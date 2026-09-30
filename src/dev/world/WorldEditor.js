@@ -211,6 +211,29 @@ export class WorldEditor {
     return collision;
   }
 
+  setCollisionPolygonEditor(id,mode=null,options={}){
+    const collision=this.runtime?.setCollisionPolygonEditor(id,mode,options)||null;
+    this.persist();
+    this.emitWorldChange();
+    return collision;
+  }
+
+  getCollisionPolygonEditorState(){
+    return this.runtime?.getCollisionPolygonEditorState?.()||{id:null,mode:null,selectedIndex:-1};
+  }
+
+  undoCollisionPolygonPoint(id,commit=true){
+    const collision=this.runtime?.undoCollisionPolygonPoint(id,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return collision;
+  }
+
+  removeCollisionPolygonPoint(id,index,commit=true){
+    const collision=this.runtime?.removeCollisionPolygonPoint(id,index,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return collision;
+  }
+
   listEntityEffectPresets(id){
     return this.runtime?.listEntityEffectPresets(id)||[];
   }
