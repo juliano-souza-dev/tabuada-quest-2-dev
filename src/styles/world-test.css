@@ -203,13 +203,14 @@
 .tq-world-atlas-magnifier{position:absolute;width:88px;height:88px;border:3px solid #fff;border-radius:50%;background-repeat:no-repeat;background-color:#061723;box-shadow:0 5px 18px rgba(0,0,0,.65),0 0 0 2px #7ee7ff;pointer-events:none;z-index:12}
 .tq-world-atlas-magnifier::after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:20px;font-weight:300;text-shadow:0 1px 3px #000}
 .tq-world-atlas-point-actions{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tq-world-atlas-wizard.is-point-mode .tq-world-atlas-point-actions{display:grid}
+.tq-world-atlas-wizard.is-point-mode .tq-world-atlas-canvas{touch-action:none}
 .tq-world-atlas-point-actions button{min-height:42px;padding:7px 8px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#102535;color:#fff;font-size:9px;font-weight:800}
 .tq-world-atlas-point-actions button.is-primary{background:#16435b;border-color:#7ee7ff;color:#dff9ff}
 .tq-world-atlas-point-actions button:disabled{opacity:.38}
 .tq-world-atlas-point-actions small{grid-column:1/-1;text-align:center;font-size:8px;color:#9fb6c5}
 @media(max-width:768px),(pointer:coarse){
-  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-point-actions{display:grid}
-  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-canvas{min-height:240px;padding:6px;touch-action:none}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-canvas{min-height:240px;padding:6px}
   .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-imagebox>img{max-height:420px}
   .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-point{width:26px;height:26px;min-width:26px!important;min-height:26px!important;margin:-13px 0 0 -13px!important}
   .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-wizard__prompt small{font-size:10px}
@@ -218,7 +219,7 @@
 }
 
 /* Mobile atlas helper: point mode + exact 4x4 cell mode */
-.tq-world-atlas-mode-switch{display:none;grid-template-columns:1fr 1fr;gap:6px}
+.tq-world-atlas-mode-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .tq-world-atlas-mode-switch button{min-height:40px;padding:7px 9px;border:1px solid rgba(126,231,255,.18);border-radius:9px;background:#0c2231;color:#b9cdd9;font-size:9px;font-weight:800}
 .tq-world-atlas-mode-switch button.is-active{border-color:#7ee7ff;background:#16394d;color:#fff;box-shadow:inset 0 0 0 1px rgba(126,231,255,.22)}
 .tq-world-atlas-grid4{position:absolute;inset:0;display:none;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);z-index:8;touch-action:none}
@@ -229,6 +230,3 @@
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-points,
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-magnifier{display:none!important}
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-point-actions{display:none!important}
-@media(max-width:768px),(pointer:coarse){
-  .tq-world-atlas-mode-switch{display:grid}
-}
