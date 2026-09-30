@@ -20,7 +20,7 @@
 .tq-world-ocean-layer--wave{mix-blend-mode:screen}
 .tq-world-ocean-layer--foam{mix-blend-mode:soft-light}
 .tq-world-entities{position:absolute;inset:0}
-.tq-world-player-wake-layer{position:absolute;inset:0;z-index:72;pointer-events:none;overflow:visible}
+.tq-world-player-wake-layer{position:absolute;inset:0;z-index:6;pointer-events:none;overflow:visible}
 .tq-world-player-shadow{
   position:absolute;
   z-index:86;
@@ -64,7 +64,6 @@
     opacity:var(--wake-opacity,.72);
     transform:translate(-50%,-50%) rotate(var(--wake-rotation,0deg)) scale(.48,.34);
   }
-  42%{opacity:calc(var(--wake-opacity,.72) * .72)}
   100%{
     opacity:0;
     transform:translate(calc(-50% + var(--wake-drift-x,0px)),calc(-50% + var(--wake-drift-y,0px))) rotate(var(--wake-rotation,0deg)) scale(1.85,1.25);
