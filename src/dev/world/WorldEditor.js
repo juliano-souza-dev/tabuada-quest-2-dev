@@ -116,17 +116,20 @@ export class WorldEditor {
     if(path.includes("/barris/")){
       type="barrel";width=78;height=78;extra={
         motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
-        effect:{category:"sea-item",preset:"none"}
+        effect:{category:"sea-item",preset:"none"},
+        collision:{active:true,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"auto",message:""}
       };
     }else if(path.includes("/baus/")){
       type="treasure";width=88;height=88;extra={
         motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
-        effect:{category:"treasure",preset:"none"}
+        effect:{category:"treasure",preset:"none"},
+        collision:{active:true,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"auto",message:""}
       };
     }else if(path.includes("/ships/")){
       type="ship";width=110;height=150;extra={
         motion:{active:true,preset:"navigation",speed:55,heave:46,pitch:42,roll:24,sway:14},
-        effect:{category:"ship",preset:"none"}
+        effect:{category:"ship",preset:"none"},
+        collision:{active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"none",message:""}
       };
     }else if(path.includes("/backgrounds/")){
       type="location";width=280;height=190;
@@ -136,7 +139,10 @@ export class WorldEditor {
         showLabel:false,
         interactionRadius:230,
         motion:{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0},
-        effect:{category,preset:"none"}
+        effect:{category,preset:"none"},
+        collision:category==="island"
+          ?{active:true,shape:"ellipse",scaleX:.72,scaleY:.52,padding:10,action:"auto",message:""}
+          :{active:false,shape:"box",scaleX:1,scaleY:1,padding:0,action:"none",message:""}
       };
     }
 
@@ -177,6 +183,16 @@ export class WorldEditor {
 
   getEntityEffect(id){
     return this.runtime?.getEntityEffect(id)||null;
+  }
+
+  getEntityCollision(id){
+    return this.runtime?.getEntityCollision(id)||null;
+  }
+
+  updateEntityCollision(id,patch,commit=true){
+    const collision=this.runtime?.updateEntityCollision(id,patch,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return collision;
   }
 
   listEntityEffectPresets(id){
