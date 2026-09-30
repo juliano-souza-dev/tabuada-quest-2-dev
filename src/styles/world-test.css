@@ -27,6 +27,21 @@
 .tq-world-entity img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 4px #001a2e80);pointer-events:none}
 .tq-world-entity__webgl{display:block;width:100%;height:100%;pointer-events:none;background:transparent}
 .tq-world-entity__webgl[hidden]{display:none}
+.tq-world-entity__collider{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  box-sizing:border-box;
+  border:2px dashed rgba(255,209,102,.95);
+  background:rgba(255,209,102,.08);
+  box-shadow:0 0 0 1px rgba(4,19,29,.6);
+  pointer-events:none;
+  z-index:12;
+  display:none;
+}
+.tq-world-host.is-editor .tq-world-entity.is-selected.has-solid-collision>.tq-world-entity__collider{display:block}
+.tq-world-entity[data-collision-shape="ellipse"]>.tq-world-entity__collider{border-radius:50%}
 
 /* Background preset: preserve the horizon/ilhas and reveal the real WebGL ocean below. */
 .tq-world-entity--horizon-blend{isolation:isolate;overflow:visible}
