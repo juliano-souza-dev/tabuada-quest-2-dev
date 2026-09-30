@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20260930-2220";
+import { WorldEditor } from "./world/WorldEditor.js?v=20260930-2230";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -1541,7 +1541,7 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20260930-2226",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20260930-2230",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
       this.assetCatalog=manifest.assets||[];
