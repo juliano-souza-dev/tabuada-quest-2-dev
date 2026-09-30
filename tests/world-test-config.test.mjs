@@ -87,3 +87,9 @@ test("player uses the 1600x1600 16-direction 4x4 atlas",()=>{
     assert.equal(region.height,400);
   }
 });
+
+
+test("world prototype uses WebGL ocean rendering",()=>{
+  assert.equal(config.ocean?.renderer,"webgl");
+  assert.ok(String(config.ocean?.background||"").startsWith("./assets/ocean/"));
+});
