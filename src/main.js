@@ -1,8 +1,8 @@
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-1525";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1525";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-1525";
-import { DevOverlay } from "./dev/DevOverlay.js?v=20260930-1734";
-import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20260930-1734";
+import { DevOverlay } from "./dev/DevOverlay.js?v=20260930-1742";
+import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20260930-1742";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20260930-1525";
 
 const app=document.querySelector("#app");
