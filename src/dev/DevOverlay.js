@@ -636,6 +636,7 @@ export class DevOverlay {
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
       const regions=sprite.regions||{};
+      const mobilePointMode=Boolean(globalThis.matchMedia?.("(pointer: coarse)")?.matches||globalThis.matchMedia?.("(max-width: 768px)")?.matches);
       const directionVisual={
         n:{icon:"↑",label:"Para cima"},
         nne:{icon:"↗",label:"Quase para cima, levemente à direita"},
@@ -664,7 +665,14 @@ export class DevOverlay {
         const sizeY=spriteImageHeight/Math.max(1,r.height)*100;
         const posX=spriteImageWidth<=r.width?0:r.x/(spriteImageWidth-r.width)*100;
         const posY=spriteImageHeight<=r.height?0:r.y/(spriteImageHeight-r.height)*100;
-        return 'background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+sizeX+'% '+sizeY+'%;background-position:'+posX+'% '+posY+'%;';
+        const polygon=Array.isArray(r.points)&&r.points.length>=3
+          ? r.points.map(point=>{
+            const px=Math.max(0,Math.min(100,((Number(point.x)-Number(r.x))/Math.max(1,Number(r.width)))*100));
+            const py=Math.max(0,Math.min(100,((Number(point.y)-Number(r.y))/Math.max(1,Number(r.height)))*100));
+            return px.toFixed(2)+"% "+py.toFixed(2)+"%";
+          }).join(",")
+          : "";
+        return 'background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+sizeX+'% '+sizeY+'%;background-position:'+posX+'% '+posY+'%;'+(polygon?'clip-path:polygon('+polygon+');':'');
       };
       const directionRegionCards=Object.entries(directionVisual).map(([key,info])=>{
         const configured=Boolean(regions[key]);
@@ -706,10 +714,17 @@ export class DevOverlay {
               (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
               '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
             '</button>'+
-            '<div class="tq-world-atlas-wizard" data-atlas-wizard>'+
-              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small>Arraste uma caixa somente em volta desse navio.</small></div></div>'+
+            '<div class="tq-world-atlas-wizard '+(mobilePointMode?'is-point-mode':'')+'" data-atlas-wizard>'+
+              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small data-atlas-help>'+(mobilePointMode?'Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão.':'Arraste uma caixa somente em volta desse navio.')+'</small></div></div>'+
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
-                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
+                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
+              '</div>'+
+              '<div class="tq-world-atlas-point-actions" data-atlas-point-actions>'+
+                '<button type="button" data-atlas-undo>↶ Desfazer</button>'+
+                '<button type="button" data-atlas-clear>Limpar</button>'+
+                '<button type="button" data-atlas-close>Fechar contorno</button>'+
+                '<button type="button" class="is-primary" data-atlas-confirm>Confirmar</button>'+
+                '<small data-atlas-point-status>0 pontos</small>'+
               '</div>'+
               '<div class="tq-world-atlas-wizard__actions">'+
                 '<button type="button" data-atlas-prev>← Anterior</button>'+
@@ -766,29 +781,136 @@ export class DevOverlay {
 
       const atlasCanvas=content.querySelector("[data-atlas-canvas]");
       const atlasImageBox=content.querySelector("[data-atlas-imagebox]");
+      const atlasPointsLayer=content.querySelector("[data-atlas-points]");
+      const atlasMagnifier=content.querySelector("[data-atlas-magnifier]");
       const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
+      const pointMode=mobilePointMode;
       let atlasDirection=firstMissing;
       let pendingRegion=null;
       let previousRegion=null;
+      let polygonPoints=[];
+      let polygonClosed=false;
+
+      const clampValue=(value,min,max)=>Math.min(max,Math.max(min,value));
+      const imageMetrics=()=>{
+        const img=atlasImageBox?.querySelector("img");
+        if(!img)return null;
+        const rect=img.getBoundingClientRect();
+        return {
+          img,
+          rect,
+          naturalW:img.naturalWidth||rect.width||1,
+          naturalH:img.naturalHeight||rect.height||1
+        };
+      };
+      const eventPoint=event=>{
+        const metrics=imageMetrics();
+        if(!metrics)return null;
+        return {
+          x:clampValue((event.clientX-metrics.rect.left)/metrics.rect.width*metrics.naturalW,0,metrics.naturalW),
+          y:clampValue((event.clientY-metrics.rect.top)/metrics.rect.height*metrics.naturalH,0,metrics.naturalH)
+        };
+      };
+      const regionFromPoints=points=>{
+        if(!Array.isArray(points)||points.length<3)return null;
+        const xs=points.map(point=>Number(point.x));
+        const ys=points.map(point=>Number(point.y));
+        const x=Math.min(...xs),y=Math.min(...ys);
+        const right=Math.max(...xs),bottom=Math.max(...ys);
+        return {
+          x,y,
+          width:Math.max(1,right-x),
+          height:Math.max(1,bottom-y),
+          points:points.map(point=>({x:Number(point.x),y:Number(point.y)}))
+        };
+      };
+      const savedPolygon=direction=>{
+        const points=regions[direction]?.points;
+        return Array.isArray(points)&&points.length>=3
+          ? points.map(point=>({x:Number(point.x),y:Number(point.y)})).filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y))
+          : [];
+      };
+      const showMagnifier=(event,point)=>{
+        if(!pointMode||!atlasMagnifier||!point)return;
+        const metrics=imageMetrics();
+        if(!metrics)return;
+        const box=atlasImageBox.getBoundingClientRect();
+        const localX=event.clientX-box.left;
+        const localY=event.clientY-box.top;
+        const size=88;
+        atlasMagnifier.hidden=false;
+        atlasMagnifier.style.left=clampValue(localX-size/2,0,Math.max(0,box.width-size))+"px";
+        atlasMagnifier.style.top=clampValue(localY-size-42,0,Math.max(0,box.height-size))+"px";
+        atlasMagnifier.style.backgroundImage='url("'+String(spriteSrc).replace(/["\\]/g,"")+'")';
+        atlasMagnifier.style.backgroundSize=(metrics.rect.width*3)+"px "+(metrics.rect.height*3)+"px";
+        atlasMagnifier.style.backgroundPosition=(point.x/metrics.naturalW*100)+"% "+(point.y/metrics.naturalH*100)+"%";
+      };
+      const hideMagnifier=()=>{if(atlasMagnifier)atlasMagnifier.hidden=true};
 
       const showSavedRegion=direction=>{
         const selection=content.querySelector("[data-atlas-selection]");
-        const img=atlasImageBox?.querySelector("img");
+        const metrics=imageMetrics();
         const region=regions[direction];
-        if(!selection||!img||!region||!img.naturalWidth||!img.naturalHeight){
+        if(!selection||!metrics||!region){
           if(selection)selection.hidden=true;
           return;
         }
-        selection.hidden=false;
-        selection.style.left=(region.x/img.naturalWidth*100)+"%";
-        selection.style.top=(region.y/img.naturalHeight*100)+"%";
-        selection.style.width=(region.width/img.naturalWidth*100)+"%";
-        selection.style.height=(region.height/img.naturalHeight*100)+"%";
+        const hasPolygon=Array.isArray(region.points)&&region.points.length>=3;
+        selection.hidden=pointMode&&hasPolygon;
+        if(selection.hidden)return;
+        selection.style.left=(region.x/metrics.naturalW*100)+"%";
+        selection.style.top=(region.y/metrics.naturalH*100)+"%";
+        selection.style.width=(region.width/metrics.naturalW*100)+"%";
+        selection.style.height=(region.height/metrics.naturalH*100)+"%";
+      };
+
+      const updatePolygonGeometry=()=>{
+        const metrics=imageMetrics();
+        const line=content.querySelector("[data-atlas-polygon-line]");
+        const fill=content.querySelector("[data-atlas-polygon-fill]");
+        if(!metrics||!line||!fill)return;
+        const normalized=polygonPoints.map(point=>(point.x/metrics.naturalW*100).toFixed(4)+","+(point.y/metrics.naturalH*100).toFixed(4));
+        const linePoints=polygonClosed&&normalized.length>=3?[...normalized,normalized[0]]:normalized;
+        line.setAttribute("points",linePoints.join(" "));
+        fill.setAttribute("points",polygonClosed&&normalized.length>=3?normalized.join(" "):"");
+        atlasPointsLayer?.querySelectorAll("[data-atlas-point-index]").forEach(handle=>{
+          const index=Number(handle.dataset.atlasPointIndex);
+          const point=polygonPoints[index];
+          if(!point)return;
+          handle.style.left=(point.x/metrics.naturalW*100)+"%";
+          handle.style.top=(point.y/metrics.naturalH*100)+"%";
+        });
+      };
+
+      const renderPolygon=()=>{
+        const polygon=content.querySelector("[data-atlas-polygon]");
+        if(polygon)polygon.hidden=!pointMode;
+        if(!pointMode)return;
+        const selection=content.querySelector("[data-atlas-selection]");
+        if(selection&&polygonPoints.length)selection.hidden=true;
+        if(atlasPointsLayer){
+          atlasPointsLayer.innerHTML=polygonPoints.map((point,index)=>
+            '<button type="button" class="tq-world-atlas-point '+(index===0?'is-first':'')+'" data-atlas-point-index="'+index+'" aria-label="Ponto '+(index+1)+'"></button>'
+          ).join("");
+        }
+        updatePolygonGeometry();
+        const status=content.querySelector("[data-atlas-point-status]");
+        if(status)status.textContent=polygonPoints.length+" ponto"+(polygonPoints.length===1?"":"s")+(polygonClosed?" · contorno fechado":"");
+        const undo=content.querySelector("[data-atlas-undo]");
+        const clear=content.querySelector("[data-atlas-clear]");
+        const close=content.querySelector("[data-atlas-close]");
+        const confirm=content.querySelector("[data-atlas-confirm]");
+        if(undo)undo.disabled=polygonPoints.length===0;
+        if(clear)clear.disabled=polygonPoints.length===0;
+        if(close)close.disabled=polygonPoints.length<3||polygonClosed;
+        if(confirm)confirm.disabled=polygonPoints.length<3;
       };
 
       const selectRegion=direction=>{
         atlasDirection=direction;
         pendingRegion=null;
+        polygonPoints=savedPolygon(direction);
+        polygonClosed=polygonPoints.length>=3;
         content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.classList.toggle("is-active",btn.dataset.playerRegionEdit===direction));
         const info=directionVisual[direction];
         const icon=content.querySelector("[data-atlas-direction-icon]");
@@ -796,11 +918,32 @@ export class DevOverlay {
         if(icon)icon.textContent=info.icon;
         if(label)label.textContent=info.label;
         showSavedRegion(direction);
+        renderPolygon();
       };
 
       const stepDirection=delta=>{
         const index=directionOrder.indexOf(atlasDirection);
         selectRegion(directionOrder[(index+delta+directionOrder.length)%directionOrder.length]);
+      };
+      const advanceAfterSave=()=>{
+        const currentIndex=directionOrder.indexOf(atlasDirection);
+        const ordered=[...directionOrder.slice(currentIndex+1),...directionOrder.slice(0,currentIndex)];
+        const nextMissing=ordered.find(key=>!regions[key]);
+        this.renderWorldInspector();
+        if(nextMissing){
+          requestAnimationFrame(()=>this.el.querySelector('[data-player-region-edit="'+nextMissing+'"]')?.click());
+        }
+      };
+      const saveRegion=region=>{
+        const metrics=imageMetrics();
+        if(!metrics||!region)return;
+        this.worldEditor.updatePlayerConfig({sprite:{
+          imageWidth:metrics.naturalW,
+          imageHeight:metrics.naturalH,
+          regions:{[atlasDirection]:region}
+        }},true);
+        this.syncLocalWorldFromEditor();
+        advanceAfterSave();
       };
 
       content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.addEventListener("click",()=>selectRegion(btn.dataset.playerRegionEdit)));
@@ -814,24 +957,111 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       });
+      content.querySelector("[data-atlas-undo]")?.addEventListener("click",()=>{
+        if(!pointMode||!polygonPoints.length)return;
+        polygonClosed=false;
+        polygonPoints.pop();
+        renderPolygon();
+      });
+      content.querySelector("[data-atlas-clear]")?.addEventListener("click",()=>{
+        polygonPoints=[];
+        polygonClosed=false;
+        renderPolygon();
+        showSavedRegion(atlasDirection);
+      });
+      content.querySelector("[data-atlas-close]")?.addEventListener("click",()=>{
+        if(polygonPoints.length<3)return;
+        polygonClosed=true;
+        renderPolygon();
+      });
+      content.querySelector("[data-atlas-confirm]")?.addEventListener("click",()=>{
+        const region=regionFromPoints(polygonPoints);
+        if(!region)return;
+        polygonClosed=true;
+        saveRegion(region);
+      });
+
+      atlasPointsLayer?.addEventListener("pointerdown",event=>{
+        if(!pointMode)return;
+        const handle=event.target.closest?.("[data-atlas-point-index]");
+        if(!handle)return;
+        event.preventDefault();
+        event.stopPropagation();
+        const index=Number(handle.dataset.atlasPointIndex);
+        if(!Number.isInteger(index)||!polygonPoints[index])return;
+        polygonClosed=false;
+        try{handle.setPointerCapture(event.pointerId)}catch{}
+        const move=e=>{
+          const point=eventPoint(e);
+          if(!point)return;
+          polygonPoints[index]=point;
+          handle.style.left=(point.x/(imageMetrics()?.naturalW||1)*100)+"%";
+          handle.style.top=(point.y/(imageMetrics()?.naturalH||1)*100)+"%";
+          updatePolygonGeometry();
+          showMagnifier(e,point);
+        };
+        const end=e=>{
+          try{if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)}catch{}
+          handle.removeEventListener("pointermove",move);
+          handle.removeEventListener("pointerup",end);
+          handle.removeEventListener("pointercancel",end);
+          hideMagnifier();
+          renderPolygon();
+        };
+        handle.addEventListener("pointermove",move);
+        handle.addEventListener("pointerup",end);
+        handle.addEventListener("pointercancel",end);
+      });
 
       selectRegion(firstMissing);
-
-      atlasImageBox?.querySelector("img")?.addEventListener("load",()=>showSavedRegion(atlasDirection));
+      atlasImageBox?.querySelector("img")?.addEventListener("load",()=>{
+        showSavedRegion(atlasDirection);
+        renderPolygon();
+      });
 
       atlasCanvas?.addEventListener("pointerdown",event=>{
-        const img=atlasImageBox?.querySelector("img");
-        if(!img||!atlasImageBox)return;
+        const metrics=imageMetrics();
+        if(!metrics||!atlasImageBox)return;
+        if(pointMode){
+          if(event.target.closest?.("[data-atlas-point-index]"))return;
+          event.preventDefault();
+          const startPoint=eventPoint(event);
+          if(!startPoint)return;
+          showMagnifier(event,startPoint);
+          try{atlasCanvas.setPointerCapture(event.pointerId)}catch{}
+          let currentPoint=startPoint;
+          const move=e=>{
+            currentPoint=eventPoint(e)||currentPoint;
+            showMagnifier(e,currentPoint);
+          };
+          const finish=e=>{
+            currentPoint=eventPoint(e)||currentPoint;
+            try{if(atlasCanvas.hasPointerCapture(e.pointerId))atlasCanvas.releasePointerCapture(e.pointerId)}catch{}
+            atlasCanvas.removeEventListener("pointermove",move);
+            atlasCanvas.removeEventListener("pointerup",finish);
+            atlasCanvas.removeEventListener("pointercancel",finish);
+            hideMagnifier();
+            if(polygonPoints.length>=3){
+              const first=polygonPoints[0];
+              const threshold=22/Math.max(1,metrics.rect.width)*metrics.naturalW;
+              if(Math.hypot(currentPoint.x-first.x,currentPoint.y-first.y)<=threshold){
+                polygonClosed=true;
+                renderPolygon();
+                return;
+              }
+            }
+            polygonClosed=false;
+            polygonPoints.push(currentPoint);
+            renderPolygon();
+          };
+          atlasCanvas.addEventListener("pointermove",move);
+          atlasCanvas.addEventListener("pointerup",finish);
+          atlasCanvas.addEventListener("pointercancel",finish);
+          return;
+        }
+
         event.preventDefault();
-        const rect=img.getBoundingClientRect();
-        const naturalW=img.naturalWidth||rect.width;
-        const naturalH=img.naturalHeight||rect.height;
-        const clampValue=(value,min,max)=>Math.min(max,Math.max(min,value));
-        const point=e=>({
-          x:clampValue((e.clientX-rect.left)/rect.width*naturalW,0,naturalW),
-          y:clampValue((e.clientY-rect.top)/rect.height*naturalH,0,naturalH)
-        });
-        const startPoint=point(event);
+        const startPoint=eventPoint(event);
         const selection=content.querySelector("[data-atlas-selection]");
         previousRegion=regions[atlasDirection]||previousRegion;
         try{atlasCanvas.setPointerCapture(event.pointerId)}catch{}
@@ -843,35 +1073,21 @@ export class DevOverlay {
           const height=Math.max(1,Math.abs(currentPoint.y-startPoint.y));
           pendingRegion={x,y,width,height};
           selection.hidden=false;
-          selection.style.left=(x/naturalW*100)+"%";
-          selection.style.top=(y/naturalH*100)+"%";
-          selection.style.width=(width/naturalW*100)+"%";
-          selection.style.height=(height/naturalH*100)+"%";
+          selection.style.left=(x/metrics.naturalW*100)+"%";
+          selection.style.top=(y/metrics.naturalH*100)+"%";
+          selection.style.width=(width/metrics.naturalW*100)+"%";
+          selection.style.height=(height/metrics.naturalH*100)+"%";
         };
 
         draw(startPoint);
-        const move=e=>draw(point(e));
+        const move=e=>draw(eventPoint(e)||startPoint);
         const finish=e=>{
-          draw(point(e));
+          draw(eventPoint(e)||startPoint);
           atlasCanvas.removeEventListener("pointermove",move);
           atlasCanvas.removeEventListener("pointerup",finish);
           atlasCanvas.removeEventListener("pointercancel",finish);
           if(!pendingRegion||pendingRegion.width<3||pendingRegion.height<3)return;
-          this.worldEditor.updatePlayerConfig({sprite:{
-            imageWidth:naturalW,
-            imageHeight:naturalH,
-            regions:{[atlasDirection]:pendingRegion}
-          }},true);
-          this.syncLocalWorldFromEditor();
-          const currentIndex=directionOrder.indexOf(atlasDirection);
-          const nextMissing=directionOrder.slice(currentIndex+1).find(key=>!regions[key])||directionOrder.find(key=>!regions[key]);
-          this.renderWorldInspector();
-          if(nextMissing){
-            requestAnimationFrame(()=>{
-              const nextButton=this.el.querySelector('[data-player-region-edit="'+nextMissing+'"]');
-              nextButton?.click();
-            });
-          }
+          saveRegion(pendingRegion);
         };
         atlasCanvas.addEventListener("pointermove",move);
         atlasCanvas.addEventListener("pointerup",finish);
