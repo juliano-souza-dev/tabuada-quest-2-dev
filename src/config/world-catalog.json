@@ -4,7 +4,7 @@
   "worlds": [
     {
       "id": "ocean-prototype",
-      "name": "Oceano Protótipo",
+      "name": "Oceano Teste Completo",
       "type": "ocean",
       "path": "./src/world/world-test.world.json"
     },
