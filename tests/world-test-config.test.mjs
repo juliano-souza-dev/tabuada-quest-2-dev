@@ -53,8 +53,37 @@ test("world prototype is editor-versioned",()=>{
 
 test("world prototype defines editable ocean movement",()=>{
   assert.equal(config.ocean?.active,true);
-  assert.ok(String(config.ocean?.background||"").startsWith("./assets/backgrounds/"));
+  assert.ok(String(config.ocean?.background||"").startsWith("./assets/ocean/"));
   assert.ok(["calm","adventure","storm"].includes(config.ocean?.preset));
   assert.ok(Number.isFinite(config.ocean?.speed));
   assert.ok(Number.isFinite(config.ocean?.swell));
+});
+
+
+test("complete ocean prototype defines the 7400x7400 playable area",()=>{
+  assert.deepEqual(config.playableArea,{x:300,y:300,width:7400,height:7400});
+});
+
+test("complete ocean prototype includes five region islands",()=>{
+  const islands=(config.entities||[]).filter(item=>item.type==="location"&&String(item.src||"").includes("/regions/islands/"));
+  assert.equal(islands.length,5);
+});
+
+test("complete ocean prototype includes scattered treasure chests",()=>{
+  const chests=(config.entities||[]).filter(item=>item.type==="treasure");
+  assert.ok(chests.length>=10);
+  assert.ok(chests.every(item=>String(item.src||"").includes("bau")));
+});
+
+test("player uses the 1600x1600 16-direction 4x4 atlas",()=>{
+  const sprite=config.player?.sprite;
+  assert.ok(String(sprite?.src||"").includes("pirate_ship_16dir_1600x1600_4x4.webp"));
+  assert.equal(sprite?.imageWidth,1600);
+  assert.equal(sprite?.imageHeight,1600);
+  const keys=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
+  assert.deepEqual(Object.keys(sprite?.regions||{}),keys);
+  for(const region of Object.values(sprite.regions)){
+    assert.equal(region.width,400);
+    assert.equal(region.height,400);
+  }
 });
