@@ -57,6 +57,70 @@
   cursor:move;
 }
 .tq-world-host.is-play .tq-world-entity__editor-hitbox{display:none}
+.tq-world-entity__collision-svg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  z-index:14;
+  pointer-events:none;
+  display:none;
+}
+.tq-world-entity__collision-polygon{
+  fill:rgba(255,209,102,.12);
+  stroke:rgba(255,209,102,.98);
+  stroke-width:1.2;
+  stroke-dasharray:3 2;
+  vector-effect:non-scaling-stroke;
+  stroke-linejoin:round;
+}
+.tq-world-host.is-editor .tq-world-entity.is-selected.has-solid-collision.is-polygon-collision>.tq-world-entity__collider{display:none}
+.tq-world-host.is-editor .tq-world-entity.is-selected.has-solid-collision.is-polygon-collision>.tq-world-entity__collision-svg{display:block}
+.tq-world-entity__collision-points{
+  position:absolute;
+  inset:0;
+  z-index:32;
+  pointer-events:none;
+  overflow:visible;
+}
+.tq-world-entity__collision-points[hidden]{display:none}
+.tq-world-collision-point{
+  position:absolute;
+  width:20px;
+  height:20px;
+  min-width:20px!important;
+  min-height:20px!important;
+  padding:0!important;
+  margin:-10px 0 0 -10px!important;
+  transform:none!important;
+  border:2px solid #06131f!important;
+  border-radius:50%!important;
+  background:#7ee7ff!important;
+  box-shadow:0 0 0 2px #fff,0 3px 9px rgba(0,0,0,.55)!important;
+  pointer-events:auto;
+  touch-action:none;
+  cursor:grab;
+}
+.tq-world-collision-point:active{cursor:grabbing}
+.tq-world-collision-point.is-first{background:#ffd166!important}
+.tq-world-collision-point.is-selected{background:#ff7b72!important;box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(255,123,114,.3)!important}
+.tq-world-entity.is-collision-editing>.tq-world-entity__editor-hitbox{cursor:crosshair}
+.tq-world-entity.is-collision-editing{outline-color:#ffd166!important}
+.tq-world-collision-polygon-tools{display:grid;gap:8px;padding:10px;border:1px solid rgba(255,209,102,.24);border-radius:10px;background:rgba(255,209,102,.055)}
+.tq-world-collision-polygon-tools.is-editing{border-color:rgba(126,231,255,.5);background:rgba(126,231,255,.055)}
+.tq-world-collision-polygon-status{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tq-world-collision-polygon-status strong{color:#ffd166;font-size:11px}
+.tq-world-collision-polygon-status small{color:#9fb6c5;font-size:9px}
+.tq-world-collision-polygon-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.tq-world-collision-polygon-actions button{min-height:38px;padding:7px;border:1px solid rgba(255,255,255,.14);border-radius:8px;background:#102535;color:#fff;font-size:9px;font-weight:800}
+.tq-world-collision-polygon-actions button.is-active{border-color:#7ee7ff;background:#16435b;color:#fff}
+.tq-world-collision-polygon-actions button:disabled{opacity:.35}
+.tq-world-collision-polygon-tools>small{font-size:9px;line-height:1.4;color:#9fb6c5}
+@media(max-width:768px),(pointer:coarse){
+  .tq-world-collision-point{width:28px;height:28px;min-width:28px!important;min-height:28px!important;margin:-14px 0 0 -14px!important}
+  .tq-world-collision-polygon-actions{grid-template-columns:1fr}
+}
 
 /* Background preset: preserve the horizon/ilhas and reveal the real WebGL ocean below. */
 .tq-world-entity--horizon-blend{isolation:isolate;overflow:visible}
