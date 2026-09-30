@@ -257,3 +257,7 @@
   font:800 11px/1 system-ui,sans-serif;
   letter-spacing:.04em;
 }
+
+.tq-world-recenter{justify-self:center;margin-top:8px;padding:9px 13px;border:1px solid #ffffff40;border-radius:999px;background:#071b2ed9;color:#fff;font:800 12px/1 system-ui,sans-serif;box-shadow:0 8px 24px #001a2e66;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:manipulation}
+.tq-world-recenter[hidden]{display:none!important}
+.tq-world-recenter:active{transform:translateY(1px)}
