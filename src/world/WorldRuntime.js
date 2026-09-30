@@ -15,6 +15,7 @@ import {
   removeVelocityIntoNormal,
   contourVelocity
 } from "./WorldCollision.mjs?v=20260930-2123";
+import { computeShipOceanMotion } from "./WorldShipOceanMotion.mjs?v=20260930-2230";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 const normalizePlayerWaterEffects=player=>{
@@ -31,7 +32,9 @@ const normalizePlayerWaterEffects=player=>{
     shadowBlur:clamp(Number(fx.shadowBlur??9),0,30),
     shadowOffset:clamp(Number(fx.shadowOffset??12),-40,80),
     shadowScaleX:clamp(Number(fx.shadowScaleX??.72),.25,1.5),
-    shadowScaleY:clamp(Number(fx.shadowScaleY??.28),.12,1)
+    shadowScaleY:clamp(Number(fx.shadowScaleY??.28),.12,1),
+    oceanMotionActive:fx.oceanMotionActive!==false,
+    oceanResponse:clamp(Number(fx.oceanResponse??1),0,2)
   };
 };
 
@@ -95,6 +98,7 @@ export class WorldRuntime {
     this.collisionAvoidance={entityId:null,side:0,until:0};
     this.lastWakeSpawn=0;
     this.wakeParticleCount=0;
+    this.playerOceanMotion={offsetX:0,offsetY:0,roll:0,scaleX:1,scaleY:1,energy:0};
     this.cleanups=[];
   }
 
@@ -1156,8 +1160,9 @@ export class WorldRuntime {
 
     if(this.playerShadowEl){
       this.playerShadowEl.hidden=!effects.shadowActive;
-      this.playerShadowEl.style.left=this.player.x+"px";
-      this.playerShadowEl.style.top=(this.player.y+effects.shadowOffset)+"px";
+      const rocking=this.playerOceanMotion||{offsetX:0,offsetY:0,scaleX:1,scaleY:1,energy:0};
+      this.playerShadowEl.style.left=(this.player.x+rocking.offsetX*.18)+"px";
+      this.playerShadowEl.style.top=(this.player.y+effects.shadowOffset+rocking.offsetY*.12)+"px";
       this.playerShadowEl.style.width=(width*effects.shadowScaleX)+"px";
       this.playerShadowEl.style.height=(height*effects.shadowScaleY)+"px";
       this.playerShadowEl.style.opacity=String(effects.shadowOpacity);
@@ -1221,19 +1226,28 @@ export class WorldRuntime {
     if(Math.floor(time/effects.wakeRate)%2===0)spawn(0,true);
   }
 
-  updatePlayerVisual(){
-    this.playerEl.style.left=this.player.x+"px";
-    this.playerEl.style.top=this.player.y+"px";
+  updatePlayerVisual(time=performance.now()){
+    const effects=this.playerWaterEffects();
+    const ocean=normalizeOceanConfig(this.config.ocean||{});
+    const rocking=this.mode==="play"&&effects.oceanMotionActive&&ocean.active
+      ?computeShipOceanMotion(ocean,this.player,time,effects.oceanResponse)
+      :{offsetX:0,offsetY:0,roll:0,scaleX:1,scaleY:1,energy:0};
+    this.playerOceanMotion=rocking;
+
+    this.playerEl.style.left=(this.player.x+rocking.offsetX)+"px";
+    this.playerEl.style.top=(this.player.y+rocking.offsetY)+"px";
 
     const sprite=this.config.player?.sprite;
     const directional=this.config.player?.directions;
+    const rockTransform=`rotate(${rocking.roll.toFixed(3)}deg) scale(${rocking.scaleX.toFixed(5)},${rocking.scaleY.toFixed(5)})`;
+
     if(sprite?.src&&sprite?.regions){
       this.player.direction=directionForHeading(this.player.rotation,this.player.direction,{hysteresis:4});
       const style=directionalRegionStyle(sprite,this.player.direction);
       if(style)Object.assign(this.playerEl.style,style);
       this.playerEl.dataset.direction=this.player.direction;
       this.playerEl.dataset.renderMode="atlas";
-      this.playerEl.style.transform="translate(-50%,-50%)";
+      this.playerEl.style.transform=`translate(-50%,-50%) ${rockTransform}`;
     }else if(directional&&typeof directional==="object"){
       this.player.direction=directionForHeading(this.player.rotation,this.player.direction,{hysteresis:4});
       const nextSrc=resolveDirectionalSource(directional,this.player.direction,this.config.player?.src||"");
@@ -1241,13 +1255,13 @@ export class WorldRuntime {
       this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
       this.playerEl.style.backgroundSize="contain";
       this.playerEl.style.backgroundPosition="center";
-      this.playerEl.style.transform="translate(-50%,-50%)";
+      this.playerEl.style.transform=`translate(-50%,-50%) ${rockTransform}`;
     }else{
       const safe=String(this.config.player?.src||"").replace(/["\\]/g,"");
       this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
       this.playerEl.style.backgroundSize="contain";
       this.playerEl.style.backgroundPosition="center";
-      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation}deg)`;
+      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${(this.player.rotation+rocking.roll).toFixed(3)}deg) scale(${rocking.scaleX.toFixed(5)},${rocking.scaleY.toFixed(5)})`;
     }
   }
 
@@ -1506,8 +1520,9 @@ export class WorldRuntime {
         if(Number.isFinite(headings[next.direction]))this.player.rotation=headings[next.direction];
       }
     }
-    this.updatePlayerVisual();
-    this.updatePlayerWaterEffects(performance.now());
+    const now=performance.now();
+    this.updatePlayerVisual(now);
+    this.updatePlayerWaterEffects(now);
     return this.getPlayerConfig();
   }
 
@@ -1807,7 +1822,7 @@ export class WorldRuntime {
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
     if(this.mode==="play")this.updatePlayer(dt);
-    this.updatePlayerVisual();
+    this.updatePlayerVisual(time);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time);
     this.updateCamera(false,dt);
