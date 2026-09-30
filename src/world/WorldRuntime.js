@@ -997,7 +997,7 @@ export class WorldRuntime {
       const frame=computeEntityMotionFrame(motion,time,(entity.index+1)*1.71,entity.type);
       entity.el.style.left=(entity.x+frame.offsetX)+"px";
       entity.el.style.top=(entity.y+frame.offsetY)+"px";
-      entity.el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)+frame.rotation}deg) scale(1,${frame.scaleY})`;
+      entity.el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)+frame.rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(1,${frame.scaleY})`;
     }
   }
 
