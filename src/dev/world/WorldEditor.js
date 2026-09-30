@@ -40,6 +40,14 @@ export class WorldEditor {
         const draftRevision=draft.meta?.sourceRevision??null;
         if(draft?.schema===source.schema&&draft?.id===source.id&&draftRevision===sourceRevision){
           world=draft;
+          const sourceLayoutRevision=source.meta?.layoutRevision??null;
+          const draftLayoutRevision=draft.meta?.layoutRevision??null;
+          if(sourceLayoutRevision&&sourceLayoutRevision!==draftLayoutRevision){
+            world.width=source.width;
+            world.height=source.height;
+            world.playableArea=structuredClone(source.playableArea||null);
+            world.meta={...(world.meta||{}),layoutRevision:sourceLayoutRevision};
+          }
         }else{
           localStorage.removeItem(this.storageKey);
         }
