@@ -1296,9 +1296,24 @@ export class WorldRuntime {
       return;
     }
 
-    const entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
+    let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
       ?this.contactEntity
       :null;
+
+    if(!entity){
+      const radius=this.playerCollisionRadius()+8;
+      for(const candidate of this.entities){
+        if(this.collected.has(candidate.id))continue;
+        candidate.collision=normalizeCollision(candidate.collision||{},candidate);
+        if(!candidate.collision.active)continue;
+        if(inferCollisionAction(candidate,candidate.collision)==="none")continue;
+        if(resolveCircleVsEntity(this.player,radius,candidate,candidate.collision).collided){
+          entity=candidate;
+          break;
+        }
+      }
+    }
+
     this.nearby=entity;
 
     if(!entity){
