@@ -108,6 +108,7 @@ export class DevOverlay {
     this.worldCatalogReady=this.loadWorldCatalog();
     this.mountMold();
     this.enableToolbarDrag();
+    this.enablePanelDrag();
     this.el.querySelector("[data-collapse]").addEventListener("click",()=>this.toggleCollapse());
     window.addEventListener("tq:selectionchange",e=>{this.selected=e.detail.node||null;this.renderInspector();});
     window.addEventListener("tq:nodechange",e=>{const node=e.detail?.node;if(node&&this.selected?.id===node.id){this.selected=node;this.syncInspector();}});
@@ -1579,6 +1580,123 @@ export class DevOverlay {
       bar.scrollLeft+=e.deltaY;
     },{passive:false});
   }
+  enablePanelDrag(){
+    const desktop=globalThis.matchMedia?.("(min-width: 800px)");
+    const configs=[
+      [".tq-dev__panel","config"],
+      [".tq-dev__scenes","scenes"],
+      [".tq-dev__worlds","worlds"],
+      [".tq-dev__assets","assets"]
+    ];
+
+    const clearPosition=panel=>{
+      if(!panel)return;
+      for(const key of ["left","top","right","bottom","transform","margin"])panel.style[key]="";
+      panel.classList.remove("is-user-positioned");
+    };
+
+    const restorePosition=(panel,key)=>{
+      if(!panel||!desktop?.matches)return;
+      try{
+        const saved=JSON.parse(sessionStorage.getItem("tq.dev.panel-position:"+key)||"null");
+        if(!saved||!Number.isFinite(saved.left)||!Number.isFinite(saved.top))return;
+        const maxX=Math.max(0,window.innerWidth-panel.offsetWidth);
+        const maxY=Math.max(0,window.innerHeight-panel.offsetHeight);
+        panel.style.left=Math.min(maxX,Math.max(0,saved.left))+"px";
+        panel.style.top=Math.min(maxY,Math.max(0,saved.top))+"px";
+        panel.style.right="auto";
+        panel.style.bottom="auto";
+        panel.style.transform="none";
+        panel.style.margin="0";
+        panel.classList.add("is-user-positioned");
+      }catch{}
+    };
+
+    const bind=(panel,key)=>{
+      if(!panel)return;
+      const handle=panel.querySelector(":scope > header");
+      if(!handle)return;
+      let drag=null;
+
+      const move=event=>{
+        if(!drag)return;
+        const maxX=Math.max(0,window.innerWidth-panel.offsetWidth);
+        const maxY=Math.max(0,window.innerHeight-panel.offsetHeight);
+        const left=Math.min(maxX,Math.max(0,drag.left+event.clientX-drag.x));
+        const top=Math.min(maxY,Math.max(0,drag.top+event.clientY-drag.y));
+        panel.style.left=left+"px";
+        panel.style.top=top+"px";
+        panel.style.right="auto";
+        panel.style.bottom="auto";
+        panel.style.transform="none";
+        panel.style.margin="0";
+        panel.classList.add("is-user-positioned");
+      };
+
+      const end=event=>{
+        if(!drag)return;
+        try{handle.releasePointerCapture(event.pointerId)}catch{}
+        drag=null;
+        const rect=panel.getBoundingClientRect();
+        try{
+          sessionStorage.setItem("tq.dev.panel-position:"+key,JSON.stringify({left:rect.left,top:rect.top}));
+        }catch{}
+      };
+
+      handle.addEventListener("pointerdown",event=>{
+        if(!desktop?.matches)return;
+        if(event.button!==0)return;
+        if(event.target.closest?.("button,input,select,textarea,a,label"))return;
+        event.preventDefault();
+        const rect=panel.getBoundingClientRect();
+        drag={x:event.clientX,y:event.clientY,left:rect.left,top:rect.top};
+        panel.style.position="fixed";
+        panel.style.left=rect.left+"px";
+        panel.style.top=rect.top+"px";
+        panel.style.right="auto";
+        panel.style.bottom="auto";
+        panel.style.transform="none";
+        panel.style.margin="0";
+        panel.classList.add("is-user-positioned");
+        try{handle.setPointerCapture(event.pointerId)}catch{}
+      });
+      handle.addEventListener("pointermove",move);
+      handle.addEventListener("pointerup",end);
+      handle.addEventListener("pointercancel",end);
+
+      restorePosition(panel,key);
+    };
+
+    configs.forEach(([selector,key])=>bind(this.el.querySelector(selector),key));
+
+    const syncViewport=()=>{
+      if(desktop?.matches){
+        configs.forEach(([selector,key])=>restorePosition(this.el.querySelector(selector),key));
+      }else{
+        configs.forEach(([selector])=>clearPosition(this.el.querySelector(selector)));
+      }
+    };
+    desktop?.addEventListener?.("change",syncViewport);
+    window.addEventListener("resize",()=>{
+      if(!desktop?.matches)return;
+      configs.forEach(([selector,key])=>{
+        const panel=this.el.querySelector(selector);
+        if(!panel?.classList.contains("is-user-positioned"))return;
+        const rect=panel.getBoundingClientRect();
+        const maxX=Math.max(0,window.innerWidth-panel.offsetWidth);
+        const maxY=Math.max(0,window.innerHeight-panel.offsetHeight);
+        panel.style.left=Math.min(maxX,Math.max(0,rect.left))+"px";
+        panel.style.top=Math.min(maxY,Math.max(0,rect.top))+"px";
+        try{
+          sessionStorage.setItem("tq.dev.panel-position:"+key,JSON.stringify({
+            left:parseFloat(panel.style.left)||0,
+            top:parseFloat(panel.style.top)||0
+          }));
+        }catch{}
+      });
+    });
+  }
+
   mountMold(){
     this.mold=document.createElement("div");
     this.mold.className="tq-dev-mold";
