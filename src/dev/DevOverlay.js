@@ -1208,6 +1208,9 @@ export class DevOverlay {
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,blendLine:.58,blendFeather:.28,oceanTint:.24,mist:.22,caustics:.16,rotateToPath:false};
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
+    const transformMax=(effect.mode==="horizonBlend"||entity.type==="background")
+      ?Math.max(2400,Number(world.width)||2400,Number(world.height)||2400)
+      :2400;
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
@@ -1241,7 +1244,7 @@ export class DevOverlay {
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Transformação</strong><span>▾</span></button><div class="tq-config-area__body">'+
           num("x","Position X")+num("y","Position Y")+
-          num("width","Width",16,2400)+num("height","Height",16,2400)+
+          num("width","Width",16,transformMax)+num("height","Height",16,transformMax)+
           '<label class="tq-field tq-field--check"><span>Manter proporção</span><input data-world-prop="lockAspect" type="checkbox" '+(entity.lockAspect!==false?'checked':'')+'></label>'+
           '<label class="tq-world-motion-range"><span><b>Rotação</b><output data-world-transform-output="rotation">'+Math.round(Number(entity.rotation||0))+'°</output></span><input data-world-prop="rotation" type="range" min="-180" max="180" step="1" value="'+Number(entity.rotation||0)+'"></label>'+
           '<label class="tq-world-motion-range"><span><b>Inclinação X</b><output data-world-transform-output="skewX">'+Math.round(Number(entity.skewX||0))+'°</output></span><input data-world-prop="skewX" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewX||0)+'"></label>'+
@@ -1351,8 +1354,12 @@ export class DevOverlay {
         }
 
         if(key==="preset"){
-          this.worldEditor.updateEntityEffect(entity.id,{preset:value},true);
-          this.selected=this.worldEditor.getSelected()||this.selected;
+          const nextEffect=this.worldEditor.updateEntityEffect(entity.id,{preset:value},true);
+          if(value==="horizon-blend"&&nextEffect?.category==="background"){
+            this.selected=this.worldEditor.fitEntityToPlayableArea(entity.id,true)||this.selected;
+          }else{
+            this.selected=this.worldEditor.getSelected()||this.selected;
+          }
           this.renderWorldInspector();
           return;
         }
