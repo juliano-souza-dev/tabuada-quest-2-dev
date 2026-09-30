@@ -1047,9 +1047,14 @@ export class WorldRuntime {
     return {x:this.player.vx/speed,y:this.player.vy/speed};
   }
 
+  playerMaxSpeed(){
+    return clamp(Number(this.config.player?.maxSpeed??420)||420,60,1000);
+  }
+
   resolvePlayerCollisions(candidate,input){
     const radius=this.playerCollisionRadius();
     const desired=this.collisionDesiredVector(input);
+    const maxSpeed=this.playerMaxSpeed();
     let x=candidate.x;
     let y=candidate.y;
     let vx=this.player.vx;
@@ -1092,8 +1097,8 @@ export class WorldRuntime {
           desired,
           {
             side:remembered,
-            minSpeed:this.navigationTarget?145:105,
-            maxSpeed:this.navigationTarget?285:230,
+            minSpeed:this.navigationTarget?maxSpeed*.35:maxSpeed*.25,
+            maxSpeed:this.navigationTarget?maxSpeed*.68:maxSpeed*.55,
             strength:.72
           }
         );
@@ -1109,8 +1114,8 @@ export class WorldRuntime {
 
   updatePlayer(dt){
     const input=this.inputVector();
-    const accel=1100;
-    const maxSpeed=420;
+    const maxSpeed=this.playerMaxSpeed();
+    const accel=maxSpeed*(1100/420);
     const drag=Math.pow(0.12,dt);
 
     this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
@@ -1188,7 +1193,7 @@ export class WorldRuntime {
     const sternDistance=height*.34+10;
     const baseX=this.player.x-forwardX*sternDistance;
     const baseY=this.player.y-forwardY*sternDistance;
-    const speedFactor=clamp(speed/420,.2,1);
+    const speedFactor=clamp(speed/this.playerMaxSpeed(),.2,1);
     const sideOffset=effects.wakeWidth*.23;
     const drift=effects.wakeLength*(.52+.48*speedFactor);
     const duration=clamp(900+effects.wakeLength*4.8,1100,2900);
@@ -1508,6 +1513,15 @@ export class WorldRuntime {
     }
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
+    if(patch.maxSpeed!==undefined){
+      next.maxSpeed=clamp(Number(patch.maxSpeed)||420,60,1000);
+      const currentSpeed=Math.hypot(this.player.vx,this.player.vy);
+      if(currentSpeed>next.maxSpeed){
+        const scale=next.maxSpeed/currentSpeed;
+        this.player.vx*=scale;
+        this.player.vy*=scale;
+      }
+    }
     if(patch.direction!==undefined)next.direction=String(patch.direction||"n").toLowerCase();
 
     this.config.player=next;
