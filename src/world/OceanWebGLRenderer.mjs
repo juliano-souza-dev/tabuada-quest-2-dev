@@ -31,6 +31,7 @@ uniform float uWaveMix;
 uniform float uFoamMix;
 uniform float uSparkleIntensity;
 uniform float uSparkleSharpness;
+uniform float uActive;
 
 in vec2 vUv;
 out vec4 outColor;
@@ -46,13 +47,14 @@ void main(){
   float tile=max(uTileSize,64.0);
   vec2 base=world/tile;
 
-  float motion=uTime*(0.025+uSpeed*0.0015);
+  float animTime=uTime*uActive;
+  float motion=animTime*(0.025+uSpeed*0.0015);
   vec2 dir=normalize(uDirection+vec2(0.0001));
 
   float freqA=max(2.0,uWaveFrequencyA);
   float freqB=max(2.0,uWaveFrequencyB);
-  float waveA=sin((base.y*freqA)+(base.x*(freqA*0.22))+uTime*(0.45+uSpeed*0.006));
-  float waveB=cos((base.x*freqB)-(base.y*(freqB*0.46))+uTime*(0.34+uSpeed*0.004));
+  float waveA=sin((base.y*freqA)+(base.x*(freqA*0.22))+animTime*(0.45+uSpeed*0.006));
+  float waveB=cos((base.x*freqB)-(base.y*(freqB*0.46))+animTime*(0.34+uSpeed*0.004));
   float swell=(0.0015+uSwell*0.000045);
   float distortionStrength=(0.15+uDistortion*0.0125);
   vec2 distortion=vec2(waveA,waveB)*swell*distortionStrength;
@@ -65,8 +67,8 @@ void main(){
   vec3 wave=texture(uTexture,uvWave).rgb;
   vec3 foam=texture(uTexture,uvFoam).rgb;
 
-  float crest=smoothstep(0.40,0.95,0.5+0.5*sin(base.x*24.0+base.y*19.0+uTime*(0.8+uSpeed*0.008)));
-  float sparkle=pow(max(0.0,sin((base.x-base.y)*58.0+uTime*2.1)),max(2.0,uSparkleSharpness));
+  float crest=smoothstep(0.40,0.95,0.5+0.5*sin(base.x*24.0+base.y*19.0+animTime*(0.8+uSpeed*0.008)));
+  float sparkle=pow(max(0.0,sin((base.x-base.y)*58.0+animTime*2.1)),max(2.0,uSparkleSharpness));
   float waveAmount=clamp(uWaveMix*0.01,0.0,1.0);
   float foamAmount=clamp(uFoamMix*0.01,0.0,1.0);
   float sparkleAmount=clamp(uSparkleIntensity*0.01,0.0,1.0);
@@ -159,7 +161,7 @@ export class OceanWebGLRenderer{
         "uTexture","uResolution","uCamera","uDirection","uZoom","uTime",
         "uTileSize","uSpeed","uSwell","uBrightness","uSaturation",
         "uDistortion","uWaveFrequencyA","uWaveFrequencyB","uWaveMix",
-        "uFoamMix","uSparkleIntensity","uSparkleSharpness"
+        "uFoamMix","uSparkleIntensity","uSparkleSharpness","uActive"
       ]){
         this.uniforms[name]=gl.getUniformLocation(this.program,name);
       }
@@ -258,6 +260,7 @@ export class OceanWebGLRenderer{
     gl.uniform1f(this.uniforms.uFoamMix,clamp(Number(ocean.foamMix)||0,0,100));
     gl.uniform1f(this.uniforms.uSparkleIntensity,clamp(Number(ocean.sparkleIntensity)||0,0,100));
     gl.uniform1f(this.uniforms.uSparkleSharpness,clamp(Number(ocean.sparkleSharpness)||18,2,48));
+    gl.uniform1f(this.uniforms.uActive,ocean.active===false?0:1);
 
     gl.drawArrays(gl.TRIANGLES,0,6);
     return true;
