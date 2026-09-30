@@ -2,7 +2,7 @@ import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollow
 import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-0904";
 import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-0904";
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-0904";
-import { directionForHeading, resolveDirectionalSource } from "./WorldDirectionalSprite.mjs?v=20260930-0904";
+import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1338";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -65,7 +65,7 @@ export class WorldRuntime {
         <div class="tq-world-stage">
           <div class="tq-world-entities"></div>
           <div class="tq-world-nav-target" hidden aria-hidden="true"></div>
-          <img class="tq-world-player" alt="Navio do jogador">
+          <div class="tq-world-player" role="img" aria-label="Navio do jogador"></div>
         </div>
       </div>
       <section class="tq-world-hud">
@@ -113,7 +113,7 @@ export class WorldRuntime {
     this.stage.style.width=this.config.width+"px";
     this.stage.style.height=this.config.height+"px";
     this.applyOceanStatic();
-    this.playerEl.src=resolveDirectionalSource(this.config.player?.directions,this.player.direction,this.config.player?.src||"");
+    this.playerEl.style.backgroundRepeat="no-repeat";
     if(this.config.player?.width)this.playerEl.style.width=Math.max(24,Number(this.config.player.width)||108)+"px";
     if(this.config.player?.height)this.playerEl.style.height=Math.max(24,Number(this.config.player.height)||150)+"px";
     this.nameEl.textContent=this.config.name||this.config.id||"Mundo";
@@ -664,14 +664,28 @@ export class WorldRuntime {
     this.playerEl.style.left=this.player.x+"px";
     this.playerEl.style.top=this.player.y+"px";
 
+    const sprite=this.config.player?.sprite;
     const directional=this.config.player?.directions;
-    if(directional&&typeof directional==="object"){
+    if(sprite?.src&&sprite?.regions){
+      this.player.direction=directionForHeading(this.player.rotation,this.player.direction,{hysteresis:7});
+      const style=directionalRegionStyle(sprite,this.player.direction);
+      if(style)Object.assign(this.playerEl.style,style);
+      this.playerEl.dataset.direction=this.player.direction;
+      this.playerEl.dataset.renderMode="atlas";
+      this.playerEl.style.transform="translate(-50%,-50%)";
+    }else if(directional&&typeof directional==="object"){
       this.player.direction=directionForHeading(this.player.rotation,this.player.direction,{hysteresis:7});
       const nextSrc=resolveDirectionalSource(directional,this.player.direction,this.config.player?.src||"");
-      if(nextSrc&&this.playerEl.getAttribute("src")!==nextSrc)this.playerEl.src=nextSrc;
-      this.playerEl.dataset.direction=this.player.direction;
+      const safe=String(nextSrc||"").replace(/["\\]/g,"");
+      this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
+      this.playerEl.style.backgroundSize="contain";
+      this.playerEl.style.backgroundPosition="center";
       this.playerEl.style.transform="translate(-50%,-50%)";
     }else{
+      const safe=String(this.config.player?.src||"").replace(/["\\]/g,"");
+      this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
+      this.playerEl.style.backgroundSize="contain";
+      this.playerEl.style.backgroundPosition="center";
       this.playerEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation}deg)`;
     }
   }
@@ -810,6 +824,10 @@ export class WorldRuntime {
     const next={...(this.config.player||{}),...structuredClone(patch)};
     if(patch.directions){
       next.directions={...(this.config.player?.directions||{}),...structuredClone(patch.directions)};
+    }
+    if(patch.sprite){
+      next.sprite={...(this.config.player?.sprite||{}),...structuredClone(patch.sprite)};
+      if(patch.sprite.regions)next.sprite.regions={...(this.config.player?.sprite?.regions||{}),...structuredClone(patch.sprite.regions)};
     }
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
@@ -1017,7 +1035,7 @@ export class WorldRuntime {
       const target=this.mode==="edit"?this.camera:this.player;
       this.coordsEl.textContent=`x ${Math.round(target.x)} · y ${Math.round(target.y)}`;
     }
-    if(this.directionEl)this.directionEl.textContent=this.config.player?.directions?`Direção: ${String(this.player.direction||"n").toUpperCase()}`:"";
+    if(this.directionEl)this.directionEl.textContent=(this.config.player?.sprite||this.config.player?.directions)?`Direção: ${String(this.player.direction||"n").toUpperCase()}`:"";
     if(this.zoomEl)this.zoomEl.textContent=this.mode==="edit"?`zoom ${Math.round(this.zoom*100)}%`:"";
 
     this.raf=requestAnimationFrame(t=>this.tick(t));
