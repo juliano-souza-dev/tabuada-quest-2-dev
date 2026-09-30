@@ -513,7 +513,7 @@
     "version": 1,
     "sourceRevision": "20260930-1720",
     "editorVersion": 1,
-    "layoutRevision": "20260930-complete-ocean-test-v1",
+    "layoutRevision": "20260930-webgl-ocean-v1",
     "playableAreaPurpose": "exploration-islands-treasure-routes",
     "directionConvention": "movement-heading",
     "atlasOrder": "n,nne,ne,ene,e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw",
@@ -560,6 +560,7 @@
         "tileScale": 0.48,
         "opacity": 0.14
       }
-    }
+    },
+    "renderer": "webgl"
   }
 }
