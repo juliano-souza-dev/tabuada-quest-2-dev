@@ -14,7 +14,7 @@ import {
   resolveCircleVsEntity,
   removeVelocityIntoNormal,
   contourVelocity
-} from "./WorldCollision.mjs?v=20260930-2112";
+} from "./WorldCollision.mjs?v=20260930-2118";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
