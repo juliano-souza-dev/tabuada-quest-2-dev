@@ -651,7 +651,9 @@ export class DevOverlay {
         shadowActive:player.effects?.shadowActive!==false,
         shadowOpacity:Number(player.effects?.shadowOpacity??.34),
         shadowBlur:Number(player.effects?.shadowBlur??9),
-        shadowOffset:Number(player.effects?.shadowOffset??12)
+        shadowOffset:Number(player.effects?.shadowOffset??12),
+        oceanMotionActive:player.effects?.oceanMotionActive!==false,
+        oceanResponse:Number(player.effects?.oceanResponse??1)
       };
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
@@ -777,7 +779,10 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
             '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
             '<div class="tq-world-player-fx">'+
-              '<strong>Rastro e sombra</strong>'+
+              '<strong>Rastro, sombra e balanço</strong>'+
+              '<label class="tq-field tq-field--check"><span>Balanço pelas ondas</span><input data-player-effect-prop="oceanMotionActive" type="checkbox" '+(playerEffects.oceanMotionActive?'checked':'')+'></label>'+
+              playerEffectRange("oceanResponse","Resposta do navio às ondas",0,2,.05,"×")+
+              '<small class="tq-world-editor-note">O balanço é calculado automaticamente usando direção, velocidade, ondulação e frequências do oceano. Contra as ondas, o navio avança e recua mais; de lado, ele rola mais.</small>'+
               '<label class="tq-field tq-field--check"><span>Rastro na água</span><input data-player-effect-prop="wakeActive" type="checkbox" '+(playerEffects.wakeActive?'checked':'')+'></label>'+
               playerEffectRange("wakeOpacity","Intensidade do rastro",0,1,.01)+
               playerEffectRange("wakeWidth","Largura do rastro",18,180,1," px")+
@@ -1257,7 +1262,7 @@ export class DevOverlay {
         this.renderWorldInspector();
       }));
 
-      const playerEffectNumeric=new Set(["wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
+      const playerEffectNumeric=new Set(["oceanResponse","wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
       content.querySelectorAll("[data-player-effect-prop]").forEach(input=>{
         const apply=commit=>{
           const key=input.dataset.playerEffectProp;
