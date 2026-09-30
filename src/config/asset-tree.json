@@ -907,6 +907,56 @@
   "assets": [
     {
       "type": "image",
+      "name": "01-bussola-pirata-dourada.webp",
+      "path": "assets/01-bussola-pirata-dourada.webp"
+    },
+    {
+      "type": "image",
+      "name": "02-bau-do-grande-tesouro.webp",
+      "path": "assets/02-bau-do-grande-tesouro.webp"
+    },
+    {
+      "type": "image",
+      "name": "03-fruta-mistica-dos-mares.webp",
+      "path": "assets/03-fruta-mistica-dos-mares.webp"
+    },
+    {
+      "type": "image",
+      "name": "04-navio-lendario-na-garrafa.webp",
+      "path": "assets/04-navio-lendario-na-garrafa.webp"
+    },
+    {
+      "type": "image",
+      "name": "05-moeda-do-rei-pirata.webp",
+      "path": "assets/05-moeda-do-rei-pirata.webp"
+    },
+    {
+      "type": "image",
+      "name": "06-mapa-do-tesouro-perdido.webp",
+      "path": "assets/06-mapa-do-tesouro-perdido.webp"
+    },
+    {
+      "type": "image",
+      "name": "07-ancora-rubi-dos-mares.webp",
+      "path": "assets/07-ancora-rubi-dos-mares.webp"
+    },
+    {
+      "type": "image",
+      "name": "08-perola-lendaria-do-oceano.webp",
+      "path": "assets/08-perola-lendaria-do-oceano.webp"
+    },
+    {
+      "type": "image",
+      "name": "09-chapeu-emblema-do-corsario.webp",
+      "path": "assets/09-chapeu-emblema-do-corsario.webp"
+    },
+    {
+      "type": "image",
+      "name": "10-medalhao-do-espadachim.webp",
+      "path": "assets/10-medalhao-do-espadachim.webp"
+    },
+    {
+      "type": "image",
       "name": "avatar-luna-pirata.webp",
       "path": "assets/avatars/avatar-luna-pirata.webp"
     },
@@ -947,31 +997,6 @@
     },
     {
       "type": "image",
-      "name": "home-art-overlay.webp",
-      "path": "assets/backgrounds/home/home-art-overlay.webp"
-    },
-    {
-      "type": "image",
-      "name": "home-pirata-fundo-principal.webp",
-      "path": "assets/backgrounds/home/home-pirata-fundo-principal.webp"
-    },
-    {
-      "type": "image",
-      "name": "home-pirate-bay.webp",
-      "path": "assets/backgrounds/home/home-pirate-bay.webp"
-    },
-    {
-      "type": "image",
-      "name": "home-pirate-port.webp",
-      "path": "assets/backgrounds/home/home-pirate-port.webp"
-    },
-    {
-      "type": "image",
-      "name": "home-pirate-sky.webp",
-      "path": "assets/backgrounds/home/home-pirate-sky.webp"
-    },
-    {
-      "type": "image",
       "name": "background.jpg",
       "path": "assets/backgrounds/background.jpg"
     },
@@ -999,6 +1024,31 @@
       "type": "image",
       "name": "home-pirate-sky.webp",
       "path": "assets/backgrounds/home-pirate-sky.webp"
+    },
+    {
+      "type": "image",
+      "name": "home-art-overlay.webp",
+      "path": "assets/backgrounds/home/home-art-overlay.webp"
+    },
+    {
+      "type": "image",
+      "name": "home-pirata-fundo-principal.webp",
+      "path": "assets/backgrounds/home/home-pirata-fundo-principal.webp"
+    },
+    {
+      "type": "image",
+      "name": "home-pirate-bay.webp",
+      "path": "assets/backgrounds/home/home-pirate-bay.webp"
+    },
+    {
+      "type": "image",
+      "name": "home-pirate-port.webp",
+      "path": "assets/backgrounds/home/home-pirate-port.webp"
+    },
+    {
+      "type": "image",
+      "name": "home-pirate-sky.webp",
+      "path": "assets/backgrounds/home/home-pirate-sky.webp"
     },
     {
       "type": "image",
@@ -1049,6 +1099,11 @@
       "type": "image",
       "name": "barril_5_cartoon.png",
       "path": "assets/baus/barril_5_cartoon.png"
+    },
+    {
+      "type": "image",
+      "name": "colecionaveis-background.webp",
+      "path": "assets/colecionaveis-background.webp"
     },
     {
       "type": "image",
@@ -1442,11 +1497,6 @@
     },
     {
       "type": "image",
-      "name": "navio_pirata_halloween_tabuada.webp",
-      "path": "assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
-    },
-    {
-      "type": "image",
       "name": "colombo.png",
       "path": "assets/ships/colombo.png"
     },
@@ -1454,6 +1504,21 @@
       "type": "image",
       "name": "el-colombo.webp",
       "path": "assets/ships/el-colombo.webp"
+    },
+    {
+      "type": "image",
+      "name": "navio_halloween_sprite_1600x1600.webp",
+      "path": "assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp"
+    },
+    {
+      "type": "image",
+      "name": "navio_pirata_halloween_tabuada.webp",
+      "path": "assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+    },
+    {
+      "type": "image",
+      "name": "navio_viking_sprite_transparente_1600x1600.webp",
+      "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
     },
     {
       "type": "image",
@@ -1574,61 +1639,6 @@
       "type": "image",
       "name": "plataforma-madeira-pirata.webp",
       "path": "assets/ui/plataforma-madeira-pirata.webp"
-    },
-    {
-      "type": "image",
-      "name": "01-bussola-pirata-dourada.webp",
-      "path": "assets/01-bussola-pirata-dourada.webp"
-    },
-    {
-      "type": "image",
-      "name": "02-bau-do-grande-tesouro.webp",
-      "path": "assets/02-bau-do-grande-tesouro.webp"
-    },
-    {
-      "type": "image",
-      "name": "03-fruta-mistica-dos-mares.webp",
-      "path": "assets/03-fruta-mistica-dos-mares.webp"
-    },
-    {
-      "type": "image",
-      "name": "04-navio-lendario-na-garrafa.webp",
-      "path": "assets/04-navio-lendario-na-garrafa.webp"
-    },
-    {
-      "type": "image",
-      "name": "05-moeda-do-rei-pirata.webp",
-      "path": "assets/05-moeda-do-rei-pirata.webp"
-    },
-    {
-      "type": "image",
-      "name": "06-mapa-do-tesouro-perdido.webp",
-      "path": "assets/06-mapa-do-tesouro-perdido.webp"
-    },
-    {
-      "type": "image",
-      "name": "07-ancora-rubi-dos-mares.webp",
-      "path": "assets/07-ancora-rubi-dos-mares.webp"
-    },
-    {
-      "type": "image",
-      "name": "08-perola-lendaria-do-oceano.webp",
-      "path": "assets/08-perola-lendaria-do-oceano.webp"
-    },
-    {
-      "type": "image",
-      "name": "09-chapeu-emblema-do-corsario.webp",
-      "path": "assets/09-chapeu-emblema-do-corsario.webp"
-    },
-    {
-      "type": "image",
-      "name": "10-medalhao-do-espadachim.webp",
-      "path": "assets/10-medalhao-do-espadachim.webp"
-    },
-    {
-      "type": "image",
-      "name": "colecionaveis-background.webp",
-      "path": "assets/colecionaveis-background.webp"
     }
   ]
 }
