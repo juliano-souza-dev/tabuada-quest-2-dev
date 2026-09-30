@@ -48,6 +48,11 @@ export const ENTITY_EFFECT_PRESETS=Object.freeze({
     label:"Background próximo",category:"background",active:true,renderer:"parallax",mode:"parallax",
     speed:0,intensity:5,range:0,parallax:.72,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false
   }),
+  "horizon-blend":Object.freeze({
+    label:"Horizonte integrado ao oceano",category:"background",active:true,renderer:"parallax",mode:"horizonBlend",
+    speed:0,intensity:18,range:0,parallax:.18,opacity:.96,blur:.45,distortion:0,glow:0,rotateToPath:false,
+    blendLine:.58,blendFeather:.28,oceanTint:.24,mist:.22,caustics:.16
+  }),
   "ship-cruise":Object.freeze({
     label:"Navio navegando",category:"ship",active:true,renderer:"dom",mode:"cruise",
     speed:44,intensity:16,range:360,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:true
@@ -62,8 +67,8 @@ const CATEGORY_PRESETS=Object.freeze({
   generic:["none","float","sea-drift","sea-webgl","island-depth","background-far","background-mid","background-near","ship-cruise","ship-cruise-webgl"],
   treasure:["none","float","treasure-glint","sea-drift"],
   "sea-item":["none","float","sea-drift","sea-webgl"],
-  island:["none","island-depth","island-distant","background-mid"],
-  background:["none","background-far","background-mid","background-near"],
+  island:["none","horizon-blend","island-depth","island-distant","background-mid"],
+  background:["none","horizon-blend","background-far","background-mid","background-near"],
   ship:["none","ship-cruise","ship-cruise-webgl","float"]
 });
 
@@ -106,8 +111,8 @@ export function recommendedEntityEffect(entity={}){
   const recommended={
     treasure:"treasure-glint",
     "sea-item":"sea-drift",
-    island:"island-depth",
-    background:"background-far",
+    island:"horizon-blend",
+    background:"horizon-blend",
     ship:"ship-cruise",
     generic:"none"
   }[category]||"none";
@@ -121,7 +126,7 @@ export function normalizeEntityEffect(input={},entity={}){
   const preset=ENTITY_EFFECT_PRESETS[input.preset]?input.preset:"none";
   const defaults=ENTITY_EFFECT_PRESETS[preset]||ENTITY_EFFECT_PRESETS.none;
   const renderer=["dom","parallax","webgl"].includes(input.renderer)?input.renderer:defaults.renderer;
-  const mode=["none","float","drift","parallax","cruise"].includes(input.mode)?input.mode:defaults.mode;
+  const mode=["none","float","drift","parallax","horizonBlend","cruise"].includes(input.mode)?input.mode:defaults.mode;
 
   return {
     category,
@@ -137,6 +142,11 @@ export function normalizeEntityEffect(input={},entity={}){
     blur:clamp(number(input.blur,defaults.blur),0,8),
     distortion:clamp(number(input.distortion,defaults.distortion),0,100),
     glow:clamp(number(input.glow,defaults.glow),0,100),
+    blendLine:clamp(number(input.blendLine,defaults.blendLine??.58),.05,.95),
+    blendFeather:clamp(number(input.blendFeather,defaults.blendFeather??.28),.02,.7),
+    oceanTint:clamp(number(input.oceanTint,defaults.oceanTint??.24),0,1),
+    mist:clamp(number(input.mist,defaults.mist??.22),0,1),
+    caustics:clamp(number(input.caustics,defaults.caustics??.16),0,1),
     rotateToPath:input.rotateToPath===undefined?Boolean(defaults.rotateToPath):input.rotateToPath!==false
   };
 }
@@ -186,7 +196,7 @@ export function computeEntityEffectFrame(input={},timeMs=0,phase=0,context={}){
     };
   }
 
-  if(effect.mode==="parallax"){
+  if(effect.mode==="parallax"||effect.mode==="horizonBlend"){
     const camera=context.camera||{x:0,y:0};
     const origin=context.cameraOrigin||camera;
     const factor=effect.parallax;
