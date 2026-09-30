@@ -6,6 +6,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1912";
+import { normalizeEntityCollision, resolvePlayerCollisions } from "./WorldCollision.mjs?v=20260930-2016";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -52,9 +53,13 @@ export class WorldRuntime {
         index,
         anchorX:Number(entity.x??0),
         anchorY:Number(entity.y??0),
+        visualX:Number(entity.x??0),
+        visualY:Number(entity.y??0),
+        visualRotation:Number(entity.rotation||0),
         el:null
       };
       normalized.effect=normalizeEntityEffect(normalized.effect||{},normalized);
+      normalized.collision=normalizeEntityCollision(normalized.collision||{},normalized);
       return normalized;
     });
     this.selectedId=null;
@@ -186,6 +191,11 @@ export class WorldRuntime {
         el.append(canvas);
       }
 
+      const collider=document.createElement("span");
+      collider.className="tq-world-entity__collider";
+      collider.setAttribute("aria-hidden","true");
+      el.append(collider);
+
       entity.el=el;
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
@@ -213,6 +223,23 @@ export class WorldRuntime {
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+    this.syncCollisionVisual(entity);
+  }
+
+  syncCollisionVisual(entity){
+    if(!entity?.el)return;
+    const collision=normalizeEntityCollision(entity.collision||{},entity);
+    entity.collision=collision;
+    const collider=entity.el.querySelector(".tq-world-entity__collider");
+    entity.el.classList.toggle("has-solid-collision",collision.active);
+    entity.el.dataset.collisionShape=collision.shape;
+    if(!collider)return;
+
+    const paddingX=(collision.padding*2/Math.max(16,Number(entity.width)||96))*100;
+    const paddingY=(collision.padding*2/Math.max(16,Number(entity.height)||96))*100;
+    collider.style.width=`calc(${collision.scaleX*100}% + ${paddingX}%)`;
+    collider.style.height=`calc(${collision.scaleY*100}% + ${paddingY}%)`;
+    collider.style.borderRadius=collision.shape==="ellipse"?"50%":"8px";
   }
 
   syncEntityEffectRenderer(entity){
@@ -1015,8 +1042,29 @@ export class WorldRuntime {
     }
 
     const travel=this.getPlayerTravelBounds();
-    this.player.x=clamp(this.player.x+this.player.vx*dt,travel.left,travel.right);
-    this.player.y=clamp(this.player.y+this.player.vy*dt,travel.top,travel.bottom);
+    const candidate={
+      x:clamp(this.player.x+this.player.vx*dt,travel.left,travel.right),
+      y:clamp(this.player.y+this.player.vy*dt,travel.top,travel.bottom)
+    };
+    const playerRadius=clamp(
+      Number(this.config.player?.collisionRadius)
+        ||Math.min(Number(this.config.player?.width||110),Number(this.config.player?.height||140))*.24,
+      12,
+      180
+    );
+    const solidEntities=this.entities.filter(entity=>!this.collected.has(entity.id));
+    const resolved=resolvePlayerCollisions(
+      candidate,
+      playerRadius,
+      solidEntities,
+      {x:this.player.vx,y:this.player.vy},
+      {iterations:4}
+    );
+    this.player.x=clamp(resolved.x,travel.left,travel.right);
+    this.player.y=clamp(resolved.y,travel.top,travel.bottom);
+    this.player.vx=resolved.vx;
+    this.player.vy=resolved.vy;
+    if(resolved.hits.length&&this.navigationTarget)this.clearNavigationTarget({brake:true});
 
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
@@ -1081,6 +1129,23 @@ export class WorldRuntime {
     return structuredClone(entity.effect);
   }
 
+  getEntityCollision(id){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    entity.collision=normalizeEntityCollision(entity.collision||{},entity);
+    return structuredClone(entity.collision);
+  }
+
+  updateEntityCollision(id,patch={},commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    entity.collision=normalizeEntityCollision({...entity.collision,...structuredClone(patch)},entity);
+    this.syncCollisionVisual(entity);
+    const clean=this.getEntity(id);
+    this.onEntityChange?.(clean,commit);
+    return structuredClone(entity.collision);
+  }
+
   listEntityEffectPresets(id){
     const effect=this.getEntityEffect(id);
     if(!effect)return [];
@@ -1134,8 +1199,11 @@ export class WorldRuntime {
       const scaleX=Number(effectFrame.scaleX||1);
       const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
 
-      entity.el.style.left=(entity.x+offsetX)+"px";
-      entity.el.style.top=(entity.y+offsetY)+"px";
+      entity.visualX=entity.x+offsetX;
+      entity.visualY=entity.y+offsetY;
+      entity.visualRotation=rotation;
+      entity.el.style.left=entity.visualX+"px";
+      entity.el.style.top=entity.visualY+"px";
       entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
       entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
 
@@ -1244,7 +1312,7 @@ export class WorldRuntime {
   }
 
   cleanEntity(entity){
-    const {el,index,anchorX,anchorY,...data}=entity;
+    const {el,index,anchorX,anchorY,visualX,visualY,visualRotation,...data}=entity;
     return data;
   }
 
@@ -1492,10 +1560,13 @@ export class WorldRuntime {
     if(!entity)return null;
     const previousType=entity.type;
     const effectPatch=patch.effect&&typeof patch.effect==="object"?structuredClone(patch.effect):null;
+    const collisionPatch=patch.collision&&typeof patch.collision==="object"?structuredClone(patch.collision):null;
     const plainPatch=structuredClone(patch);
     delete plainPatch.effect;
+    delete plainPatch.collision;
     Object.assign(entity,plainPatch);
     if(effectPatch)entity.effect=normalizeEntityEffect({...entity.effect,...effectPatch},entity);
+    if(collisionPatch)entity.collision=normalizeEntityCollision({...entity.collision,...collisionPatch},entity);
     entity.x=clamp(Number(entity.x??0),0,this.config.width);
     entity.y=clamp(Number(entity.y??0),0,this.config.height);
     const maxEntitySize=(entity.type==="background"||entity.effect?.mode==="horizonBlend")
@@ -1507,12 +1578,17 @@ export class WorldRuntime {
     entity.skewX=clamp(Number(entity.skewX||0),-75,75);
     entity.skewY=clamp(Number(entity.skewY||0),-75,75);
     entity.effect=normalizeEntityEffect(entity.effect||{},entity);
+    entity.collision=normalizeEntityCollision(entity.collision||{},entity);
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
+    entity.visualX=entity.x;
+    entity.visualY=entity.y;
+    entity.visualRotation=entity.rotation;
     if(previousType!==entity.type)this.renderEntities();
     else{
       this.applyEntityVisual(entity);
       if(effectPatch||patch.src!==undefined)this.syncEntityEffectRenderer(entity);
+      if(collisionPatch||patch.type!==undefined||patch.width!==undefined||patch.height!==undefined)this.syncCollisionVisual(entity);
       this.syncGizmo();
     }
     this.selectedId=id;
@@ -1537,13 +1613,19 @@ export class WorldRuntime {
       skewX:clamp(Number(raw.skewX||0),-75,75),
       skewY:clamp(Number(raw.skewY||0),-75,75),
       effect:normalizeEntityEffect(raw.effect||{},raw),
+      collision:normalizeEntityCollision(raw.collision||{},raw),
       index:this.entities.length,
       anchorX:0,
       anchorY:0,
+      visualX:0,
+      visualY:0,
+      visualRotation:Number(raw.rotation||0),
       el:null
     };
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
+    entity.visualX=entity.x;
+    entity.visualY=entity.y;
     this.entities.push(entity);
     this.renderEntities();
     this.selectEntity(id);
