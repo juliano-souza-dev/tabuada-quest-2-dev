@@ -131,3 +131,16 @@
 /* Layered ocean parallax editor */
 .tq-world-ocean-layer-card{display:grid;gap:8px;padding:10px;border:1px solid rgba(126,231,255,.14);border-radius:10px;background:rgba(7,32,48,.48)}
 .tq-world-ocean-layer-card>strong{font-size:11px;color:#7ee7ff}
+
+.tq-world-sprite-picker{grid-template-columns:72px minmax(0,1fr)!important;min-height:82px;overflow:hidden}
+.tq-world-sprite-picker>span{overflow:hidden}
+.tq-world-sprite-preview,.tq-world-sprite-empty{width:72px!important;height:62px!important;background-position:center!important;background-repeat:no-repeat!important}
+.tq-world-frame-editor{display:grid;gap:8px;padding-top:2px}
+.tq-world-frame-editor__head{display:grid;gap:2px}
+.tq-world-frame-editor__head>strong{font-size:11px;color:#eef9ff}
+.tq-world-frame-editor__head>small{font-size:9px;line-height:1.35;color:#9fb6c5}
+.tq-world-frame-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.tq-world-frame-card{display:grid;grid-template-columns:42px minmax(0,1fr);grid-template-areas:"label select" "thumb select";gap:3px 6px;align-items:center;padding:6px;border:1px solid rgba(126,231,255,.16);border-radius:9px;background:rgba(4,20,31,.42);min-width:0}
+.tq-world-frame-card>strong{grid-area:label;font-size:10px;color:#7ee7ff;text-align:center}
+.tq-world-frame-thumb{grid-area:thumb;width:42px;height:42px;border-radius:6px;border:1px solid rgba(126,231,255,.18);background-color:rgba(255,255,255,.035);background-repeat:no-repeat;display:grid;place-items:center;color:#7ee7ff}
+.tq-world-frame-card>select{grid-area:select;width:100%;min-width:0;height:34px;border-radius:7px;background:#071927;color:#fff;border:1px solid rgba(126,231,255,.14);font-size:10px;padding:0 5px}
