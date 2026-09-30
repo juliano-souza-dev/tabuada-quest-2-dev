@@ -71,6 +71,7 @@ export function normalizeOceanConfig(input={}){
   const layersInput=input.layers||{};
   return {
     active: input.active!==false,
+    renderer:String(input.renderer||"webgl").toLowerCase()==="css"?"css":"webgl",
     background,
     preset,
     speed: clamp(number(input.speed,defaults.speed),0,100),
