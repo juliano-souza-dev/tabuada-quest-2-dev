@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20260930-1859";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20260930-1912";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime}={}){
@@ -114,17 +114,29 @@ export class WorldEditor {
     let extra={};
 
     if(path.includes("/barris/")){
-      type="barrel";width=78;height=78;extra={motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8}};
+      type="barrel";width=78;height=78;extra={
+        motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
+        effect:{category:"sea-item",preset:"none"}
+      };
     }else if(path.includes("/baus/")){
-      type="treasure";width=88;height=88;extra={motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8}};
+      type="treasure";width=88;height=88;extra={
+        motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
+        effect:{category:"treasure",preset:"none"}
+      };
     }else if(path.includes("/ships/")){
-      type="ship";width=110;height=150;extra={motion:{active:true,preset:"navigation",speed:55,heave:46,pitch:42,roll:24,sway:14}};
+      type="ship";width=110;height=150;extra={
+        motion:{active:true,preset:"navigation",speed:55,heave:46,pitch:42,roll:24,sway:14},
+        effect:{category:"ship",preset:"none"}
+      };
     }else if(path.includes("/backgrounds/")){
-      type="location";width=280;height=190;extra={
+      type="location";width=280;height=190;
+      const category=/ilha|island/i.test(path)?"island":"background";
+      extra={
         renderMode:"sprite",
         showLabel:false,
         interactionRadius:230,
-        motion:{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0}
+        motion:{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0},
+        effect:{category,preset:"none"}
       };
     }
 
@@ -161,6 +173,20 @@ export class WorldEditor {
     const motion=this.runtime?.updateEntityMotion(id,patch,commit)||null;
     if(commit){this.persist();this.emitWorldChange()}
     return motion;
+  }
+
+  getEntityEffect(id){
+    return this.runtime?.getEntityEffect(id)||null;
+  }
+
+  listEntityEffectPresets(id){
+    return this.runtime?.listEntityEffectPresets(id)||[];
+  }
+
+  updateEntityEffect(id,patch,commit=true){
+    const effect=this.runtime?.updateEntityEffect(id,patch,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return effect;
   }
 
   deleteEntity(id){
