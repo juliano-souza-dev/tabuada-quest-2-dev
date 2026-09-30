@@ -713,6 +713,15 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Área jogável</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<small class="tq-world-editor-note">Limite real de navegação. Deixe espaço externo para câmera, horizonte e decoração.</small>'+
+            '<div class="tq-worlds__create-grid">'+
+              '<label class="tq-world-field"><span>X inicial</span><input data-world-playable-prop="x" type="number" min="0" max="'+world.width+'" value="'+Number(world.playableArea?.x??0)+'"></label>'+
+              '<label class="tq-world-field"><span>Y inicial</span><input data-world-playable-prop="y" type="number" min="0" max="'+world.height+'" value="'+Number(world.playableArea?.y??0)+'"></label>'+
+              '<label class="tq-world-field"><span>Largura jogável</span><input data-world-playable-prop="width" type="number" min="200" max="'+world.width+'" value="'+Number(world.playableArea?.width??world.width)+'"></label>'+
+              '<label class="tq-world-field"><span>Altura jogável</span><input data-world-playable-prop="height" type="number" min="200" max="'+world.height+'" value="'+Number(world.playableArea?.height??world.height)+'"></label>'+
+            '</div>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Navio do jogador</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Trocar spritesheet do navio">'+
               (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
@@ -784,6 +793,14 @@ export class DevOverlay {
         this.worldEditor.updateWorld({[key]:value},true);
         this.syncLocalWorldFromEditor();
         this.renderWorlds();
+        this.renderWorldInspector();
+      }));
+
+      content.querySelectorAll("[data-world-playable-prop]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.worldPlayableProp;
+        this.worldEditor.updateWorld({playableArea:{[key]:Number(input.value)}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
       }));
 
       content.querySelector("[data-player-sprite-pick]")?.addEventListener("click",()=>this.openWorldPlayerSpritePicker());
