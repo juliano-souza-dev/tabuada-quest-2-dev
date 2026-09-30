@@ -17,6 +17,23 @@ import {
 } from "./WorldCollision.mjs?v=20260930-2123";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
+const normalizePlayerWaterEffects=player=>{
+  const fx=player?.effects||{};
+  return {
+    wakeActive:fx.wakeActive!==false,
+    wakeOpacity:clamp(Number(fx.wakeOpacity??.72),0,1),
+    wakeWidth:clamp(Number(fx.wakeWidth??54),18,180),
+    wakeLength:clamp(Number(fx.wakeLength??150),50,420),
+    wakeRate:clamp(Number(fx.wakeRate??70),35,220),
+    wakeMinSpeed:clamp(Number(fx.wakeMinSpeed??48),0,280),
+    shadowActive:fx.shadowActive!==false,
+    shadowOpacity:clamp(Number(fx.shadowOpacity??.34),0,.9),
+    shadowBlur:clamp(Number(fx.shadowBlur??9),0,30),
+    shadowOffset:clamp(Number(fx.shadowOffset??12),-40,80),
+    shadowScaleX:clamp(Number(fx.shadowScaleX??.72),.25,1.5),
+    shadowScaleY:clamp(Number(fx.shadowScaleY??.28),.12,1)
+  };
+};
 
 export class WorldRuntime {
   constructor(root,config,options={}){
@@ -76,6 +93,8 @@ export class WorldRuntime {
     this.nearby=null;
     this.contactEntity=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
+    this.lastWakeSpawn=0;
+    this.wakeParticleCount=0;
     this.cleanups=[];
   }
 
@@ -95,6 +114,8 @@ export class WorldRuntime {
         </div>
         <div class="tq-world-stage">
           <div class="tq-world-playable-boundary" data-world-playable-boundary aria-hidden="true"></div>
+          <div class="tq-world-player-wake-layer" data-world-player-wake aria-hidden="true"></div>
+          <div class="tq-world-player-shadow" data-world-player-shadow aria-hidden="true"></div>
           <div class="tq-world-entities"></div>
           <div class="tq-world-nav-target" hidden aria-hidden="true"></div>
           <div class="tq-world-player" role="img" aria-label="Navio do jogador"></div>
@@ -132,6 +153,8 @@ export class WorldRuntime {
     this.stage=this.host.querySelector(".tq-world-stage");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
+    this.playerWakeLayer=this.host.querySelector("[data-world-player-wake]");
+    this.playerShadowEl=this.host.querySelector("[data-world-player-shadow]");
     this.playerEl=this.host.querySelector(".tq-world-player");
     this.navTargetEl=this.host.querySelector(".tq-world-nav-target");
     this.joystickEl=this.host.querySelector("[data-world-joystick]");
@@ -905,6 +928,7 @@ export class WorldRuntime {
       this.pointerDirections.clear();
       this.resetJoystick();
       this.clearNavigationTarget();
+      this.clearPlayerWake();
       this.nearby=null;
       if(this.actionWrap)this.actionWrap.hidden=true;
       if(this.recenterButton)this.recenterButton.hidden=true;
@@ -1112,6 +1136,89 @@ export class WorldRuntime {
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
     }
+  }
+
+  playerWaterEffects(){
+    return normalizePlayerWaterEffects(this.config.player||{});
+  }
+
+  clearPlayerWake(){
+    this.playerWakeLayer?.replaceChildren();
+    this.wakeParticleCount=0;
+    this.lastWakeSpawn=0;
+  }
+
+  updatePlayerWaterEffects(time){
+    const effects=this.playerWaterEffects();
+    const width=Math.max(24,Number(this.config.player?.width)||108);
+    const height=Math.max(24,Number(this.config.player?.height)||150);
+    const speed=Math.hypot(this.player.vx,this.player.vy);
+
+    if(this.playerShadowEl){
+      this.playerShadowEl.hidden=!effects.shadowActive;
+      this.playerShadowEl.style.left=this.player.x+"px";
+      this.playerShadowEl.style.top=(this.player.y+effects.shadowOffset)+"px";
+      this.playerShadowEl.style.width=(width*effects.shadowScaleX)+"px";
+      this.playerShadowEl.style.height=(height*effects.shadowScaleY)+"px";
+      this.playerShadowEl.style.opacity=String(effects.shadowOpacity);
+      this.playerShadowEl.style.filter=`blur(${effects.shadowBlur}px)`;
+      this.playerShadowEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation}deg)`;
+    }
+
+    if(
+      this.mode!=="play"
+      ||!effects.wakeActive
+      ||speed<effects.wakeMinSpeed
+      ||!this.playerWakeLayer
+    )return;
+
+    if(time-this.lastWakeSpawn<effects.wakeRate)return;
+    this.lastWakeSpawn=time;
+
+    const angle=this.player.rotation*Math.PI/180;
+    const forwardX=Math.sin(angle);
+    const forwardY=-Math.cos(angle);
+    const rightX=Math.cos(angle);
+    const rightY=Math.sin(angle);
+    const sternDistance=height*.34+10;
+    const baseX=this.player.x-forwardX*sternDistance;
+    const baseY=this.player.y-forwardY*sternDistance;
+    const speedFactor=clamp(speed/420,.2,1);
+    const sideOffset=effects.wakeWidth*.23;
+    const drift=effects.wakeLength*(.52+.48*speedFactor);
+    const duration=clamp(900+effects.wakeLength*4.8,1100,2900);
+
+    const spawn=(side,center=false)=>{
+      if(this.wakeParticleCount>=84){
+        this.playerWakeLayer.firstElementChild?.remove();
+        this.wakeParticleCount=Math.max(0,this.wakeParticleCount-1);
+      }
+
+      const puff=document.createElement("span");
+      puff.className="tq-world-wake-puff"+(center?" tq-world-wake-puff--center":"");
+      const lateral=center?0:side*sideOffset;
+      puff.style.left=(baseX+rightX*lateral)+"px";
+      puff.style.top=(baseY+rightY*lateral)+"px";
+      puff.style.width=(center?effects.wakeWidth*.52:effects.wakeWidth)+"px";
+      puff.style.height=(center?Math.max(16,effects.wakeWidth*.46):Math.max(18,effects.wakeWidth*.62))+"px";
+      puff.style.setProperty("--wake-opacity",String(effects.wakeOpacity*(center?.55:1)));
+      puff.style.setProperty("--wake-rotation",this.player.rotation+"deg");
+      puff.style.setProperty("--wake-drift-x",(-forwardX*drift+rightX*side*effects.wakeWidth*.22)+"px");
+      puff.style.setProperty("--wake-drift-y",(-forwardY*drift+rightY*side*effects.wakeWidth*.22)+"px");
+      puff.style.setProperty("--wake-duration",duration+"ms");
+      puff.addEventListener("animationend",()=>{
+        if(puff.isConnected){
+          puff.remove();
+          this.wakeParticleCount=Math.max(0,this.wakeParticleCount-1);
+        }
+      },{once:true});
+      this.playerWakeLayer.append(puff);
+      this.wakeParticleCount+=1;
+    };
+
+    spawn(-1,false);
+    spawn(1,false);
+    if(Math.floor(time/effects.wakeRate)%2===0)spawn(0,true);
   }
 
   updatePlayerVisual(){
@@ -1382,6 +1489,9 @@ export class WorldRuntime {
       next.sprite={...(this.config.player?.sprite||{}),...structuredClone(patch.sprite)};
       if(patch.sprite.regions)next.sprite.regions={...(this.config.player?.sprite?.regions||{}),...structuredClone(patch.sprite.regions)};
     }
+    if(patch.effects){
+      next.effects={...(this.config.player?.effects||{}),...structuredClone(patch.effects)};
+    }
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
     if(patch.direction!==undefined)next.direction=String(patch.direction||"n").toLowerCase();
@@ -1397,6 +1507,7 @@ export class WorldRuntime {
       }
     }
     this.updatePlayerVisual();
+    this.updatePlayerWaterEffects(performance.now());
     return this.getPlayerConfig();
   }
 
@@ -1697,6 +1808,7 @@ export class WorldRuntime {
     this.lastTime=time;
     if(this.mode==="play")this.updatePlayer(dt);
     this.updatePlayerVisual();
+    this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time);
     this.updateCamera(false,dt);
     this.updateOceanFrame(time);
@@ -1724,6 +1836,7 @@ export class WorldRuntime {
     this.resetOceanRenderer();
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
     this.entityEffectRenderers.clear();
+    this.clearPlayerWake();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";
