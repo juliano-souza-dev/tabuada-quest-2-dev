@@ -197,6 +197,9 @@
 .tq-world-editor-note{display:block;padding:8px;border-radius:8px;background:rgba(255,255,255,.04);color:#9fc6d8;font-size:10px;line-height:1.4}
 .tq-world-effect-engine{display:grid;grid-template-columns:auto auto 1fr;align-items:center;gap:7px;padding:8px 9px;border:1px solid rgba(126,231,255,.14);border-radius:9px;background:rgba(7,32,48,.48)}
 .tq-world-effect-engine>span{font-size:10px;color:#9fc6d8}.tq-world-effect-engine>strong{padding:3px 6px;border-radius:6px;background:#15364a;color:#7ee7ff;font-size:10px}.tq-world-effect-engine>small{justify-self:end;color:#829cac;font-size:9px}
+.tq-world-effect-subgroup{display:grid;gap:8px;padding:10px;border:1px solid rgba(73,190,220,.22);border-radius:10px;background:linear-gradient(180deg,rgba(73,190,220,.07),rgba(7,32,48,.34))}
+.tq-world-effect-subgroup>strong{font-size:11px;color:#7ee7ff}
+.tq-world-effect-subgroup>small{font-size:9px;line-height:1.4;color:#99bdcc}
 
 
 /* Analog world navigation */
