@@ -1207,6 +1207,7 @@ export class DevOverlay {
 
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,blendLine:.58,blendFeather:.28,oceanTint:.24,mist:.22,caustics:.16,rotateToPath:false};
+    const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.5,padding:0};
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const transformMax=(effect.mode==="horizonBlend"||entity.type==="background")
       ?Math.max(2400,Number(world.width)||2400,Number(world.height)||2400)
@@ -1215,6 +1216,7 @@ export class DevOverlay {
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
     const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
+    const collisionRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-collision-output="'+key+'">'+(Math.round(Number(collision[key]||0)*100)/100)+suffix+'</output></span><input data-collision-prop="'+key+'" data-collision-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(collision[key]??0)+'"></label>';
     const typeOptions=["object","barrel","treasure","ship","location","island","background"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
@@ -1251,6 +1253,14 @@ export class DevOverlay {
           '<label class="tq-world-motion-range"><span><b>Inclinação Y</b><output data-world-transform-output="skewY">'+Math.round(Number(entity.skewY||0))+'°</output></span><input data-world-prop="skewY" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewY||0)+'"></label>'+
           '<div class="tq-world-transform-actions"><button type="button" data-world-rotate="-90">↶ -90°</button><button type="button" data-world-rotate="0">0°</button><button type="button" data-world-rotate="90">↷ +90°</button></div>'+
           '<small class="tq-world-editor-note">Direto no asset: 8 alças redimensionam por cima, baixo, lados e cantos; círculo superior gira; alças roxas inclinam em X e Y.</small>'+
+        '</div></section>'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Física / colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<label class="tq-field tq-field--check"><span>Colisão sólida</span><input data-collision-prop="active" type="checkbox" '+(collision.active?'checked':'')+'></label>'+
+          '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option></select></label>'+
+          collisionRange("scaleX","Largura da colisão",.1,1.5,.01)+
+          collisionRange("scaleY","Altura da colisão",.1,1.5,.01)+
+          collisionRange("padding","Margem de segurança",0,500,1," px")+
+          '<small class="tq-world-editor-note">A área tracejada aparece sobre o asset selecionado. Ilhas e navios são sólidos por padrão; backgrounds, baús e itens ao mar não bloqueiam a navegação.</small>'+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Efeito do objeto</strong><span>▾</span></button><div class="tq-config-area__body">'+
           '<label class="tq-world-field"><span>Categoria</span><select data-effect-prop="category">'+effectCategories+'</select></label>'+
@@ -1335,6 +1345,28 @@ export class DevOverlay {
       this.selected=this.worldEditor.updateEntity(entity.id,{rotation},true)||this.selected;
       this.renderWorldInspector();
     }));
+
+    const collisionNumeric=new Set(["scaleX","scaleY","padding"]);
+    content.querySelectorAll("[data-collision-prop]").forEach(input=>{
+      const read=()=>input.type==="checkbox"
+        ?input.checked
+        :(collisionNumeric.has(input.dataset.collisionProp)?Number(input.value):input.value);
+
+      const apply=(commit)=>{
+        const key=input.dataset.collisionProp;
+        const value=read();
+        const output=content.querySelector('[data-collision-output="'+key+'"]');
+        if(output){
+          const suffix=input.dataset.collisionSuffix||"";
+          output.value=String(Math.round(Number(value)*100)/100)+suffix;
+        }
+        this.worldEditor.updateEntityCollision(entity.id,{[key]:value},commit);
+        this.selected=this.worldEditor.getSelected()||this.selected;
+      };
+
+      if(input.type==="range")input.addEventListener("input",()=>apply(false));
+      input.addEventListener("change",()=>apply(true));
+    });
 
     const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow","blendLine","blendFeather","oceanTint","mist","caustics"]);
     content.querySelectorAll("[data-effect-prop]").forEach(input=>{
