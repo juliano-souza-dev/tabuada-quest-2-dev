@@ -245,6 +245,42 @@ export class WorldRuntime {
       if(canvas)canvas.hidden=!active;
       if(img)img.hidden=active;
     });
+
+    this.applyHorizonBlendVisual(entity,effect);
+  }
+
+  applyHorizonBlendVisual(entity,effect=entity?.effect){
+    if(!entity?.el)return;
+    const normalized=normalizeEntityEffect(effect||{},entity);
+    const active=Boolean(normalized.active&&normalized.mode==="horizonBlend");
+    const el=entity.el;
+    el.classList.toggle("tq-world-entity--horizon-blend",active);
+
+    if(!active){
+      for(const name of [
+        "--hb-solid-end","--hb-line","--hb-soft-end","--hb-fade-end",
+        "--hb-tint","--hb-mist","--hb-caustics","--hb-ocean-texture","--hb-ocean-size"
+      ])el.style.removeProperty(name);
+      return;
+    }
+
+    const line=clamp(Number(normalized.blendLine||.58)*100,5,95);
+    const feather=clamp(Number(normalized.blendFeather||.28)*100,2,70);
+    const solidEnd=clamp(line-feather*.48,0,100);
+    const softEnd=clamp(line+feather*.34,0,100);
+    const fadeEnd=clamp(line+feather*.86,0,100);
+    const ocean=normalizeOceanConfig(this.config.ocean||{});
+    const safeOcean=String(ocean.background||"").replace(/["\\]/g,"");
+
+    el.style.setProperty("--hb-solid-end",solidEnd.toFixed(2)+"%");
+    el.style.setProperty("--hb-line",line.toFixed(2)+"%");
+    el.style.setProperty("--hb-soft-end",softEnd.toFixed(2)+"%");
+    el.style.setProperty("--hb-fade-end",fadeEnd.toFixed(2)+"%");
+    el.style.setProperty("--hb-tint",String(clamp(Number(normalized.oceanTint||0),0,1)));
+    el.style.setProperty("--hb-mist",String(clamp(Number(normalized.mist||0),0,1)));
+    el.style.setProperty("--hb-caustics",String(clamp(Number(normalized.caustics||0),0,1)));
+    el.style.setProperty("--hb-ocean-size",Math.max(180,Number(ocean.tileSize||720))+"px");
+    el.style.setProperty("--hb-ocean-texture",safeOcean?'url("'+safeOcean+'")':"none");
   }
 
   ensureGizmo(){
@@ -1075,6 +1111,7 @@ export class WorldRuntime {
         :{offsetX:0,offsetY:0,rotation:0,scaleY:1};
 
       const effect=this.getEntityEffect(entity.id)||normalizeEntityEffect({},entity);
+      this.applyHorizonBlendVisual(entity,effect);
       let origin=this.entityEffectOrigins.get(entity.id);
       if(!origin){
         origin={x:Number(this.camera.x)||0,y:Number(this.camera.y)||0};
@@ -1295,6 +1332,7 @@ export class WorldRuntime {
     const previousRenderer=String(current.renderer||"webgl");
     this.config.ocean=normalizeOceanConfig(next);
     this.applyOceanStatic();
+    for(const entity of this.entities)this.applyHorizonBlendVisual(entity,entity.effect);
 
     if(
       String(this.config.ocean.renderer)!==previousRenderer
