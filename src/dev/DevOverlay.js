@@ -104,8 +104,8 @@ export class DevOverlay {
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
     this.loadAssets();
     this.loadCompositionTypes();
-    this.loadSceneCatalog();
-    this.loadWorldCatalog();
+    this.sceneCatalogReady=this.loadSceneCatalog();
+    this.worldCatalogReady=this.loadWorldCatalog();
     this.mountMold();
     this.enableToolbarDrag();
     this.el.querySelector("[data-collapse]").addEventListener("click",()=>this.toggleCollapse());
@@ -1377,6 +1377,71 @@ export class DevOverlay {
     }
 
     return false;
+  }
+
+  captureContinuity(){
+    const visiblePanel=()=>{
+      if(this.el?.querySelector(".tq-dev__assets")?.hidden===false)return "assets";
+      if(this.el?.querySelector(".tq-dev__scenes")?.hidden===false)return "scenes";
+      if(this.el?.querySelector(".tq-dev__worlds")?.hidden===false)return "worlds";
+      if(this.el?.querySelector(".tq-dev__panel")?.hidden===false)return "config";
+      return null;
+    };
+    return {
+      schema:"tq.app-continuity",
+      version:1,
+      timestamp:Date.now(),
+      workspace:this.workspace||"scene",
+      mode:this.mode||"edit",
+      sceneId:this.runtime?.scene?.id||null,
+      worldId:this.worldEditor?.entry?.id||null,
+      selectedId:this.selected?.id||null,
+      panel:visiblePanel(),
+      assetDirectoryPath:this.assetDirectoryPath||"assets"
+    };
+  }
+
+  async restoreContinuity(state){
+    if(!state||state.schema!=="tq.app-continuity")return false;
+    try{
+      await Promise.allSettled([
+        this.sceneCatalogReady||this.loadSceneCatalog(),
+        this.worldCatalogReady||this.loadWorldCatalog()
+      ]);
+
+      if(state.workspace==="world"&&state.worldId){
+        await this.openWorld(state.worldId);
+        if(state.selectedId){
+          this.selected=this.worldEditor.selectEntity(state.selectedId);
+        }
+      }else if(state.sceneId&&state.sceneId!==this.runtime?.scene?.id){
+        await this.openScene(state.sceneId);
+        if(state.selectedId){
+          this.runtime.select?.(state.selectedId);
+          this.selected=this.runtime.nodes?.get(state.selectedId)?.node||null;
+        }
+      }else if(state.selectedId){
+        this.runtime.select?.(state.selectedId);
+        this.selected=this.runtime.nodes?.get(state.selectedId)?.node||null;
+      }
+
+      if(["edit","config","play"].includes(state.mode))this.setMode(state.mode);
+
+      if(state.panel==="assets"){
+        if(state.assetDirectoryPath)this.assetDirectoryPath=state.assetDirectoryPath;
+        this.toggleAssets(true);
+      }else if(state.panel==="scenes"){
+        this.toggleScenes(true);
+      }else if(state.panel==="worlds"){
+        this.toggleWorlds(true);
+      }else if(state.panel==="config"){
+        this.setMode("config");
+      }
+      return true;
+    }catch(error){
+      console.warn("App continuity restore failed",error);
+      return false;
+    }
   }
 
   escapeHtml(value){
