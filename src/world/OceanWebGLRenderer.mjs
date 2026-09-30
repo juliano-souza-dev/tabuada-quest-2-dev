@@ -24,6 +24,13 @@ uniform float uSpeed;
 uniform float uSwell;
 uniform float uBrightness;
 uniform float uSaturation;
+uniform float uDistortion;
+uniform float uWaveFrequencyA;
+uniform float uWaveFrequencyB;
+uniform float uWaveMix;
+uniform float uFoamMix;
+uniform float uSparkleIntensity;
+uniform float uSparkleSharpness;
 
 in vec2 vUv;
 out vec4 outColor;
@@ -42,10 +49,13 @@ void main(){
   float motion=uTime*(0.025+uSpeed*0.0015);
   vec2 dir=normalize(uDirection+vec2(0.0001));
 
-  float waveA=sin((base.y*18.0)+(base.x*4.0)+uTime*(0.45+uSpeed*0.006));
-  float waveB=cos((base.x*15.0)-(base.y*7.0)+uTime*(0.34+uSpeed*0.004));
-  float swell=(0.0025+uSwell*0.000055);
-  vec2 distortion=vec2(waveA,waveB)*swell;
+  float freqA=max(2.0,uWaveFrequencyA);
+  float freqB=max(2.0,uWaveFrequencyB);
+  float waveA=sin((base.y*freqA)+(base.x*(freqA*0.22))+uTime*(0.45+uSpeed*0.006));
+  float waveB=cos((base.x*freqB)-(base.y*(freqB*0.46))+uTime*(0.34+uSpeed*0.004));
+  float swell=(0.0015+uSwell*0.000045);
+  float distortionStrength=(0.15+uDistortion*0.0125);
+  vec2 distortion=vec2(waveA,waveB)*swell*distortionStrength;
 
   vec2 uvDeep=fract(base*1.00+dir*motion*0.35+distortion*0.45);
   vec2 uvWave=fract(base*1.38+dir.yx*motion*0.58+distortion);
@@ -56,12 +66,15 @@ void main(){
   vec3 foam=texture(uTexture,uvFoam).rgb;
 
   float crest=smoothstep(0.40,0.95,0.5+0.5*sin(base.x*24.0+base.y*19.0+uTime*(0.8+uSpeed*0.008)));
-  float sparkle=pow(max(0.0,sin((base.x-base.y)*58.0+uTime*2.1)),18.0)*0.11;
+  float sparkle=pow(max(0.0,sin((base.x-base.y)*58.0+uTime*2.1)),max(2.0,uSparkleSharpness));
+  float waveAmount=clamp(uWaveMix*0.01,0.0,1.0);
+  float foamAmount=clamp(uFoamMix*0.01,0.0,1.0);
+  float sparkleAmount=clamp(uSparkleIntensity*0.01,0.0,1.0);
 
   vec3 color=deep;
-  color=mix(color,wave,0.22+crest*0.12);
-  color=mix(color,foam,crest*(0.07+uSwell*0.0012));
-  color+=vec3(1.0,0.86,0.52)*sparkle*(0.35+uSwell*0.012);
+  color=mix(color,wave,clamp(waveAmount*(0.72+crest*0.36),0.0,1.0));
+  color=mix(color,foam,crest*foamAmount);
+  color+=vec3(1.0,0.86,0.52)*sparkle*sparkleAmount*(0.45+uSwell*0.008);
 
   color*=uBrightness;
   color=saturateColor(color,uSaturation);
@@ -144,7 +157,9 @@ export class OceanWebGLRenderer{
 
       for(const name of [
         "uTexture","uResolution","uCamera","uDirection","uZoom","uTime",
-        "uTileSize","uSpeed","uSwell","uBrightness","uSaturation"
+        "uTileSize","uSpeed","uSwell","uBrightness","uSaturation",
+        "uDistortion","uWaveFrequencyA","uWaveFrequencyB","uWaveMix",
+        "uFoamMix","uSparkleIntensity","uSparkleSharpness"
       ]){
         this.uniforms[name]=gl.getUniformLocation(this.program,name);
       }
@@ -236,6 +251,13 @@ export class OceanWebGLRenderer{
     gl.uniform1f(this.uniforms.uSwell,clamp(Number(ocean.swell)||0,0,100));
     gl.uniform1f(this.uniforms.uBrightness,clamp(Number(ocean.brightness)||100,50,150)/100);
     gl.uniform1f(this.uniforms.uSaturation,clamp(Number(ocean.saturation)||100,0,180)/100);
+    gl.uniform1f(this.uniforms.uDistortion,clamp(Number(ocean.distortion)||0,0,100));
+    gl.uniform1f(this.uniforms.uWaveFrequencyA,clamp(Number(ocean.waveFrequencyA)||18,2,60));
+    gl.uniform1f(this.uniforms.uWaveFrequencyB,clamp(Number(ocean.waveFrequencyB)||15,2,60));
+    gl.uniform1f(this.uniforms.uWaveMix,clamp(Number(ocean.waveMix)||0,0,100));
+    gl.uniform1f(this.uniforms.uFoamMix,clamp(Number(ocean.foamMix)||0,0,100));
+    gl.uniform1f(this.uniforms.uSparkleIntensity,clamp(Number(ocean.sparkleIntensity)||0,0,100));
+    gl.uniform1f(this.uniforms.uSparkleSharpness,clamp(Number(ocean.sparkleSharpness)||18,2,48));
 
     gl.drawArrays(gl.TRIANGLES,0,6);
     return true;
