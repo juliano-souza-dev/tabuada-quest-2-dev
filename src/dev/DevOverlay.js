@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20260930-1802";
+import { WorldEditor } from "./world/WorldEditor.js?v=20260930-1851";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -154,7 +154,7 @@ export class DevOverlay {
     try{
       if(this.sceneResolver?.catalog)this.sceneCatalog=structuredClone(this.sceneResolver.catalog);
       else{
-        const response=await fetch("./src/config/scene-catalog.json?v=20260930-1318",{cache:"no-store"});
+        const response=await fetch("./src/config/scene-catalog.json?v=20260930-1851",{cache:"no-store"});
         if(!response.ok)throw new Error("HTTP "+response.status);
         this.sceneCatalog=await response.json();
       }
@@ -391,7 +391,7 @@ export class DevOverlay {
 
   async loadWorldCatalog(){
     try{
-      const response=await fetch("./src/config/world-catalog.json?v=20260930-1318",{cache:"no-store"});
+      const response=await fetch("./src/config/world-catalog.json?v=20260930-1851",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       this.worldCatalog=await response.json();
     }catch(error){
@@ -1334,7 +1334,7 @@ export class DevOverlay {
 
   async loadCompositionTypes(){
     try{
-      const r=await fetch("./src/config/composition-types.json?v=20260930-1318",{cache:"no-store"});
+      const r=await fetch("./src/config/composition-types.json?v=20260930-1851",{cache:"no-store"});
       const registry=await r.json();
       this.compositionTypes=registry.types||[];
       if(this.selected&&this.mode==="config")this.renderInspector();
@@ -1344,7 +1344,7 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20260930-1318",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20260930-1851",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
       this.assetCatalog=manifest.assets||[];
