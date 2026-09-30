@@ -6,7 +6,14 @@ export const OCEAN_PRESETS = Object.freeze({
     swell: 12,
     tileSize: 760,
     brightness: 100,
-    saturation: 95
+    saturation: 95,
+    distortion: 34,
+    waveFrequencyA: 18,
+    waveFrequencyB: 15,
+    waveMix: 28,
+    foamMix: 14,
+    sparkleIntensity: 18,
+    sparkleSharpness: 18
   }),
   adventure: Object.freeze({
     speed: 28,
@@ -15,7 +22,14 @@ export const OCEAN_PRESETS = Object.freeze({
     swell: 28,
     tileSize: 720,
     brightness: 102,
-    saturation: 105
+    saturation: 105,
+    distortion: 48,
+    waveFrequencyA: 18,
+    waveFrequencyB: 15,
+    waveMix: 34,
+    foamMix: 20,
+    sparkleIntensity: 34,
+    sparkleSharpness: 18
   }),
   storm: Object.freeze({
     speed: 56,
@@ -24,7 +38,14 @@ export const OCEAN_PRESETS = Object.freeze({
     swell: 62,
     tileSize: 660,
     brightness: 88,
-    saturation: 82
+    saturation: 82,
+    distortion: 70,
+    waveFrequencyA: 22,
+    waveFrequencyB: 18,
+    waveMix: 48,
+    foamMix: 34,
+    sparkleIntensity: 12,
+    sparkleSharpness: 24
   })
 });
 
@@ -81,6 +102,13 @@ export function normalizeOceanConfig(input={}){
     tileSize: clamp(number(input.tileSize,defaults.tileSize),240,1600),
     brightness: clamp(number(input.brightness,defaults.brightness),50,150),
     saturation: clamp(number(input.saturation,defaults.saturation),0,180),
+    distortion: clamp(number(input.distortion,defaults.distortion),0,100),
+    waveFrequencyA: clamp(number(input.waveFrequencyA,defaults.waveFrequencyA),2,60),
+    waveFrequencyB: clamp(number(input.waveFrequencyB,defaults.waveFrequencyB),2,60),
+    waveMix: clamp(number(input.waveMix,defaults.waveMix),0,100),
+    foamMix: clamp(number(input.foamMix,defaults.foamMix),0,100),
+    sparkleIntensity: clamp(number(input.sparkleIntensity,defaults.sparkleIntensity),0,100),
+    sparkleSharpness: clamp(number(input.sparkleSharpness,defaults.sparkleSharpness),2,48),
     layers:{
       deep:normalizeLayer(layersInput.deep,OCEAN_LAYER_DEFAULTS.deep,background),
       wave:normalizeLayer(layersInput.wave,OCEAN_LAYER_DEFAULTS.wave,background),
