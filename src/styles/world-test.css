@@ -6,8 +6,9 @@
 .tq-world-viewport{position:absolute;inset:0;overflow:hidden;background:#02101a}
 .tq-world-stage{position:absolute;left:0;top:0;z-index:2;transform-origin:0 0;will-change:transform}
 .tq-world-host.is-editor .tq-world-stage{box-shadow:0 0 0 4px #66d9ff99,0 0 80px #000c}
-.tq-world-host.is-editor .tq-world-viewport{cursor:grab}
-.tq-world-host.is-editor .tq-world-viewport:active{cursor:grabbing}
+.tq-world-host.is-editor .tq-world-viewport{cursor:grab;touch-action:none;user-select:none;overscroll-behavior:none}
+.tq-world-host.is-editor .tq-world-viewport:active,
+.tq-world-host.is-editor.is-camera-dragging .tq-world-viewport{cursor:grabbing}
 .tq-world-ocean-stack{position:absolute;inset:0;z-index:1;overflow:hidden;background:#0875a7;pointer-events:none}
 .tq-world-ocean-layer{position:absolute;inset:-8%;background-color:transparent;background-repeat:repeat;background-size:720px auto;will-change:background-position,transform,filter;pointer-events:none}
 .tq-world-ocean-layer--deep{mix-blend-mode:normal}
