@@ -682,6 +682,9 @@ export class DevOverlay {
           '<small>'+this.escapeHtml(info.label)+'</small>'+
         '</button>';
       }).join("");
+      const grid4Cells=Array.from({length:16},(_,index)=>
+        '<button type="button" class="tq-world-atlas-grid4__cell" data-atlas-grid-cell="'+index+'" aria-label="Quadro '+(index+1)+'"></button>'
+      ).join("");
       const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
       const layerRange=(layer,key,label,min,max,step)=>{
         const value=Number(ocean.layers?.[layer]?.[key]??0);
@@ -716,8 +719,12 @@ export class DevOverlay {
             '</button>'+
             '<div class="tq-world-atlas-wizard '+(mobilePointMode?'is-point-mode':'')+'" data-atlas-wizard>'+
               '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small data-atlas-help>'+(mobilePointMode?'Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão.':'Arraste uma caixa somente em volta desse navio.')+'</small></div></div>'+
+              '<div class="tq-world-atlas-mode-switch" data-atlas-mode-switch>'+
+                '<button type="button" class="is-active" data-atlas-mode="points">Pontos</button>'+
+                '<button type="button" data-atlas-mode="grid4">Quadro 4×4</button>'+
+              '</div>'+
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
-                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
+                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><div class="tq-world-atlas-grid4" data-atlas-grid4>'+grid4Cells+'</div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
               '</div>'+
               '<div class="tq-world-atlas-point-actions" data-atlas-point-actions>'+
                 '<button type="button" data-atlas-undo>↶ Desfazer</button>'+
@@ -784,7 +791,9 @@ export class DevOverlay {
       const atlasPointsLayer=content.querySelector("[data-atlas-points]");
       const atlasMagnifier=content.querySelector("[data-atlas-magnifier]");
       const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
-      const pointMode=mobilePointMode;
+      let selectionMode=mobilePointMode?"points":"rectangle";
+      const isPointMode=()=>selectionMode==="points";
+      const isGridMode=()=>selectionMode==="grid4";
       let atlasDirection=firstMissing;
       let pendingRegion=null;
       let previousRegion=null;
@@ -831,7 +840,7 @@ export class DevOverlay {
           : [];
       };
       const showMagnifier=(event,point)=>{
-        if(!pointMode||!atlasMagnifier||!point)return;
+        if(!isPointMode()||!atlasMagnifier||!point)return;
         const metrics=imageMetrics();
         if(!metrics)return;
         const box=atlasImageBox.getBoundingClientRect();
@@ -856,7 +865,7 @@ export class DevOverlay {
           return;
         }
         const hasPolygon=Array.isArray(region.points)&&region.points.length>=3;
-        selection.hidden=pointMode&&hasPolygon;
+        selection.hidden=isPointMode()&&hasPolygon;
         if(selection.hidden)return;
         selection.style.left=(region.x/metrics.naturalW*100)+"%";
         selection.style.top=(region.y/metrics.naturalH*100)+"%";
@@ -884,8 +893,8 @@ export class DevOverlay {
 
       const renderPolygon=()=>{
         const polygon=content.querySelector("[data-atlas-polygon]");
-        if(polygon)polygon.hidden=!pointMode;
-        if(!pointMode)return;
+        if(polygon)polygon.hidden=!isPointMode();
+        if(!isPointMode())return;
         const selection=content.querySelector("[data-atlas-selection]");
         if(selection&&polygonPoints.length)selection.hidden=true;
         if(atlasPointsLayer){
@@ -927,12 +936,10 @@ export class DevOverlay {
       };
       const advanceAfterSave=()=>{
         const currentIndex=directionOrder.indexOf(atlasDirection);
-        const ordered=[...directionOrder.slice(currentIndex+1),...directionOrder.slice(0,currentIndex)];
-        const nextMissing=ordered.find(key=>!regions[key]);
+        const nextIndex=currentIndex>=directionOrder.length-1?0:currentIndex+1;
+        const nextDirection=directionOrder[nextIndex];
         this.renderWorldInspector();
-        if(nextMissing){
-          requestAnimationFrame(()=>this.el.querySelector('[data-player-region-edit="'+nextMissing+'"]')?.click());
-        }
+        requestAnimationFrame(()=>this.el.querySelector('[data-player-region-edit="'+nextDirection+'"]')?.click());
       };
       const saveRegion=region=>{
         const metrics=imageMetrics();
@@ -946,6 +953,34 @@ export class DevOverlay {
         advanceAfterSave();
       };
 
+      const setSelectionMode=mode=>{
+        if(!mobilePointMode&&mode!=="rectangle")return;
+        selectionMode=mode;
+        const wizard=content.querySelector("[data-atlas-wizard]");
+        wizard?.classList.toggle("is-point-mode",isPointMode());
+        wizard?.classList.toggle("is-grid-mode",isGridMode());
+        content.querySelectorAll("[data-atlas-mode]").forEach(button=>button.classList.toggle("is-active",button.dataset.atlasMode===selectionMode));
+        const help=content.querySelector("[data-atlas-help]");
+        if(help){
+          help.textContent=isGridMode()
+            ?"Toque no quadrado 4×4 que contém este navio. A célula inteira será usada."
+            :(isPointMode()
+              ?"Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão."
+              :"Arraste uma caixa somente em volta desse navio.");
+        }
+        if(!isPointMode()){
+          hideMagnifier();
+          const polygon=content.querySelector("[data-atlas-polygon]");
+          if(polygon)polygon.hidden=true;
+          if(atlasPointsLayer)atlasPointsLayer.innerHTML="";
+        }else{
+          renderPolygon();
+        }
+        showSavedRegion(atlasDirection);
+      };
+      content.querySelectorAll("[data-atlas-mode]").forEach(button=>button.addEventListener("click",()=>setSelectionMode(button.dataset.atlasMode)));
+      setSelectionMode(selectionMode);
+
       content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.addEventListener("click",()=>selectRegion(btn.dataset.playerRegionEdit)));
       content.querySelector("[data-atlas-prev]")?.addEventListener("click",()=>stepDirection(-1));
       content.querySelector("[data-atlas-next]")?.addEventListener("click",()=>stepDirection(1));
@@ -957,8 +992,30 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       });
+      content.querySelector("[data-atlas-grid4]")?.addEventListener("click",event=>{
+        if(!isGridMode())return;
+        const cell=event.target.closest?.("[data-atlas-grid-cell]");
+        if(!cell)return;
+        event.preventDefault();
+        event.stopPropagation();
+        const metrics=imageMetrics();
+        if(!metrics)return;
+        const index=Number(cell.dataset.atlasGridCell);
+        if(!Number.isInteger(index)||index<0||index>15)return;
+        const column=index%4;
+        const row=Math.floor(index/4);
+        const width=metrics.naturalW/4;
+        const height=metrics.naturalH/4;
+        saveRegion({
+          x:column*width,
+          y:row*height,
+          width,
+          height
+        });
+      });
+
       content.querySelector("[data-atlas-undo]")?.addEventListener("click",()=>{
-        if(!pointMode||!polygonPoints.length)return;
+        if(!isPointMode()||!polygonPoints.length)return;
         polygonClosed=false;
         polygonPoints.pop();
         renderPolygon();
@@ -982,7 +1039,7 @@ export class DevOverlay {
       });
 
       atlasPointsLayer?.addEventListener("pointerdown",event=>{
-        if(!pointMode)return;
+        if(!isPointMode())return;
         const handle=event.target.closest?.("[data-atlas-point-index]");
         if(!handle)return;
         event.preventDefault();
@@ -1022,7 +1079,8 @@ export class DevOverlay {
       atlasCanvas?.addEventListener("pointerdown",event=>{
         const metrics=imageMetrics();
         if(!metrics||!atlasImageBox)return;
-        if(pointMode){
+        if(isGridMode())return;
+        if(isPointMode()){
           if(event.target.closest?.("[data-atlas-point-index]"))return;
           event.preventDefault();
           const startPoint=eventPoint(event);
