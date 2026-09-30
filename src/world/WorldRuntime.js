@@ -63,6 +63,7 @@ export class WorldRuntime {
           <div class="tq-world-ocean-layer tq-world-ocean-layer--foam" data-ocean-layer="foam"></div>
         </div>
         <div class="tq-world-stage">
+          <div class="tq-world-playable-boundary" data-world-playable-boundary aria-hidden="true"></div>
           <div class="tq-world-entities"></div>
           <div class="tq-world-nav-target" hidden aria-hidden="true"></div>
           <div class="tq-world-player" role="img" aria-label="Navio do jogador"></div>
@@ -91,6 +92,7 @@ export class WorldRuntime {
     this.root.append(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
     this.stage=this.host.querySelector(".tq-world-stage");
+    this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
     this.playerEl=this.host.querySelector(".tq-world-player");
     this.navTargetEl=this.host.querySelector(".tq-world-nav-target");
@@ -112,6 +114,7 @@ export class WorldRuntime {
 
     this.stage.style.width=this.config.width+"px";
     this.stage.style.height=this.config.height+"px";
+    this.applyPlayableAreaVisual();
     this.applyOceanStatic();
     this.playerEl.style.backgroundRepeat="no-repeat";
     if(this.config.player?.width)this.playerEl.style.width=Math.max(24,Number(this.config.player.width)||108)+"px";
@@ -535,6 +538,9 @@ export class WorldRuntime {
         marginX:55,
         marginY:70
       });
+      const travel=this.getPlayerTravelBounds();
+      target.x=clamp(target.x,travel.left,travel.right);
+      target.y=clamp(target.y,travel.top,travel.bottom);
       this.navigationTarget=target;
       this.keys.clear();
       this.pointerDirections.clear();
@@ -618,6 +624,46 @@ export class WorldRuntime {
     return {x:0,y:0};
   }
 
+  getPlayableBounds(){
+    const worldWidth=Math.max(1,Number(this.config.width)||1);
+    const worldHeight=Math.max(1,Number(this.config.height)||1);
+    const raw=this.config.playableArea&&typeof this.config.playableArea==="object"?this.config.playableArea:{};
+    const left=clamp(Number(raw.x??0)||0,0,Math.max(0,worldWidth-1));
+    const top=clamp(Number(raw.y??0)||0,0,Math.max(0,worldHeight-1));
+    const width=clamp(Number(raw.width??(worldWidth-left))||(worldWidth-left),1,worldWidth-left);
+    const height=clamp(Number(raw.height??(worldHeight-top))||(worldHeight-top),1,worldHeight-top);
+    return {left,top,right:left+width,bottom:top+height,width,height};
+  }
+
+  getPlayerTravelBounds(){
+    const area=this.getPlayableBounds();
+    const halfW=Math.max(24,Number(this.config.player?.width||110)/2);
+    const halfH=Math.max(24,Number(this.config.player?.height||140)/2);
+    if(area.width<=halfW*2||area.height<=halfH*2){
+      return {
+        left:area.left+area.width/2,
+        right:area.left+area.width/2,
+        top:area.top+area.height/2,
+        bottom:area.top+area.height/2
+      };
+    }
+    return {
+      left:area.left+halfW,
+      right:area.right-halfW,
+      top:area.top+halfH,
+      bottom:area.bottom-halfH
+    };
+  }
+
+  applyPlayableAreaVisual(){
+    if(!this.playableBoundaryEl)return;
+    const area=this.getPlayableBounds();
+    this.playableBoundaryEl.style.left=area.left+"px";
+    this.playableBoundaryEl.style.top=area.top+"px";
+    this.playableBoundaryEl.style.width=area.width+"px";
+    this.playableBoundaryEl.style.height=area.height+"px";
+  }
+
   resize(){
     const rect=this.viewport.getBoundingClientRect();
     this.viewportSize={width:rect.width,height:rect.height};
@@ -652,8 +698,9 @@ export class WorldRuntime {
       this.player.vy*=scale;
     }
 
-    this.player.x=clamp(this.player.x+this.player.vx*dt,55,this.config.width-55);
-    this.player.y=clamp(this.player.y+this.player.vy*dt,70,this.config.height-70);
+    const travel=this.getPlayerTravelBounds();
+    this.player.x=clamp(this.player.x+this.player.vx*dt,travel.left,travel.right);
+    this.player.y=clamp(this.player.y+this.player.vy*dt,travel.top,travel.bottom);
 
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
@@ -851,12 +898,26 @@ export class WorldRuntime {
     if(patch.name!==undefined)this.config.name=String(patch.name||this.config.id||"Mundo");
     if(patch.width!==undefined)this.config.width=clamp(Number(patch.width)||390,390,20000);
     if(patch.height!==undefined)this.config.height=clamp(Number(patch.height)||844,844,20000);
+    if(patch.playableArea&&typeof patch.playableArea==="object"){
+      this.config.playableArea={
+        ...(this.config.playableArea||{}),
+        ...structuredClone(patch.playableArea)
+      };
+    }
+
+    const area=this.getPlayableBounds();
+    this.config.playableArea={x:area.left,y:area.top,width:area.width,height:area.height};
+
     if(this.stage){
       this.stage.style.width=this.config.width+"px";
       this.stage.style.height=this.config.height+"px";
     }
-    this.player.x=clamp(this.player.x,55,this.config.width-55);
-    this.player.y=clamp(this.player.y,70,this.config.height-70);
+    this.applyPlayableAreaVisual();
+
+    const travel=this.getPlayerTravelBounds();
+    this.player.x=clamp(this.player.x,travel.left,travel.right);
+    this.player.y=clamp(this.player.y,travel.top,travel.bottom);
+
     for(const entity of this.entities){
       entity.x=clamp(Number(entity.x||0),0,this.config.width);
       entity.y=clamp(Number(entity.y||0),0,this.config.height);
