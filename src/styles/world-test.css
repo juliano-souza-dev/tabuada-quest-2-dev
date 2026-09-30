@@ -30,6 +30,7 @@
 
 /* Background preset: preserve the horizon/ilhas and reveal the real WebGL ocean below. */
 .tq-world-entity--horizon-blend{isolation:isolate;overflow:visible}
+.tq-world-entity--horizon-blend>img{object-fit:cover}
 .tq-world-entity--horizon-blend>img,
 .tq-world-entity--horizon-blend>.tq-world-entity__webgl{
   -webkit-mask-image:linear-gradient(
