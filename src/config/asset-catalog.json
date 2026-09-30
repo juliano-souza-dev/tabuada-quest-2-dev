@@ -1,0 +1,487 @@
+{
+  "schema": "tq.asset-catalog",
+  "version": 1,
+  "generatedFrom": "develop",
+  "assets": [
+    {
+      "path": "assets/01-bussola-pirata-dourada.webp",
+      "category": "root",
+      "name": "01-bussola-pirata-dourada.webp"
+    },
+    {
+      "path": "assets/02-bau-do-grande-tesouro.webp",
+      "category": "root",
+      "name": "02-bau-do-grande-tesouro.webp"
+    },
+    {
+      "path": "assets/03-fruta-mistica-dos-mares.webp",
+      "category": "root",
+      "name": "03-fruta-mistica-dos-mares.webp"
+    },
+    {
+      "path": "assets/04-navio-lendario-na-garrafa.webp",
+      "category": "root",
+      "name": "04-navio-lendario-na-garrafa.webp"
+    },
+    {
+      "path": "assets/05-moeda-do-rei-pirata.webp",
+      "category": "root",
+      "name": "05-moeda-do-rei-pirata.webp"
+    },
+    {
+      "path": "assets/06-mapa-do-tesouro-perdido.webp",
+      "category": "root",
+      "name": "06-mapa-do-tesouro-perdido.webp"
+    },
+    {
+      "path": "assets/07-ancora-rubi-dos-mares.webp",
+      "category": "root",
+      "name": "07-ancora-rubi-dos-mares.webp"
+    },
+    {
+      "path": "assets/08-perola-lendaria-do-oceano.webp",
+      "category": "root",
+      "name": "08-perola-lendaria-do-oceano.webp"
+    },
+    {
+      "path": "assets/09-chapeu-emblema-do-corsario.webp",
+      "category": "root",
+      "name": "09-chapeu-emblema-do-corsario.webp"
+    },
+    {
+      "path": "assets/10-medalhao-do-espadachim.webp",
+      "category": "root",
+      "name": "10-medalhao-do-espadachim.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-luna-pirata.webp",
+      "category": "avatars",
+      "name": "avatar-luna-pirata.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-luna-visual-base.webp",
+      "category": "avatars",
+      "name": "avatar-luna-visual-base.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-maya-pirata.webp",
+      "category": "avatars",
+      "name": "avatar-maya-pirata.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-maya-visual-base.webp",
+      "category": "avatars",
+      "name": "avatar-maya-visual-base.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-sofia-pirata-rosto.png",
+      "category": "avatars",
+      "name": "avatar-sofia-pirata-rosto.png"
+    },
+    {
+      "path": "assets/avatars/avatar-sofia-pirata-rosto.webp",
+      "category": "avatars",
+      "name": "avatar-sofia-pirata-rosto.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-sofia-pirata.webp",
+      "category": "avatars",
+      "name": "avatar-sofia-pirata.webp"
+    },
+    {
+      "path": "assets/avatars/avatar-sofia-visual-base.webp",
+      "category": "avatars",
+      "name": "avatar-sofia-visual-base.webp"
+    },
+    {
+      "path": "assets/backgrounds/home-art-overlay.webp",
+      "category": "backgrounds",
+      "name": "home-art-overlay.webp"
+    },
+    {
+      "path": "assets/backgrounds/home-pirata-fundo-principal.webp",
+      "category": "backgrounds",
+      "name": "home-pirata-fundo-principal.webp"
+    },
+    {
+      "path": "assets/backgrounds/home-pirate-bay.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-bay.webp"
+    },
+    {
+      "path": "assets/backgrounds/home-pirate-port.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-port.webp"
+    },
+    {
+      "path": "assets/backgrounds/home-pirate-sky.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-sky.webp"
+    },
+    {
+      "path": "assets/backgrounds/home/home-art-overlay.webp",
+      "category": "backgrounds",
+      "name": "home-art-overlay.webp"
+    },
+    {
+      "path": "assets/backgrounds/home/home-pirata-fundo-principal.webp",
+      "category": "backgrounds",
+      "name": "home-pirata-fundo-principal.webp"
+    },
+    {
+      "path": "assets/backgrounds/home/home-pirate-bay.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-bay.webp"
+    },
+    {
+      "path": "assets/backgrounds/home/home-pirate-port.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-port.webp"
+    },
+    {
+      "path": "assets/backgrounds/home/home-pirate-sky.webp",
+      "category": "backgrounds",
+      "name": "home-pirate-sky.webp"
+    },
+    {
+      "path": "assets/backgrounds/scene-islands.webp",
+      "category": "backgrounds",
+      "name": "scene-islands.webp"
+    },
+    {
+      "path": "assets/backgrounds/scene-ocean.webp",
+      "category": "backgrounds",
+      "name": "scene-ocean.webp"
+    },
+    {
+      "path": "assets/backgrounds/scene-pier.webp",
+      "category": "backgrounds",
+      "name": "scene-pier.webp"
+    },
+    {
+      "path": "assets/backgrounds/scene-ship.webp",
+      "category": "backgrounds",
+      "name": "scene-ship.webp"
+    },
+    {
+      "path": "assets/backgrounds/scene-sky.webp",
+      "category": "backgrounds",
+      "name": "scene-sky.webp"
+    },
+    {
+      "path": "assets/backgrounds/tabuada-quest-background-pirata.webp",
+      "category": "backgrounds",
+      "name": "tabuada-quest-background-pirata.webp"
+    },
+    {
+      "path": "assets/colecionaveis-background.webp",
+      "category": "root",
+      "name": "colecionaveis-background.webp"
+    },
+    {
+      "path": "assets/collectibles/01-bussola-pirata-dourada.webp",
+      "category": "collectibles",
+      "name": "01-bussola-pirata-dourada.webp"
+    },
+    {
+      "path": "assets/collectibles/02-bau-do-grande-tesouro.webp",
+      "category": "collectibles",
+      "name": "02-bau-do-grande-tesouro.webp"
+    },
+    {
+      "path": "assets/collectibles/03-fruta-mistica-dos-mares.webp",
+      "category": "collectibles",
+      "name": "03-fruta-mistica-dos-mares.webp"
+    },
+    {
+      "path": "assets/collectibles/04-navio-lendario-na-garrafa.webp",
+      "category": "collectibles",
+      "name": "04-navio-lendario-na-garrafa.webp"
+    },
+    {
+      "path": "assets/collectibles/05-moeda-do-rei-pirata.webp",
+      "category": "collectibles",
+      "name": "05-moeda-do-rei-pirata.webp"
+    },
+    {
+      "path": "assets/collectibles/06-mapa-do-tesouro-perdido.webp",
+      "category": "collectibles",
+      "name": "06-mapa-do-tesouro-perdido.webp"
+    },
+    {
+      "path": "assets/collectibles/07-ancora-rubi-dos-mares.webp",
+      "category": "collectibles",
+      "name": "07-ancora-rubi-dos-mares.webp"
+    },
+    {
+      "path": "assets/collectibles/08-perola-lendaria-do-oceano.webp",
+      "category": "collectibles",
+      "name": "08-perola-lendaria-do-oceano.webp"
+    },
+    {
+      "path": "assets/collectibles/09-chapeu-emblema-do-corsario.webp",
+      "category": "collectibles",
+      "name": "09-chapeu-emblema-do-corsario.webp"
+    },
+    {
+      "path": "assets/collectibles/10-medalhao-do-espadachim.webp",
+      "category": "collectibles",
+      "name": "10-medalhao-do-espadachim.webp"
+    },
+    {
+      "path": "assets/collectibles/colecionaveis-background.webp",
+      "category": "collectibles",
+      "name": "colecionaveis-background.webp"
+    },
+    {
+      "path": "assets/crew/atirador.webp",
+      "category": "crew",
+      "name": "atirador.webp"
+    },
+    {
+      "path": "assets/crew/carpinteiro.webp",
+      "category": "crew",
+      "name": "carpinteiro.webp"
+    },
+    {
+      "path": "assets/crew/cozinheiro.webp",
+      "category": "crew",
+      "name": "cozinheiro.webp"
+    },
+    {
+      "path": "assets/crew/espadachim.webp",
+      "category": "crew",
+      "name": "espadachim.webp"
+    },
+    {
+      "path": "assets/crew/explorador.webp",
+      "category": "crew",
+      "name": "explorador.webp"
+    },
+    {
+      "path": "assets/crew/inventor.webp",
+      "category": "crew",
+      "name": "inventor.webp"
+    },
+    {
+      "path": "assets/crew/medico.webp",
+      "category": "crew",
+      "name": "medico.webp"
+    },
+    {
+      "path": "assets/crew/musico.webp",
+      "category": "crew",
+      "name": "musico.webp"
+    },
+    {
+      "path": "assets/crew/navegador.webp",
+      "category": "crew",
+      "name": "navegador.webp"
+    },
+    {
+      "path": "assets/global/carta-nautica-01-regioes-01-04.webp",
+      "category": "global",
+      "name": "carta-nautica-01-regioes-01-04.webp"
+    },
+    {
+      "path": "assets/global/carta-nautica-02-regioes-05-08.webp",
+      "category": "global",
+      "name": "carta-nautica-02-regioes-05-08.webp"
+    },
+    {
+      "path": "assets/global/carta-nautica-03-regioes-09-12.webp",
+      "category": "global",
+      "name": "carta-nautica-03-regioes-09-12.webp"
+    },
+    {
+      "path": "assets/global/comercial-ship.webp",
+      "category": "global",
+      "name": "comercial-ship.webp"
+    },
+    {
+      "path": "assets/global/gb-win.webp",
+      "category": "global",
+      "name": "gb-win.webp"
+    },
+    {
+      "path": "assets/global/mapa-mundo.png",
+      "category": "global",
+      "name": "mapa-mundo.png"
+    },
+    {
+      "path": "assets/global/mapa-mundo.webp",
+      "category": "global",
+      "name": "mapa-mundo.webp"
+    },
+    {
+      "path": "assets/global/pet-rescue-screen.webp",
+      "category": "global",
+      "name": "pet-rescue-screen.webp"
+    },
+    {
+      "path": "assets/pets/axolotl-captain.webp",
+      "category": "pets",
+      "name": "axolotl-captain.webp"
+    },
+    {
+      "path": "assets/pets/azulao.webp",
+      "category": "pets",
+      "name": "azulao.webp"
+    },
+    {
+      "path": "assets/pets/bambuzinho.webp",
+      "category": "pets",
+      "name": "bambuzinho.webp"
+    },
+    {
+      "path": "assets/pets/biscoito.webp",
+      "category": "pets",
+      "name": "biscoito.webp"
+    },
+    {
+      "path": "assets/pets/bolota.webp",
+      "category": "pets",
+      "name": "bolota.webp"
+    },
+    {
+      "path": "assets/pets/brisa.webp",
+      "category": "pets",
+      "name": "brisa.webp"
+    },
+    {
+      "path": "assets/pets/cacau.webp",
+      "category": "pets",
+      "name": "cacau.webp"
+    },
+    {
+      "path": "assets/pets/canela.webp",
+      "category": "pets",
+      "name": "canela.webp"
+    },
+    {
+      "path": "assets/pets/capitao.webp",
+      "category": "pets",
+      "name": "capitao.webp"
+    },
+    {
+      "path": "assets/pets/cascalho.webp",
+      "category": "pets",
+      "name": "cascalho.webp"
+    },
+    {
+      "path": "assets/pets/coral.webp",
+      "category": "pets",
+      "name": "coral.webp"
+    },
+    {
+      "path": "assets/pets/dourado.webp",
+      "category": "pets",
+      "name": "dourado.webp"
+    },
+    {
+      "path": "assets/pets/estrela.webp",
+      "category": "pets",
+      "name": "estrela.webp"
+    },
+    {
+      "path": "assets/pets/faisca.webp",
+      "category": "pets",
+      "name": "faisca.webp"
+    },
+    {
+      "path": "assets/pets/farofa.webp",
+      "category": "pets",
+      "name": "farofa.webp"
+    },
+    {
+      "path": "assets/pets/farol.webp",
+      "category": "pets",
+      "name": "farol.webp"
+    },
+    {
+      "path": "assets/pets/fumaca.webp",
+      "category": "pets",
+      "name": "fumaca.webp"
+    },
+    {
+      "path": "assets/pets/jujuba.webp",
+      "category": "pets",
+      "name": "jujuba.webp"
+    },
+    {
+      "path": "assets/pets/marujo.webp",
+      "category": "pets",
+      "name": "marujo.webp"
+    },
+    {
+      "path": "assets/pets/oceano.webp",
+      "category": "pets",
+      "name": "oceano.webp"
+    },
+    {
+      "path": "assets/pets/perola.webp",
+      "category": "pets",
+      "name": "perola.webp"
+    },
+    {
+      "path": "assets/pets/pingo.webp",
+      "category": "pets",
+      "name": "pingo.webp"
+    },
+    {
+      "path": "assets/pets/pipoca.webp",
+      "category": "pets",
+      "name": "pipoca.webp"
+    },
+    {
+      "path": "assets/pets/pirilampo.webp",
+      "category": "pets",
+      "name": "pirilampo.webp"
+    },
+    {
+      "path": "assets/pets/pluma.webp",
+      "category": "pets",
+      "name": "pluma.webp"
+    },
+    {
+      "path": "assets/pets/relampago.webp",
+      "category": "pets",
+      "name": "relampago.webp"
+    },
+    {
+      "path": "assets/pets/rubi.webp",
+      "category": "pets",
+      "name": "rubi.webp"
+    },
+    {
+      "path": "assets/pets/tempestade.webp",
+      "category": "pets",
+      "name": "tempestade.webp"
+    },
+    {
+      "path": "assets/pets/tesouro.webp",
+      "category": "pets",
+      "name": "tesouro.webp"
+    },
+    {
+      "path": "assets/pets/trovao.webp",
+      "category": "pets",
+      "name": "trovao.webp"
+    },
+    {
+      "path": "assets/pwa/icon-192.svg",
+      "category": "pwa",
+      "name": "icon-192.svg"
+    },
+    {
+      "path": "assets/pwa/icon-512.svg",
+      "category": "pwa",
+      "name": "icon-512.svg"
+    },
+    {
+      "path": "assets/screens/tavern-background.webp",
+      "category": "screens",
+      "name": "tavern-background.webp"
+    }
+  ]
+}
