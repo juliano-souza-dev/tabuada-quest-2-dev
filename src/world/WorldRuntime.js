@@ -6,7 +6,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1912";
-import { normalizeEntityCollision, resolvePlayerCollisions } from "./WorldCollision.mjs?v=20260930-2020";
+import { normalizeEntityCollision, resolvePlayerCollisions, polygonFromScale } from "./WorldCollision.mjs?v=20260930-2044";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -44,6 +44,9 @@ export class WorldRuntime {
     this.navigationTarget=null;
     this.entityEffectRenderers=new Map();
     this.entityEffectOrigins=new Map();
+    this.collisionPolygonEditId=null;
+    this.collisionPolygonMode=null;
+    this.collisionPolygonSelectedIndex=-1;
     this.entities=(config.entities||[]).map((entity,index)=>{
       const normalized={
         ...structuredClone(entity),
@@ -201,6 +204,21 @@ export class WorldRuntime {
       hitbox.setAttribute("aria-hidden","true");
       el.append(hitbox);
 
+      const collisionSvg=document.createElementNS("http://www.w3.org/2000/svg","svg");
+      collisionSvg.setAttribute("viewBox","0 0 100 100");
+      collisionSvg.setAttribute("preserveAspectRatio","none");
+      collisionSvg.classList.add("tq-world-entity__collision-svg");
+      collisionSvg.setAttribute("aria-hidden","true");
+      const polygon=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+      polygon.classList.add("tq-world-entity__collision-polygon");
+      collisionSvg.append(polygon);
+      el.append(collisionSvg);
+
+      const collisionPoints=document.createElement("div");
+      collisionPoints.className="tq-world-entity__collision-points";
+      collisionPoints.setAttribute("aria-hidden","true");
+      el.append(collisionPoints);
+
       entity.el=el;
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
@@ -237,16 +255,210 @@ export class WorldRuntime {
     const collision=normalizeEntityCollision(entity.collision||{},entity);
     entity.collision=collision;
     const collider=entity.el.querySelector(".tq-world-entity__collider");
-    entity.el.classList.toggle("has-solid-collision",collision.active);
-    entity.el.dataset.collisionShape=collision.shape;
-    if(!collider)return;
+    const polygonSvg=entity.el.querySelector(".tq-world-entity__collision-svg");
+    const polygonShape=entity.el.querySelector(".tq-world-entity__collision-polygon");
+    const pointLayer=entity.el.querySelector(".tq-world-entity__collision-points");
 
-    const paddingX=(collision.padding*2/Math.max(16,Number(entity.width)||96))*100;
-    const paddingY=(collision.padding*2/Math.max(16,Number(entity.height)||96))*100;
-    collider.style.width=`calc(${collision.scaleX*100}% + ${paddingX}%)`;
-    collider.style.height=`calc(${collision.scaleY*100}% + ${paddingY}%)`;
-    collider.style.borderRadius=collision.shape==="ellipse"?"50%":"8px";
+    entity.el.classList.toggle("has-solid-collision",collision.active);
+    entity.el.classList.toggle("is-polygon-collision",collision.shape==="polygon");
+    entity.el.classList.toggle("is-collision-editing",this.collisionPolygonEditId===entity.id);
+    entity.el.dataset.collisionShape=collision.shape;
+
+    if(collider){
+      const paddingX=(collision.padding*2/Math.max(16,Number(entity.width)||96))*100;
+      const paddingY=(collision.padding*2/Math.max(16,Number(entity.height)||96))*100;
+      collider.style.width=`calc(${collision.scaleX*100}% + ${paddingX}%)`;
+      collider.style.height=`calc(${collision.scaleY*100}% + ${paddingY}%)`;
+      collider.style.borderRadius=collision.shape==="ellipse"?"50%":"8px";
+    }
+
+    if(polygonSvg&&polygonShape){
+      const points=collision.points||[];
+      polygonShape.setAttribute("points",points.map(point=>
+        (50+point.x*100).toFixed(3)+","+(50+point.y*100).toFixed(3)
+      ).join(" "));
+      polygonSvg.style.setProperty("--collision-padding",String(Math.max(0,Number(collision.padding)||0)));
+    }
+
+    if(pointLayer){
+      pointLayer.replaceChildren();
+      const editing=this.mode==="edit"&&this.collisionPolygonEditId===entity.id&&collision.shape==="polygon";
+      pointLayer.hidden=!editing;
+      if(editing){
+        (collision.points||[]).forEach((point,index)=>{
+          const handle=document.createElement("button");
+          handle.type="button";
+          handle.className="tq-world-collision-point";
+          if(index===this.collisionPolygonSelectedIndex)handle.classList.add("is-selected");
+          if(index===0)handle.classList.add("is-first");
+          handle.dataset.collisionPoint=String(index);
+          handle.title="Ponto "+(index+1)+" · arraste para mover";
+          handle.style.left=(50+point.x*100)+"%";
+          handle.style.top=(50+point.y*100)+"%";
+
+          handle.addEventListener("pointerdown",event=>{
+            event.preventDefault();
+            event.stopPropagation();
+            this.collisionPolygonSelectedIndex=index;
+            pointLayer.querySelectorAll(".tq-world-collision-point").forEach((item,i)=>item.classList.toggle("is-selected",i===index));
+            try{handle.setPointerCapture(event.pointerId)}catch{}
+
+            const move=e=>{
+              const next=this.collisionPointFromClient(entity,e.clientX,e.clientY);
+              if(!next)return;
+              const points=structuredClone(entity.collision?.points||[]);
+              if(!points[index])return;
+              points[index]=next;
+              entity.collision=normalizeEntityCollision({...entity.collision,shape:"polygon",points},entity);
+              this.syncCollisionVisual(entity);
+              this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),false);
+            };
+            const finish=e=>{
+              try{if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)}catch{}
+              handle.removeEventListener("pointermove",move);
+              handle.removeEventListener("pointerup",finish);
+              handle.removeEventListener("pointercancel",finish);
+              this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),true);
+            };
+            handle.addEventListener("pointermove",move);
+            handle.addEventListener("pointerup",finish);
+            handle.addEventListener("pointercancel",finish);
+          });
+
+          handle.addEventListener("dblclick",event=>{
+            event.preventDefault();
+            event.stopPropagation();
+            this.removeCollisionPolygonPoint(entity.id,index,true);
+          });
+
+          pointLayer.append(handle);
+        });
+      }
+    }
+
     this.syncEditorHitbox(entity);
+  }
+
+  collisionPointFromClient(entity,clientX,clientY){
+    if(!entity||!this.viewport)return null;
+    const rect=this.viewport.getBoundingClientRect();
+    const world=screenPointToWorld(clientX,clientY,{
+      viewportLeft:rect.left,
+      viewportTop:rect.top,
+      viewportWidth:rect.width,
+      viewportHeight:rect.height,
+      cameraX:this.camera.x,
+      cameraY:this.camera.y,
+      zoom:this.zoom,
+      worldWidth:this.config.width,
+      worldHeight:this.config.height
+    });
+    const cx=Number(entity.visualX??entity.x??0);
+    const cy=Number(entity.visualY??entity.y??0);
+    const angle=Number(entity.visualRotation??entity.rotation??0)*Math.PI/180;
+    const dx=world.x-cx;
+    const dy=world.y-cy;
+    const localX=dx*Math.cos(angle)+dy*Math.sin(angle);
+    const localY=-dx*Math.sin(angle)+dy*Math.cos(angle);
+    const width=Math.max(1,Number(entity.width)||96);
+    const height=Math.max(1,Number(entity.height)||96);
+    return {
+      x:clamp(localX/width,-.75,.75),
+      y:clamp(localY/height,-.75,.75)
+    };
+  }
+
+  setCollisionPolygonEditor(id,mode=null,{reset=false}={}){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+
+    if(!mode){
+      if(this.collisionPolygonEditId===id){
+        this.collisionPolygonEditId=null;
+        this.collisionPolygonMode=null;
+        this.collisionPolygonSelectedIndex=-1;
+        this.syncCollisionVisual(entity);
+        this.syncGizmo();
+      }
+      return this.getEntityCollision(id);
+    }
+
+    const current=normalizeEntityCollision(entity.collision||{},entity);
+    let points=structuredClone(current.points||[]);
+    if(reset){
+      points=[];
+    }else if(points.length<3){
+      points=polygonFromScale(current.scaleX,current.scaleY);
+    }
+
+    entity.collision=normalizeEntityCollision({
+      ...current,
+      active:true,
+      shape:"polygon",
+      scaleX:1,
+      scaleY:1,
+      points
+    },entity);
+    this.selectedId=id;
+    this.collisionPolygonEditId=id;
+    this.collisionPolygonMode=mode==="draw"?"draw":"edit";
+    this.collisionPolygonSelectedIndex=-1;
+    this.applySelectionVisual();
+    this.syncCollisionVisual(entity);
+    this.syncGizmo();
+
+    const clean=this.getEntity(id);
+    this.onSelectionChange?.(clean);
+    this.onEntityChange?.(clean,true);
+    return structuredClone(entity.collision);
+  }
+
+  getCollisionPolygonEditorState(){
+    return {
+      id:this.collisionPolygonEditId,
+      mode:this.collisionPolygonMode,
+      selectedIndex:this.collisionPolygonSelectedIndex
+    };
+  }
+
+  addCollisionPolygonPoint(id,point,commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity||!point)return null;
+    const current=normalizeEntityCollision(entity.collision||{},entity);
+    const points=[...(current.points||[]),{
+      x:clamp(Number(point.x)||0,-.75,.75),
+      y:clamp(Number(point.y)||0,-.75,.75)
+    }].slice(0,64);
+    entity.collision=normalizeEntityCollision({...current,active:true,shape:"polygon",points},entity);
+    this.collisionPolygonSelectedIndex=points.length-1;
+    this.syncCollisionVisual(entity);
+    const clean=this.getEntity(id);
+    this.onEntityChange?.(clean,commit);
+    return structuredClone(entity.collision);
+  }
+
+  removeCollisionPolygonPoint(id,index=this.collisionPolygonSelectedIndex,commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    const current=normalizeEntityCollision(entity.collision||{},entity);
+    const points=structuredClone(current.points||[]);
+    const safeIndex=Number(index);
+    if(!Number.isInteger(safeIndex)||safeIndex<0||safeIndex>=points.length)return structuredClone(current);
+    points.splice(safeIndex,1);
+    entity.collision=normalizeEntityCollision({...current,points},entity);
+    this.collisionPolygonSelectedIndex=Math.min(points.length-1,safeIndex);
+    this.syncCollisionVisual(entity);
+    const clean=this.getEntity(id);
+    this.onEntityChange?.(clean,commit);
+    return structuredClone(entity.collision);
+  }
+
+  undoCollisionPolygonPoint(id,commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    const current=normalizeEntityCollision(entity.collision||{},entity);
+    if(!current.points?.length)return structuredClone(current);
+    return this.removeCollisionPolygonPoint(id,current.points.length-1,commit);
   }
 
   syncEditorHitbox(entity){
@@ -524,7 +736,7 @@ export class WorldRuntime {
     const gizmo=this.ensureGizmo();
     if(!gizmo)return;
     const entity=this.entities.find(item=>item.id===this.selectedId);
-    const visible=this.mode==="edit"&&entity&&!this.collected.has(entity.id);
+    const visible=this.mode==="edit"&&entity&&!this.collected.has(entity.id)&&this.collisionPolygonEditId!==entity.id;
     gizmo.hidden=!visible;
     if(!visible)return;
 
@@ -544,9 +756,18 @@ export class WorldRuntime {
 
     el.addEventListener("pointerdown",event=>{
       if(this.mode!=="edit")return;
+      if(event.target?.closest?.(".tq-world-collision-point"))return;
       event.preventDefault();
       event.stopPropagation();
       this.selectEntity(entity.id);
+
+      if(this.collisionPolygonEditId===entity.id){
+        if(this.collisionPolygonMode==="draw"){
+          const point=this.collisionPointFromClient(entity,event.clientX,event.clientY);
+          if(point)this.addCollisionPolygonPoint(entity.id,point,true);
+        }
+        return;
+      }
 
       const start={
         px:event.clientX,
@@ -943,6 +1164,13 @@ export class WorldRuntime {
     this.host?.classList.toggle("is-play",this.mode==="play");
     if(this.modeEl)this.modeEl.textContent=this.mode==="edit"?"MUNDO · EDITAR":"MUNDO · PLAY";
     if(this.mode==="play"){
+      if(this.collisionPolygonEditId){
+        const entity=this.entities.find(item=>item.id===this.collisionPolygonEditId);
+        this.collisionPolygonEditId=null;
+        this.collisionPolygonMode=null;
+        this.collisionPolygonSelectedIndex=-1;
+        if(entity)this.syncCollisionVisual(entity);
+      }
       this.keys.clear();
       this.pointerDirections.clear();
       this.resetJoystick();
@@ -1167,8 +1395,25 @@ export class WorldRuntime {
   updateEntityCollision(id,patch={},commit=true){
     const entity=this.entities.find(item=>item.id===id);
     if(!entity)return null;
-    entity.collision=normalizeEntityCollision({...entity.collision,...structuredClone(patch)},entity);
+    const previous=normalizeEntityCollision(entity.collision||{},entity);
+    let nextPatch=structuredClone(patch);
+    if(nextPatch.shape==="polygon"&&previous.shape!=="polygon"&&!(Array.isArray(nextPatch.points)&&nextPatch.points.length)){
+      nextPatch={
+        ...nextPatch,
+        active:true,
+        scaleX:1,
+        scaleY:1,
+        points:polygonFromScale(previous.scaleX,previous.scaleY)
+      };
+    }
+    entity.collision=normalizeEntityCollision({...previous,...nextPatch},entity);
+    if(entity.collision.shape!=="polygon"&&this.collisionPolygonEditId===id){
+      this.collisionPolygonEditId=null;
+      this.collisionPolygonMode=null;
+      this.collisionPolygonSelectedIndex=-1;
+    }
     this.syncCollisionVisual(entity);
+    this.syncGizmo();
     const clean=this.getEntity(id);
     this.onEntityChange?.(clean,commit);
     return structuredClone(entity.collision);
@@ -1543,7 +1788,15 @@ export class WorldRuntime {
   }
 
   selectEntity(id){
-    this.selectedId=id&&this.entities.some(entity=>entity.id===id)?id:null;
+    const next=id&&this.entities.some(entity=>entity.id===id)?id:null;
+    if(this.collisionPolygonEditId&&next!==this.collisionPolygonEditId){
+      const previous=this.entities.find(item=>item.id===this.collisionPolygonEditId);
+      this.collisionPolygonEditId=null;
+      this.collisionPolygonMode=null;
+      this.collisionPolygonSelectedIndex=-1;
+      if(previous)this.syncCollisionVisual(previous);
+    }
+    this.selectedId=next;
     this.applySelectionVisual();
     this.syncGizmo();
     this.onSelectionChange?.(this.getSelected());
@@ -1672,6 +1925,11 @@ export class WorldRuntime {
     this.entities.splice(index,1);
     this.entities.forEach((entity,i)=>entity.index=i);
     if(this.selectedId===id)this.selectedId=null;
+    if(this.collisionPolygonEditId===id){
+      this.collisionPolygonEditId=null;
+      this.collisionPolygonMode=null;
+      this.collisionPolygonSelectedIndex=-1;
+    }
     this.renderEntities();
     this.onSelectionChange?.(null);
     this.onEntityChange?.(null,true);
