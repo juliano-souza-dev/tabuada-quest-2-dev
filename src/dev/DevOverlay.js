@@ -1591,7 +1591,7 @@ export class DevOverlay {
 
     const clearPosition=panel=>{
       if(!panel)return;
-      for(const key of ["left","top","right","bottom","transform","margin"])panel.style[key]="";
+      for(const key of ["left","top","right","bottom","width","height","maxWidth","maxHeight","transform","margin"])panel.style[key]="";
       panel.classList.remove("is-user-positioned");
     };
 
@@ -1653,6 +1653,10 @@ export class DevOverlay {
         panel.style.position="fixed";
         panel.style.left=rect.left+"px";
         panel.style.top=rect.top+"px";
+        panel.style.width=rect.width+"px";
+        panel.style.height=rect.height+"px";
+        panel.style.maxWidth="calc(100vw - 12px)";
+        panel.style.maxHeight="calc(100vh - 12px)";
         panel.style.right="auto";
         panel.style.bottom="auto";
         panel.style.transform="none";
