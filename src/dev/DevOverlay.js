@@ -788,9 +788,8 @@ export class DevOverlay {
             '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
             '<div class="tq-world-player-fx">'+
               '<strong>Rastro, sombra e balanço</strong>'+
-              '<label class="tq-field tq-field--check"><span>Balanço pelas ondas</span><input data-player-effect-prop="oceanMotionActive" type="checkbox" '+(playerEffects.oceanMotionActive?'checked':'')+'></label>'+
-              playerEffectRange("oceanResponse","Resposta do navio às ondas",0,2,.05,"×")+
-              '<small class="tq-world-editor-note">O balanço é calculado automaticamente usando direção, velocidade, ondulação e frequências do oceano. Contra as ondas, o navio avança e recua mais; de lado, ele rola mais.</small>'+
+              '<label class="tq-field tq-field--check"><span>Balanço automático pelas ondas</span><input data-player-effect-prop="oceanMotionActive" type="checkbox" '+(playerEffects.oceanMotionActive?'checked':'')+'></label>'+
+              '<small class="tq-world-editor-note">Sem intensidade manual: o balanço é calculado diretamente pela configuração atual do oceano WebGL. Ondulação, velocidade, distorção, mistura de ondas, frequências e direção determinam o movimento.</small>'+
               '<label class="tq-field tq-field--check"><span>Rastro na água</span><input data-player-effect-prop="wakeActive" type="checkbox" '+(playerEffects.wakeActive?'checked':'')+'></label>'+
               playerEffectRange("wakeOpacity","Intensidade do rastro",0,1,.01)+
               playerEffectRange("wakeWidth","Largura do rastro",18,180,1," px")+
@@ -1286,7 +1285,7 @@ export class DevOverlay {
         input.addEventListener("change",()=>apply(true));
       });
 
-      const playerEffectNumeric=new Set(["oceanResponse","wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
+      const playerEffectNumeric=new Set(["wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
       content.querySelectorAll("[data-player-effect-prop]").forEach(input=>{
         const apply=commit=>{
           const key=input.dataset.playerEffectProp;
