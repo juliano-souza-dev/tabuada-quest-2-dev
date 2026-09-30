@@ -63,6 +63,9 @@ export class WorldEditor {
 
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
+      onEnterScene:(entity,state)=>{
+        window.dispatchEvent(new CustomEvent("tq:worldenterscene",{detail:{entity,state}}));
+      },
       onSelectionChange:entity=>{
         window.dispatchEvent(new CustomEvent("tq:worldselectionchange",{detail:{entity}}));
       },
