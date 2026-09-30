@@ -1,9 +1,11 @@
-import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20260930-1851";
-import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1851";
-import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1851";
-import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1851";
-import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1851";
-import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1851";
+import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20260930-1912";
+import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
+import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1912";
+import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=20260930-1912";
+import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1912";
+import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
+import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
+import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1912";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -39,16 +41,22 @@ export class WorldRuntime {
     this.pointerDirections=new Set();
     this.joystick={x:0,y:0,active:false,pointerId:null};
     this.navigationTarget=null;
-    this.entities=(config.entities||[]).map((entity,index)=>({
-      ...structuredClone(entity),
-      rotation:Number(entity.rotation||0),
-      skewX:Number(entity.skewX||0),
-      skewY:Number(entity.skewY||0),
-      index,
-      anchorX:Number(entity.x??0),
-      anchorY:Number(entity.y??0),
-      el:null
-    }));
+    this.entityEffectRenderers=new Map();
+    this.entityEffectOrigins=new Map();
+    this.entities=(config.entities||[]).map((entity,index)=>{
+      const normalized={
+        ...structuredClone(entity),
+        rotation:Number(entity.rotation||0),
+        skewX:Number(entity.skewX||0),
+        skewY:Number(entity.skewY||0),
+        index,
+        anchorX:Number(entity.x??0),
+        anchorY:Number(entity.y??0),
+        el:null
+      };
+      normalized.effect=normalizeEntityEffect(normalized.effect||{},normalized);
+      return normalized;
+    });
     this.selectedId=null;
     this.lastTime=0;
     this.raf=0;
@@ -151,6 +159,8 @@ export class WorldRuntime {
 
   renderEntities(){
     if(!this.entityLayer)return;
+    for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
+    this.entityEffectRenderers.clear();
     this.entityLayer.replaceChildren();
     this.gizmoEl=null;
 
@@ -168,6 +178,12 @@ export class WorldRuntime {
         img.src=entity.src||"";
         img.alt=entity.label||entity.type||"Objeto";
         el.append(img);
+
+        const canvas=document.createElement("canvas");
+        canvas.className="tq-world-entity__webgl";
+        canvas.hidden=true;
+        canvas.setAttribute("aria-hidden","true");
+        el.append(canvas);
       }
 
       entity.el=el;
@@ -175,6 +191,7 @@ export class WorldRuntime {
       if(this.collected.has(entity.id))el.hidden=true;
       if(this.editorEnabled)this.bindEntityEditing(entity);
       this.entityLayer.append(el);
+      this.syncEntityEffectRenderer(entity);
     }
 
     this.ensureGizmo();
@@ -196,6 +213,38 @@ export class WorldRuntime {
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+  }
+
+  syncEntityEffectRenderer(entity){
+    if(!entity?.el)return;
+    const effect=normalizeEntityEffect(entity.effect||{},entity);
+    entity.effect=effect;
+    const img=entity.el.querySelector("img");
+    const canvas=entity.el.querySelector(".tq-world-entity__webgl");
+    const wantsWebGL=Boolean(effect.active&&effect.renderer==="webgl"&&entity.src&&canvas);
+
+    entity.el.dataset.effectRenderer=effect.renderer;
+    entity.el.dataset.effectPreset=effect.preset;
+
+    if(!wantsWebGL){
+      if(canvas)canvas.hidden=true;
+      if(img)img.hidden=false;
+      return;
+    }
+
+    let renderer=this.entityEffectRenderers.get(entity.id);
+    if(!renderer&&canvas){
+      renderer=new EntityWebGLEffectRenderer(canvas);
+      this.entityEffectRenderers.set(entity.id,renderer);
+    }
+
+    renderer?.init?.(entity.src).then(ok=>{
+      if(!entity.el?.isConnected)return;
+      const current=normalizeEntityEffect(entity.effect||{},entity);
+      const active=Boolean(ok&&current.active&&current.renderer==="webgl");
+      if(canvas)canvas.hidden=!active;
+      if(img)img.hidden=active;
+    });
   }
 
   ensureGizmo(){
@@ -986,18 +1035,84 @@ export class WorldRuntime {
     return structuredClone(entity.motion);
   }
 
+  getEntityEffect(id){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    entity.effect=normalizeEntityEffect(entity.effect||{},entity);
+    return structuredClone(entity.effect);
+  }
+
+  listEntityEffectPresets(id){
+    const effect=this.getEntityEffect(id);
+    if(!effect)return [];
+    return listEntityEffectPresets(effect.category);
+  }
+
+  updateEntityEffect(id,patch={},commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    const current=this.getEntityEffect(id)||normalizeEntityEffect({},entity);
+    const base=patch.preset&&patch.preset!==current.preset
+      ?applyEntityEffectPreset(current,patch.preset,entity)
+      :current;
+    entity.effect=normalizeEntityEffect({...base,...structuredClone(patch)},entity);
+    this.entityEffectOrigins.set(id,{x:Number(this.camera.x)||0,y:Number(this.camera.y)||0});
+    this.applyEntityVisual(entity);
+    this.syncEntityEffectRenderer(entity);
+    this.syncGizmo();
+    const clean=this.getEntity(id);
+    this.onEntityChange?.(clean,commit);
+    return structuredClone(entity.effect);
+  }
+
   updateEntityMotionFrame(time){
     for(const entity of this.entities){
       if(this.collected.has(entity.id)||!entity.el)continue;
+
       const motion=this.getEntityMotion(entity.id);
-      if(!motion?.active){
-        this.applyEntityVisual(entity);
-        continue;
+      const motionFrame=motion?.active
+        ?computeEntityMotionFrame(motion,time,(entity.index+1)*1.71,entity.type)
+        :{offsetX:0,offsetY:0,rotation:0,scaleY:1};
+
+      const effect=this.getEntityEffect(entity.id)||normalizeEntityEffect({},entity);
+      let origin=this.entityEffectOrigins.get(entity.id);
+      if(!origin){
+        origin={x:Number(this.camera.x)||0,y:Number(this.camera.y)||0};
+        this.entityEffectOrigins.set(entity.id,origin);
       }
-      const frame=computeEntityMotionFrame(motion,time,(entity.index+1)*1.71,entity.type);
-      entity.el.style.left=(entity.x+frame.offsetX)+"px";
-      entity.el.style.top=(entity.y+frame.offsetY)+"px";
-      entity.el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)+frame.rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(1,${frame.scaleY})`;
+      const effectFrame=computeEntityEffectFrame(effect,time,(entity.index+1)*2.17,{
+        entity,
+        camera:this.camera,
+        cameraOrigin:origin,
+        worldWidth:this.config.width,
+        worldHeight:this.config.height
+      });
+
+      const offsetX=Number(motionFrame.offsetX||0)+Number(effectFrame.offsetX||0);
+      const offsetY=Number(motionFrame.offsetY||0)+Number(effectFrame.offsetY||0);
+      const rotation=Number(entity.rotation||0)+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
+      const scaleX=Number(effectFrame.scaleX||1);
+      const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
+
+      entity.el.style.left=(entity.x+offsetX)+"px";
+      entity.el.style.top=(entity.y+offsetY)+"px";
+      entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
+      entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
+
+      const img=entity.el.querySelector("img");
+      const canvas=entity.el.querySelector(".tq-world-entity__webgl");
+      const blur=effect.active?Number(effectFrame.blur||0):0;
+      if(img)img.style.filter=`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
+
+      if(effect.active&&effect.renderer==="webgl"){
+        const renderer=this.entityEffectRenderers.get(entity.id);
+        const rendered=renderer?.render?.(time,effect,entity.width||96,entity.height||96)===true;
+        if(canvas)canvas.hidden=!rendered;
+        if(img)img.hidden=rendered;
+      }else{
+        if(canvas)canvas.hidden=true;
+        if(img)img.hidden=false;
+      }
     }
   }
 
@@ -1303,7 +1418,11 @@ export class WorldRuntime {
     const entity=this.entities.find(item=>item.id===id);
     if(!entity)return null;
     const previousType=entity.type;
-    Object.assign(entity,structuredClone(patch));
+    const effectPatch=patch.effect&&typeof patch.effect==="object"?structuredClone(patch.effect):null;
+    const plainPatch=structuredClone(patch);
+    delete plainPatch.effect;
+    Object.assign(entity,plainPatch);
+    if(effectPatch)entity.effect=normalizeEntityEffect({...entity.effect,...effectPatch},entity);
     entity.x=clamp(Number(entity.x??0),0,this.config.width);
     entity.y=clamp(Number(entity.y??0),0,this.config.height);
     entity.width=clamp(Number(entity.width??96),16,2400);
@@ -1311,11 +1430,13 @@ export class WorldRuntime {
     entity.rotation=Number(entity.rotation||0);
     entity.skewX=clamp(Number(entity.skewX||0),-75,75);
     entity.skewY=clamp(Number(entity.skewY||0),-75,75);
+    entity.effect=normalizeEntityEffect(entity.effect||{},entity);
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
     if(previousType!==entity.type)this.renderEntities();
     else{
       this.applyEntityVisual(entity);
+      if(effectPatch||patch.src!==undefined)this.syncEntityEffectRenderer(entity);
       this.syncGizmo();
     }
     this.selectedId=id;
@@ -1339,6 +1460,7 @@ export class WorldRuntime {
       rotation:Number(raw.rotation||0),
       skewX:clamp(Number(raw.skewX||0),-75,75),
       skewY:clamp(Number(raw.skewY||0),-75,75),
+      effect:normalizeEntityEffect(raw.effect||{},raw),
       index:this.entities.length,
       anchorX:0,
       anchorY:0,
@@ -1406,6 +1528,8 @@ export class WorldRuntime {
   destroy(){
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
+    for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
+    this.entityEffectRenderers.clear();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";
