@@ -116,27 +116,43 @@ export class WorldEditor {
     if(path.includes("/barris/")){
       type="barrel";width=78;height=78;extra={
         motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
-        effect:{category:"sea-item",preset:"none"}
+        effect:{category:"sea-item",preset:"none"},
+        collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0}
       };
     }else if(path.includes("/baus/")){
       type="treasure";width=88;height=88;extra={
         motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
-        effect:{category:"treasure",preset:"none"}
+        effect:{category:"treasure",preset:"none"},
+        collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0}
       };
     }else if(path.includes("/ships/")){
       type="ship";width=110;height=150;extra={
         motion:{active:true,preset:"navigation",speed:55,heave:46,pitch:42,roll:24,sway:14},
-        effect:{category:"ship",preset:"none"}
+        effect:{category:"ship",preset:"none"},
+        collision:{active:true,shape:"ellipse",scaleX:.44,scaleY:.58,padding:6}
+      };
+    }else if(path.includes("/regions/islands/")){
+      type="location";width=900;height=650;extra={
+        renderMode:"sprite",
+        showLabel:false,
+        interactionRadius:360,
+        motion:{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0},
+        effect:{category:"island",preset:"none"},
+        collision:{active:true,shape:"ellipse",scaleX:.72,scaleY:.50,padding:10}
       };
     }else if(path.includes("/backgrounds/")){
-      type="location";width=280;height=190;
       const category=/ilha|island/i.test(path)?"island":"background";
+      type=category==="island"?"location":"background";
+      width=280;height=190;
       extra={
         renderMode:"sprite",
         showLabel:false,
-        interactionRadius:230,
+        interactionRadius:category==="island"?230:0,
         motion:{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0},
-        effect:{category,preset:"none"}
+        effect:{category,preset:"none"},
+        collision:category==="island"
+          ?{active:true,shape:"ellipse",scaleX:.72,scaleY:.50,padding:10}
+          :{active:false,shape:"box",scaleX:1,scaleY:1,padding:0}
       };
     }
 
@@ -183,6 +199,16 @@ export class WorldEditor {
 
   getEntityEffect(id){
     return this.runtime?.getEntityEffect(id)||null;
+  }
+
+  getEntityCollision(id){
+    return this.runtime?.getEntityCollision(id)||null;
+  }
+
+  updateEntityCollision(id,patch,commit=true){
+    const collision=this.runtime?.updateEntityCollision(id,patch,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return collision;
   }
 
   listEntityEffectPresets(id){
