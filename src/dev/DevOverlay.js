@@ -712,6 +712,12 @@ export class DevOverlay {
         return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-ocean-output="'+key+'">'+value+suffix+'</output></span>'+
           '<input data-ocean-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-ocean-suffix="'+suffix+'"></label>';
       };
+      const playerRange=(key,label,min,max,step="1",suffix="")=>{
+        const value=Number(player[key]??(key==="maxSpeed"?420:0));
+        const shown=Math.round(value*100)/100;
+        return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-player-output="'+key+'">'+shown+suffix+'</output></span>'+
+          '<input data-player-live-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-player-suffix="'+suffix+'"></label>';
+      };
       const playerEffectRange=(key,label,min,max,step="1",suffix="")=>{
         const value=Number(playerEffects[key]??0);
         const shown=Math.round(value*100)/100;
@@ -776,6 +782,8 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
               '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
             '</div>'+
+            playerRange("maxSpeed","Velocidade máxima",60,1000,10," px/s")+
+            '<small class="tq-world-editor-note">Controla a velocidade máxima real do navio. A aceleração e o contorno de obstáculos se ajustam proporcionalmente para manter a navegação natural.</small>'+
             '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
             '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
             '<div class="tq-world-player-fx">'+
@@ -1261,6 +1269,22 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       }));
+
+      content.querySelectorAll("[data-player-live-prop]").forEach(input=>{
+        const apply=commit=>{
+          const key=input.dataset.playerLiveProp;
+          const value=Number(input.value);
+          const output=content.querySelector('[data-player-output="'+key+'"]');
+          if(output){
+            const suffix=input.dataset.playerSuffix||"";
+            output.value=String(Math.round(value*100)/100)+suffix;
+          }
+          this.worldEditor.updatePlayerConfig({[key]:value},commit);
+          if(commit)this.syncLocalWorldFromEditor();
+        };
+        input.addEventListener("input",()=>apply(false));
+        input.addEventListener("change",()=>apply(true));
+      });
 
       const playerEffectNumeric=new Set(["oceanResponse","wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
       content.querySelectorAll("[data-player-effect-prop]").forEach(input=>{
