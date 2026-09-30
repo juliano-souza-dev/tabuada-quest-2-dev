@@ -6,6 +6,7 @@ export class DevOverlay {
     this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];this.worldEditor=new WorldEditor(this.runtime.root,{sceneRuntime:this.runtime});this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
+    this.worldAtlasSelectionMode=null;
     try{this.sceneGroupOpen=new Set(JSON.parse(sessionStorage.getItem(this.sceneGroupStorageKey)||"[]"))}catch{this.sceneGroupOpen=new Set()}
   }
   mount(){
@@ -734,6 +735,7 @@ export class DevOverlay {
                 '<button type="button" data-atlas-mode="points">Pontos</button>'+
                 '<button type="button" data-atlas-mode="grid4">Quadro 4×4</button>'+
               '</div>'+
+              '<button type="button" class="tq-world-atlas-grid-fill" data-atlas-grid-fill>⚡ Preencher 16 posições</button>'+
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
                 (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><div class="tq-world-atlas-grid4" data-atlas-grid4>'+grid4Cells+'</div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
               '</div>'+
@@ -828,7 +830,9 @@ export class DevOverlay {
       const atlasPointsLayer=content.querySelector("[data-atlas-points]");
       const atlasMagnifier=content.querySelector("[data-atlas-magnifier]");
       const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
-      let selectionMode=preferPointMode?"points":"rectangle";
+      let selectionMode=["rectangle","points","grid4"].includes(this.worldAtlasSelectionMode)
+        ?this.worldAtlasSelectionMode
+        :(preferPointMode?"points":"rectangle");
       const isPointMode=()=>selectionMode==="points";
       const isGridMode=()=>selectionMode==="grid4";
       let atlasDirection=firstMissing;
@@ -993,6 +997,7 @@ export class DevOverlay {
       const setSelectionMode=mode=>{
         if(!["rectangle","points","grid4"].includes(mode))return;
         selectionMode=mode;
+        this.worldAtlasSelectionMode=mode;
         const wizard=content.querySelector("[data-atlas-wizard]");
         wizard?.classList.toggle("is-point-mode",isPointMode());
         wizard?.classList.toggle("is-grid-mode",isGridMode());
@@ -1049,6 +1054,33 @@ export class DevOverlay {
           width,
           height
         });
+      });
+
+      content.querySelector("[data-atlas-grid-fill]")?.addEventListener("click",()=>{
+        if(!isGridMode())return;
+        const metrics=imageMetrics();
+        if(!metrics)return;
+        const width=metrics.naturalW/4;
+        const height=metrics.naturalH/4;
+        const filledRegions={};
+        directionOrder.forEach((direction,index)=>{
+          const column=index%4;
+          const row=Math.floor(index/4);
+          filledRegions[direction]={
+            x:column*width,
+            y:row*height,
+            width,
+            height
+          };
+        });
+        this.worldAtlasSelectionMode="grid4";
+        this.worldEditor.updatePlayerConfig({sprite:{
+          imageWidth:metrics.naturalW,
+          imageHeight:metrics.naturalH,
+          regions:filledRegions
+        }},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
       });
 
       content.querySelector("[data-atlas-undo]")?.addEventListener("click",()=>{
