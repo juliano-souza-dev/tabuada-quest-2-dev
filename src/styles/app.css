@@ -144,3 +144,29 @@
 }
 .tq-install-app[hidden]{display:none!important}
 .tq-install-app:disabled{opacity:.55}
+
+@media(min-width:800px){
+  .tq-dev__panel>header,
+  .tq-dev__scenes>header,
+  .tq-dev__worlds>header,
+  .tq-dev__assets>header{
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+  }
+  .tq-dev__panel>header:active,
+  .tq-dev__scenes>header:active,
+  .tq-dev__worlds>header:active,
+  .tq-dev__assets>header:active{
+    cursor:grabbing;
+  }
+  .tq-dev__panel.is-user-positioned,
+  .tq-dev__scenes.is-user-positioned,
+  .tq-dev__worlds.is-user-positioned,
+  .tq-dev__assets.is-user-positioned{
+    right:auto!important;
+    bottom:auto!important;
+    transform:none!important;
+    margin:0!important;
+  }
+}
