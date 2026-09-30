@@ -310,7 +310,13 @@ export class WorldRuntime {
               if(!points[index])return;
               points[index]=next;
               entity.collision=normalizeEntityCollision({...entity.collision,shape:"polygon",points},entity);
-              this.syncCollisionVisual(entity);
+              if(polygonShape){
+                polygonShape.setAttribute("points",(entity.collision.points||[]).map(point=>
+                  (50+point.x*100).toFixed(3)+","+(50+point.y*100).toFixed(3)
+                ).join(" "));
+              }
+              handle.style.left=(50+next.x*100)+"%";
+              handle.style.top=(50+next.y*100)+"%";
               this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),false);
             };
             const finish=e=>{
@@ -318,6 +324,7 @@ export class WorldRuntime {
               handle.removeEventListener("pointermove",move);
               handle.removeEventListener("pointerup",finish);
               handle.removeEventListener("pointercancel",finish);
+              this.syncCollisionVisual(entity);
               this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),true);
             };
             handle.addEventListener("pointermove",move);
