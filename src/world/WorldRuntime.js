@@ -196,6 +196,11 @@ export class WorldRuntime {
       collider.setAttribute("aria-hidden","true");
       el.append(collider);
 
+      const hitbox=document.createElement("span");
+      hitbox.className="tq-world-entity__editor-hitbox";
+      hitbox.setAttribute("aria-hidden","true");
+      el.append(hitbox);
+
       entity.el=el;
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
@@ -224,6 +229,7 @@ export class WorldRuntime {
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
     this.syncCollisionVisual(entity);
+    this.syncEditorHitbox(entity);
   }
 
   syncCollisionVisual(entity){
@@ -240,6 +246,26 @@ export class WorldRuntime {
     collider.style.width=`calc(${collision.scaleX*100}% + ${paddingX}%)`;
     collider.style.height=`calc(${collision.scaleY*100}% + ${paddingY}%)`;
     collider.style.borderRadius=collision.shape==="ellipse"?"50%":"8px";
+    this.syncEditorHitbox(entity);
+  }
+
+  syncEditorHitbox(entity){
+    if(!entity?.el)return;
+    const hitbox=entity.el.querySelector(".tq-world-entity__editor-hitbox");
+    if(!hitbox)return;
+
+    const collision=normalizeEntityCollision(entity.collision||{},entity);
+    if(collision.active){
+      const paddingX=(collision.padding*2/Math.max(16,Number(entity.width)||96))*100;
+      const paddingY=(collision.padding*2/Math.max(16,Number(entity.height)||96))*100;
+      hitbox.style.width=`max(100%, calc(${collision.scaleX*100}% + ${paddingX}%))`;
+      hitbox.style.height=`max(100%, calc(${collision.scaleY*100}% + ${paddingY}%))`;
+      hitbox.style.borderRadius=collision.shape==="ellipse"?"50%":"8px";
+    }else{
+      hitbox.style.width="100%";
+      hitbox.style.height="100%";
+      hitbox.style.borderRadius="0";
+    }
   }
 
   syncEntityEffectRenderer(entity){
@@ -576,7 +602,6 @@ export class WorldRuntime {
         lastY:clientY,
         dragging:false
       };
-      if(this.mode==="edit")this.selectEntity(null);
     };
 
     const clampPlayCamera=()=>{
@@ -644,10 +669,12 @@ export class WorldRuntime {
 
     const end=event=>{
       if(!pan||event.pointerId!==pan.pointerId)return;
+      const dragged=Boolean(pan.dragging);
       try{
         if(this.viewport.hasPointerCapture(event.pointerId))this.viewport.releasePointerCapture(event.pointerId);
       }catch{}
       finishPan();
+      if(this.mode==="edit"&&!dragged)this.selectEntity(null);
     };
 
     const touchStart=event=>{
@@ -675,6 +702,7 @@ export class WorldRuntime {
       const dragged=Boolean(pan?.dragging);
       touchPan=null;
       finishPan();
+      if(this.mode==="edit"&&!dragged)this.selectEntity(null);
       if(dragged)event.preventDefault();
     };
 
