@@ -15,7 +15,8 @@ import {
   removeVelocityIntoNormal,
   contourVelocity
 } from "./WorldCollision.mjs?v=20260930-2123";
-import { computeShipOceanMotion } from "./WorldShipOceanMotion.mjs?v=20260930-2230";
+import { computeShipOceanMotion } from "./WorldShipOceanMotion.mjs?v=20260930-2242";
+import { normalizePlayerMaxSpeed, stepPlayerVelocity } from "./WorldPlayerMotion.mjs?v=20260930-2242";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 const normalizePlayerWaterEffects=player=>{
@@ -1048,7 +1049,7 @@ export class WorldRuntime {
   }
 
   playerMaxSpeed(){
-    return clamp(Number(this.config.player?.maxSpeed??420)||420,60,1000);
+    return normalizePlayerMaxSpeed(this.config.player?.maxSpeed,420);
   }
 
   resolvePlayerCollisions(candidate,input){
@@ -1115,24 +1116,16 @@ export class WorldRuntime {
   updatePlayer(dt){
     const input=this.inputVector();
     const maxSpeed=this.playerMaxSpeed();
-    const inputMagnitude=clamp(Math.hypot(input.x,input.y),0,1);
-    const targetVx=input.x*maxSpeed;
-    const targetVy=input.y*maxSpeed;
-
-    const accelResponse=1-Math.exp(-dt*6.8);
-    const coastResponse=1-Math.exp(-dt*3.4);
-    const response=inputMagnitude>.001?accelResponse:coastResponse;
-
-    this.player.vx+=(targetVx-this.player.vx)*response;
-    this.player.vy+=(targetVy-this.player.vy)*response;
+    const velocity=stepPlayerVelocity(
+      {vx:this.player.vx,vy:this.player.vy},
+      input,
+      maxSpeed,
+      dt
+    );
+    this.player.vx=velocity.vx;
+    this.player.vy=velocity.vy;
 
     let speed=Math.hypot(this.player.vx,this.player.vy);
-    if(speed>maxSpeed){
-      const scale=maxSpeed/speed;
-      this.player.vx*=scale;
-      this.player.vy*=scale;
-      speed=maxSpeed;
-    }
 
     const travel=this.getPlayerTravelBounds();
     const candidate={
@@ -1519,7 +1512,7 @@ export class WorldRuntime {
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
     if(patch.maxSpeed!==undefined){
-      next.maxSpeed=clamp(Number(patch.maxSpeed)||420,60,1000);
+      next.maxSpeed=normalizePlayerMaxSpeed(patch.maxSpeed,420);
       const currentSpeed=Math.hypot(this.player.vx,this.player.vy);
       if(currentSpeed>next.maxSpeed){
         const scale=next.maxSpeed/currentSpeed;
