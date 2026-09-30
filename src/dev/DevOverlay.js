@@ -114,14 +114,16 @@ export class DevOverlay {
     window.addEventListener("tq:nodechange",e=>{const node=e.detail?.node;if(node&&this.selected?.id===node.id){this.selected=node;this.syncInspector();}});
     window.addEventListener("tq:sceneload",()=>{if(this.workspace!=="world"){this.selected=null;this.renderScenes()}});
     window.addEventListener("tq:worldselectionchange",e=>{
-      if(this.workspace!=="world")return;
+      if(!this.isWorldWorkspace())return;
       this.selected=e.detail?.entity||null;
-      if(this.mode==="config")this.renderInspector();
+      if(this.mode==="config")this.renderWorldInspector();
     });
     window.addEventListener("tq:worldentitychange",e=>{
-      if(this.workspace!=="world")return;
+      if(!this.isWorldWorkspace())return;
       const entity=e.detail?.entity;
-      if(entity&&this.selected?.id===entity.id)this.selected=entity;
+      const selected=this.worldEditor?.getSelected()||null;
+      if(selected)this.selected=selected;
+      else if(entity&&this.selected?.id===entity.id)this.selected=entity;
       if(e.detail?.commit){
         this.syncLocalWorldFromEditor();
         if(this.mode==="config")this.renderWorldInspector();
@@ -129,9 +131,9 @@ export class DevOverlay {
       this.renderWorlds();
     });
     window.addEventListener("tq:worldchange",()=>{
-      if(this.workspace!=="world")return;
+      if(!this.isWorldWorkspace())return;
       this.syncLocalWorldFromEditor();
-      if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
+      if(this.mode==="config")this.renderWorldInspector();
       this.renderWorlds();
     });
   }
@@ -618,7 +620,8 @@ export class DevOverlay {
   renderWorldInspector(){
     const content=this.el.querySelector(".tq-dev__content");
     const title=this.el.querySelector("[data-node-title]");
-    const entity=this.selected;
+    const entity=this.worldEditor?.getSelected()||null;
+    this.selected=entity;
 
     if(!entity){
       const world=this.worldEditor?.getWorld();
@@ -1832,13 +1835,23 @@ export class DevOverlay {
     a.href=url;a.download=id+".scene.json";document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),0);
   }
+  isWorldWorkspace(){
+    return Boolean(this.worldEditor?.active&&!this.worldEditor?.suspended);
+  }
+
   setMode(mode){
     this.mode=mode;
-    if(this.workspace==="world")this.worldEditor?.setMode(mode);
+    if(this.isWorldWorkspace())this.worldEditor?.setMode(mode);
     else this.runtime.setMode(mode);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
     this.el.querySelector(".tq-dev__panel").hidden=mode!=="config";this.el.classList.toggle("is-play",mode==="play");
-    if(mode==="config"){this.el.querySelector(".tq-dev__assets").hidden=true;this.el.querySelector(".tq-dev__scenes").hidden=true;this.el.querySelector(".tq-dev__worlds").hidden=true;this.renderInspector();}
+    if(mode==="config"){
+      this.el.querySelector(".tq-dev__assets").hidden=true;
+      this.el.querySelector(".tq-dev__scenes").hidden=true;
+      this.el.querySelector(".tq-dev__worlds").hidden=true;
+      if(this.isWorldWorkspace())this.selected=this.worldEditor?.getSelected()||null;
+      this.renderInspector();
+    }
   }
 
   normalizeInferencePath(value){
@@ -2081,7 +2094,7 @@ export class DevOverlay {
   }
 
   renderInspector(){
-    if(this.workspace==="world"){this.renderWorldInspector();return;}
+    if(this.isWorldWorkspace()){this.renderWorldInspector();return;}
     const content=this.el.querySelector(".tq-dev__content");
     const title=this.el.querySelector("[data-node-title]");
 
@@ -2328,7 +2341,7 @@ export class DevOverlay {
     this.syncInspector();
   }
   syncInspector(){
-    if(this.workspace==="world"){if(this.mode==="config")this.renderWorldInspector();return;}
+    if(this.isWorldWorkspace()){if(this.mode==="config")this.renderWorldInspector();return;}
     if(!this.selected||!this.el)return;
     this.el.querySelectorAll("[data-prop]").forEach(input=>{const v=this.selected[input.dataset.prop];if(input.type==="checkbox")input.checked=Boolean(v);else if(document.activeElement!==input)input.value=v??"";});
   }
