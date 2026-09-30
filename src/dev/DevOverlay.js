@@ -704,6 +704,10 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Mensagens de colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-world-field"><span>Asset da mensagem</span><input data-world-ui-prop="interactionMessageAsset" type="text" value="'+this.escapeHtml(world.ui?.interactionMessageAsset||"")+'" placeholder="./assets/..."></label>'+
+            '<small class="tq-world-editor-note">Se houver um asset, a mensagem de colisão é escrita sobre ele. Se ficar vazio, o jogo usa uma caixa de texto padrão.</small>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Área jogável</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<small class="tq-world-editor-note">Limite real de navegação. Deixe espaço externo para câmera, horizonte e decoração.</small>'+
             '<div class="tq-worlds__create-grid">'+
@@ -801,6 +805,13 @@ export class DevOverlay {
       content.querySelectorAll("[data-world-playable-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldPlayableProp;
         this.worldEditor.updateWorld({playableArea:{[key]:Number(input.value)}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      }));
+
+      content.querySelectorAll("[data-world-ui-prop]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.worldUiProp;
+        this.worldEditor.updateWorld({ui:{[key]:input.value}},true);
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       }));
@@ -1207,11 +1218,13 @@ export class DevOverlay {
 
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false};
+    const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0,action:"auto",message:""};
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
     const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
+    const collisionRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-collision-output="'+key+'">'+(Math.round(Number(collision[key]||0)*100)/100)+suffix+'</output></span><input data-collision-prop="'+key+'" data-collision-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(collision[key]??0)+'"></label>';
     const typeOptions=["object","barrel","treasure","ship","location","island","background"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
@@ -1264,6 +1277,21 @@ export class DevOverlay {
           motionRange("roll","Balanço lateral")+
           motionRange("sway","Deriva lateral")+
           '<small class="tq-world-editor-note">Usa a mesma linguagem do motor de composição de navios: heave, pitch, roll e sway. O preview roda no próprio mundo.</small>'+
+        '</div></section>'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<label class="tq-field tq-field--check"><span>Colisão ativa</span><input data-collision-prop="active" type="checkbox" '+(collision.active?'checked':'')+'></label>'+
+          '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option></select></label>'+
+          collisionRange("scaleX","Largura da área",.1,1.5,.01)+
+          collisionRange("scaleY","Altura da área",.1,1.5,.01)+
+          collisionRange("padding","Margem",0,500,1," px")+
+          '<label class="tq-world-field"><span>Função ao tocar</span><select data-collision-prop="action">'+
+            '<option value="auto" '+(collision.action==="auto"?'selected':'')+'>Automática pelo tipo</option>'+
+            '<option value="none" '+(collision.action==="none"?'selected':'')+'>Nenhuma · contornar</option>'+
+            '<option value="collect" '+(collision.action==="collect"?'selected':'')+'>Recolher item</option>'+
+            '<option value="enter-scene" '+(collision.action==="enter-scene"?'selected':'')+'>Acessar cena / ilha</option>'+
+          '</select></label>'+
+          '<label class="tq-world-field"><span>Mensagem</span><input data-collision-prop="message" type="text" maxlength="240" value="'+this.escapeHtml(collision.message||"")+'" placeholder="Deixe vazio para mensagem automática"></label>'+
+          '<small class="tq-world-editor-note">Se houver função, tocar na área mostra a mensagem e o botão da ação. Sem função, o navio desliza e contorna o obstáculo em vez de insistir contra ele.</small>'+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Comportamento</strong><span>▾</span></button><div class="tq-config-area__body">'+
           num("interactionRadius","Raio de interação",0,2000)+
@@ -1321,6 +1349,26 @@ export class DevOverlay {
       this.selected=this.worldEditor.updateEntity(entity.id,{rotation},true)||this.selected;
       this.renderWorldInspector();
     }));
+
+    const collisionNumeric=new Set(["scaleX","scaleY","padding"]);
+    content.querySelectorAll("[data-collision-prop]").forEach(input=>{
+      const read=()=>input.type==="checkbox"
+        ?input.checked
+        :(collisionNumeric.has(input.dataset.collisionProp)?Number(input.value):input.value);
+      const apply=(commit)=>{
+        const key=input.dataset.collisionProp;
+        const value=read();
+        const output=content.querySelector('[data-collision-output="'+key+'"]');
+        if(output){
+          const suffix=input.dataset.collisionSuffix||"";
+          output.value=String(Math.round(Number(value)*100)/100)+suffix;
+        }
+        this.worldEditor.updateEntityCollision(entity.id,{[key]:value},commit);
+        this.selected=this.worldEditor.getSelected()||this.selected;
+      };
+      if(input.type==="range")input.addEventListener("input",()=>apply(false));
+      input.addEventListener("change",()=>apply(true));
+    });
 
     const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow"]);
     content.querySelectorAll("[data-effect-prop]").forEach(input=>{
