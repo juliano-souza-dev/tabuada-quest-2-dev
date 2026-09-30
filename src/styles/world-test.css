@@ -131,3 +131,22 @@
 /* Layered ocean parallax editor */
 .tq-world-ocean-layer-card{display:grid;gap:8px;padding:10px;border:1px solid rgba(126,231,255,.14);border-radius:10px;background:rgba(7,32,48,.48)}
 .tq-world-ocean-layer-card>strong{font-size:11px;color:#7ee7ff}
+
+/* 16-way guided ship direction grid */
+.tq-world-direction16__progress{display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 9px;border:1px solid rgba(126,231,255,.14);border-radius:9px;background:rgba(255,255,255,.025)}
+.tq-world-direction16__progress strong{font-size:14px;color:#7ee7ff}
+.tq-world-direction16__progress small{font-size:8px;color:#9fb6c5}
+.tq-world-direction16{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tq-world-direction16__item{display:grid!important;grid-template-columns:24px minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"icon thumb" "label label";align-items:center;gap:3px 4px;min-width:0;min-height:72px;padding:5px!important;border:1px solid rgba(126,231,255,.14)!important;border-radius:9px!important;background:rgba(4,20,31,.48)!important;color:#fff!important}
+.tq-world-direction16__item.is-active{border-color:#7ee7ff!important;box-shadow:inset 0 0 0 1px rgba(126,231,255,.28)}
+.tq-world-direction16__item.is-configured .tq-world-direction16__thumb{border-style:solid}
+.tq-world-direction16__icon{grid-area:icon;display:grid;place-items:center;font-size:18px;color:#7ee7ff}
+.tq-world-direction16__thumb{grid-area:thumb;justify-self:end;width:38px;height:34px;border:1px dashed rgba(126,231,255,.28);border-radius:6px;background-color:rgba(255,255,255,.035);background-repeat:no-repeat;display:grid;place-items:center;color:#7ee7ff;font-size:16px}
+.tq-world-direction16__item small{grid-area:label;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:7px;line-height:1.15;color:#c6d7e2;text-align:center}
+@media(max-width:430px){
+  .tq-world-direction16{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .tq-world-direction16__item{grid-template-columns:18px minmax(0,1fr);min-height:66px;padding:4px!important}
+  .tq-world-direction16__icon{font-size:15px}
+  .tq-world-direction16__thumb{width:30px;height:28px;font-size:14px}
+  .tq-world-direction16__item small{font-size:6.5px}
+}
