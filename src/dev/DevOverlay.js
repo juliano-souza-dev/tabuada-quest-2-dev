@@ -1536,7 +1536,7 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20260930-1851",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20260930-2226",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
       this.assetCatalog=manifest.assets||[];
