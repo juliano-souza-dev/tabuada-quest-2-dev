@@ -12,6 +12,14 @@ export const COLLISION_TYPE_DEFAULTS=Object.freeze({
 });
 
 export function defaultCollisionForEntity(entity={}){
+  const effectCategory=String(entity.effect?.category||entity.effectCategory||"");
+  const effectMode=String(entity.effect?.mode||"");
+  if(effectCategory==="background"||effectMode==="horizonBlend"){
+    return {...COLLISION_TYPE_DEFAULTS.background};
+  }
+  if(effectCategory==="island"){
+    return {...COLLISION_TYPE_DEFAULTS.island};
+  }
   const type=String(entity.type||"object");
   const defaults=COLLISION_TYPE_DEFAULTS[type]||COLLISION_TYPE_DEFAULTS.object;
   return {...defaults};
