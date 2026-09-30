@@ -15,8 +15,8 @@ import {
   removeVelocityIntoNormal,
   contourVelocity
 } from "./WorldCollision.mjs?v=20260930-2123";
-import { computeShipOceanMotion } from "./WorldShipOceanMotion.mjs?v=20260930-2242";
-import { normalizePlayerMaxSpeed, stepPlayerVelocity } from "./WorldPlayerMotion.mjs?v=20260930-2242";
+import { computeShipOceanMotion } from "./WorldShipOceanMotion.mjs?v=20260930-2244";
+import { normalizePlayerMaxSpeed, stepPlayerVelocity } from "./WorldPlayerMotion.mjs?v=20260930-2244";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 const normalizePlayerWaterEffects=player=>{
