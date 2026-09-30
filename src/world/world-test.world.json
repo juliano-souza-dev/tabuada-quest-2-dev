@@ -2,95 +2,522 @@
   "schema": "tq.world",
   "version": 1,
   "id": "ocean-prototype",
+  "name": "Oceano Teste Completo",
   "width": 8000,
   "height": 8000,
+  "playableArea": {
+    "x": 300,
+    "y": 300,
+    "width": 7400,
+    "height": 7400
+  },
   "player": {
     "x": 4000,
-    "y": 6800,
-    "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+    "y": 7000,
+    "width": 230,
+    "height": 230,
+    "direction": "n",
+    "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+    "sprite": {
+      "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "regions": {
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
+      }
+    }
   },
   "entities": [
     {
-      "id": "location.islands",
+      "id": "location.enseada-bandeira",
       "type": "location",
-      "label": "Arquipélago de Teste",
-      "x": 2400,
-      "y": 2500,
-      "width": 720,
-      "height": 520,
-      "interactionRadius": 260,
-      "src": "./assets/backgrounds/scene-islands.webp",
-      "scene": "./src/scenes/world-test-island.scene.json"
+      "label": "Enseada da Bandeira",
+      "src": "./assets/regions/islands/r-1-enseada-da-bandeira.webp",
+      "x": 1500,
+      "y": 1500,
+      "width": 900,
+      "height": 650,
+      "z": 12,
+      "interactionRadius": 360,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "scene": "./src/scenes/world-test-island.scene.json",
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     },
     {
-      "id": "location.port",
+      "id": "location.minas-aurum",
       "type": "location",
-      "label": "Porto Pirata",
-      "x": 5900,
-      "y": 1800,
-      "width": 700,
-      "height": 500,
-      "interactionRadius": 250,
-      "src": "./assets/backgrounds/home-pirate-port.webp",
-      "scene": "./src/scenes/world-test-island.scene.json"
+      "label": "Minas de Aurum",
+      "src": "./assets/regions/islands/r-1-minas-de-aurum.webp",
+      "x": 3950,
+      "y": 1250,
+      "width": 980,
+      "height": 720,
+      "z": 12,
+      "interactionRadius": 360,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "scene": "./src/scenes/world-test-island.scene.json",
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     },
     {
-      "id": "barrel.01",
-      "type": "barrel",
-      "label": "barril",
-      "x": 3300,
-      "y": 5900,
-      "width": 78,
-      "height": 78,
-      "drift": 28,
-      "bob": 12,
-      "src": "./assets/barris/barril_5_cartoon.png"
+      "id": "location.baia-bichos",
+      "type": "location",
+      "label": "Baía dos Bichos",
+      "src": "./assets/regions/islands/r1-baia-dos-bichos.webp",
+      "x": 6450,
+      "y": 1750,
+      "width": 980,
+      "height": 720,
+      "z": 12,
+      "interactionRadius": 360,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "scene": "./src/scenes/world-test-island.scene.json",
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     },
     {
-      "id": "barrel.02",
-      "type": "barrel",
-      "label": "barril",
-      "x": 4700,
-      "y": 5200,
-      "width": 78,
-      "height": 78,
-      "drift": 22,
-      "bob": 14,
-      "src": "./assets/barris/barril_5_cartoon.png"
+      "id": "location.farol-torto",
+      "type": "location",
+      "label": "Farol Torto",
+      "src": "./assets/regions/islands/r1-farol-torto.webp",
+      "x": 2050,
+      "y": 5050,
+      "width": 980,
+      "height": 720,
+      "z": 12,
+      "interactionRadius": 360,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "scene": "./src/scenes/world-test-island.scene.json",
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     },
     {
-      "id": "barrel.03",
-      "type": "barrel",
-      "label": "barril",
-      "x": 5600,
-      "y": 3900,
-      "width": 78,
-      "height": 78,
-      "drift": 34,
-      "bob": 10,
-      "src": "./assets/barris/barril_5_cartoon.png"
+      "id": "location.fortaleza-tralhas",
+      "type": "location",
+      "label": "Fortaleza das Tralhas",
+      "src": "./assets/regions/islands/r1-fortaleza-das-tralhas.webp",
+      "x": 5750,
+      "y": 5250,
+      "width": 1080,
+      "height": 780,
+      "z": 12,
+      "interactionRadius": 360,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "scene": "./src/scenes/world-test-island.scene.json",
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     },
     {
-      "id": "barrel.04",
-      "type": "barrel",
-      "label": "barril",
-      "x": 1900,
-      "y": 5200,
-      "width": 78,
-      "height": 78,
-      "drift": 18,
-      "bob": 15,
-      "src": "./assets/barris/barril_5_cartoon.png"
+      "id": "treasure.01",
+      "type": "treasure",
+      "label": "Baú 1",
+      "x": 2850,
+      "y": 1950,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.02",
+      "type": "treasure",
+      "label": "Baú 2",
+      "x": 5100,
+      "y": 2200,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.03",
+      "type": "treasure",
+      "label": "Baú 3",
+      "x": 6850,
+      "y": 3200,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.04",
+      "type": "treasure",
+      "label": "Baú 4",
+      "x": 1200,
+      "y": 3350,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.05",
+      "type": "treasure",
+      "label": "Baú 5",
+      "x": 3550,
+      "y": 3350,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.06",
+      "type": "treasure",
+      "label": "Baú 6",
+      "x": 5100,
+      "y": 3650,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.07",
+      "type": "treasure",
+      "label": "Baú 7",
+      "x": 2500,
+      "y": 4200,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.08",
+      "type": "treasure",
+      "label": "Baú 8",
+      "x": 6900,
+      "y": 4700,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.09",
+      "type": "treasure",
+      "label": "Baú 9",
+      "x": 1350,
+      "y": 6200,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.10",
+      "type": "treasure",
+      "label": "Baú 10",
+      "x": 3400,
+      "y": 6100,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.11",
+      "type": "treasure",
+      "label": "Baú 11",
+      "x": 5000,
+      "y": 6650,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
+    },
+    {
+      "id": "treasure.12",
+      "type": "treasure",
+      "label": "Baú 12",
+      "x": 6750,
+      "y": 6150,
+      "width": 96,
+      "height": 96,
+      "z": 24,
+      "interactionRadius": 125,
+      "src": "./assets/02-bau-do-grande-tesouro.webp",
+      "lockAspect": true,
+      "motion": {
+        "active": true,
+        "preset": "calm",
+        "speed": 36,
+        "heave": 20,
+        "pitch": 14,
+        "roll": 10,
+        "sway": 6
+      }
     }
   ],
-  "name": "Oceano Protótipo",
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20260930-0050",
+    "sourceRevision": "20260930-1720",
     "editorVersion": 1,
-    "layoutRevision": "20260930-playable-8000-v1",
-    "playableAreaPurpose": "exploration-islands-treasure-routes"
+    "layoutRevision": "20260930-complete-ocean-test-v1",
+    "playableAreaPurpose": "exploration-islands-treasure-routes",
+    "directionConvention": "movement-heading",
+    "atlasOrder": "n,nne,ne,ene,e,ese,se,sse,s,ssw,sw,wsw,w,wnw,nw,nnw",
+    "atlasCellSize": 400
   },
   "editor": {
     "cameraX": 4000,
@@ -99,20 +526,40 @@
   },
   "ocean": {
     "active": true,
-    "background": "./assets/backgrounds/scene-ocean.webp",
+    "background": "./assets/ocean/ocean.png",
     "preset": "adventure",
     "speed": 28,
     "directionX": 0.82,
     "directionY": 0.32,
     "swell": 28,
-    "tileSize": 720,
+    "tileSize": 1254,
     "brightness": 102,
-    "saturation": 105
-  },
-  "playableArea": {
-    "x": 300,
-    "y": 300,
-    "width": 7400,
-    "height": 7400
+    "saturation": 105,
+    "layers": {
+      "deep": {
+        "background": "./assets/ocean/ocean.png",
+        "parallax": 0.22,
+        "driftX": 7,
+        "driftY": 4,
+        "tileScale": 1.18,
+        "opacity": 1
+      },
+      "wave": {
+        "background": "./assets/ocean/ocean.png",
+        "parallax": 0.45,
+        "driftX": 18,
+        "driftY": 11,
+        "tileScale": 0.72,
+        "opacity": 0.28
+      },
+      "foam": {
+        "background": "./assets/ocean/ocean.png",
+        "parallax": 0.68,
+        "driftX": 36,
+        "driftY": 24,
+        "tileScale": 0.48,
+        "opacity": 0.14
+      }
+    }
   }
 }
