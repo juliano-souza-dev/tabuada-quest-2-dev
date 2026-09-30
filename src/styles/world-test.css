@@ -20,6 +20,56 @@
 .tq-world-ocean-layer--wave{mix-blend-mode:screen}
 .tq-world-ocean-layer--foam{mix-blend-mode:soft-light}
 .tq-world-entities{position:absolute;inset:0}
+.tq-world-player-wake-layer{position:absolute;inset:0;z-index:72;pointer-events:none;overflow:visible}
+.tq-world-player-shadow{
+  position:absolute;
+  z-index:86;
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,17,29,.72) 0%,rgba(0,17,29,.48) 44%,rgba(0,17,29,0) 78%);
+  mix-blend-mode:multiply;
+  pointer-events:none;
+  transform-origin:center;
+  will-change:left,top,width,height,transform,opacity,filter;
+}
+.tq-world-player-shadow[hidden]{display:none}
+.tq-world-wake-puff{
+  position:absolute;
+  z-index:1;
+  border-radius:50%;
+  pointer-events:none;
+  background:
+    radial-gradient(ellipse at center,rgba(255,255,255,.96) 0%,rgba(235,251,255,.8) 28%,rgba(185,239,255,.48) 55%,rgba(255,255,255,0) 78%);
+  filter:blur(1.2px);
+  mix-blend-mode:screen;
+  transform-origin:center;
+  opacity:0;
+  animation:tq-world-wake-dissolve var(--wake-duration,1600ms) ease-out forwards;
+  will-change:transform,opacity;
+}
+.tq-world-wake-puff::after{
+  content:"";
+  position:absolute;
+  inset:18% 4%;
+  border-radius:50%;
+  border-top:2px solid rgba(255,255,255,.76);
+  border-bottom:1px solid rgba(179,238,255,.42);
+  transform:rotate(-8deg);
+}
+.tq-world-wake-puff--center{
+  filter:blur(1.6px);
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.72) 0%,rgba(210,246,255,.46) 42%,rgba(255,255,255,0) 78%);
+}
+@keyframes tq-world-wake-dissolve{
+  0%{
+    opacity:var(--wake-opacity,.72);
+    transform:translate(-50%,-50%) rotate(var(--wake-rotation,0deg)) scale(.48,.34);
+  }
+  42%{opacity:calc(var(--wake-opacity,.72) * .72)}
+  100%{
+    opacity:0;
+    transform:translate(calc(-50% + var(--wake-drift-x,0px)),calc(-50% + var(--wake-drift-y,0px))) rotate(var(--wake-rotation,0deg)) scale(1.85,1.25);
+  }
+}
 .tq-world-player{position:absolute;width:108px;height:150px;object-fit:contain;z-index:100;transform-origin:50% 62%;filter:drop-shadow(0 9px 6px #001a2e80);will-change:left,top,transform;pointer-events:none}
 .tq-world-entity{position:absolute;transform:translate(-50%,-50%);transform-origin:center;will-change:left,top,transform;touch-action:none}
 .tq-world-host.is-editor .tq-world-entity{cursor:move}
