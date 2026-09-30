@@ -635,10 +635,24 @@ export class DevOverlay {
       const spriteSrc=String(sprite.src||"");
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
-      const spriteOrder=Array.isArray(sprite.order)&&sprite.order.length?sprite.order.join(","):"n,ne,e,se,s,sw,w,nw";
+      const defaultSpriteOrder=["n","ne","e","se","s","sw","w","nw"];
+      const spriteOrder=Array.isArray(sprite.order)&&sprite.order.length?sprite.order:defaultSpriteOrder;
       const spritePreview=spriteSrc
-        ? '<div class="tq-world-sprite-preview" style="background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+spriteColumns*100+'% '+spriteRows*100+'%"></div>'
+        ? '<div class="tq-world-sprite-preview" style="background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;;background-size:contain"></div>'
         : '<i class="tq-world-sprite-empty">＋</i>';
+      const spriteFrameCount=Math.max(1,spriteColumns*spriteRows);
+      const frameIndexFor=key=>{const index=spriteOrder.indexOf(key);return index>=0?Math.min(index,spriteFrameCount-1):0;};
+      const frameStyle=index=>{
+        const column=index%spriteColumns,row=Math.floor(index/spriteColumns);
+        const x=spriteColumns<=1?0:(column/(spriteColumns-1))*100;
+        const y=spriteRows<=1?0:(row/(spriteRows-1))*100;
+        return 'background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+spriteColumns*100+'% '+spriteRows*100+'%;background-position:'+x+'% '+y+'%';
+      };
+      const directionFrameCards=Object.entries(directionLabels).map(([key,label])=>{
+        const index=frameIndexFor(key);
+        const options=Array.from({length:spriteFrameCount},(_,i)=>'<option value="'+i+'" '+(i===index?'selected':'')+'>Frame '+(i+1)+'</option>').join("");
+        return '<div class="tq-world-frame-card"><strong>'+label+'</strong><div class="tq-world-frame-thumb" style="'+(spriteSrc?frameStyle(index):'')+'">'+(!spriteSrc?'＋':'')+'</div><select data-player-frame-direction="'+key+'">'+options+'</select></div>';
+      }).join("");
       const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
       const layerRange=(layer,key,label,min,max,step)=>{
         const value=Number(ocean.layers?.[layer]?.[key]??0);
@@ -672,7 +686,7 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Colunas</span><input data-player-sprite-prop="columns" type="number" min="1" max="32" value="'+spriteColumns+'"></label>'+
               '<label class="tq-world-field"><span>Linhas</span><input data-player-sprite-prop="rows" type="number" min="1" max="32" value="'+spriteRows+'"></label>'+
             '</div>'+
-            '<label class="tq-world-field"><span>Ordem dos frames</span><input data-player-sprite-prop="order" type="text" value="'+this.escapeHtml(spriteOrder)+'" placeholder="n,ne,e,se,s,sw,w,nw"></label>'+
+            '<div class="tq-world-frame-editor"><div class="tq-world-frame-editor__head"><strong>Direções</strong><small>Escolha visualmente qual frame representa cada direção.</small></div><div class="tq-world-frame-grid">'+directionFrameCards+'</div></div>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
               '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
@@ -722,8 +736,24 @@ export class DevOverlay {
         const key=input.dataset.playerSpriteProp;
         let value=input.value;
         if(["columns","rows"].includes(key))value=Math.max(1,Number(value)||1);
-        if(key==="order")value=String(value).split(",").map(item=>item.trim().toLowerCase()).filter(Boolean);
         this.worldEditor.updatePlayerConfig({sprite:{[key]:value}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      }));
+
+      content.querySelectorAll("[data-player-frame-direction]").forEach(select=>select.addEventListener("change",()=>{
+        const direction=select.dataset.playerFrameDirection;
+        const frameIndex=Math.max(0,Number(select.value)||0);
+        const order=Array.from({length:Math.max(1,spriteColumns*spriteRows)},()=>null);
+        for(const key of Object.keys(directionLabels)){
+          const control=content.querySelector('[data-player-frame-direction="'+key+'"]');
+          if(!control)continue;
+          const index=Math.max(0,Number(control.value)||0);
+          order[index]=key;
+        }
+        const compact=order.filter(Boolean);
+        for(const key of Object.keys(directionLabels))if(!compact.includes(key))compact.push(key);
+        this.worldEditor.updatePlayerConfig({sprite:{order:compact}},true);
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       }));
