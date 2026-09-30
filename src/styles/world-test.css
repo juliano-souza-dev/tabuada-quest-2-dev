@@ -42,6 +42,21 @@
 }
 .tq-world-host.is-editor .tq-world-entity.is-selected.has-solid-collision>.tq-world-entity__collider{display:block}
 .tq-world-entity[data-collision-shape="ellipse"]>.tq-world-entity__collider{border-radius:50%}
+.tq-world-entity__editor-hitbox{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  z-index:24;
+  background:rgba(0,0,0,.001);
+  pointer-events:none;
+  touch-action:none;
+}
+.tq-world-host.is-editor .tq-world-entity__editor-hitbox{
+  pointer-events:auto;
+  cursor:move;
+}
+.tq-world-host.is-play .tq-world-entity__editor-hitbox{display:none}
 
 /* Background preset: preserve the horizon/ilhas and reveal the real WebGL ocean below. */
 .tq-world-entity--horizon-blend{isolation:isolate;overflow:visible}
