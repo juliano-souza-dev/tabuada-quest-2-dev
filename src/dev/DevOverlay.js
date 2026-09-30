@@ -643,6 +643,16 @@ export class DevOverlay {
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
       const spriteSrc=String(sprite.src||"");
+      const playerEffects={
+        wakeActive:player.effects?.wakeActive!==false,
+        wakeOpacity:Number(player.effects?.wakeOpacity??.72),
+        wakeWidth:Number(player.effects?.wakeWidth??54),
+        wakeLength:Number(player.effects?.wakeLength??150),
+        shadowActive:player.effects?.shadowActive!==false,
+        shadowOpacity:Number(player.effects?.shadowOpacity??.34),
+        shadowBlur:Number(player.effects?.shadowBlur??9),
+        shadowOffset:Number(player.effects?.shadowOffset??12)
+      };
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
       const regions=sprite.regions||{};
@@ -699,6 +709,12 @@ export class DevOverlay {
         const value=Number(ocean[key]??0);
         return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-ocean-output="'+key+'">'+value+suffix+'</output></span>'+
           '<input data-ocean-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-ocean-suffix="'+suffix+'"></label>';
+      };
+      const playerEffectRange=(key,label,min,max,step="1",suffix="")=>{
+        const value=Number(playerEffects[key]??0);
+        const shown=Math.round(value*100)/100;
+        return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-player-effect-output="'+key+'">'+shown+suffix+'</output></span>'+
+          '<input data-player-effect-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-player-effect-suffix="'+suffix+'"></label>';
       };
 
       title.textContent=(world.name||world.id)+" · oceano";
@@ -760,6 +776,18 @@ export class DevOverlay {
             '</div>'+
             '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
             '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
+            '<div class="tq-world-player-fx">'+
+              '<strong>Rastro e sombra</strong>'+
+              '<label class="tq-field tq-field--check"><span>Rastro na água</span><input data-player-effect-prop="wakeActive" type="checkbox" '+(playerEffects.wakeActive?'checked':'')+'></label>'+
+              playerEffectRange("wakeOpacity","Intensidade do rastro",0,1,.01)+
+              playerEffectRange("wakeWidth","Largura do rastro",18,180,1," px")+
+              playerEffectRange("wakeLength","Comprimento do rastro",50,420,5," px")+
+              '<label class="tq-field tq-field--check"><span>Sombra do navio</span><input data-player-effect-prop="shadowActive" type="checkbox" '+(playerEffects.shadowActive?'checked':'')+'></label>'+
+              playerEffectRange("shadowOpacity","Intensidade da sombra",0,.9,.01)+
+              playerEffectRange("shadowBlur","Desfoque da sombra",0,30,1," px")+
+              playerEffectRange("shadowOffset","Deslocamento da sombra",-40,80,1," px")+
+              '<small class="tq-world-editor-note">O rastro acompanha direção e velocidade do navio. A sombra fica sobre a superfície sem alterar o WebGL do oceano.</small>'+
+            '</div>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · textura e cor</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
@@ -1228,6 +1256,23 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       }));
+
+      const playerEffectNumeric=new Set(["wakeOpacity","wakeWidth","wakeLength","shadowOpacity","shadowBlur","shadowOffset"]);
+      content.querySelectorAll("[data-player-effect-prop]").forEach(input=>{
+        const apply=commit=>{
+          const key=input.dataset.playerEffectProp;
+          const value=input.type==="checkbox"?input.checked:(playerEffectNumeric.has(key)?Number(input.value):input.value);
+          const output=content.querySelector('[data-player-effect-output="'+key+'"]');
+          if(output){
+            const suffix=input.dataset.playerEffectSuffix||"";
+            output.value=String(Math.round(Number(value)*100)/100)+suffix;
+          }
+          this.worldEditor.updatePlayerConfig({effects:{[key]:value}},commit);
+          if(commit)this.syncLocalWorldFromEditor();
+        };
+        if(input.type==="range")input.addEventListener("input",()=>apply(false));
+        input.addEventListener("change",()=>apply(true));
+      });
 
       const numeric=new Set([
         "speed","directionX","directionY","swell","tileSize","brightness","saturation",
