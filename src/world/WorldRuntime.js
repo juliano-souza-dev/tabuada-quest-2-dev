@@ -3,6 +3,7 @@ import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFram
 import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-0904";
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-0904";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1452";
+import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1755";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -60,6 +61,7 @@ export class WorldRuntime {
     this.host.className="tq-world-host";
     this.host.innerHTML=`
       <div class="tq-world-viewport">
+        <canvas class="tq-world-ocean-webgl" data-world-ocean-webgl aria-hidden="true"></canvas>
         <div class="tq-world-ocean-stack" aria-hidden="true">
           <div class="tq-world-ocean-layer tq-world-ocean-layer--deep" data-ocean-layer="deep"></div>
           <div class="tq-world-ocean-layer tq-world-ocean-layer--wave" data-ocean-layer="wave"></div>
@@ -95,6 +97,9 @@ export class WorldRuntime {
 
     this.root.append(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
+    this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
+    this.oceanRenderer=null;
+    this.oceanRendererInit=null;
     this.stage=this.host.querySelector(".tq-world-stage");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
@@ -121,6 +126,7 @@ export class WorldRuntime {
     this.stage.style.height=this.config.height+"px";
     this.applyPlayableAreaVisual();
     this.applyOceanStatic();
+    this.initOceanRenderer();
     this.playerEl.style.backgroundRepeat="no-repeat";
     if(this.config.player?.width)this.playerEl.style.width=Math.max(24,Number(this.config.player.width)||108)+"px";
     if(this.config.player?.height)this.playerEl.style.height=Math.max(24,Number(this.config.player.height)||150)+"px";
@@ -794,6 +800,7 @@ export class WorldRuntime {
   resize(){
     const rect=this.viewport.getBoundingClientRect();
     this.viewportSize={width:rect.width,height:rect.height};
+    this.oceanRenderer?.resize?.(rect.width,rect.height);
     this.clampEditorCamera();
     this.updateCamera(true);
   }
@@ -1075,9 +1082,52 @@ export class WorldRuntime {
         next.layers[key]={...(base.layers?.[key]||{}),...structuredClone(value||{})};
       }
     }
+    const previousBackground=String(current.background||"");
+    const previousRenderer=String(current.renderer||"webgl");
     this.config.ocean=normalizeOceanConfig(next);
     this.applyOceanStatic();
+
+    if(
+      String(this.config.ocean.renderer)!==previousRenderer
+      ||String(this.config.ocean.background||"")!==previousBackground
+    ){
+      this.resetOceanRenderer();
+      this.initOceanRenderer();
+    }
     return this.getOcean();
+  }
+
+  resetOceanRenderer(){
+    this.oceanRenderer?.destroy?.();
+    this.oceanRenderer=null;
+    this.oceanRendererInit=null;
+    this.host?.classList.remove("is-webgl-ocean");
+  }
+
+  async initOceanRenderer(){
+    const ocean=normalizeOceanConfig(this.config.ocean||{});
+    if(ocean.renderer!=="webgl"||!this.oceanCanvas){
+      this.host?.classList.remove("is-webgl-ocean");
+      return false;
+    }
+    if(this.oceanRendererInit)return this.oceanRendererInit;
+
+    const renderer=new OceanWebGLRenderer(this.oceanCanvas);
+    this.oceanRenderer=renderer;
+    this.oceanRendererInit=renderer.init(ocean.background).then(ok=>{
+      if(ok&&this.oceanRenderer===renderer){
+        this.host?.classList.add("is-webgl-ocean");
+        if(this.viewportSize)renderer.resize(this.viewportSize.width,this.viewportSize.height);
+        return true;
+      }
+      if(this.oceanRenderer===renderer)this.host?.classList.remove("is-webgl-ocean");
+      return false;
+    }).catch(error=>{
+      console.warn("[TabuadaQuest] Ocean WebGL init failed:",error);
+      if(this.oceanRenderer===renderer)this.host?.classList.remove("is-webgl-ocean");
+      return false;
+    });
+    return this.oceanRendererInit;
   }
 
   applyOceanStatic(){
@@ -1098,6 +1148,18 @@ export class WorldRuntime {
 
   updateOceanFrame(time){
     const ocean=normalizeOceanConfig(this.config.ocean||{});
+    const webglRendered=ocean.renderer==="webgl"
+      &&this.oceanRenderer?.render?.({
+        time,
+        camera:this.camera,
+        zoom:this.mode==="play"?this.playZoom:this.zoom,
+        ocean,
+        width:this.viewportSize?.width||1,
+        height:this.viewportSize?.height||1
+      });
+
+    if(webglRendered)return;
+
     const frame=computeOceanFrame(ocean,time,this.camera);
     for(const key of ["deep","wave","foam"]){
       const el=this.oceanEls?.[key];
@@ -1244,6 +1306,7 @@ export class WorldRuntime {
 
   destroy(){
     cancelAnimationFrame(this.raf);
+    this.resetOceanRenderer();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";
