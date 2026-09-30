@@ -134,6 +134,11 @@ export class DevOverlay {
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
       this.renderWorlds();
     });
+    window.addEventListener("tq:worldenterscene",e=>{
+      if(this.workspace!=="world")return;
+      const entity=e.detail?.entity;
+      if(entity?.scene)this.openWorldLinkedScene(entity);
+    });
   }
 
   loadLocalScenes(){
