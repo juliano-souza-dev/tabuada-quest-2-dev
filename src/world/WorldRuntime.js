@@ -338,10 +338,49 @@ export class WorldRuntime {
   bindEditorCamera(){
     let pan=null;
     const dragThreshold=3;
+    let touchPan=null;
 
     const isBlockedTarget=target=>Boolean(target?.closest?.(
       ".tq-world-entity,.tq-world-gizmo,.tq-world-controls,.tq-world-action,.tq-world-hud,button,input,select,textarea,a,label"
     ));
+
+    const beginPan=(clientX,clientY,pointerId=null)=>{
+      pan={
+        pointerId,
+        px:clientX,
+        py:clientY,
+        lastX:clientX,
+        lastY:clientY,
+        dragging:false
+      };
+      this.selectEntity(null);
+    };
+
+    const updatePan=(clientX,clientY)=>{
+      if(!pan||this.mode!=="edit")return false;
+      const totalX=clientX-pan.px;
+      const totalY=clientY-pan.py;
+      if(!pan.dragging&&Math.hypot(totalX,totalY)<dragThreshold)return false;
+      pan.dragging=true;
+      this.host?.classList.add("is-camera-dragging");
+
+      const zoom=Math.max(.1,this.zoom||1);
+      const dx=clientX-pan.lastX;
+      const dy=clientY-pan.lastY;
+      pan.lastX=clientX;
+      pan.lastY=clientY;
+
+      this.camera.x-=dx/zoom;
+      this.camera.y-=dy/zoom;
+      this.clampEditorCamera();
+      this.updateCamera(true);
+      return true;
+    };
+
+    const finishPan=()=>{
+      this.host?.classList.remove("is-camera-dragging");
+      pan=null;
+    };
 
     const down=event=>{
       if(this.mode!=="edit")return;
@@ -349,48 +388,49 @@ export class WorldRuntime {
       if(event.pointerType==="mouse"&&event.button!==0)return;
       if(isBlockedTarget(event.target))return;
 
-      pan={
-        pointerId:event.pointerId,
-        px:event.clientX,
-        py:event.clientY,
-        lastX:event.clientX,
-        lastY:event.clientY,
-        dragging:false
-      };
+      beginPan(event.clientX,event.clientY,event.pointerId);
       try{this.viewport.setPointerCapture(event.pointerId)}catch{}
       event.preventDefault();
-      this.selectEntity(null);
     };
 
     const move=event=>{
       if(!pan||event.pointerId!==pan.pointerId||this.mode!=="edit")return;
-
-      const totalX=event.clientX-pan.px;
-      const totalY=event.clientY-pan.py;
-      if(!pan.dragging&&Math.hypot(totalX,totalY)<dragThreshold)return;
-      pan.dragging=true;
-      this.host?.classList.add("is-camera-dragging");
-
-      const zoom=Math.max(.1,this.zoom||1);
-      const dx=event.clientX-pan.lastX;
-      const dy=event.clientY-pan.lastY;
-      pan.lastX=event.clientX;
-      pan.lastY=event.clientY;
-
-      this.camera.x-=dx/zoom;
-      this.camera.y-=dy/zoom;
-      this.clampEditorCamera();
-      this.updateCamera(true);
-      event.preventDefault();
+      if(updatePan(event.clientX,event.clientY))event.preventDefault();
     };
 
     const end=event=>{
       if(!pan||event.pointerId!==pan.pointerId)return;
-      this.host?.classList.remove("is-camera-dragging");
       try{
         if(this.viewport.hasPointerCapture(event.pointerId))this.viewport.releasePointerCapture(event.pointerId);
       }catch{}
-      pan=null;
+      finishPan();
+    };
+
+    const touchStart=event=>{
+      if(this.mode!=="edit"||pan)return;
+      if(isBlockedTarget(event.target))return;
+      const touch=event.touches?.[0];
+      if(!touch)return;
+      touchPan=touch.identifier;
+      beginPan(touch.clientX,touch.clientY,"touch:"+touch.identifier);
+      event.preventDefault();
+    };
+
+    const touchMove=event=>{
+      if(this.mode!=="edit"||touchPan===null||!pan)return;
+      const touch=[...(event.touches||[])].find(item=>item.identifier===touchPan);
+      if(!touch)return;
+      updatePan(touch.clientX,touch.clientY);
+      event.preventDefault();
+    };
+
+    const touchEnd=event=>{
+      if(touchPan===null)return;
+      const ended=[...(event.changedTouches||[])].some(item=>item.identifier===touchPan);
+      if(!ended)return;
+      touchPan=null;
+      finishPan();
+      event.preventDefault();
     };
 
     const wheel=event=>{
@@ -409,14 +449,23 @@ export class WorldRuntime {
     this.viewport.addEventListener("pointermove",move,{passive:false});
     this.viewport.addEventListener("pointerup",end);
     this.viewport.addEventListener("pointercancel",end);
+    this.viewport.addEventListener("touchstart",touchStart,{passive:false});
+    this.viewport.addEventListener("touchmove",touchMove,{passive:false});
+    this.viewport.addEventListener("touchend",touchEnd,{passive:false});
+    this.viewport.addEventListener("touchcancel",touchEnd,{passive:false});
     this.viewport.addEventListener("wheel",wheel,{passive:false});
 
     this.cleanups.push(()=>{
-      this.host?.classList.remove("is-camera-dragging");
+      touchPan=null;
+      finishPan();
       this.viewport.removeEventListener("pointerdown",down);
       this.viewport.removeEventListener("pointermove",move);
       this.viewport.removeEventListener("pointerup",end);
       this.viewport.removeEventListener("pointercancel",end);
+      this.viewport.removeEventListener("touchstart",touchStart);
+      this.viewport.removeEventListener("touchmove",touchMove);
+      this.viewport.removeEventListener("touchend",touchEnd);
+      this.viewport.removeEventListener("touchcancel",touchEnd);
       this.viewport.removeEventListener("wheel",wheel);
     });
   }
