@@ -30,6 +30,8 @@ export class WorldRuntime {
     };
     this.zoom=Number(config.editor?.zoom??0.58);
     this.playZoom=1;
+    this.playCameraOffset={x:0,y:0};
+    this.suppressNavigationClick=false;
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
     this.pointerDirections=new Set();
@@ -123,7 +125,7 @@ export class WorldRuntime {
 
     this.renderEntities();
     this.bindControls();
-    if(this.editorEnabled)this.bindEditorCamera();
+    this.bindCameraPan();
     this.resize();
     this.onResize=()=>this.resize();
     window.addEventListener("resize",this.onResize);
@@ -335,14 +337,17 @@ export class WorldRuntime {
     });
   }
 
-  bindEditorCamera(){
+  bindCameraPan(){
     let pan=null;
-    const dragThreshold=3;
+    const dragThreshold=4;
     let touchPan=null;
 
-    const isBlockedTarget=target=>Boolean(target?.closest?.(
-      ".tq-world-entity,.tq-world-gizmo,.tq-world-controls,.tq-world-action,.tq-world-hud,button,input,select,textarea,a,label"
-    ));
+    const isBlockedTarget=target=>{
+      const common=".tq-world-controls,.tq-world-action,.tq-world-hud,button,input,select,textarea,a,label";
+      if(target?.closest?.(common))return true;
+      if(this.mode==="edit"&&target?.closest?.(".tq-world-entity,.tq-world-gizmo"))return true;
+      return false;
+    };
 
     const beginPan=(clientX,clientY,pointerId=null)=>{
       pan={
@@ -353,18 +358,32 @@ export class WorldRuntime {
         lastY:clientY,
         dragging:false
       };
-      this.selectEntity(null);
+      if(this.mode==="edit")this.selectEntity(null);
+    };
+
+    const clampPlayCamera=()=>{
+      if(!this.viewportSize)return;
+      const zoom=Math.max(.1,this.playZoom||1);
+      const halfW=Math.min(this.config.width/2,this.viewportSize.width/(2*zoom));
+      const halfH=Math.min(this.config.height/2,this.viewportSize.height/(2*zoom));
+      this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
+      this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
+      this.playCameraOffset.x=this.camera.x-this.player.x;
+      this.playCameraOffset.y=this.camera.y-this.player.y;
     };
 
     const updatePan=(clientX,clientY)=>{
-      if(!pan||this.mode!=="edit")return false;
+      if(!pan)return false;
       const totalX=clientX-pan.px;
       const totalY=clientY-pan.py;
       if(!pan.dragging&&Math.hypot(totalX,totalY)<dragThreshold)return false;
-      pan.dragging=true;
-      this.host?.classList.add("is-camera-dragging");
+      if(!pan.dragging){
+        pan.dragging=true;
+        this.suppressNavigationClick=true;
+        this.host?.classList.add("is-camera-dragging");
+      }
 
-      const zoom=Math.max(.1,this.zoom||1);
+      const zoom=Math.max(.1,(this.mode==="play"?this.playZoom:this.zoom)||1);
       const dx=clientX-pan.lastX;
       const dy=clientY-pan.lastY;
       pan.lastX=clientX;
@@ -372,8 +391,14 @@ export class WorldRuntime {
 
       this.camera.x-=dx/zoom;
       this.camera.y-=dy/zoom;
-      this.clampEditorCamera();
-      this.updateCamera(true);
+
+      if(this.mode==="play"){
+        clampPlayCamera();
+        this.updateCamera(true);
+      }else{
+        this.clampEditorCamera();
+        this.updateCamera(true);
+      }
       return true;
     };
 
@@ -383,7 +408,6 @@ export class WorldRuntime {
     };
 
     const down=event=>{
-      if(this.mode!=="edit")return;
       if(event.isPrimary===false)return;
       if(event.pointerType==="mouse"&&event.button!==0)return;
       if(isBlockedTarget(event.target))return;
@@ -394,7 +418,7 @@ export class WorldRuntime {
     };
 
     const move=event=>{
-      if(!pan||event.pointerId!==pan.pointerId||this.mode!=="edit")return;
+      if(!pan||event.pointerId!==pan.pointerId)return;
       if(updatePan(event.clientX,event.clientY))event.preventDefault();
     };
 
@@ -407,7 +431,7 @@ export class WorldRuntime {
     };
 
     const touchStart=event=>{
-      if(this.mode!=="edit"||pan)return;
+      if(pan)return;
       if(isBlockedTarget(event.target))return;
       const touch=event.touches?.[0];
       if(!touch)return;
@@ -417,7 +441,7 @@ export class WorldRuntime {
     };
 
     const touchMove=event=>{
-      if(this.mode!=="edit"||touchPan===null||!pan)return;
+      if(touchPan===null||!pan)return;
       const touch=[...(event.touches||[])].find(item=>item.identifier===touchPan);
       if(!touch)return;
       updatePan(touch.clientX,touch.clientY);
@@ -597,6 +621,10 @@ export class WorldRuntime {
 
     const navigateToPointer=e=>{
       if(this.mode!=="play")return;
+      if(this.suppressNavigationClick){
+        this.suppressNavigationClick=false;
+        return;
+      }
       if(e.button!==undefined&&e.button!==0)return;
       if(e.target?.closest?.(".tq-world-controls,.tq-world-action"))return;
 
@@ -658,6 +686,8 @@ export class WorldRuntime {
       this.pointerDirections.clear();
       this.resetJoystick();
       this.clearNavigationTarget();
+      this.playCameraOffset.x=0;
+      this.playCameraOffset.y=0;
       this.zoom=this.playZoom;
       this.selectEntity(null);
     }else{
@@ -859,8 +889,8 @@ export class WorldRuntime {
       const halfW=Math.min(this.config.width/2,vw/(2*zoom));
       const halfH=Math.min(this.config.height/2,vh/(2*zoom));
       const target={
-        x:clamp(this.player.x,halfW,this.config.width-halfW),
-        y:clamp(this.player.y,halfH,this.config.height-halfH)
+        x:clamp(this.player.x+Number(this.playCameraOffset.x||0),halfW,this.config.width-halfW),
+        y:clamp(this.player.y+Number(this.playCameraOffset.y||0),halfH,this.config.height-halfH)
       };
       if(immediate){
         this.camera.x=target.x;
