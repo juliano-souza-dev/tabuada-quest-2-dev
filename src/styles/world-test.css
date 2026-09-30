@@ -192,3 +192,27 @@
   .tq-world-direction-orbit__thumb{width:34px;height:32px}
   .tq-world-direction-orbit__item small{font-size:7px}
 }
+
+/* Mobile point-by-point atlas selection */
+.tq-world-atlas-polygon{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:4}
+.tq-world-atlas-polygon polygon{fill:rgba(126,231,255,.14);stroke:none}
+.tq-world-atlas-polygon polyline{fill:none;stroke:#7ee7ff;stroke-width:.65;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+.tq-world-atlas-points{position:absolute;inset:0;pointer-events:none;z-index:6}
+.tq-world-atlas-point{position:absolute;width:20px;height:20px;min-width:20px!important;min-height:20px!important;padding:0!important;margin:-10px 0 0 -10px!important;border:2px solid #071721!important;border-radius:50%!important;background:#7ee7ff!important;box-shadow:0 0 0 2px rgba(255,255,255,.82),0 2px 7px rgba(0,0,0,.5)!important;transform:none!important;pointer-events:auto;touch-action:none}
+.tq-world-atlas-point.is-first{background:#ffd166!important;box-shadow:0 0 0 2px #fff,0 0 0 5px rgba(255,209,102,.25)!important}
+.tq-world-atlas-magnifier{position:absolute;width:88px;height:88px;border:3px solid #fff;border-radius:50%;background-repeat:no-repeat;background-color:#061723;box-shadow:0 5px 18px rgba(0,0,0,.65),0 0 0 2px #7ee7ff;pointer-events:none;z-index:12}
+.tq-world-atlas-magnifier::after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:20px;font-weight:300;text-shadow:0 1px 3px #000}
+.tq-world-atlas-point-actions{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tq-world-atlas-point-actions button{min-height:42px;padding:7px 8px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#102535;color:#fff;font-size:9px;font-weight:800}
+.tq-world-atlas-point-actions button.is-primary{background:#16435b;border-color:#7ee7ff;color:#dff9ff}
+.tq-world-atlas-point-actions button:disabled{opacity:.38}
+.tq-world-atlas-point-actions small{grid-column:1/-1;text-align:center;font-size:8px;color:#9fb6c5}
+@media(max-width:768px),(pointer:coarse){
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-point-actions{display:grid}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-canvas{min-height:240px;padding:6px;touch-action:none}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-imagebox>img{max-height:420px}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-point{width:26px;height:26px;min-width:26px!important;min-height:26px!important;margin:-13px 0 0 -13px!important}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-wizard__prompt small{font-size:10px}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-wizard__actions [data-atlas-copy-size]{display:none}
+  .tq-world-atlas-wizard.is-point-mode .tq-world-atlas-wizard__actions{grid-template-columns:1fr 1fr}
+}
