@@ -1,14 +1,24 @@
-export const DIRECTION_KEYS=Object.freeze(["n","ne","e","se","s","sw","w","nw"]);
+export const DIRECTION_KEYS=Object.freeze([
+  "n","nne","ne","ene",
+  "e","ese","se","sse",
+  "s","ssw","sw","wsw",
+  "w","wnw","nw","nnw"
+]);
+
+export const LEGACY_DIRECTION_KEYS=Object.freeze(["n","ne","e","se","s","sw","w","nw"]);
 
 const CENTERS=Object.freeze({
-  n:0,
-  ne:45,
-  e:90,
-  se:135,
-  s:180,
-  sw:-135,
-  w:-90,
-  nw:-45
+  n:0,nne:22.5,ne:45,ene:67.5,
+  e:90,ese:112.5,se:135,sse:157.5,
+  s:180,ssw:-157.5,sw:-135,wsw:-112.5,
+  w:-90,wnw:-67.5,nw:-45,nnw:-22.5
+});
+
+const LEGACY_FALLBACK=Object.freeze({
+  n:"n",nne:"n",ne:"ne",ene:"ne",
+  e:"e",ese:"se",se:"se",sse:"s",
+  s:"s",ssw:"sw",sw:"sw",wsw:"w",
+  w:"w",wnw:"nw",nw:"nw",nnw:"n"
 });
 
 export function normalizeHeading(value=0){
@@ -19,22 +29,22 @@ export function angularDistance(a,b){
   return Math.abs(normalizeHeading(Number(a||0)-Number(b||0)));
 }
 
-export function directionForHeading(heading,current=null,{hysteresis=7}={}){
+export function directionForHeading(heading,current=null,{hysteresis=4}={}){
   const angle=normalizeHeading(heading);
   const hold=Math.max(0,Number(hysteresis)||0);
 
   if(current&&DIRECTION_KEYS.includes(current)){
-    const currentCenter=CENTERS[current];
-    if(angularDistance(angle,currentCenter)<=22.5+hold)return current;
+    const center=CENTERS[current];
+    if(angularDistance(angle,center)<=11.25+hold)return current;
   }
 
   let best="n";
-  let bestDistance=Infinity;
+  let distance=Infinity;
   for(const key of DIRECTION_KEYS){
-    const d=angularDistance(angle,CENTERS[key]);
-    if(d<bestDistance){
+    const next=angularDistance(angle,CENTERS[key]);
+    if(next<distance){
       best=key;
-      bestDistance=d;
+      distance=next;
     }
   }
   return best;
@@ -42,6 +52,62 @@ export function directionForHeading(heading,current=null,{hysteresis=7}={}){
 
 export function resolveDirectionalSource(directions,key,fallback=""){
   if(!directions||typeof directions!=="object")return String(fallback||"");
-  const normalized=DIRECTION_KEYS.includes(key)?key:"n";
-  return String(directions[normalized]||directions.n||fallback||"");
+  const requested=DIRECTION_KEYS.includes(key)?key:"n";
+  const legacy=LEGACY_FALLBACK[requested]||"n";
+  return String(directions[requested]||directions[legacy]||directions.n||fallback||"");
+}
+
+export function normalizeAtlasRegion(raw={}){
+  return {
+    x:Math.max(0,Number(raw.x)||0),
+    y:Math.max(0,Number(raw.y)||0),
+    width:Math.max(1,Number(raw.width)||1),
+    height:Math.max(1,Number(raw.height)||1)
+  };
+}
+
+export function resolveDirectionalRegion(sprite,key){
+  if(!sprite||typeof sprite!=="object"||!sprite.src)return null;
+
+  const requested=DIRECTION_KEYS.includes(key)?key:"n";
+  const regions=sprite.regions&&typeof sprite.regions==="object"?sprite.regions:{};
+  const legacy=LEGACY_FALLBACK[requested];
+  const firstAvailable=DIRECTION_KEYS.map(direction=>regions[direction]).find(Boolean)
+    ||LEGACY_DIRECTION_KEYS.map(direction=>regions[direction]).find(Boolean);
+  const raw=regions[requested]||regions[legacy]||regions.n||firstAvailable;
+  if(!raw)return null;
+
+  const region=normalizeAtlasRegion(raw);
+  const imageWidth=Math.max(region.x+region.width,Number(sprite.imageWidth)||0,1);
+  const imageHeight=Math.max(region.y+region.height,Number(sprite.imageHeight)||0,1);
+
+  return {
+    src:String(sprite.src),
+    direction:requested,
+    resolvedDirection:regions[requested]?requested:(regions[legacy]?legacy:(regions.n?"n":"fallback")),
+    ...region,
+    imageWidth,
+    imageHeight
+  };
+}
+
+export function directionalRegionStyle(sprite,key){
+  const region=resolveDirectionalRegion(sprite,key);
+  if(!region)return null;
+
+  const sizeX=(region.imageWidth/region.width)*100;
+  const sizeY=(region.imageHeight/region.height)*100;
+  const positionX=region.imageWidth<=region.width
+    ? 0
+    : (region.x/(region.imageWidth-region.width))*100;
+  const positionY=region.imageHeight<=region.height
+    ? 0
+    : (region.y/(region.imageHeight-region.height))*100;
+
+  return {
+    backgroundImage:'url("'+region.src.replace(/["\\]/g,"")+'")',
+    backgroundSize:sizeX+"% "+sizeY+"%",
+    backgroundPosition:positionX+"% "+positionY+"%",
+    backgroundRepeat:"no-repeat"
+  };
 }
