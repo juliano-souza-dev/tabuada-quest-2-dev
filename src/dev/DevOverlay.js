@@ -110,16 +110,26 @@ export class DevOverlay {
     this.enableToolbarDrag();
     this.enablePanelDrag();
     this.el.querySelector("[data-collapse]").addEventListener("click",()=>this.toggleCollapse());
-    window.addEventListener("tq:selectionchange",e=>{this.selected=e.detail.node||null;this.renderInspector();});
-    window.addEventListener("tq:nodechange",e=>{const node=e.detail?.node;if(node&&this.selected?.id===node.id){this.selected=node;this.syncInspector();}});
+    window.addEventListener("tq:selectionchange",e=>{
+      if(this.worldEditor?.active&&!this.worldEditor?.suspended)return;
+      this.selected=e.detail.node||null;
+      this.renderInspector();
+    });
+    window.addEventListener("tq:nodechange",e=>{
+      if(this.worldEditor?.active&&!this.worldEditor?.suspended)return;
+      const node=e.detail?.node;
+      if(node&&this.selected?.id===node.id){this.selected=node;this.syncInspector();}
+    });
     window.addEventListener("tq:sceneload",()=>{if(this.workspace!=="world"){this.selected=null;this.renderScenes()}});
     window.addEventListener("tq:worldselectionchange",e=>{
-      if(this.workspace!=="world")return;
+      if(!this.worldEditor?.active||this.worldEditor?.suspended)return;
+      this.workspace="world";
       this.selected=e.detail?.entity||null;
       if(this.mode==="config")this.renderWorldInspector();
     });
     window.addEventListener("tq:worldentitychange",e=>{
-      if(this.workspace!=="world")return;
+      if(!this.worldEditor?.active||this.worldEditor?.suspended)return;
+      this.workspace="world";
       const entity=e.detail?.entity;
       const selected=this.worldEditor?.getSelected()||null;
       if(selected)this.selected=selected;
@@ -131,7 +141,8 @@ export class DevOverlay {
       this.renderWorlds();
     });
     window.addEventListener("tq:worldchange",()=>{
-      if(this.workspace!=="world")return;
+      if(!this.worldEditor?.active||this.worldEditor?.suspended)return;
+      this.workspace="world";
       this.syncLocalWorldFromEditor();
       if(this.mode==="config")this.renderWorldInspector();
       this.renderWorlds();
@@ -2130,7 +2141,11 @@ export class DevOverlay {
   }
 
   renderInspector(){
-    if(this.workspace==="world"){this.renderWorldInspector();return;}
+    if(this.worldEditor?.active&&!this.worldEditor?.suspended){
+      this.workspace="world";
+      this.renderWorldInspector();
+      return;
+    }
     const content=this.el.querySelector(".tq-dev__content");
     const title=this.el.querySelector("[data-node-title]");
 
@@ -2377,7 +2392,11 @@ export class DevOverlay {
     this.syncInspector();
   }
   syncInspector(){
-    if(this.workspace==="world"){if(this.mode==="config")this.renderWorldInspector();return;}
+    if(this.worldEditor?.active&&!this.worldEditor?.suspended){
+      this.workspace="world";
+      if(this.mode==="config")this.renderWorldInspector();
+      return;
+    }
     if(!this.selected||!this.el)return;
     this.el.querySelectorAll("[data-prop]").forEach(input=>{const v=this.selected[input.dataset.prop];if(input.type==="checkbox")input.checked=Boolean(v);else if(document.activeElement!==input)input.value=v??"";});
   }
