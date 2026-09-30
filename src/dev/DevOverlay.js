@@ -636,11 +636,35 @@ export class DevOverlay {
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
       const regions=sprite.regions||{};
-      const regionFor=key=>regions[key]||{x:0,y:0,width:Math.max(1,Number(sprite.imageWidth)||256),height:Math.max(1,Number(sprite.imageHeight)||256)};
-      const spritePreview=spriteSrc?'<img class="tq-world-sprite-source" src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" data-sprite-source>':'<i class="tq-world-sprite-empty">＋</i>';
-      const directionRegionCards=Object.entries(directionLabels).map(([key,label])=>{
-        const r=regionFor(key);
-        return '<button type="button" class="tq-world-region-card" data-player-region-edit="'+key+'"><strong>'+label+'</strong><span class="tq-world-region-thumb" data-region-thumb="'+key+'"></span><small>x '+Math.round(r.x)+' · y '+Math.round(r.y)+' · '+Math.round(r.width)+'×'+Math.round(r.height)+'</small></button>';
+      const directionVisual={
+        n:{icon:"↑",label:"Para cima",pos:"top"},
+        ne:{icon:"↗",label:"Cima e direita",pos:"top-right"},
+        e:{icon:"→",label:"Para direita",pos:"right"},
+        se:{icon:"↘",label:"Baixo e direita",pos:"bottom-right"},
+        s:{icon:"↓",label:"Para baixo",pos:"bottom"},
+        sw:{icon:"↙",label:"Baixo e esquerda",pos:"bottom-left"},
+        w:{icon:"←",label:"Para esquerda",pos:"left"},
+        nw:{icon:"↖",label:"Cima e esquerda",pos:"top-left"}
+      };
+      const spriteImageWidth=Math.max(1,Number(sprite.imageWidth)||1);
+      const spriteImageHeight=Math.max(1,Number(sprite.imageHeight)||1);
+      const firstMissing=Object.keys(directionVisual).find(key=>!regions[key])||"n";
+      const previewStyle=key=>{
+        const r=regions[key];
+        if(!r||spriteImageWidth<=1||spriteImageHeight<=1)return "";
+        const sizeX=spriteImageWidth/Math.max(1,r.width)*100;
+        const sizeY=spriteImageHeight/Math.max(1,r.height)*100;
+        const posX=spriteImageWidth<=r.width?0:r.x/(spriteImageWidth-r.width)*100;
+        const posY=spriteImageHeight<=r.height?0:r.y/(spriteImageHeight-r.height)*100;
+        return 'background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+sizeX+'% '+sizeY+'%;background-position:'+posX+'% '+posY+'%;';
+      };
+      const directionRegionCards=Object.entries(directionVisual).map(([key,info])=>{
+        const configured=Boolean(regions[key]);
+        return '<button type="button" class="tq-world-direction-orbit__item '+(configured?'is-configured':'')+'" data-player-region-edit="'+key+'" data-direction-pos="'+info.pos+'" title="'+this.escapeHtml(info.label)+'">'+
+          '<span class="tq-world-direction-orbit__arrow">'+info.icon+'</span>'+
+          '<span class="tq-world-direction-orbit__thumb" style="'+previewStyle(key)+'">'+(configured?'':'＋')+'</span>'+
+          '<small>'+this.escapeHtml(info.label)+'</small>'+
+        '</button>';
       }).join("");
       const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
       const layerRange=(layer,key,label,min,max,step)=>{
@@ -670,22 +694,28 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Navio do jogador</strong><span>▾</span></button><div class="tq-config-area__body">'+
-            '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Escolher spritesheet do navio">'+spritePreview+'<span><strong>Spritesheet do navio</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Selecionar asset")+'</small></span></button>'+
-            '<div class="tq-world-atlas-editor" data-atlas-editor>'+
-              '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+ (spriteSrc?'<img src="'+this.escapeHtml(spriteSrc)+'" alt="" draggable="false">':'<span>Selecione um spritesheet</span>') +'<div class="tq-world-atlas-selection" data-atlas-selection hidden></div></div>'+
-              '<small>Selecione uma direção abaixo e arraste sobre a imagem para marcar exatamente a área visível.</small>'+
+            '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Trocar spritesheet do navio">'+
+              (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
+              '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
+            '</button>'+
+            '<div class="tq-world-atlas-wizard" data-atlas-wizard>'+
+              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small>Arraste uma caixa somente em volta desse navio.</small></div></div>'+
+              '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
+                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
+              '</div>'+
+              '<div class="tq-world-atlas-wizard__actions">'+
+                '<button type="button" data-atlas-prev>← Anterior</button>'+
+                '<button type="button" data-atlas-copy-size>Copiar tamanho anterior</button>'+
+                '<button type="button" data-atlas-next>Próxima →</button>'+
+              '</div>'+
             '</div>'+
-            '<div class="tq-world-frame-grid">'+directionRegionCards+'</div>'+
-            '<div class="tq-worlds__create-grid">'+
-              '<label class="tq-world-field"><span>Colunas</span><input data-player-sprite-prop="columns" type="number" min="1" max="32" value="'+spriteColumns+'"></label>'+
-              '<label class="tq-world-field"><span>Linhas</span><input data-player-sprite-prop="rows" type="number" min="1" max="32" value="'+spriteRows+'"></label>'+
-            '</div>'+
+            '<div class="tq-world-direction-orbit">'+directionRegionCards+'<div class="tq-world-direction-orbit__center"><strong data-atlas-progress>'+Object.keys(regions).filter(key=>directionVisual[key]).length+'/8</strong><small>posições prontas</small></div></div>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
               '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
             '</div>'+
-            '<label class="tq-world-field"><span>Direção inicial</span><select data-player-prop="direction">'+Object.entries(directionLabels).map(([key,label])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'+
-            '<small class="tq-world-editor-note">Um único spritesheet contém todas as direções do mesmo navio. Padrão: 8 colunas × 1 linha, na ordem N, NE, E, SE, S, SW, W, NW.</small>'+
+            '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
+            '<small class="tq-world-editor-note">Você só precisa reconhecer a orientação visual do navio. As letras de direção continuam existindo internamente, mas não fazem parte do fluxo de edição.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Visual do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
@@ -726,36 +756,117 @@ export class DevOverlay {
       content.querySelector("[data-player-sprite-pick]")?.addEventListener("click",()=>this.openWorldPlayerSpritePicker());
 
       const atlasCanvas=content.querySelector("[data-atlas-canvas]");
-      let atlasDirection="n";
+      const atlasImageBox=content.querySelector("[data-atlas-imagebox]");
+      const directionOrder=["n","ne","e","se","s","sw","w","nw"];
+      let atlasDirection=firstMissing;
+      let pendingRegion=null;
+      let previousRegion=null;
+
+      const showSavedRegion=direction=>{
+        const selection=content.querySelector("[data-atlas-selection]");
+        const img=atlasImageBox?.querySelector("img");
+        const region=regions[direction];
+        if(!selection||!img||!region||!img.naturalWidth||!img.naturalHeight){
+          if(selection)selection.hidden=true;
+          return;
+        }
+        selection.hidden=false;
+        selection.style.left=(region.x/img.naturalWidth*100)+"%";
+        selection.style.top=(region.y/img.naturalHeight*100)+"%";
+        selection.style.width=(region.width/img.naturalWidth*100)+"%";
+        selection.style.height=(region.height/img.naturalHeight*100)+"%";
+      };
+
       const selectRegion=direction=>{
         atlasDirection=direction;
+        pendingRegion=null;
         content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.classList.toggle("is-active",btn.dataset.playerRegionEdit===direction));
+        const info=directionVisual[direction];
+        const icon=content.querySelector("[data-atlas-direction-icon]");
+        const label=content.querySelector("[data-atlas-direction-label]");
+        if(icon)icon.textContent=info.icon;
+        if(label)label.textContent=info.label;
+        showSavedRegion(direction);
       };
+
+      const stepDirection=delta=>{
+        const index=directionOrder.indexOf(atlasDirection);
+        selectRegion(directionOrder[(index+delta+directionOrder.length)%directionOrder.length]);
+      };
+
       content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.addEventListener("click",()=>selectRegion(btn.dataset.playerRegionEdit)));
-      selectRegion("n");
+      content.querySelector("[data-atlas-prev]")?.addEventListener("click",()=>stepDirection(-1));
+      content.querySelector("[data-atlas-next]")?.addEventListener("click",()=>stepDirection(1));
+      content.querySelector("[data-atlas-copy-size]")?.addEventListener("click",()=>{
+        const source=previousRegion||directionOrder.map(key=>regions[key]).find(Boolean);
+        if(!source)return;
+        const current=regions[atlasDirection]||source;
+        this.worldEditor.updatePlayerConfig({sprite:{regions:{[atlasDirection]:{x:current.x,y:current.y,width:source.width,height:source.height}}}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      });
+
+      selectRegion(firstMissing);
+
+      atlasImageBox?.querySelector("img")?.addEventListener("load",()=>showSavedRegion(atlasDirection));
+
       atlasCanvas?.addEventListener("pointerdown",event=>{
-        const img=atlasCanvas.querySelector("img");if(!img)return;
+        const img=atlasImageBox?.querySelector("img");
+        if(!img||!atlasImageBox)return;
         event.preventDefault();
         const rect=img.getBoundingClientRect();
-        const naturalW=img.naturalWidth||rect.width,naturalH=img.naturalHeight||rect.height;
-        const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
-        const point=e=>({x:clamp((e.clientX-rect.left)/rect.width*naturalW,0,naturalW),y:clamp((e.clientY-rect.top)/rect.height*naturalH,0,naturalH)});
-        const start=point(event),selection=content.querySelector("[data-atlas-selection]");
+        const naturalW=img.naturalWidth||rect.width;
+        const naturalH=img.naturalHeight||rect.height;
+        const clampValue=(value,min,max)=>Math.min(max,Math.max(min,value));
+        const point=e=>({
+          x:clampValue((e.clientX-rect.left)/rect.width*naturalW,0,naturalW),
+          y:clampValue((e.clientY-rect.top)/rect.height*naturalH,0,naturalH)
+        });
+        const startPoint=point(event);
+        const selection=content.querySelector("[data-atlas-selection]");
+        previousRegion=regions[atlasDirection]||previousRegion;
         try{atlasCanvas.setPointerCapture(event.pointerId)}catch{}
-        const draw=p=>{
-          const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y),w=Math.max(1,Math.abs(p.x-start.x)),h=Math.max(1,Math.abs(p.y-start.y));
-          selection.hidden=false;selection.style.left=(x/naturalW*100)+"%";selection.style.top=(y/naturalH*100)+"%";selection.style.width=(w/naturalW*100)+"%";selection.style.height=(h/naturalH*100)+"%";
-          return {x,y,width:w,height:h};
+
+        const draw=currentPoint=>{
+          const x=Math.min(startPoint.x,currentPoint.x);
+          const y=Math.min(startPoint.y,currentPoint.y);
+          const width=Math.max(1,Math.abs(currentPoint.x-startPoint.x));
+          const height=Math.max(1,Math.abs(currentPoint.y-startPoint.y));
+          pendingRegion={x,y,width,height};
+          selection.hidden=false;
+          selection.style.left=(x/naturalW*100)+"%";
+          selection.style.top=(y/naturalH*100)+"%";
+          selection.style.width=(width/naturalW*100)+"%";
+          selection.style.height=(height/naturalH*100)+"%";
         };
-        let latest=draw(start);
-        const move=e=>{latest=draw(point(e))};
-        const end=e=>{
-          latest=draw(point(e));
-          atlasCanvas.removeEventListener("pointermove",move);atlasCanvas.removeEventListener("pointerup",end);atlasCanvas.removeEventListener("pointercancel",end);
-          this.worldEditor.updatePlayerConfig({sprite:{imageWidth:naturalW,imageHeight:naturalH,regions:{[atlasDirection]:latest}}},true);
-          this.syncLocalWorldFromEditor();this.renderWorldInspector();
+
+        draw(startPoint);
+        const move=e=>draw(point(e));
+        const finish=e=>{
+          draw(point(e));
+          atlasCanvas.removeEventListener("pointermove",move);
+          atlasCanvas.removeEventListener("pointerup",finish);
+          atlasCanvas.removeEventListener("pointercancel",finish);
+          if(!pendingRegion||pendingRegion.width<3||pendingRegion.height<3)return;
+          this.worldEditor.updatePlayerConfig({sprite:{
+            imageWidth:naturalW,
+            imageHeight:naturalH,
+            regions:{[atlasDirection]:pendingRegion}
+          }},true);
+          this.syncLocalWorldFromEditor();
+          const currentIndex=directionOrder.indexOf(atlasDirection);
+          const nextMissing=directionOrder.slice(currentIndex+1).find(key=>!regions[key])||directionOrder.find(key=>!regions[key]);
+          this.renderWorldInspector();
+          if(nextMissing){
+            requestAnimationFrame(()=>{
+              const nextButton=this.el.querySelector('[data-player-region-edit="'+nextMissing+'"]');
+              nextButton?.click();
+            });
+          }
         };
-        atlasCanvas.addEventListener("pointermove",move);atlasCanvas.addEventListener("pointerup",end);atlasCanvas.addEventListener("pointercancel",end);
+        atlasCanvas.addEventListener("pointermove",move);
+        atlasCanvas.addEventListener("pointerup",finish);
+        atlasCanvas.addEventListener("pointercancel",finish);
       });
 
       content.querySelectorAll("[data-player-prop]").forEach(input=>input.addEventListener("change",()=>{
