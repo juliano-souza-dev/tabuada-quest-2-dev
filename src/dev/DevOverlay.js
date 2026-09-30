@@ -1210,7 +1210,10 @@ export class DevOverlay {
 
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,blendLine:.58,blendFeather:.28,oceanTint:.24,mist:.22,caustics:.16,rotateToPath:false};
-    const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.5,padding:0};
+    const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.5,padding:0,points:[]};
+    const polygonEditor=this.worldEditor.getCollisionPolygonEditorState?.()||{id:null,mode:null,selectedIndex:-1};
+    const polygonEditing=polygonEditor.id===entity.id;
+    const polygonPointCount=Array.isArray(collision.points)?collision.points.length:0;
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const transformMax=(effect.mode==="horizonBlend"||entity.type==="background")
       ?Math.max(2400,Number(world.width)||2400,Number(world.height)||2400)
@@ -1220,6 +1223,19 @@ export class DevOverlay {
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
     const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
     const collisionRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-collision-output="'+key+'">'+(Math.round(Number(collision[key]||0)*100)/100)+suffix+'</output></span><input data-collision-prop="'+key+'" data-collision-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(collision[key]??0)+'"></label>';
+    const polygonControls=collision.shape==="polygon"
+      ? '<div class="tq-world-collision-polygon-tools '+(polygonEditing?'is-editing':'')+'">'+
+          '<div class="tq-world-collision-polygon-status"><strong>'+polygonPointCount+' pontos</strong><small>'+(polygonPointCount>=3?'Polígono válido':'Mínimo de 3 pontos')+'</small></div>'+
+          '<div class="tq-world-collision-polygon-actions">'+
+            '<button type="button" data-collision-polygon-edit class="'+(polygonEditing&&polygonEditor.mode==="edit"?'is-active':'')+'">✏ Editar pontos</button>'+
+            '<button type="button" data-collision-polygon-draw class="'+(polygonEditing&&polygonEditor.mode==="draw"?'is-active':'')+'">＋ Desenhar do zero</button>'+
+            '<button type="button" data-collision-polygon-undo '+(polygonPointCount?'':'disabled')+'>↶ Último ponto</button>'+
+            '<button type="button" data-collision-polygon-remove '+(polygonEditing&&polygonEditor.selectedIndex>=0?'':'disabled')+'>✕ Ponto selecionado</button>'+
+            '<button type="button" data-collision-polygon-finish '+(polygonEditing?'':'disabled')+'>✓ Finalizar</button>'+
+          '</div>'+
+          '<small>Em <b>Desenhar do zero</b>, clique ou toque ponto a ponto sobre a ilha. Em <b>Editar pontos</b>, arraste os marcadores. Duplo clique em um ponto também remove.</small>'+
+        '</div>'
+      : "";
     const typeOptions=["object","barrel","treasure","ship","location","island","background"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
@@ -1259,11 +1275,11 @@ export class DevOverlay {
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Física / colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
           '<label class="tq-field tq-field--check"><span>Colisão sólida</span><input data-collision-prop="active" type="checkbox" '+(collision.active?'checked':'')+'></label>'+
-          '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option></select></label>'+
-          collisionRange("scaleX","Largura da colisão",.1,1.5,.01)+
-          collisionRange("scaleY","Altura da colisão",.1,1.5,.01)+
+          '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option><option value="polygon" '+(collision.shape==="polygon"?'selected':'')+'>Polígono ponto a ponto</option></select></label>'+
+          (collision.shape==="polygon"?"":collisionRange("scaleX","Largura da colisão",.1,1.5,.01)+collisionRange("scaleY","Altura da colisão",.1,1.5,.01))+
           collisionRange("padding","Margem de segurança",0,500,1," px")+
-          '<small class="tq-world-editor-note">A área tracejada aparece sobre o asset selecionado. Ilhas e navios são sólidos por padrão; backgrounds, baús e itens ao mar não bloqueiam a navegação.</small>'+
+          polygonControls+
+          '<small class="tq-world-editor-note">A marcação mostra onde a física começa. Para ilhas irregulares, use Polígono e desenhe o contorno ponto a ponto.</small>'+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Efeito do objeto</strong><span>▾</span></button><div class="tq-config-area__body">'+
           '<label class="tq-world-field"><span>Categoria</span><select data-effect-prop="category">'+effectCategories+'</select></label>'+
@@ -1365,10 +1381,40 @@ export class DevOverlay {
         }
         this.worldEditor.updateEntityCollision(entity.id,{[key]:value},commit);
         this.selected=this.worldEditor.getSelected()||this.selected;
+        if(commit&&key==="shape")this.renderWorldInspector();
       };
 
       if(input.type==="range")input.addEventListener("input",()=>apply(false));
       input.addEventListener("change",()=>apply(true));
+    });
+
+    content.querySelector("[data-collision-polygon-edit]")?.addEventListener("click",()=>{
+      this.worldEditor.setCollisionPolygonEditor(entity.id,"edit");
+      this.selected=this.worldEditor.getSelected()||this.selected;
+      this.renderWorldInspector();
+    });
+    content.querySelector("[data-collision-polygon-draw]")?.addEventListener("click",()=>{
+      if(confirm("Apagar o contorno atual e desenhar uma nova área de colisão ponto a ponto?")){
+        this.worldEditor.setCollisionPolygonEditor(entity.id,"draw",{reset:true});
+        this.selected=this.worldEditor.getSelected()||this.selected;
+        this.renderWorldInspector();
+      }
+    });
+    content.querySelector("[data-collision-polygon-undo]")?.addEventListener("click",()=>{
+      this.worldEditor.undoCollisionPolygonPoint(entity.id,true);
+      this.selected=this.worldEditor.getSelected()||this.selected;
+      this.renderWorldInspector();
+    });
+    content.querySelector("[data-collision-polygon-remove]")?.addEventListener("click",()=>{
+      const state=this.worldEditor.getCollisionPolygonEditorState?.()||{};
+      this.worldEditor.removeCollisionPolygonPoint(entity.id,state.selectedIndex,true);
+      this.selected=this.worldEditor.getSelected()||this.selected;
+      this.renderWorldInspector();
+    });
+    content.querySelector("[data-collision-polygon-finish]")?.addEventListener("click",()=>{
+      this.worldEditor.setCollisionPolygonEditor(entity.id,null);
+      this.selected=this.worldEditor.getSelected()||this.selected;
+      this.renderWorldInspector();
     });
 
     const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow","blendLine","blendFeather","oceanTint","mist","caustics"]);
