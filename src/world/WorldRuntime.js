@@ -386,8 +386,11 @@ export class WorldRuntime {
 
           entity.x=clamp(start.x+worldCenterX,0,this.config.width);
           entity.y=clamp(start.y+worldCenterY,0,this.config.height);
-          entity.width=clamp(right-left,min,2400);
-          entity.height=clamp(bottom-top,min,2400);
+          const maxSize=(entity.type==="background"||entity.effect?.mode==="horizonBlend")
+            ?Math.max(2400,Number(this.config.width)||2400,Number(this.config.height)||2400)
+            :2400;
+          entity.width=clamp(right-left,min,maxSize);
+          entity.height=clamp(bottom-top,min,maxSize);
           entity.anchorX=entity.x;
           entity.anchorY=entity.y;
 
@@ -1452,6 +1455,38 @@ export class WorldRuntime {
     }
   }
 
+  fitEntityToPlayableArea(id,commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+
+    const area=this.getPlayableBounds();
+    entity.x=area.left+area.width/2;
+    entity.y=area.top+area.height/2;
+    entity.width=area.width;
+    entity.height=area.height;
+    entity.anchorX=entity.x;
+    entity.anchorY=entity.y;
+    entity.lockAspect=false;
+
+    const effect=normalizeEntityEffect(entity.effect||{},entity);
+    if(effect.mode==="horizonBlend"){
+      entity.z=Math.min(Number(entity.z??4),4);
+      entity.effect=effect;
+      this.entityEffectOrigins.set(id,{x:Number(this.camera.x)||0,y:Number(this.camera.y)||0});
+    }
+
+    this.applyEntityVisual(entity);
+    this.applyHorizonBlendVisual(entity,entity.effect);
+    this.syncGizmo();
+    this.selectedId=id;
+    this.applySelectionVisual();
+
+    const clean=this.getEntity(id);
+    this.onSelectionChange?.(clean);
+    this.onEntityChange?.(clean,commit);
+    return clean;
+  }
+
   updateEntity(id,patch={},commit=true){
     const entity=this.entities.find(item=>item.id===id);
     if(!entity)return null;
@@ -1463,8 +1498,11 @@ export class WorldRuntime {
     if(effectPatch)entity.effect=normalizeEntityEffect({...entity.effect,...effectPatch},entity);
     entity.x=clamp(Number(entity.x??0),0,this.config.width);
     entity.y=clamp(Number(entity.y??0),0,this.config.height);
-    entity.width=clamp(Number(entity.width??96),16,2400);
-    entity.height=clamp(Number(entity.height??96),16,2400);
+    const maxEntitySize=(entity.type==="background"||entity.effect?.mode==="horizonBlend")
+      ?Math.max(2400,Number(this.config.width)||2400,Number(this.config.height)||2400)
+      :2400;
+    entity.width=clamp(Number(entity.width??96),16,maxEntitySize);
+    entity.height=clamp(Number(entity.height??96),16,maxEntitySize);
     entity.rotation=Number(entity.rotation||0);
     entity.skewX=clamp(Number(entity.skewX||0),-75,75);
     entity.skewY=clamp(Number(entity.skewY||0),-75,75);
