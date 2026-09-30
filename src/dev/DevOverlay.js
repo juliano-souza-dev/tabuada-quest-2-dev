@@ -1206,10 +1206,16 @@ export class DevOverlay {
     }
 
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
+    const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false};
+    const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
-    const typeOptions=["object","barrel","treasure","ship","location"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
+    const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
+    const typeOptions=["object","barrel","treasure","ship","location","island","background"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
+    const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
+      .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
+    const effectPresets=effectPresetItems.map(item=>'<option value="'+item.id+'" '+(effect.preset===item.id?'selected':'')+'>'+this.escapeHtml(item.label||item.id)+'</option>').join("");
     const motionPresets=[["none","Sem balanço"],["calm","Mar calmo"],["navigation","Navegação natural"],["rough","Mar agitado"],["heavy","Objeto pesado"]]
       .map(([value,label])=>'<option value="'+value+'" '+(motion.preset===value?'selected':'')+'>'+label+'</option>').join("");
 
@@ -1232,6 +1238,22 @@ export class DevOverlay {
           '<label class="tq-world-motion-range"><span><b>Inclinação Y</b><output data-world-transform-output="skewY">'+Math.round(Number(entity.skewY||0))+'°</output></span><input data-world-prop="skewY" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewY||0)+'"></label>'+
           '<div class="tq-world-transform-actions"><button type="button" data-world-rotate="-90">↶ -90°</button><button type="button" data-world-rotate="0">0°</button><button type="button" data-world-rotate="90">↷ +90°</button></div>'+
           '<small class="tq-world-editor-note">Direto no asset: 8 alças redimensionam por cima, baixo, lados e cantos; círculo superior gira; alças roxas inclinam em X e Y.</small>'+
+        '</div></section>'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Efeito do objeto</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<label class="tq-world-field"><span>Categoria</span><select data-effect-prop="category">'+effectCategories+'</select></label>'+
+          '<label class="tq-world-field"><span>Efeito</span><select data-effect-prop="preset">'+effectPresets+'</select></label>'+
+          '<label class="tq-field tq-field--check"><span>Ativo</span><input data-effect-prop="active" type="checkbox" '+(effect.active?'checked':'')+'></label>'+
+          '<div class="tq-world-effect-engine"><span>Motor</span><strong>'+this.escapeHtml(String(effect.renderer||"dom").toUpperCase())+'</strong><small>'+this.escapeHtml(String(effect.mode||"none"))+'</small></div>'+
+          effectRange("speed","Velocidade",0,100,1)+
+          effectRange("intensity","Intensidade",0,100,1)+
+          effectRange("range","Alcance / percurso",0,2400,10," px")+
+          effectRange("parallax","Parallax",0,1,.01)+
+          effectRange("opacity","Opacidade",.08,1,.01)+
+          effectRange("blur","Desfoque de profundidade",0,8,.1," px")+
+          effectRange("distortion","Distorção WebGL",0,100,1)+
+          effectRange("glow","Brilho WebGL",0,100,1)+
+          '<label class="tq-field tq-field--check"><span>Orientar no percurso</span><input data-effect-prop="rotateToPath" type="checkbox" '+(effect.rotateToPath?'checked':'')+'></label>'+
+          '<small class="tq-world-editor-note">Cada asset pode usar efeito próprio. Parallax compõe profundidade; WebGL distorce/brilha o sprite na GPU; navios podem navegar em percurso automático ao redor do ponto onde foram posicionados.</small>'+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Balanço / água</strong><span>▾</span></button><div class="tq-config-area__body">'+
           '<label class="tq-field tq-field--check"><span>Efeito ativo</span><input data-motion-prop="active" type="checkbox" '+(motion.active?'checked':'')+'></label>'+
@@ -1299,6 +1321,43 @@ export class DevOverlay {
       this.selected=this.worldEditor.updateEntity(entity.id,{rotation},true)||this.selected;
       this.renderWorldInspector();
     }));
+
+    const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow"]);
+    content.querySelectorAll("[data-effect-prop]").forEach(input=>{
+      const read=()=>input.type==="checkbox"
+        ?input.checked
+        :(effectNumeric.has(input.dataset.effectProp)?Number(input.value):input.value);
+
+      const apply=(commit)=>{
+        const key=input.dataset.effectProp;
+        const value=read();
+
+        if(key==="category"){
+          this.worldEditor.updateEntityEffect(entity.id,{category:value,preset:"none"},true);
+          this.selected=this.worldEditor.getSelected()||this.selected;
+          this.renderWorldInspector();
+          return;
+        }
+
+        if(key==="preset"){
+          this.worldEditor.updateEntityEffect(entity.id,{preset:value},true);
+          this.selected=this.worldEditor.getSelected()||this.selected;
+          this.renderWorldInspector();
+          return;
+        }
+
+        const output=content.querySelector('[data-effect-output="'+key+'"]');
+        if(output){
+          const suffix=input.dataset.effectSuffix||"";
+          output.value=String(Math.round(Number(value)*100)/100)+suffix;
+        }
+        this.worldEditor.updateEntityEffect(entity.id,{[key]:value},commit);
+        this.selected=this.worldEditor.getSelected()||this.selected;
+      };
+
+      if(input.type==="range")input.addEventListener("input",()=>apply(false));
+      input.addEventListener("change",()=>apply(true));
+    });
 
     const motionNumeric=new Set(["speed","heave","pitch","roll","sway"]);
     content.querySelectorAll("[data-motion-prop]").forEach(input=>{
