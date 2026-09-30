@@ -232,8 +232,3 @@
 @media(max-width:768px),(pointer:coarse){
   .tq-world-atlas-mode-switch{display:grid}
 }
-
-.tq-world-atlas-grid4-actions{display:none;gap:5px}
-.tq-world-atlas-grid4-actions button{min-height:44px;padding:9px 11px;border:1px solid rgba(126,231,255,.72);border-radius:9px;background:#16435b;color:#fff;font-size:10px;font-weight:900}
-.tq-world-atlas-grid4-actions small{text-align:center;font-size:8px;line-height:1.35;color:#9fb6c5}
-.tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-grid4-actions{display:grid}
