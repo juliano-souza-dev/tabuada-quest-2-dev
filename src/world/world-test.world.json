@@ -2,11 +2,11 @@
   "schema": "tq.world",
   "version": 1,
   "id": "ocean-prototype",
-  "width": 2200,
-  "height": 3200,
+  "width": 8000,
+  "height": 8000,
   "player": {
-    "x": 1100,
-    "y": 2680,
+    "x": 4000,
+    "y": 6800,
     "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
   },
   "entities": [
@@ -14,10 +14,10 @@
       "id": "location.islands",
       "type": "location",
       "label": "Arquipélago de Teste",
-      "x": 720,
-      "y": 1420,
-      "width": 350,
-      "height": 250,
+      "x": 2400,
+      "y": 2500,
+      "width": 720,
+      "height": 520,
       "interactionRadius": 260,
       "src": "./assets/backgrounds/scene-islands.webp",
       "scene": "./src/scenes/world-test-island.scene.json"
@@ -26,10 +26,10 @@
       "id": "location.port",
       "type": "location",
       "label": "Porto Pirata",
-      "x": 1690,
-      "y": 830,
-      "width": 340,
-      "height": 240,
+      "x": 5900,
+      "y": 1800,
+      "width": 700,
+      "height": 500,
       "interactionRadius": 250,
       "src": "./assets/backgrounds/home-pirate-port.webp",
       "scene": "./src/scenes/world-test-island.scene.json"
@@ -38,8 +38,8 @@
       "id": "barrel.01",
       "type": "barrel",
       "label": "barril",
-      "x": 940,
-      "y": 2280,
+      "x": 3300,
+      "y": 5900,
       "width": 78,
       "height": 78,
       "drift": 28,
@@ -50,8 +50,8 @@
       "id": "barrel.02",
       "type": "barrel",
       "label": "barril",
-      "x": 1340,
-      "y": 2010,
+      "x": 4700,
+      "y": 5200,
       "width": 78,
       "height": 78,
       "drift": 22,
@@ -62,8 +62,8 @@
       "id": "barrel.03",
       "type": "barrel",
       "label": "barril",
-      "x": 1610,
-      "y": 1710,
+      "x": 5600,
+      "y": 3900,
       "width": 78,
       "height": 78,
       "drift": 34,
@@ -74,8 +74,8 @@
       "id": "barrel.04",
       "type": "barrel",
       "label": "barril",
-      "x": 480,
-      "y": 2350,
+      "x": 1900,
+      "y": 5200,
       "width": 78,
       "height": 78,
       "drift": 18,
@@ -88,12 +88,14 @@
     "schema": "tq.world",
     "version": 1,
     "sourceRevision": "20260930-0050",
-    "editorVersion": 1
+    "editorVersion": 1,
+    "layoutRevision": "20260930-playable-8000-v1",
+    "playableAreaPurpose": "exploration-islands-treasure-routes"
   },
   "editor": {
-    "cameraX": 1100,
-    "cameraY": 1780,
-    "zoom": 0.58
+    "cameraX": 4000,
+    "cameraY": 4000,
+    "zoom": 0.25
   },
   "ocean": {
     "active": true,
@@ -106,5 +108,11 @@
     "tileSize": 720,
     "brightness": 102,
     "saturation": 105
+  },
+  "playableArea": {
+    "x": 300,
+    "y": 300,
+    "width": 7400,
+    "height": 7400
   }
 }
