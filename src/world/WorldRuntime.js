@@ -31,6 +31,7 @@ export class WorldRuntime {
     this.zoom=Number(config.editor?.zoom??0.58);
     this.playZoom=1;
     this.playCameraOffset={x:0,y:0};
+    this.playCameraDetached=false;
     this.suppressNavigationClick=false;
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
@@ -89,6 +90,7 @@ export class WorldRuntime {
           </div>
         </div>
         <div class="tq-world-help">Joystick analógico · WASD / setas<br>toque ou clique no oceano para navegar</div>
+        <button type="button" class="tq-world-recenter" data-world-recenter hidden aria-label="Centralizar câmera no navio">🎯 Navio</button>
       </div>`;
 
     this.root.append(this.host);
@@ -100,6 +102,7 @@ export class WorldRuntime {
     this.navTargetEl=this.host.querySelector(".tq-world-nav-target");
     this.joystickEl=this.host.querySelector("[data-world-joystick]");
     this.joystickThumbEl=this.host.querySelector("[data-world-joystick-thumb]");
+    this.recenterButton=this.host.querySelector("[data-world-recenter]");
     this.coordsEl=this.host.querySelector("[data-world-coords]");
     this.progressEl=this.host.querySelector("[data-world-progress]");
     this.directionEl=this.host.querySelector("[data-world-direction]");
@@ -368,8 +371,6 @@ export class WorldRuntime {
       const halfH=Math.min(this.config.height/2,this.viewportSize.height/(2*zoom));
       this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
       this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
-      this.playCameraOffset.x=this.camera.x-this.player.x;
-      this.playCameraOffset.y=this.camera.y-this.player.y;
     };
 
     const updatePan=(clientX,clientY)=>{
@@ -380,6 +381,10 @@ export class WorldRuntime {
       if(!pan.dragging){
         pan.dragging=true;
         this.suppressNavigationClick=true;
+        if(this.mode==="play"){
+          this.playCameraDetached=true;
+          if(this.recenterButton)this.recenterButton.hidden=false;
+        }
         this.host?.classList.add("is-camera-dragging");
       }
 
@@ -661,7 +666,18 @@ export class WorldRuntime {
     this.viewport.addEventListener("click",navigateToPointer);
 
     const action=()=>this.activateNearby();
+    const recenter=event=>{
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      if(this.mode!=="play")return;
+      this.playCameraDetached=false;
+      this.playCameraOffset.x=0;
+      this.playCameraOffset.y=0;
+      if(this.recenterButton)this.recenterButton.hidden=true;
+      this.updateCamera(true);
+    };
     this.actionButton.addEventListener("click",action);
+    this.recenterButton?.addEventListener("click",recenter);
     this.cleanups.push(()=>{
       joystick?.removeEventListener("pointerdown",joystickPointerStart);
       globalThis.removeEventListener?.("pointermove",joystickPointerMove);
@@ -673,6 +689,7 @@ export class WorldRuntime {
       globalThis.removeEventListener?.("touchcancel",joystickTouchEnd);
       this.viewport.removeEventListener("click",navigateToPointer);
       this.actionButton.removeEventListener("click",action);
+      this.recenterButton?.removeEventListener("click",recenter);
     });
   }
 
@@ -689,6 +706,8 @@ export class WorldRuntime {
       this.clearNavigationTarget();
       this.playCameraOffset.x=0;
       this.playCameraOffset.y=0;
+      this.playCameraDetached=false;
+      if(this.recenterButton)this.recenterButton.hidden=true;
       this.zoom=this.playZoom;
       this.selectEntity(null);
     }else{
@@ -698,6 +717,7 @@ export class WorldRuntime {
       this.clearNavigationTarget();
       this.nearby=null;
       if(this.actionWrap)this.actionWrap.hidden=true;
+      if(this.recenterButton)this.recenterButton.hidden=true;
       this.zoom=clamp(Number(this.zoom||.58),.25,1.5);
     }
     for(const entity of this.entities)this.applyEntityVisual(entity);
@@ -889,17 +909,23 @@ export class WorldRuntime {
       const zoom=this.playZoom;
       const halfW=Math.min(this.config.width/2,vw/(2*zoom));
       const halfH=Math.min(this.config.height/2,vh/(2*zoom));
-      const target={
-        x:clamp(this.player.x+Number(this.playCameraOffset.x||0),halfW,this.config.width-halfW),
-        y:clamp(this.player.y+Number(this.playCameraOffset.y||0),halfH,this.config.height-halfH)
-      };
-      if(immediate){
-        this.camera.x=target.x;
-        this.camera.y=target.y;
+
+      if(this.playCameraDetached){
+        this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
+        this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
       }else{
-        const next=cameraFollowStep(this.camera,target,dt,4.5);
-        this.camera.x=next.x;
-        this.camera.y=next.y;
+        const target={
+          x:clamp(this.player.x,halfW,this.config.width-halfW),
+          y:clamp(this.player.y,halfH,this.config.height-halfH)
+        };
+        if(immediate){
+          this.camera.x=target.x;
+          this.camera.y=target.y;
+        }else{
+          const next=cameraFollowStep(this.camera,target,dt,4.5);
+          this.camera.x=next.x;
+          this.camera.y=next.y;
+        }
       }
       this.zoom=zoom;
     }else{
