@@ -6,6 +6,15 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1912";
+import {
+  normalizeCollision,
+  inferCollisionAction,
+  collisionMessage,
+  collisionActionLabel,
+  resolveCircleVsEntity,
+  removeVelocityIntoNormal,
+  contourVelocity
+} from "./WorldCollision.mjs?v=20260930-2112";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
@@ -55,12 +64,18 @@ export class WorldRuntime {
         el:null
       };
       normalized.effect=normalizeEntityEffect(normalized.effect||{},normalized);
+      normalized.collision=normalizeCollision(normalized.collision||{},normalized);
+      normalized.visualX=Number(normalized.x||0);
+      normalized.visualY=Number(normalized.y||0);
+      normalized.visualRotation=Number(normalized.rotation||0);
       return normalized;
     });
     this.selectedId=null;
     this.lastTime=0;
     this.raf=0;
     this.nearby=null;
+    this.contactEntity=null;
+    this.collisionAvoidance={entityId:null,side:0,until:0};
     this.cleanups=[];
   }
 
@@ -94,7 +109,10 @@ export class WorldRuntime {
         <span data-world-zoom></span>
       </section>
       <div class="tq-world-action" hidden>
-        <button type="button" data-world-action></button>
+        <div class="tq-world-action__surface">
+          <span class="tq-world-action__message" data-world-action-message></span>
+          <button type="button" data-world-action></button>
+        </div>
       </div>
       <div class="tq-world-controls" aria-label="Controles de navegação">
         <div class="tq-world-joystick" data-world-joystick aria-label="Joystick analógico">
@@ -126,6 +144,7 @@ export class WorldRuntime {
     this.modeEl=this.host.querySelector("[data-world-mode]");
     this.nameEl=this.host.querySelector("[data-world-name]");
     this.actionWrap=this.host.querySelector(".tq-world-action");
+    this.actionMessage=this.host.querySelector("[data-world-action-message]");
     this.actionButton=this.host.querySelector("[data-world-action]");
     this.oceanEls={
       deep:this.host.querySelector('[data-ocean-layer="deep"]'),
@@ -186,6 +205,11 @@ export class WorldRuntime {
         el.append(canvas);
       }
 
+      const collider=document.createElement("span");
+      collider.className="tq-world-entity__collider";
+      collider.setAttribute("aria-hidden","true");
+      el.append(collider);
+
       entity.el=el;
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
@@ -213,6 +237,23 @@ export class WorldRuntime {
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+    this.syncCollisionVisual(entity);
+  }
+
+  syncCollisionVisual(entity){
+    if(!entity?.el)return;
+    entity.collision=normalizeCollision(entity.collision||{},entity);
+    const collider=entity.el.querySelector(".tq-world-entity__collider");
+    entity.el.classList.toggle("has-collision",entity.collision.active);
+    entity.el.dataset.collisionShape=entity.collision.shape;
+    if(!collider)return;
+    const widthPct=entity.collision.scaleX*100;
+    const heightPct=entity.collision.scaleY*100;
+    const paddingX=(entity.collision.padding*2/Math.max(16,Number(entity.width)||96))*100;
+    const paddingY=(entity.collision.padding*2/Math.max(16,Number(entity.height)||96))*100;
+    collider.style.width=`calc(${widthPct}% + ${paddingX}%)`;
+    collider.style.height=`calc(${heightPct}% + ${paddingY}%)`;
+    collider.style.borderRadius=entity.collision.shape==="ellipse"?"50%":"10px";
   }
 
   syncEntityEffectRenderer(entity){
@@ -957,10 +998,89 @@ export class WorldRuntime {
     this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
   }
 
+  playerCollisionRadius(){
+    return clamp(
+      Number(this.config.player?.collisionRadius)
+        ||Math.min(Number(this.config.player?.width||110),Number(this.config.player?.height||150))*.24,
+      12,
+      180
+    );
+  }
+
+  collisionDesiredVector(input){
+    if(input&&Math.hypot(Number(input.x)||0,Number(input.y)||0)>.001)return input;
+    if(this.navigationTarget){
+      const dx=this.navigationTarget.x-this.player.x;
+      const dy=this.navigationTarget.y-this.player.y;
+      const length=Math.hypot(dx,dy)||1;
+      return {x:dx/length,y:dy/length};
+    }
+    const speed=Math.hypot(this.player.vx,this.player.vy)||1;
+    return {x:this.player.vx/speed,y:this.player.vy/speed};
+  }
+
+  resolvePlayerCollisions(candidate,input){
+    const radius=this.playerCollisionRadius();
+    const desired=this.collisionDesiredVector(input);
+    let x=candidate.x;
+    let y=candidate.y;
+    let vx=this.player.vx;
+    let vy=this.player.vy;
+    let contact=null;
+    const now=performance.now();
+
+    for(let pass=0;pass<4;pass++){
+      let changed=false;
+      for(const entity of this.entities){
+        if(this.collected.has(entity.id))continue;
+        entity.collision=normalizeCollision(entity.collision||{},entity);
+        if(!entity.collision.active)continue;
+
+        const hit=resolveCircleVsEntity({x,y},radius,entity,entity.collision);
+        if(!hit.collided)continue;
+        changed=true;
+        x=hit.x;
+        y=hit.y;
+
+        const action=inferCollisionAction(entity,entity.collision);
+        const cleaned=removeVelocityIntoNormal({x:vx,y:vy},hit.normalX,hit.normalY);
+        vx=cleaned.x;
+        vy=cleaned.y;
+
+        if(action!=="none"){
+          if(!contact||hit.penetration>contact.penetration){
+            contact={entity,penetration:hit.penetration};
+          }
+          continue;
+        }
+
+        const remembered=this.collisionAvoidance.entityId===entity.id&&this.collisionAvoidance.until>now
+          ?this.collisionAvoidance.side
+          :0;
+        const contour=contourVelocity(
+          {x:vx,y:vy},
+          hit.normalX,
+          hit.normalY,
+          desired,
+          {
+            side:remembered,
+            minSpeed:this.navigationTarget?145:105,
+            maxSpeed:this.navigationTarget?285:230,
+            strength:.72
+          }
+        );
+        vx=contour.x;
+        vy=contour.y;
+        this.collisionAvoidance={entityId:entity.id,side:contour.side,until:now+520};
+      }
+      if(!changed)break;
+    }
+
+    return {x,y,vx,vy,contact:contact?.entity||null};
+  }
+
   updatePlayer(dt){
     const input=this.inputVector();
-    // Navigation tuning: keep inertia without crushing the terminal speed.
-    // The previous 0.0008 drag limited full-throttle speed to ~73 world px/s.
     const accel=1100;
     const maxSpeed=420;
     const drag=Math.pow(0.12,dt);
@@ -968,17 +1088,27 @@ export class WorldRuntime {
     this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
     this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
 
-    const speed=Math.hypot(this.player.vx,this.player.vy);
+    let speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>maxSpeed){
       const scale=maxSpeed/speed;
       this.player.vx*=scale;
       this.player.vy*=scale;
+      speed=maxSpeed;
     }
 
     const travel=this.getPlayerTravelBounds();
-    this.player.x=clamp(this.player.x+this.player.vx*dt,travel.left,travel.right);
-    this.player.y=clamp(this.player.y+this.player.vy*dt,travel.top,travel.bottom);
+    const candidate={
+      x:clamp(this.player.x+this.player.vx*dt,travel.left,travel.right),
+      y:clamp(this.player.y+this.player.vy*dt,travel.top,travel.bottom)
+    };
+    const resolved=this.resolvePlayerCollisions(candidate,input);
+    this.player.x=clamp(resolved.x,travel.left,travel.right);
+    this.player.y=clamp(resolved.y,travel.top,travel.bottom);
+    this.player.vx=resolved.vx;
+    this.player.vy=resolved.vy;
+    this.contactEntity=resolved.contact;
 
+    speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
     }
@@ -1094,8 +1224,11 @@ export class WorldRuntime {
       const scaleX=Number(effectFrame.scaleX||1);
       const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
 
-      entity.el.style.left=(entity.x+offsetX)+"px";
-      entity.el.style.top=(entity.y+offsetY)+"px";
+      entity.visualX=entity.x+offsetX;
+      entity.visualY=entity.y+offsetY;
+      entity.visualRotation=rotation;
+      entity.el.style.left=entity.visualX+"px";
+      entity.el.style.top=entity.visualY+"px";
       entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
       entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
 
@@ -1158,53 +1291,62 @@ export class WorldRuntime {
   updateNearby(){
     if(this.mode!=="play"){
       this.nearby=null;
+      this.contactEntity=null;
       this.actionWrap.hidden=true;
       return;
     }
 
-    let best=null;
-    let bestDistance=Infinity;
-    for(const entity of this.entities){
-      if(this.collected.has(entity.id))continue;
-      const threshold=entity.interactionRadius??(entity.type==="location"?230:105);
-      const d=distance(this.player,entity);
-      if(d<=threshold&&d<bestDistance){
-        best=entity;
-        bestDistance=d;
-      }
-    }
+    const entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
+      ?this.contactEntity
+      :null;
+    this.nearby=entity;
 
-    this.nearby=best;
-    if(!best){
+    if(!entity){
       this.actionWrap.hidden=true;
       return;
     }
 
+    const collision=normalizeCollision(entity.collision||{},entity);
+    const action=inferCollisionAction(entity,collision);
+    if(action==="none"){
+      this.actionWrap.hidden=true;
+      return;
+    }
+
+    const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
+    const safeAsset=asset.replace(/["\\]/g,"");
+    this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
+    this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
+    if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
+    this.actionButton.textContent=collisionActionLabel(entity,collision);
     this.actionWrap.hidden=false;
-    this.actionButton.textContent=best.type==="location"
-      ? "Entrar: "+(best.label||best.id)
-      : "Coletar "+(best.label||best.type||"objeto");
   }
 
   activateNearby(){
     const entity=this.nearby;
     if(!entity||this.mode!=="play")return;
 
-    if(["barrel","treasure","object"].includes(entity.type)){
+    const collision=normalizeCollision(entity.collision||{},entity);
+    const action=inferCollisionAction(entity,collision);
+
+    if(action==="collect"){
       this.collected.add(entity.id);
       if(entity.el)entity.el.hidden=true;
+      this.contactEntity=null;
+      this.nearby=null;
+      this.actionWrap.hidden=true;
       this.updateProgress();
-      this.updateNearby();
       return;
     }
 
-    if(entity.type==="location"&&entity.scene&&this.onEnterScene){
+    if(action==="enter-scene"&&entity.scene&&this.onEnterScene){
+      this.actionWrap.hidden=true;
       this.onEnterScene(this.cleanEntity(entity),this.getState());
     }
   }
 
   cleanEntity(entity){
-    const {el,index,anchorX,anchorY,...data}=entity;
+    const {el,index,anchorX,anchorY,visualX,visualY,visualRotation,...data}=entity;
     return data;
   }
 
@@ -1251,6 +1393,12 @@ export class WorldRuntime {
       this.config.playableArea={
         ...(this.config.playableArea||{}),
         ...structuredClone(patch.playableArea)
+      };
+    }
+    if(patch.ui&&typeof patch.ui==="object"){
+      this.config.ui={
+        ...(this.config.ui||{}),
+        ...structuredClone(patch.ui)
       };
     }
 
@@ -1419,10 +1567,13 @@ export class WorldRuntime {
     if(!entity)return null;
     const previousType=entity.type;
     const effectPatch=patch.effect&&typeof patch.effect==="object"?structuredClone(patch.effect):null;
+    const collisionPatch=patch.collision&&typeof patch.collision==="object"?structuredClone(patch.collision):null;
     const plainPatch=structuredClone(patch);
     delete plainPatch.effect;
+    delete plainPatch.collision;
     Object.assign(entity,plainPatch);
     if(effectPatch)entity.effect=normalizeEntityEffect({...entity.effect,...effectPatch},entity);
+    if(collisionPatch)entity.collision=normalizeCollision({...entity.collision,...collisionPatch},entity);
     entity.x=clamp(Number(entity.x??0),0,this.config.width);
     entity.y=clamp(Number(entity.y??0),0,this.config.height);
     entity.width=clamp(Number(entity.width??96),16,2400);
@@ -1431,12 +1582,17 @@ export class WorldRuntime {
     entity.skewX=clamp(Number(entity.skewX||0),-75,75);
     entity.skewY=clamp(Number(entity.skewY||0),-75,75);
     entity.effect=normalizeEntityEffect(entity.effect||{},entity);
+    entity.collision=normalizeCollision(entity.collision||{},entity);
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
+    entity.visualX=entity.x;
+    entity.visualY=entity.y;
+    entity.visualRotation=entity.rotation;
     if(previousType!==entity.type)this.renderEntities();
     else{
       this.applyEntityVisual(entity);
       if(effectPatch||patch.src!==undefined)this.syncEntityEffectRenderer(entity);
+      if(collisionPatch||patch.type!==undefined||patch.width!==undefined||patch.height!==undefined)this.syncCollisionVisual(entity);
       this.syncGizmo();
     }
     this.selectedId=id;
@@ -1445,6 +1601,23 @@ export class WorldRuntime {
     this.onSelectionChange?.(clean);
     this.onEntityChange?.(clean,commit);
     return clean;
+  }
+
+  getEntityCollision(id){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    entity.collision=normalizeCollision(entity.collision||{},entity);
+    return structuredClone(entity.collision);
+  }
+
+  updateEntityCollision(id,patch={},commit=true){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return null;
+    entity.collision=normalizeCollision({...entity.collision,...structuredClone(patch)},entity);
+    this.syncCollisionVisual(entity);
+    const clean=this.getEntity(id);
+    this.onEntityChange?.(clean,commit);
+    return structuredClone(entity.collision);
   }
 
   addEntity(raw){
@@ -1461,13 +1634,19 @@ export class WorldRuntime {
       skewX:clamp(Number(raw.skewX||0),-75,75),
       skewY:clamp(Number(raw.skewY||0),-75,75),
       effect:normalizeEntityEffect(raw.effect||{},raw),
+      collision:normalizeCollision(raw.collision||{},raw),
       index:this.entities.length,
       anchorX:0,
       anchorY:0,
+      visualX:0,
+      visualY:0,
+      visualRotation:Number(raw.rotation||0),
       el:null
     };
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
+    entity.visualX=entity.x;
+    entity.visualY=entity.y;
     this.entities.push(entity);
     this.renderEntities();
     this.selectEntity(id);
