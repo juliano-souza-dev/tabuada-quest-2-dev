@@ -45,7 +45,9 @@ export function resolveDirectionalRegion(sprite,key){
   if(!sprite||typeof sprite!=="object"||!sprite.src)return null;
 
   const requested=DIRECTION_KEYS.includes(key)?key:"n";
-  const raw=sprite.regions?.[requested]||sprite.regions?.n;
+  const regions=sprite.regions&&typeof sprite.regions==="object"?sprite.regions:{};
+  const firstAvailable=DIRECTION_KEYS.map(direction=>regions[direction]).find(Boolean);
+  const raw=regions[requested]||regions.n||firstAvailable;
   if(!raw)return null;
 
   const region=normalizeAtlasRegion(raw);
