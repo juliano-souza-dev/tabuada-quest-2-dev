@@ -58,11 +58,34 @@ export function resolveDirectionalSource(directions,key,fallback=""){
 }
 
 export function normalizeAtlasRegion(raw={}){
+  const points=Array.isArray(raw.points)
+    ? raw.points
+      .map(point=>({x:Number(point?.x),y:Number(point?.y)}))
+      .filter(point=>Number.isFinite(point.x)&&Number.isFinite(point.y))
+    : [];
+
+  if(points.length>=3){
+    const xs=points.map(point=>point.x);
+    const ys=points.map(point=>point.y);
+    const x=Math.max(0,Math.min(...xs));
+    const y=Math.max(0,Math.min(...ys));
+    const right=Math.max(...xs);
+    const bottom=Math.max(...ys);
+    return {
+      x,
+      y,
+      width:Math.max(1,right-x),
+      height:Math.max(1,bottom-y),
+      points
+    };
+  }
+
   return {
     x:Math.max(0,Number(raw.x)||0),
     y:Math.max(0,Number(raw.y)||0),
     width:Math.max(1,Number(raw.width)||1),
-    height:Math.max(1,Number(raw.height)||1)
+    height:Math.max(1,Number(raw.height)||1),
+    points:[]
   };
 }
 
@@ -104,10 +127,21 @@ export function directionalRegionStyle(sprite,key){
     ? 0
     : (region.y/(region.imageHeight-region.height))*100;
 
+  const polygon=Array.isArray(region.points)&&region.points.length>=3
+    ? region.points.map(point=>{
+      const x=((point.x-region.x)/region.width)*100;
+      const y=((point.y-region.y)/region.height)*100;
+      return Math.max(0,Math.min(100,x)).toFixed(3)+"% "+Math.max(0,Math.min(100,y)).toFixed(3)+"%";
+    }).join(",")
+    : "";
+  const clipPath=polygon?"polygon("+polygon+")":"none";
+
   return {
     backgroundImage:'url("'+region.src.replace(/["\\]/g,"")+'")',
     backgroundSize:sizeX+"% "+sizeY+"%",
     backgroundPosition:positionX+"% "+positionY+"%",
-    backgroundRepeat:"no-repeat"
+    backgroundRepeat:"no-repeat",
+    clipPath,
+    WebkitClipPath:clipPath
   };
 }
