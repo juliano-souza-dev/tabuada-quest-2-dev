@@ -342,6 +342,8 @@
 .tq-world-atlas-grid4{position:absolute;inset:0;display:none;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);z-index:8;touch-action:none}
 .tq-world-atlas-grid4__cell{min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;border:1px solid rgba(126,231,255,.72)!important;border-radius:0!important;background:rgba(126,231,255,.035)!important;box-shadow:none!important}
 .tq-world-atlas-grid4__cell:active,.tq-world-atlas-grid4__cell:hover{background:rgba(126,231,255,.18)!important}
+.tq-world-player-fx{display:grid;gap:8px;margin-top:10px;padding:10px;border:1px solid rgba(126,231,255,.18);border-radius:10px;background:rgba(7,32,48,.38)}
+.tq-world-player-fx>strong{font-size:11px;color:#7ee7ff}
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-grid4{display:grid}
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-polygon,
 .tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-points,
