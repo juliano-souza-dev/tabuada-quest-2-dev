@@ -80,7 +80,7 @@ function createInstallButton(){
 async function registerPWA(){
   if(!("serviceWorker" in navigator))return null;
   try{
-    const registration=await navigator.serviceWorker.register("./sw.js?v=20260930-1525",{
+    const registration=await navigator.serviceWorker.register("./sw.js?v=20260930-1851",{
       scope:"./",
       updateViaCache:"none"
     });
