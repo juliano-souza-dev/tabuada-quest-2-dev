@@ -1206,7 +1206,7 @@ export class DevOverlay {
     }
 
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
-    const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false};
+    const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,blendLine:.58,blendFeather:.28,oceanTint:.24,mist:.22,caustics:.16,rotateToPath:false};
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
@@ -1216,6 +1216,16 @@ export class DevOverlay {
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
     const effectPresets=effectPresetItems.map(item=>'<option value="'+item.id+'" '+(effect.preset===item.id?'selected':'')+'>'+this.escapeHtml(item.label||item.id)+'</option>').join("");
+    const horizonControls=effect.mode==="horizonBlend"
+      ? '<div class="tq-world-effect-subgroup"><strong>Integração com o oceano WebGL</strong>'+
+          effectRange("blendLine","Altura da integração",.05,.95,.01)+
+          effectRange("blendFeather","Suavidade da máscara",.02,.7,.01)+
+          effectRange("oceanTint","Mistura de cor",0,1,.01)+
+          effectRange("mist","Névoa oceânica",0,1,.01)+
+          effectRange("caustics","Textura/caústica",0,1,.01)+
+          '<small>A parte superior permanece visível. A base é dissolvida e revela o oceano WebGL real que continua renderizando por baixo.</small>'+
+        '</div>'
+      : "";
     const motionPresets=[["none","Sem balanço"],["calm","Mar calmo"],["navigation","Navegação natural"],["rough","Mar agitado"],["heavy","Objeto pesado"]]
       .map(([value,label])=>'<option value="'+value+'" '+(motion.preset===value?'selected':'')+'>'+label+'</option>').join("");
 
@@ -1250,6 +1260,7 @@ export class DevOverlay {
           effectRange("parallax","Parallax",0,1,.01)+
           effectRange("opacity","Opacidade",.08,1,.01)+
           effectRange("blur","Desfoque de profundidade",0,8,.1," px")+
+          horizonControls+
           effectRange("distortion","Distorção WebGL",0,100,1)+
           effectRange("glow","Brilho WebGL",0,100,1)+
           '<label class="tq-field tq-field--check"><span>Orientar no percurso</span><input data-effect-prop="rotateToPath" type="checkbox" '+(effect.rotateToPath?'checked':'')+'></label>'+
@@ -1322,7 +1333,7 @@ export class DevOverlay {
       this.renderWorldInspector();
     }));
 
-    const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow"]);
+    const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow","blendLine","blendFeather","oceanTint","mist","caustics"]);
     content.querySelectorAll("[data-effect-prop]").forEach(input=>{
       const read=()=>input.type==="checkbox"
         ?input.checked
