@@ -635,23 +635,12 @@ export class DevOverlay {
       const spriteSrc=String(sprite.src||"");
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
-      const defaultSpriteOrder=["n","ne","e","se","s","sw","w","nw"];
-      const spriteOrder=Array.isArray(sprite.order)&&sprite.order.length?sprite.order:defaultSpriteOrder;
-      const spritePreview=spriteSrc
-        ? '<div class="tq-world-sprite-preview" style="background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;;background-size:contain"></div>'
-        : '<i class="tq-world-sprite-empty">＋</i>';
-      const spriteFrameCount=Math.max(1,spriteColumns*spriteRows);
-      const frameIndexFor=key=>{const index=spriteOrder.indexOf(key);return index>=0?Math.min(index,spriteFrameCount-1):0;};
-      const frameStyle=index=>{
-        const column=index%spriteColumns,row=Math.floor(index/spriteColumns);
-        const x=spriteColumns<=1?0:(column/(spriteColumns-1))*100;
-        const y=spriteRows<=1?0:(row/(spriteRows-1))*100;
-        return 'background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+spriteColumns*100+'% '+spriteRows*100+'%;background-position:'+x+'% '+y+'%';
-      };
-      const directionFrameCards=Object.entries(directionLabels).map(([key,label])=>{
-        const index=frameIndexFor(key);
-        const options=Array.from({length:spriteFrameCount},(_,i)=>'<option value="'+i+'" '+(i===index?'selected':'')+'>Frame '+(i+1)+'</option>').join("");
-        return '<div class="tq-world-frame-card"><strong>'+label+'</strong><div class="tq-world-frame-thumb" style="'+(spriteSrc?frameStyle(index):'')+'">'+(!spriteSrc?'＋':'')+'</div><select data-player-frame-direction="'+key+'">'+options+'</select></div>';
+      const regions=sprite.regions||{};
+      const regionFor=key=>regions[key]||{x:0,y:0,width:Math.max(1,Number(sprite.imageWidth)||256),height:Math.max(1,Number(sprite.imageHeight)||256)};
+      const spritePreview=spriteSrc?'<img class="tq-world-sprite-source" src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" data-sprite-source>':'<i class="tq-world-sprite-empty">＋</i>';
+      const directionRegionCards=Object.entries(directionLabels).map(([key,label])=>{
+        const r=regionFor(key);
+        return '<button type="button" class="tq-world-region-card" data-player-region-edit="'+key+'"><strong>'+label+'</strong><span class="tq-world-region-thumb" data-region-thumb="'+key+'"></span><small>x '+Math.round(r.x)+' · y '+Math.round(r.y)+' · '+Math.round(r.width)+'×'+Math.round(r.height)+'</small></button>';
       }).join("");
       const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
       const layerRange=(layer,key,label,min,max,step)=>{
@@ -682,11 +671,15 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Navio do jogador</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Escolher spritesheet do navio">'+spritePreview+'<span><strong>Spritesheet do navio</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Selecionar asset")+'</small></span></button>'+
+            '<div class="tq-world-atlas-editor" data-atlas-editor>'+
+              '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+ (spriteSrc?'<img src="'+this.escapeHtml(spriteSrc)+'" alt="" draggable="false">':'<span>Selecione um spritesheet</span>') +'<div class="tq-world-atlas-selection" data-atlas-selection hidden></div></div>'+
+              '<small>Selecione uma direção abaixo e arraste sobre a imagem para marcar exatamente a área visível.</small>'+
+            '</div>'+
+            '<div class="tq-world-frame-grid">'+directionRegionCards+'</div>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Colunas</span><input data-player-sprite-prop="columns" type="number" min="1" max="32" value="'+spriteColumns+'"></label>'+
               '<label class="tq-world-field"><span>Linhas</span><input data-player-sprite-prop="rows" type="number" min="1" max="32" value="'+spriteRows+'"></label>'+
             '</div>'+
-            '<div class="tq-world-frame-editor"><div class="tq-world-frame-editor__head"><strong>Direções</strong><small>Escolha visualmente qual frame representa cada direção.</small></div><div class="tq-world-frame-grid">'+directionFrameCards+'</div></div>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
               '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
@@ -732,31 +725,38 @@ export class DevOverlay {
 
       content.querySelector("[data-player-sprite-pick]")?.addEventListener("click",()=>this.openWorldPlayerSpritePicker());
 
-      content.querySelectorAll("[data-player-sprite-prop]").forEach(input=>input.addEventListener("change",()=>{
-        const key=input.dataset.playerSpriteProp;
-        let value=input.value;
-        if(["columns","rows"].includes(key))value=Math.max(1,Number(value)||1);
-        this.worldEditor.updatePlayerConfig({sprite:{[key]:value}},true);
-        this.syncLocalWorldFromEditor();
-        this.renderWorldInspector();
-      }));
-
-      content.querySelectorAll("[data-player-frame-direction]").forEach(select=>select.addEventListener("change",()=>{
-        const direction=select.dataset.playerFrameDirection;
-        const frameIndex=Math.max(0,Number(select.value)||0);
-        const order=Array.from({length:Math.max(1,spriteColumns*spriteRows)},()=>null);
-        for(const key of Object.keys(directionLabels)){
-          const control=content.querySelector('[data-player-frame-direction="'+key+'"]');
-          if(!control)continue;
-          const index=Math.max(0,Number(control.value)||0);
-          order[index]=key;
-        }
-        const compact=order.filter(Boolean);
-        for(const key of Object.keys(directionLabels))if(!compact.includes(key))compact.push(key);
-        this.worldEditor.updatePlayerConfig({sprite:{order:compact}},true);
-        this.syncLocalWorldFromEditor();
-        this.renderWorldInspector();
-      }));
+      const atlasCanvas=content.querySelector("[data-atlas-canvas]");
+      let atlasDirection="n";
+      const selectRegion=direction=>{
+        atlasDirection=direction;
+        content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.classList.toggle("is-active",btn.dataset.playerRegionEdit===direction));
+      };
+      content.querySelectorAll("[data-player-region-edit]").forEach(btn=>btn.addEventListener("click",()=>selectRegion(btn.dataset.playerRegionEdit)));
+      selectRegion("n");
+      atlasCanvas?.addEventListener("pointerdown",event=>{
+        const img=atlasCanvas.querySelector("img");if(!img)return;
+        event.preventDefault();
+        const rect=img.getBoundingClientRect();
+        const naturalW=img.naturalWidth||rect.width,naturalH=img.naturalHeight||rect.height;
+        const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
+        const point=e=>({x:clamp((e.clientX-rect.left)/rect.width*naturalW,0,naturalW),y:clamp((e.clientY-rect.top)/rect.height*naturalH,0,naturalH)});
+        const start=point(event),selection=content.querySelector("[data-atlas-selection]");
+        try{atlasCanvas.setPointerCapture(event.pointerId)}catch{}
+        const draw=p=>{
+          const x=Math.min(start.x,p.x),y=Math.min(start.y,p.y),w=Math.max(1,Math.abs(p.x-start.x)),h=Math.max(1,Math.abs(p.y-start.y));
+          selection.hidden=false;selection.style.left=(x/naturalW*100)+"%";selection.style.top=(y/naturalH*100)+"%";selection.style.width=(w/naturalW*100)+"%";selection.style.height=(h/naturalH*100)+"%";
+          return {x,y,width:w,height:h};
+        };
+        let latest=draw(start);
+        const move=e=>{latest=draw(point(e))};
+        const end=e=>{
+          latest=draw(point(e));
+          atlasCanvas.removeEventListener("pointermove",move);atlasCanvas.removeEventListener("pointerup",end);atlasCanvas.removeEventListener("pointercancel",end);
+          this.worldEditor.updatePlayerConfig({sprite:{imageWidth:naturalW,imageHeight:naturalH,regions:{[atlasDirection]:latest}}},true);
+          this.syncLocalWorldFromEditor();this.renderWorldInspector();
+        };
+        atlasCanvas.addEventListener("pointermove",move);atlasCanvas.addEventListener("pointerup",end);atlasCanvas.addEventListener("pointercancel",end);
+      });
 
       content.querySelectorAll("[data-player-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.playerProp;
@@ -972,7 +972,7 @@ export class DevOverlay {
     if(target.kind==="world-player-sprite"){
       const src="./"+asset.path;
       const current=this.worldEditor.getPlayerConfig()?.sprite||{};
-      this.worldEditor.updatePlayerConfig({sprite:{src,columns:Number(current.columns)||8,rows:Number(current.rows)||1,order:Array.isArray(current.order)&&current.order.length?current.order:["n","ne","e","se","s","sw","w","nw"]},src},true);
+      this.worldEditor.updatePlayerConfig({sprite:{src,regions:current.regions||{}},src},true);
       this.syncLocalWorldFromEditor();
       this.assetPickTarget=null;
       this.toggleAssets(false);
