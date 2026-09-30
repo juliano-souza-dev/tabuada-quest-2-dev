@@ -287,6 +287,8 @@
 .tq-world-atlas-mode-switch{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .tq-world-atlas-mode-switch button{min-height:40px;padding:7px 9px;border:1px solid rgba(126,231,255,.18);border-radius:9px;background:#0c2231;color:#b9cdd9;font-size:9px;font-weight:800}
 .tq-world-atlas-mode-switch button.is-active{border-color:#7ee7ff;background:#16394d;color:#fff;box-shadow:inset 0 0 0 1px rgba(126,231,255,.22)}
+.tq-world-atlas-grid-fill{display:none;min-height:42px;padding:8px 12px;border:1px solid #7ee7ff;border-radius:9px;background:#16435b;color:#fff;font-size:10px;font-weight:900;box-shadow:inset 0 0 0 1px rgba(126,231,255,.18)}
+.tq-world-atlas-wizard.is-grid-mode .tq-world-atlas-grid-fill{display:block}
 .tq-world-atlas-grid4{position:absolute;inset:0;display:none;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);z-index:8;touch-action:none}
 .tq-world-atlas-grid4__cell{min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;border:1px solid rgba(126,231,255,.72)!important;border-radius:0!important;background:rgba(126,231,255,.035)!important;box-shadow:none!important}
 .tq-world-atlas-grid4__cell:active,.tq-world-atlas-grid4__cell:hover{background:rgba(126,231,255,.18)!important}
