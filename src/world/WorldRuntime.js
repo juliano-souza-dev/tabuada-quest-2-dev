@@ -6,7 +6,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20260930-1912";
-import { normalizeEntityCollision, resolvePlayerCollisions } from "./WorldCollision.mjs?v=20260930-2016";
+import { normalizeEntityCollision, resolvePlayerCollisions } from "./WorldCollision.mjs?v=20260930-2020";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 
