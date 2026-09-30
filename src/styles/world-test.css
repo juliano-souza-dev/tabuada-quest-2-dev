@@ -27,6 +27,81 @@
 .tq-world-entity img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 4px #001a2e80);pointer-events:none}
 .tq-world-entity__webgl{display:block;width:100%;height:100%;pointer-events:none;background:transparent}
 .tq-world-entity__webgl[hidden]{display:none}
+
+/* Background preset: preserve the horizon/ilhas and reveal the real WebGL ocean below. */
+.tq-world-entity--horizon-blend{isolation:isolate;overflow:visible}
+.tq-world-entity--horizon-blend>img,
+.tq-world-entity--horizon-blend>.tq-world-entity__webgl{
+  -webkit-mask-image:linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 var(--hb-solid-end,44%),
+    rgba(0,0,0,.82) var(--hb-line,58%),
+    rgba(0,0,0,.28) var(--hb-soft-end,68%),
+    transparent var(--hb-fade-end,82%),
+    transparent 100%
+  );
+  mask-image:linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 var(--hb-solid-end,44%),
+    rgba(0,0,0,.82) var(--hb-line,58%),
+    rgba(0,0,0,.28) var(--hb-soft-end,68%),
+    transparent var(--hb-fade-end,82%),
+    transparent 100%
+  );
+}
+
+/* A very subtle sample of the same ocean texture hides color discontinuities.
+   The actual moving water remains the existing WebGL ocean underneath. */
+.tq-world-entity--horizon-blend::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  background-image:var(--hb-ocean-texture,none);
+  background-repeat:repeat;
+  background-size:var(--hb-ocean-size,720px) auto;
+  background-position:center bottom;
+  opacity:var(--hb-caustics,.16);
+  mix-blend-mode:soft-light;
+  -webkit-mask-image:linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent var(--hb-solid-end,44%),
+    rgba(0,0,0,.12) var(--hb-line,58%),
+    rgba(0,0,0,.55) var(--hb-soft-end,68%),
+    #000 100%
+  );
+  mask-image:linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent var(--hb-solid-end,44%),
+    rgba(0,0,0,.12) var(--hb-line,58%),
+    rgba(0,0,0,.55) var(--hb-soft-end,68%),
+    #000 100%
+  );
+}
+
+/* Haze/tint is restricted to the transition band so the distant islands stay readable. */
+.tq-world-entity--horizon-blend::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:3;
+  pointer-events:none;
+  background:linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent var(--hb-solid-end,44%),
+    rgba(73,190,220,.08) var(--hb-line,58%),
+    rgba(73,190,220,var(--hb-tint,.24)) var(--hb-soft-end,68%),
+    rgba(143,221,235,var(--hb-mist,.22)) 100%
+  );
+  mix-blend-mode:screen;
+  filter:blur(5px);
+}
 .tq-world-entity.is-logical-only{background:transparent}
 .tq-world-host.is-editor .tq-world-entity.is-logical-only{outline:1px dashed rgba(126,231,255,.48);outline-offset:0}
 .tq-world-hud{position:fixed;left:max(10px,env(safe-area-inset-left));top:max(72px,calc(env(safe-area-inset-top) + 62px));z-index:500;display:grid;gap:2px;min-width:180px;padding:9px 12px;border:1px solid #ffffff38;border-radius:12px;background:#061b2dcc;backdrop-filter:blur(8px);box-shadow:0 5px 18px #0006;pointer-events:none}
