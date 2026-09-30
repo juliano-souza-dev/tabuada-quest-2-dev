@@ -636,7 +636,7 @@ export class DevOverlay {
       const spriteColumns=Math.max(1,Number(sprite.columns)||8);
       const spriteRows=Math.max(1,Number(sprite.rows)||1);
       const regions=sprite.regions||{};
-      const mobilePointMode=Boolean(globalThis.matchMedia?.("(pointer: coarse)")?.matches||globalThis.matchMedia?.("(max-width: 768px)")?.matches);
+      const preferPointMode=Boolean(globalThis.matchMedia?.("(pointer: coarse)")?.matches||globalThis.matchMedia?.("(max-width: 768px)")?.matches);
       const directionVisual={
         n:{icon:"↑",label:"Para cima"},
         nne:{icon:"↗",label:"Quase para cima, levemente à direita"},
@@ -717,10 +717,11 @@ export class DevOverlay {
               (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
               '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
             '</button>'+
-            '<div class="tq-world-atlas-wizard '+(mobilePointMode?'is-point-mode':'')+'" data-atlas-wizard>'+
-              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small data-atlas-help>'+(mobilePointMode?'Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão.':'Arraste uma caixa somente em volta desse navio.')+'</small></div></div>'+
+            '<div class="tq-world-atlas-wizard '+(preferPointMode?'is-point-mode':'')+'" data-atlas-wizard>'+
+              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small data-atlas-help>'+(preferPointMode?'Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão.':'Arraste uma caixa somente em volta desse navio.')+'</small></div></div>'+
               '<div class="tq-world-atlas-mode-switch" data-atlas-mode-switch>'+
-                '<button type="button" class="is-active" data-atlas-mode="points">Pontos</button>'+
+                '<button type="button" data-atlas-mode="rectangle">Retângulo</button>'+
+                '<button type="button" data-atlas-mode="points">Pontos</button>'+
                 '<button type="button" data-atlas-mode="grid4">Quadro 4×4</button>'+
               '</div>'+
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
@@ -791,7 +792,7 @@ export class DevOverlay {
       const atlasPointsLayer=content.querySelector("[data-atlas-points]");
       const atlasMagnifier=content.querySelector("[data-atlas-magnifier]");
       const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
-      let selectionMode=mobilePointMode?"points":"rectangle";
+      let selectionMode=preferPointMode?"points":"rectangle";
       const isPointMode=()=>selectionMode==="points";
       const isGridMode=()=>selectionMode==="grid4";
       let atlasDirection=firstMissing;
@@ -954,7 +955,7 @@ export class DevOverlay {
       };
 
       const setSelectionMode=mode=>{
-        if(!mobilePointMode&&mode!=="rectangle")return;
+        if(!["rectangle","points","grid4"].includes(mode))return;
         selectionMode=mode;
         const wizard=content.querySelector("[data-atlas-wizard]");
         wizard?.classList.toggle("is-point-mode",isPointMode());
