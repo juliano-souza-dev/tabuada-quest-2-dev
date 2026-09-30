@@ -1115,11 +1115,16 @@ export class WorldRuntime {
   updatePlayer(dt){
     const input=this.inputVector();
     const maxSpeed=this.playerMaxSpeed();
-    const accel=maxSpeed*(1100/420);
-    const drag=Math.pow(0.12,dt);
+    const inputMagnitude=clamp(Math.hypot(input.x,input.y),0,1);
+    const targetVx=input.x*maxSpeed;
+    const targetVy=input.y*maxSpeed;
 
-    this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
-    this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
+    const accelResponse=1-Math.exp(-dt*6.8);
+    const coastResponse=1-Math.exp(-dt*3.4);
+    const response=inputMagnitude>.001?accelResponse:coastResponse;
+
+    this.player.vx+=(targetVx-this.player.vx)*response;
+    this.player.vy+=(targetVy-this.player.vy)*response;
 
     let speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>maxSpeed){
@@ -1235,7 +1240,7 @@ export class WorldRuntime {
     const effects=this.playerWaterEffects();
     const ocean=normalizeOceanConfig(this.config.ocean||{});
     const rocking=this.mode==="play"&&effects.oceanMotionActive&&ocean.active
-      ?computeShipOceanMotion(ocean,this.player,time,effects.oceanResponse)
+      ?computeShipOceanMotion(ocean,this.player,time,1)
       :{offsetX:0,offsetY:0,roll:0,scaleX:1,scaleY:1,energy:0};
     this.playerOceanMotion=rocking;
 
