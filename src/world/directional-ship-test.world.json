@@ -1,0 +1,57 @@
+{
+  "schema": "tq.world",
+  "version": 1,
+  "id": "directional-ship-test",
+  "name": "Teste Navio 8 Direções",
+  "type": "ocean",
+  "width": 2400,
+  "height": 3200,
+  "player": {
+    "x": 1200,
+    "y": 2500,
+    "width": 180,
+    "height": 180,
+    "direction": "n",
+    "src": "./assets/ships/ship_s.png",
+    "directions": {
+      "n": "./assets/ships/ship_s.png",
+      "ne": "./assets/ships/ship_sw.png",
+      "e": "./assets/ships/ship_w.png",
+      "se": "./assets/ships/ship_nw.png",
+      "s": "./assets/ships/ship_n.png",
+      "sw": "./assets/ships/ship_ne.png",
+      "w": "./assets/ships/ship_e.png",
+      "nw": "./assets/ships/ship_se.png"
+    }
+  },
+  "entities": [],
+  "nameplate": {
+    "purpose": "Teste visual das oito vistas direcionais do navio"
+  },
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "sourceRevision": "20260930-0732",
+    "editorVersion": 1,
+    "testPurpose": "8-direction ship navigation",
+    "directionConvention": "movement-heading",
+    "assetConvention": "camera-viewpoint-opposite-heading"
+  },
+  "editor": {
+    "cameraX": 1200,
+    "cameraY": 1600,
+    "zoom": 0.58
+  },
+  "ocean": {
+    "active": true,
+    "background": "./assets/backgrounds/scene-ocean.webp",
+    "preset": "adventure",
+    "speed": 28,
+    "directionX": 0.82,
+    "directionY": 0.32,
+    "swell": 28,
+    "tileSize": 720,
+    "brightness": 102,
+    "saturation": 105
+  }
+}

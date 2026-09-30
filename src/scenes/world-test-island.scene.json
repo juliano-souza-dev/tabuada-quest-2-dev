@@ -1,0 +1,78 @@
+{
+  "schema": "tq.scene",
+  "version": 1,
+  "id": "world-test-island",
+  "screenId": "world-test-island",
+  "reference": {
+    "width": 390,
+    "height": 844
+  },
+  "root": {
+    "id": "viewport",
+    "kind": "viewport",
+    "canonical": true
+  },
+  "nodes": [
+    {
+      "id": "world-test-island.background",
+      "kind": "image",
+      "src": "./assets/backgrounds/scene-islands.webp",
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 844,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 1,
+      "visible": true,
+      "locked": true,
+      "parentId": "viewport",
+      "layout": {
+        "mode": "viewport-cover"
+      }
+    },
+    {
+      "id": "world-test-island.title",
+      "kind": "text",
+      "text": "CENA REAL DO NOSSO MOTOR",
+      "x": 43,
+      "y": 86,
+      "width": 304,
+      "height": 54,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 5,
+      "visible": true,
+      "locked": true,
+      "parentId": "viewport"
+    },
+    {
+      "id": "world-test-island.note",
+      "kind": "text",
+      "text": "Você saiu do WorldRuntime e entrou no SceneRuntime.",
+      "x": 48,
+      "y": 145,
+      "width": 294,
+      "height": 72,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 5,
+      "visible": true,
+      "locked": true,
+      "parentId": "viewport"
+    }
+  ],
+  "meta": {
+    "sourceRevision": "20260930-0030",
+    "prototype": true
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "schema": "tq.world",
+  "version": 1,
+  "id": "ocean-prototype",
+  "width": 2200,
+  "height": 3200,
+  "player": {
+    "x": 1100,
+    "y": 2680,
+    "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+  },
+  "entities": [
+    {
+      "id": "location.islands",
+      "type": "location",
+      "label": "Arquipélago de Teste",
+      "x": 720,
+      "y": 1420,
+      "width": 350,
+      "height": 250,
+      "interactionRadius": 260,
+      "src": "./assets/backgrounds/scene-islands.webp",
+      "scene": "./src/scenes/world-test-island.scene.json"
+    },
+    {
+      "id": "location.port",
+      "type": "location",
+      "label": "Porto Pirata",
+      "x": 1690,
+      "y": 830,
+      "width": 340,
+      "height": 240,
+      "interactionRadius": 250,
+      "src": "./assets/backgrounds/home-pirate-port.webp",
+      "scene": "./src/scenes/world-test-island.scene.json"
+    },
+    {
+      "id": "barrel.01",
+      "type": "barrel",
+      "label": "barril",
+      "x": 940,
+      "y": 2280,
+      "width": 78,
+      "height": 78,
+      "drift": 28,
+      "bob": 12,
+      "src": "./assets/barris/barril_5_cartoon.png"
+    },
+    {
+      "id": "barrel.02",
+      "type": "barrel",
+      "label": "barril",
+      "x": 1340,
+      "y": 2010,
+      "width": 78,
+      "height": 78,
+      "drift": 22,
+      "bob": 14,
+      "src": "./assets/barris/barril_5_cartoon.png"
+    },
+    {
+      "id": "barrel.03",
+      "type": "barrel",
+      "label": "barril",
+      "x": 1610,
+      "y": 1710,
+      "width": 78,
+      "height": 78,
+      "drift": 34,
+      "bob": 10,
+      "src": "./assets/barris/barril_5_cartoon.png"
+    },
+    {
+      "id": "barrel.04",
+      "type": "barrel",
+      "label": "barril",
+      "x": 480,
+      "y": 2350,
+      "width": 78,
+      "height": 78,
+      "drift": 18,
+      "bob": 15,
+      "src": "./assets/barris/barril_5_cartoon.png"
+    }
+  ],
+  "name": "Oceano Protótipo",
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "sourceRevision": "20260930-0050",
+    "editorVersion": 1
+  },
+  "editor": {
+    "cameraX": 1100,
+    "cameraY": 1780,
+    "zoom": 0.58
+  },
+  "ocean": {
+    "active": true,
+    "background": "./assets/backgrounds/scene-ocean.webp",
+    "preset": "adventure",
+    "speed": 28,
+    "directionX": 0.82,
+    "directionY": 0.32,
+    "swell": 28,
+    "tileSize": 720,
+    "brightness": 102,
+    "saturation": 105
+  }
+}
