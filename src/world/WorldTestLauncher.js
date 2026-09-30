@@ -1,15 +1,15 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20260930-1802";
-import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1452";
+import { WorldRuntime } from "./WorldRuntime.js?v=20260930-1851";
+import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 
 export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
-  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20260930-0904",{cache:"no-store"});
+  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20260930-1851",{cache:"no-store"});
   if(!catalogResponse.ok)throw new Error("World catalog failed: "+catalogResponse.status);
   const catalog=await catalogResponse.json();
   const entry=(catalog.worlds||[]).find(item=>item.id===worldId)
     ||(catalog.worlds||[]).find(item=>item.id==="ocean-prototype");
   if(!entry?.path)throw new Error("World test not found: "+worldId);
 
-  const response=await fetch(entry.path+"?v=20260930-0904",{cache:"no-store"});
+  const response=await fetch(entry.path+"?v=20260930-1851",{cache:"no-store"});
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
 
