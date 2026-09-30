@@ -726,6 +726,10 @@ export class DevOverlay {
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
                 (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><div class="tq-world-atlas-grid4" data-atlas-grid4>'+grid4Cells+'</div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
               '</div>'+
+              '<button type="button" class="tq-world-atlas-apply-all" data-atlas-grid4-apply-all>'+
+                '<span class="tq-world-atlas-apply-all__icon">✓</span>'+
+                '<span><strong>APLICAR 4×4 A TODOS</strong><small>Configura os 16 quadros agora</small></span>'+
+              '</button>'+
               '<div class="tq-world-atlas-point-actions" data-atlas-point-actions>'+
                 '<button type="button" data-atlas-undo>↶ Desfazer</button>'+
                 '<button type="button" data-atlas-clear>Limpar</button>'+
@@ -953,6 +957,35 @@ export class DevOverlay {
         advanceAfterSave();
       };
 
+      const grid4Region=(index,metrics=imageMetrics())=>{
+        if(!metrics||!Number.isInteger(index)||index<0||index>=16)return null;
+        const width=metrics.naturalW/4;
+        const height=metrics.naturalH/4;
+        return {
+          x:(index%4)*width,
+          y:Math.floor(index/4)*height,
+          width,
+          height
+        };
+      };
+
+      const applyGrid4ToAll=()=>{
+        const metrics=imageMetrics();
+        if(!metrics)return false;
+        const allRegions={};
+        directionOrder.forEach((direction,index)=>{
+          allRegions[direction]=grid4Region(index,metrics);
+        });
+        this.worldEditor.updatePlayerConfig({sprite:{
+          imageWidth:metrics.naturalW,
+          imageHeight:metrics.naturalH,
+          regions:allRegions
+        }},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+        return true;
+      };
+
       const setSelectionMode=mode=>{
         if(!mobilePointMode&&mode!=="rectangle")return;
         selectionMode=mode;
@@ -992,26 +1025,28 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       });
+      content.querySelector("[data-atlas-grid4-apply-all]")?.addEventListener("click",event=>{
+        event.preventDefault();
+        if(!isGridMode())return;
+        const button=event.currentTarget;
+        if(!applyGrid4ToAll())return;
+        button.classList.add("is-applied");
+        const strong=button.querySelector("strong");
+        const small=button.querySelector("small");
+        if(strong)strong.textContent="16 QUADROS APLICADOS ✓";
+        if(small)small.textContent="Cada direção recebeu seu respectivo quadro";
+      });
+
       content.querySelector("[data-atlas-grid4]")?.addEventListener("click",event=>{
         if(!isGridMode())return;
         const cell=event.target.closest?.("[data-atlas-grid-cell]");
         if(!cell)return;
         event.preventDefault();
         event.stopPropagation();
-        const metrics=imageMetrics();
-        if(!metrics)return;
         const index=Number(cell.dataset.atlasGridCell);
-        if(!Number.isInteger(index)||index<0||index>15)return;
-        const column=index%4;
-        const row=Math.floor(index/4);
-        const width=metrics.naturalW/4;
-        const height=metrics.naturalH/4;
-        saveRegion({
-          x:column*width,
-          y:row*height,
-          width,
-          height
-        });
+        const region=grid4Region(index);
+        if(!region)return;
+        saveRegion(region);
       });
 
       content.querySelector("[data-atlas-undo]")?.addEventListener("click",()=>{
