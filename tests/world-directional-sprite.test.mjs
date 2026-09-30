@@ -96,3 +96,44 @@ test("missing direction falls back instead of hiding ship",()=>{
   assert.ok(region);
   assert.deepEqual({x:region.x,y:region.y,width:region.width,height:region.height},{x:100,y:0,width:100,height:100});
 });
+
+
+test("point-defined atlas region derives bounds and clip polygon",()=>{
+  const sprite={
+    src:"ship.webp",
+    imageWidth:500,
+    imageHeight:400,
+    regions:{
+      n:{
+        points:[
+          {x:120,y:80},
+          {x:220,y:90},
+          {x:240,y:180},
+          {x:150,y:210},
+          {x:100,y:150}
+        ]
+      }
+    }
+  };
+  const region=resolveDirectionalRegion(sprite,"n");
+  assert.equal(region.x,100);
+  assert.equal(region.y,80);
+  assert.equal(region.width,140);
+  assert.equal(region.height,130);
+  assert.equal(region.points.length,5);
+  const style=directionalRegionStyle(sprite,"n");
+  assert.match(style.clipPath,/^polygon\(/);
+  assert.equal(style.WebkitClipPath,style.clipPath);
+});
+
+test("rectangular atlas region clears polygon clipping",()=>{
+  const sprite={
+    src:"ship.webp",
+    imageWidth:400,
+    imageHeight:200,
+    regions:{e:{x:100,y:0,width:100,height:100}}
+  };
+  const style=directionalRegionStyle(sprite,"e");
+  assert.equal(style.clipPath,"none");
+  assert.equal(style.WebkitClipPath,"none");
+});
