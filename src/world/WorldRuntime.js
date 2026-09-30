@@ -41,6 +41,9 @@ export class WorldRuntime {
     this.navigationTarget=null;
     this.entities=(config.entities||[]).map((entity,index)=>({
       ...structuredClone(entity),
+      rotation:Number(entity.rotation||0),
+      skewX:Number(entity.skewX||0),
+      skewY:Number(entity.skewY||0),
       index,
       anchorX:Number(entity.x??0),
       anchorY:Number(entity.y??0),
@@ -187,7 +190,7 @@ export class WorldRuntime {
     el.style.top=entity.y+"px";
     el.style.width=(entity.width||96)+"px";
     el.style.height=(entity.height||96)+"px";
-    el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)}deg)`;
+    el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg)`;
     const logicalOnly=el.dataset.renderMode==="logical";
     el.classList.toggle("is-logical-only",logicalOnly);
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
@@ -202,14 +205,26 @@ export class WorldRuntime {
     const gizmo=document.createElement("div");
     gizmo.className="tq-world-gizmo";
     gizmo.hidden=true;
-    gizmo.innerHTML='<span class="tq-world-gizmo__stem"></span><button type="button" class="tq-world-gizmo__rotate" aria-label="Girar entidade" title="Girar"></button><button type="button" class="tq-world-gizmo__resize" aria-label="Redimensionar entidade" title="Redimensionar"></button>';
+    const resizeHandles=["nw","n","ne","e","se","s","sw","w"]
+      .map(dir=>'<button type="button" class="tq-world-gizmo__resize tq-world-gizmo__resize--'+dir+'" data-world-resize-dir="'+dir+'" aria-label="Redimensionar '+dir+'" title="Redimensionar '+dir+'"></button>')
+      .join("");
+    gizmo.innerHTML=
+      '<span class="tq-world-gizmo__stem"></span>'+
+      '<button type="button" class="tq-world-gizmo__rotate" aria-label="Girar entidade" title="Girar"></button>'+
+      resizeHandles+
+      '<button type="button" class="tq-world-gizmo__skew tq-world-gizmo__skew--x" data-world-skew-axis="x" aria-label="Inclinar horizontalmente" title="Inclinar horizontalmente"></button>'+
+      '<button type="button" class="tq-world-gizmo__skew tq-world-gizmo__skew--y" data-world-skew-axis="y" aria-label="Inclinar verticalmente" title="Inclinar verticalmente"></button>';
     this.entityLayer.append(gizmo);
     this.gizmoEl=gizmo;
 
+    const activeEntity=()=>this.mode==="edit"&&this.selectedId
+      ?this.entities.find(item=>item.id===this.selectedId)
+      :null;
+    const emit=(entity,commit)=>this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),commit);
+
     const rotate=gizmo.querySelector(".tq-world-gizmo__rotate");
     rotate.addEventListener("pointerdown",event=>{
-      if(this.mode!=="edit"||!this.selectedId)return;
-      const entity=this.entities.find(item=>item.id===this.selectedId);
+      const entity=activeEntity();
       if(!entity)return;
       event.preventDefault();event.stopPropagation();
       const rect=entity.el?.getBoundingClientRect();
@@ -222,64 +237,143 @@ export class WorldRuntime {
         entity.rotation=((angle+180)%360+360)%360-180;
         this.applyEntityVisual(entity);
         this.syncGizmo();
-        this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),false);
+        emit(entity,false);
       };
-      const end=e=>{
+      const finish=e=>{
         try{if(rotate.hasPointerCapture(e.pointerId))rotate.releasePointerCapture(e.pointerId)}catch{}
         rotate.removeEventListener("pointermove",move);
-        rotate.removeEventListener("pointerup",end);
-        rotate.removeEventListener("pointercancel",end);
-        this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),true);
+        rotate.removeEventListener("pointerup",finish);
+        rotate.removeEventListener("pointercancel",finish);
+        emit(entity,true);
       };
       rotate.addEventListener("pointermove",move);
-      rotate.addEventListener("pointerup",end);
-      rotate.addEventListener("pointercancel",end);
+      rotate.addEventListener("pointerup",finish);
+      rotate.addEventListener("pointercancel",finish);
     });
 
-    const resize=gizmo.querySelector(".tq-world-gizmo__resize");
-    resize.addEventListener("pointerdown",event=>{
-      if(this.mode!=="edit"||!this.selectedId)return;
-      const entity=this.entities.find(item=>item.id===this.selectedId);
-      if(!entity)return;
-      event.preventDefault();event.stopPropagation();
-      const rect=entity.el?.getBoundingClientRect();
-      if(!rect)return;
-      const center={x:rect.left+rect.width/2,y:rect.top+rect.height/2};
-      const startDistance=Math.max(1,Math.hypot(event.clientX-center.x,event.clientY-center.y));
-      const startWidth=Math.max(16,Number(entity.width||96));
-      const startHeight=Math.max(16,Number(entity.height||96));
-      const startAngle=Number(entity.rotation||0)*Math.PI/180;
-      const start={x:event.clientX,y:event.clientY};
-      try{resize.setPointerCapture(event.pointerId)}catch{}
+    gizmo.querySelectorAll("[data-world-resize-dir]").forEach(handle=>{
+      handle.addEventListener("pointerdown",event=>{
+        const entity=activeEntity();
+        if(!entity)return;
+        event.preventDefault();event.stopPropagation();
 
-      const move=e=>{
-        if(entity.lockAspect!==false){
-          const scale=Math.max(.12,Math.hypot(e.clientX-center.x,e.clientY-center.y)/startDistance);
-          entity.width=clamp(startWidth*scale,16,2400);
-          entity.height=clamp(startHeight*scale,16,2400);
-        }else{
-          const zoom=Math.max(.1,this.zoom||1);
-          const dx=(e.clientX-start.x)/zoom;
-          const dy=(e.clientY-start.y)/zoom;
-          const localX=dx*Math.cos(-startAngle)-dy*Math.sin(-startAngle);
-          const localY=dx*Math.sin(-startAngle)+dy*Math.cos(-startAngle);
-          entity.width=clamp(startWidth+localX*2,16,2400);
-          entity.height=clamp(startHeight+localY*2,16,2400);
-        }
-        this.applyEntityVisual(entity);
-        this.syncGizmo();
-        this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),false);
-      };
-      const end=e=>{
-        try{if(resize.hasPointerCapture(e.pointerId))resize.releasePointerCapture(e.pointerId)}catch{}
-        resize.removeEventListener("pointermove",move);
-        resize.removeEventListener("pointerup",end);
-        resize.removeEventListener("pointercancel",end);
-        this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),true);
-      };
-      resize.addEventListener("pointermove",move);
-      resize.addEventListener("pointerup",end);
-      resize.addEventListener("pointercancel",end);
+        const dir=String(handle.dataset.worldResizeDir||"se");
+        const zoom=Math.max(.1,this.zoom||1);
+        const angle=Number(entity.rotation||0)*Math.PI/180;
+        const cos=Math.cos(angle);
+        const sin=Math.sin(angle);
+        const min=16;
+        const start={
+          px:event.clientX,
+          py:event.clientY,
+          x:Number(entity.x||0),
+          y:Number(entity.y||0),
+          width:Math.max(min,Number(entity.width||96)),
+          height:Math.max(min,Number(entity.height||96))
+        };
+        const startLeft=-start.width/2;
+        const startRight=start.width/2;
+        const startTop=-start.height/2;
+        const startBottom=start.height/2;
+
+        try{handle.setPointerCapture(event.pointerId)}catch{}
+
+        const move=e=>{
+          const dx=(e.clientX-start.px)/zoom;
+          const dy=(e.clientY-start.py)/zoom;
+          const localX=dx*cos+dy*sin;
+          const localY=-dx*sin+dy*cos;
+
+          let left=startLeft;
+          let right=startRight;
+          let top=startTop;
+          let bottom=startBottom;
+
+          if(dir.includes("w"))left=Math.min(right-min,startLeft+localX);
+          if(dir.includes("e"))right=Math.max(left+min,startRight+localX);
+          if(dir.includes("n"))top=Math.min(bottom-min,startTop+localY);
+          if(dir.includes("s"))bottom=Math.max(top+min,startBottom+localY);
+
+          const localCenterX=(left+right)/2;
+          const localCenterY=(top+bottom)/2;
+          const worldCenterX=localCenterX*cos-localCenterY*sin;
+          const worldCenterY=localCenterX*sin+localCenterY*cos;
+
+          entity.x=clamp(start.x+worldCenterX,0,this.config.width);
+          entity.y=clamp(start.y+worldCenterY,0,this.config.height);
+          entity.width=clamp(right-left,min,2400);
+          entity.height=clamp(bottom-top,min,2400);
+          entity.anchorX=entity.x;
+          entity.anchorY=entity.y;
+
+          this.applyEntityVisual(entity);
+          this.syncGizmo();
+          emit(entity,false);
+        };
+
+        const finish=e=>{
+          try{if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)}catch{}
+          handle.removeEventListener("pointermove",move);
+          handle.removeEventListener("pointerup",finish);
+          handle.removeEventListener("pointercancel",finish);
+          emit(entity,true);
+        };
+
+        handle.addEventListener("pointermove",move);
+        handle.addEventListener("pointerup",finish);
+        handle.addEventListener("pointercancel",finish);
+      });
+    });
+
+    gizmo.querySelectorAll("[data-world-skew-axis]").forEach(handle=>{
+      handle.addEventListener("pointerdown",event=>{
+        const entity=activeEntity();
+        if(!entity)return;
+        event.preventDefault();event.stopPropagation();
+
+        const axis=handle.dataset.worldSkewAxis==="y"?"y":"x";
+        const zoom=Math.max(.1,this.zoom||1);
+        const angle=Number(entity.rotation||0)*Math.PI/180;
+        const cos=Math.cos(angle);
+        const sin=Math.sin(angle);
+        const start={
+          px:event.clientX,
+          py:event.clientY,
+          value:axis==="x"?Number(entity.skewX||0):Number(entity.skewY||0),
+          width:Math.max(1,Number(entity.width||96)),
+          height:Math.max(1,Number(entity.height||96))
+        };
+
+        try{handle.setPointerCapture(event.pointerId)}catch{}
+
+        const move=e=>{
+          const dx=(e.clientX-start.px)/zoom;
+          const dy=(e.clientY-start.py)/zoom;
+          const localX=dx*cos+dy*sin;
+          const localY=-dx*sin+dy*cos;
+          const delta=axis==="x"?localX:localY;
+          const size=axis==="x"?start.height:start.width;
+          const value=clamp(start.value+Math.atan(delta/size)*180/Math.PI,-75,75);
+          if(axis==="x")entity.skewX=value;
+          else entity.skewY=value;
+
+          this.applyEntityVisual(entity);
+          this.syncGizmo();
+          emit(entity,false);
+        };
+
+        const finish=e=>{
+          try{if(handle.hasPointerCapture(e.pointerId))handle.releasePointerCapture(e.pointerId)}catch{}
+          handle.removeEventListener("pointermove",move);
+          handle.removeEventListener("pointerup",finish);
+          handle.removeEventListener("pointercancel",finish);
+          emit(entity,true);
+        };
+
+        handle.addEventListener("pointermove",move);
+        handle.addEventListener("pointerup",finish);
+        handle.addEventListener("pointercancel",finish);
+      });
     });
 
     return gizmo;
@@ -1215,6 +1309,8 @@ export class WorldRuntime {
     entity.width=clamp(Number(entity.width??96),16,2400);
     entity.height=clamp(Number(entity.height??96),16,2400);
     entity.rotation=Number(entity.rotation||0);
+    entity.skewX=clamp(Number(entity.skewX||0),-75,75);
+    entity.skewY=clamp(Number(entity.skewY||0),-75,75);
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
     if(previousType!==entity.type)this.renderEntities();
@@ -1240,6 +1336,9 @@ export class WorldRuntime {
       id,
       x:clamp(Number(raw.x??this.camera.x),0,this.config.width),
       y:clamp(Number(raw.y??this.camera.y),0,this.config.height),
+      rotation:Number(raw.rotation||0),
+      skewX:clamp(Number(raw.skewX||0),-75,75),
+      skewY:clamp(Number(raw.skewY||0),-75,75),
       index:this.entities.length,
       anchorX:0,
       anchorY:0,
