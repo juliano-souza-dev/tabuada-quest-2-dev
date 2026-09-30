@@ -1160,9 +1160,13 @@ export class WorldRuntime {
       ?applyEntityEffectPreset(current,patch.preset,entity)
       :current;
     entity.effect=normalizeEntityEffect({...base,...structuredClone(patch)},entity);
+    if(entity.effect.category==="background"||entity.effect.mode==="horizonBlend"){
+      entity.collision=normalizeEntityCollision({...entity.collision,active:false},entity);
+    }
     this.entityEffectOrigins.set(id,{x:Number(this.camera.x)||0,y:Number(this.camera.y)||0});
     this.applyEntityVisual(entity);
     this.syncEntityEffectRenderer(entity);
+    this.syncCollisionVisual(entity);
     this.syncGizmo();
     const clean=this.getEntity(id);
     this.onEntityChange?.(clean,commit);
