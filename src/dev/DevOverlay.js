@@ -403,8 +403,11 @@ export class DevOverlay {
   }
 
   worldBackgroundOptions(selected=""){
-    const backgrounds=(this.assetCatalog||[]).filter(asset=>String(asset.path||"").startsWith("assets/backgrounds/"));
-    const preferred=["assets/backgrounds/scene-ocean.webp",...backgrounds.map(asset=>asset.path)];
+    const backgrounds=(this.assetCatalog||[]).filter(asset=>{
+      const path=String(asset.path||"");
+      return path.startsWith("assets/ocean/")||path.startsWith("assets/backgrounds/");
+    });
+    const preferred=["assets/ocean/ocean.png","assets/backgrounds/scene-ocean.webp",...backgrounds.map(asset=>asset.path)];
     const unique=[...new Set(preferred)];
     return unique.map(path=>{
       const value="./"+path;
@@ -519,7 +522,7 @@ export class DevOverlay {
         y:Math.max(120,height-420),
         src:"./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
       },
-      ocean:{active:true,background,preset,...presetDefaults},
+      ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
       entities:[],
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
       meta:{schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev"}
@@ -686,23 +689,11 @@ export class DevOverlay {
       const grid4Cells=Array.from({length:16},(_,index)=>
         '<button type="button" class="tq-world-atlas-grid4__cell" data-atlas-grid-cell="'+index+'" aria-label="Quadro '+(index+1)+'"></button>'
       ).join("");
-      const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
-      const layerRange=(layer,key,label,min,max,step)=>{
-        const value=Number(ocean.layers?.[layer]?.[key]??0);
-        return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-ocean-layer-output="'+layer+':'+key+'">'+value+'</output></span>'+
-          '<input data-ocean-layer="'+layer+'" data-ocean-layer-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'"></label>';
+      const shaderRange=(key,label,min,max,step="1",suffix="")=>{
+        const value=Number(ocean[key]??0);
+        return '<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-ocean-output="'+key+'">'+value+suffix+'</output></span>'+
+          '<input data-ocean-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-ocean-suffix="'+suffix+'"></label>';
       };
-      const layerCards=Object.entries(layerLabels).map(([layer,label])=>{
-        const data=ocean.layers?.[layer]||{};
-        return '<div class="tq-world-ocean-layer-card"><strong>'+label+'</strong>'+
-          '<label class="tq-world-field"><span>Textura</span><select data-ocean-layer="'+layer+'" data-ocean-layer-prop="background">'+this.worldBackgroundOptions(data.background||ocean.background)+'</select></label>'+
-          layerRange(layer,"parallax","Parallax",0,1,.01)+
-          layerRange(layer,"driftX","Deriva X",-120,120,1)+
-          layerRange(layer,"driftY","Deriva Y",-120,120,1)+
-          layerRange(layer,"tileScale","Escala da camada",.2,2.5,.01)+
-          layerRange(layer,"opacity","Opacidade",0,1,.01)+
-        '</div>';
-      }).join("");
 
       title.textContent=(world.name||world.id)+" · oceano";
       content.innerHTML=
@@ -759,24 +750,35 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
             '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Visual do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · textura e cor</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
-            '<label class="tq-world-field"><span>Fundo</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
+            '<label class="tq-world-field"><span>Renderer</span><select data-ocean-prop="renderer"><option value="webgl" '+(ocean.renderer==="webgl"?'selected':'')+'>WebGL2</option><option value="css" '+(ocean.renderer==="css"?'selected':'')+'>CSS fallback</option></select></label>'+
+            '<label class="tq-world-field"><span>Textura base</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-ocean-prop="preset">'+presetOptions+'</select></label>'+
-            number("tileSize","Escala da textura",240,1600,10)+
-            number("brightness","Brilho",50,150,1)+
-            number("saturation","Saturação",0,180,1)+
+            shaderRange("tileSize","Escala da textura",240,1600,10," px")+
+            shaderRange("brightness","Brilho",50,150,1,"%")+
+            shaderRange("saturation","Saturação",0,180,1,"%")+
+            '<small class="tq-world-editor-note">WebGL2 é o renderer principal. CSS fica apenas como fallback de compatibilidade.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Movimento da água</strong><span>▾</span></button><div class="tq-config-area__body">'+
-            number("speed","Velocidade",0,100,1)+
-            number("directionX","Direção horizontal",-1,1,.05)+
-            number("directionY","Direção vertical",-1,1,.05)+
-            number("swell","Ondulação",0,100,1)+
-            '<small class="tq-world-ocean-note">As alterações aparecem imediatamente no oceano. Play usa a mesma configuração.</small>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · movimento</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            shaderRange("speed","Velocidade",0,100,1)+
+            shaderRange("directionX","Direção horizontal",-1,1,.01)+
+            shaderRange("directionY","Direção vertical",-1,1,.01)+
+            shaderRange("swell","Ondulação",0,100,1)+
+            shaderRange("distortion","Distorção UV",0,100,1)+
+            '<small class="tq-world-ocean-note">Direção controla o fluxo global. Ondulação e distorção alteram a deformação da superfície na GPU.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Parallax do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
-            '<small class="tq-world-editor-note">Navios e entidades ficam em fator 1.0. As três camadas abaixo movem mais devagar que a câmera, criando profundidade.</small>'+
-            layerCards+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · ondas e profundidade</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            shaderRange("waveFrequencyA","Frequência de onda A",2,60,1)+
+            shaderRange("waveFrequencyB","Frequência de onda B",2,60,1)+
+            shaderRange("waveMix","Mistura das ondas",0,100,1,"%")+
+            shaderRange("foamMix","Espuma / cristas",0,100,1,"%")+
+            '<small class="tq-world-editor-note">As duas frequências cruzadas quebram o padrão repetitivo e criam leitura de profundidade sem mover camadas DOM.</small>'+
+          '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · luz e reflexo</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            shaderRange("sparkleIntensity","Intensidade dos reflexos",0,100,1,"%")+
+            shaderRange("sparkleSharpness","Nitidez dos reflexos",2,48,1)+
+            '<small class="tq-world-editor-note">Controla os brilhos especulares dourados calculados no fragment shader.</small>'+
           '</div></section>'+
         '</div>';
 
@@ -1179,28 +1181,27 @@ export class DevOverlay {
         this.renderWorldInspector();
       }));
 
-      content.querySelectorAll("[data-ocean-layer-prop]").forEach(input=>{
+      const numeric=new Set([
+        "speed","directionX","directionY","swell","tileSize","brightness","saturation",
+        "distortion","waveFrequencyA","waveFrequencyB","waveMix","foamMix",
+        "sparkleIntensity","sparkleSharpness"
+      ]);
+      content.querySelectorAll("[data-ocean-prop]").forEach(input=>{
         const apply=(commit)=>{
-          const layer=input.dataset.oceanLayer;
-          const key=input.dataset.oceanLayerProp;
-          const value=key==="background"?input.value:Number(input.value);
-          const output=content.querySelector('[data-ocean-layer-output="'+layer+':'+key+'"]');
-          if(output)output.value=String(Math.round(value*100)/100);
-          this.worldEditor.updateOcean({layers:{[layer]:{[key]:value}}},commit);
+          const key=input.dataset.oceanProp;
+          const value=input.type==="checkbox"?input.checked:(numeric.has(key)?Number(input.value):input.value);
+          const output=content.querySelector('[data-ocean-output="'+key+'"]');
+          if(output){
+            const suffix=input.dataset.oceanSuffix||"";
+            output.value=String(Math.round(Number(value)*100)/100)+suffix;
+          }
+          this.worldEditor.updateOcean({[key]:value},commit);
           if(commit)this.syncLocalWorldFromEditor();
+          if(commit&&(key==="preset"||key==="renderer"||key==="background"))this.renderWorldInspector();
         };
         if(input.type==="range")input.addEventListener("input",()=>apply(false));
         input.addEventListener("change",()=>apply(true));
       });
-
-      const numeric=new Set(["speed","directionX","directionY","swell","tileSize","brightness","saturation"]);
-      content.querySelectorAll("[data-ocean-prop]").forEach(input=>input.addEventListener("change",()=>{
-        const key=input.dataset.oceanProp;
-        const value=input.type==="checkbox"?input.checked:(numeric.has(key)?Number(input.value):input.value);
-        this.worldEditor.updateOcean({[key]:value},true);
-        this.syncLocalWorldFromEditor();
-        if(key==="preset")this.renderWorldInspector();
-      }));
       return;
     }
 
