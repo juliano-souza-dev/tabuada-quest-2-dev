@@ -13,6 +13,12 @@
       "name": "Teste Navio 8 Direções",
       "type": "ocean",
       "path": "./src/world/directional-ship-test.world.json"
+    },
+    {
+      "id": "ocean-horizon-blend",
+      "name": "Mar Horizonte Integrado",
+      "type": "ocean",
+      "path": "./src/world/ocean-horizon-blend.world.json"
     }
   ]
 }
