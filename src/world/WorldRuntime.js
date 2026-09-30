@@ -414,7 +414,7 @@ export class WorldRuntime {
 
       beginPan(event.clientX,event.clientY,event.pointerId);
       try{this.viewport.setPointerCapture(event.pointerId)}catch{}
-      event.preventDefault();
+      if(this.mode==="edit"||event.pointerType==="mouse")event.preventDefault();
     };
 
     const move=event=>{
@@ -437,7 +437,7 @@ export class WorldRuntime {
       if(!touch)return;
       touchPan=touch.identifier;
       beginPan(touch.clientX,touch.clientY,"touch:"+touch.identifier);
-      event.preventDefault();
+      if(this.mode==="edit")event.preventDefault();
     };
 
     const touchMove=event=>{
@@ -452,9 +452,10 @@ export class WorldRuntime {
       if(touchPan===null)return;
       const ended=[...(event.changedTouches||[])].some(item=>item.identifier===touchPan);
       if(!ended)return;
+      const dragged=Boolean(pan?.dragging);
       touchPan=null;
       finishPan();
-      event.preventDefault();
+      if(dragged)event.preventDefault();
     };
 
     const wheel=event=>{
