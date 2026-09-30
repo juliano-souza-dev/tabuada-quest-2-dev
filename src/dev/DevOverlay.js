@@ -1227,9 +1227,11 @@ export class DevOverlay {
           num("x","Position X")+num("y","Position Y")+
           num("width","Width",16,2400)+num("height","Height",16,2400)+
           '<label class="tq-field tq-field--check"><span>Manter proporção</span><input data-world-prop="lockAspect" type="checkbox" '+(entity.lockAspect!==false?'checked':'')+'></label>'+
-          '<label class="tq-world-motion-range"><span><b>Rotação</b><output data-world-rotation-output>'+Math.round(Number(entity.rotation||0))+'°</output></span><input data-world-prop="rotation" type="range" min="-180" max="180" step="1" value="'+Number(entity.rotation||0)+'"></label>'+
+          '<label class="tq-world-motion-range"><span><b>Rotação</b><output data-world-transform-output="rotation">'+Math.round(Number(entity.rotation||0))+'°</output></span><input data-world-prop="rotation" type="range" min="-180" max="180" step="1" value="'+Number(entity.rotation||0)+'"></label>'+
+          '<label class="tq-world-motion-range"><span><b>Inclinação X</b><output data-world-transform-output="skewX">'+Math.round(Number(entity.skewX||0))+'°</output></span><input data-world-prop="skewX" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewX||0)+'"></label>'+
+          '<label class="tq-world-motion-range"><span><b>Inclinação Y</b><output data-world-transform-output="skewY">'+Math.round(Number(entity.skewY||0))+'°</output></span><input data-world-prop="skewY" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewY||0)+'"></label>'+
           '<div class="tq-world-transform-actions"><button type="button" data-world-rotate="-90">↶ -90°</button><button type="button" data-world-rotate="0">0°</button><button type="button" data-world-rotate="90">↷ +90°</button></div>'+
-          '<small class="tq-world-editor-note">No canvas: arraste o objeto para mover, o círculo superior para girar e o canto inferior para redimensionar.</small>'+
+          '<small class="tq-world-editor-note">Direto no asset: 8 alças redimensionam por cima, baixo, lados e cantos; círculo superior gira; alças roxas inclinam em X e Y.</small>'+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Balanço / água</strong><span>▾</span></button><div class="tq-config-area__body">'+
           '<label class="tq-field tq-field--check"><span>Efeito ativo</span><input data-motion-prop="active" type="checkbox" '+(motion.active?'checked':'')+'></label>'+
@@ -1258,7 +1260,7 @@ export class DevOverlay {
       button.querySelector("span").textContent=body.hidden?"▸":"▾";
     }));
 
-    const numeric=new Set(["x","y","width","height","rotation","interactionRadius"]);
+    const numeric=new Set(["x","y","width","height","rotation","skewX","skewY","interactionRadius"]);
     const commitWorldProp=input=>{
       const key=input.dataset.worldProp;
       const value=input.type==="checkbox"?input.checked:(numeric.has(key)?Number(input.value):input.value);
@@ -1278,12 +1280,13 @@ export class DevOverlay {
     };
 
     content.querySelectorAll("[data-world-prop]").forEach(input=>{
-      if(input.dataset.worldProp==="rotation"){
+      if(["rotation","skewX","skewY"].includes(input.dataset.worldProp)){
         input.addEventListener("input",()=>{
+          const key=input.dataset.worldProp;
           const value=Number(input.value);
-          const output=content.querySelector("[data-world-rotation-output]");
+          const output=content.querySelector('[data-world-transform-output="'+key+'"]');
           if(output)output.value=Math.round(value)+"°";
-          this.selected=this.worldEditor.updateEntity(entity.id,{rotation:value},false)||this.selected;
+          this.selected=this.worldEditor.updateEntity(entity.id,{[key]:value},false)||this.selected;
         });
       }
       input.addEventListener("change",()=>commitWorldProp(input));
