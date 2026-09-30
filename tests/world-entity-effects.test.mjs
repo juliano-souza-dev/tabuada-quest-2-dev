@@ -65,6 +65,30 @@ test("parallax effect offsets against camera movement",()=>{
   assert.ok(frame.scaleX>0);
 });
 
+
+test("horizon blend keeps background integration separate from the WebGL ocean renderer",()=>{
+  const presets=listEntityEffectPresets("background").map(item=>item.id);
+  assert.ok(presets.includes("horizon-blend"));
+  const preset=ENTITY_EFFECT_PRESETS["horizon-blend"];
+  assert.equal(preset.renderer,"parallax");
+  assert.equal(preset.mode,"horizonBlend");
+
+  const effect=applyEntityEffectPreset({category:"background"},"horizon-blend",{type:"background"});
+  assert.equal(effect.active,true);
+  assert.ok(effect.blendLine>0&&effect.blendLine<1);
+  assert.ok(effect.blendFeather>0);
+  assert.ok(effect.oceanTint>=0&&effect.oceanTint<=1);
+
+  const frame=computeEntityEffectFrame(effect,1000,0,{
+    entity:{type:"background"},
+    camera:{x:600,y:500},
+    cameraOrigin:{x:200,y:200},
+    worldHeight:8000
+  });
+  assert.ok(frame.offsetX>0);
+  assert.ok(frame.offsetY>0);
+});
+
 test("cruise effect moves ships around their anchor",()=>{
   const effect=applyEntityEffectPreset({category:"ship"},"ship-cruise",{type:"ship"});
   const a=computeEntityEffectFrame(effect,0,1,{entity:{type:"ship"}});
