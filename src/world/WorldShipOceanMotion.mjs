@@ -63,15 +63,15 @@ export function computeShipOceanMotion(ocean={},player={},timeMs=0,response=1){
   );
   const energy=oceanEnergy*responseScale;
 
-  const heave=(waveA*.72+waveB*.28)*(2.4+12.8*oceanEnergy)*responseScale;
-  const surge=waveA*(3.2+17.5*oceanEnergy)*(.32+headOn*.46+against*.82)*responseScale;
-  const sway=waveB*(1.4+9.5*oceanEnergy)*(.18+broadside*.82)*responseScale;
+  const heave=(waveA*.72+waveB*.28)*(3.6+18.5*oceanEnergy)*responseScale;
+  const surge=waveA*(5.0+26.0*oceanEnergy)*(.32+headOn*.46+against*.82)*responseScale;
+  const sway=waveB*(2.2+13.5*oceanEnergy)*(.18+broadside*.82)*responseScale;
 
   const offsetX=forward.x*surge+right.x*sway+direction.x*heave*.22;
   const offsetY=forward.y*surge+right.y*sway+direction.y*heave*.22;
 
-  const roll=(waveB*.72+crest*.28)*(2.2+11.0*oceanEnergy)*(.16+broadside*.84)*responseScale;
-  const pitch=(waveA*.78+crest*.22)*(2.0+8.5*oceanEnergy)*(.28+headOn*.72)*responseScale;
+  const roll=(waveB*.72+crest*.28)*(3.4+17.0*oceanEnergy)*(.16+broadside*.84)*responseScale;
+  const pitch=(waveA*.78+crest*.22)*(3.0+12.0*oceanEnergy)*(.28+headOn*.72)*responseScale;
 
   return {
     offsetX,
