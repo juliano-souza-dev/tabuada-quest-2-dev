@@ -631,14 +631,14 @@ export class DevOverlay {
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
-      const directionSlots=Object.entries(directionLabels).map(([key,label])=>{
-        const src=player.directions?.[key]||"";
-        return '<button type="button" class="tq-world-direction-slot" data-player-direction-pick="'+key+'" title="Escolher asset para '+label+'">'+
-          '<span>'+label+'</span>'+
-          (src?'<img src="'+this.escapeHtml(src)+'" alt="" loading="lazy">':'<i>＋</i>')+
-          '<small>'+this.escapeHtml(src?src.split("/").pop():"Selecionar")+'</small>'+
-        '</button>';
-      }).join("");
+      const sprite=player.sprite||{};
+      const spriteSrc=String(sprite.src||"");
+      const spriteColumns=Math.max(1,Number(sprite.columns)||8);
+      const spriteRows=Math.max(1,Number(sprite.rows)||1);
+      const spriteOrder=Array.isArray(sprite.order)&&sprite.order.length?sprite.order.join(","):"n,ne,e,se,s,sw,w,nw";
+      const spritePreview=spriteSrc
+        ? '<div class="tq-world-sprite-preview" style="background-image:url(&quot;'+this.escapeHtml(spriteSrc)+'&quot;);background-size:'+spriteColumns*100+'% '+spriteRows*100+'%"></div>'
+        : '<i class="tq-world-sprite-empty">＋</i>';
       const layerLabels={deep:"Água profunda",wave:"Cristas / ondas",foam:"Espuma / detalhe"};
       const layerRange=(layer,key,label,min,max,step)=>{
         const value=Number(ocean.layers?.[layer]?.[key]??0);
@@ -667,13 +667,18 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Navio do jogador</strong><span>▾</span></button><div class="tq-config-area__body">'+
-            '<div class="tq-world-direction-grid">'+directionSlots+'</div>'+
+            '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Escolher spritesheet do navio">'+spritePreview+'<span><strong>Spritesheet do navio</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Selecionar asset")+'</small></span></button>'+
+            '<div class="tq-worlds__create-grid">'+
+              '<label class="tq-world-field"><span>Colunas</span><input data-player-sprite-prop="columns" type="number" min="1" max="32" value="'+spriteColumns+'"></label>'+
+              '<label class="tq-world-field"><span>Linhas</span><input data-player-sprite-prop="rows" type="number" min="1" max="32" value="'+spriteRows+'"></label>'+
+            '</div>'+
+            '<label class="tq-world-field"><span>Ordem dos frames</span><input data-player-sprite-prop="order" type="text" value="'+this.escapeHtml(spriteOrder)+'" placeholder="n,ne,e,se,s,sw,w,nw"></label>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
               '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
             '</div>'+
             '<label class="tq-world-field"><span>Direção inicial</span><select data-player-prop="direction">'+Object.entries(directionLabels).map(([key,label])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+label+'</option>').join("")+'</select></label>'+
-            '<small class="tq-world-editor-note">Cada slot representa a direção real da proa. Use Assets para escolher a vista correta de N, NE, E, SE, S, SW, W e NW.</small>'+
+            '<small class="tq-world-editor-note">Um único spritesheet contém todas as direções do mesmo navio. Padrão: 8 colunas × 1 linha, na ordem N, NE, E, SE, S, SW, W, NW.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Visual do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
@@ -711,8 +716,16 @@ export class DevOverlay {
         this.renderWorlds();
       }));
 
-      content.querySelectorAll("[data-player-direction-pick]").forEach(button=>button.addEventListener("click",()=>{
-        this.openWorldPlayerAssetPicker(button.dataset.playerDirectionPick);
+      content.querySelector("[data-player-sprite-pick]")?.addEventListener("click",()=>this.openWorldPlayerSpritePicker());
+
+      content.querySelectorAll("[data-player-sprite-prop]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.playerSpriteProp;
+        let value=input.value;
+        if(["columns","rows"].includes(key))value=Math.max(1,Number(value)||1);
+        if(key==="order")value=String(value).split(",").map(item=>item.trim().toLowerCase()).filter(Boolean);
+        this.worldEditor.updatePlayerConfig({sprite:{[key]:value}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
       }));
 
       content.querySelectorAll("[data-player-prop]").forEach(input=>input.addEventListener("change",()=>{
@@ -913,9 +926,9 @@ export class DevOverlay {
     if(!show)this.assetPickTarget=null;
     if(show){this.el.querySelector(".tq-dev__panel").hidden=true;this.el.querySelector(".tq-dev__scenes").hidden=true;this.el.querySelector(".tq-dev__worlds").hidden=true;this.renderAssets()}
   }
-  openWorldPlayerAssetPicker(direction){
+  openWorldPlayerSpritePicker(){
     if(this.workspace!=="world"||!this.worldEditor?.active)return;
-    this.assetPickTarget={kind:"world-player-direction",direction:String(direction||"n")};
+    this.assetPickTarget={kind:"world-player-sprite"};
     if(this.assetNodeIndex.has("assets/ships"))this.assetDirectoryPath="assets/ships";
     const search=this.el.querySelector("[data-asset-search]");
     if(search)search.value="";
@@ -926,10 +939,10 @@ export class DevOverlay {
     const target=this.assetPickTarget;
     if(!target||!asset)return false;
 
-    if(target.kind==="world-player-direction"){
-      const direction=target.direction;
+    if(target.kind==="world-player-sprite"){
       const src="./"+asset.path;
-      this.worldEditor.updatePlayerConfig({directions:{[direction]:src},...(direction==="n"?{src}: {})},true);
+      const current=this.worldEditor.getPlayerConfig()?.sprite||{};
+      this.worldEditor.updatePlayerConfig({sprite:{src,columns:Number(current.columns)||8,rows:Number(current.rows)||1,order:Array.isArray(current.order)&&current.order.length?current.order:["n","ne","e","se","s","sw","w","nw"]},src},true);
       this.syncLocalWorldFromEditor();
       this.assetPickTarget=null;
       this.toggleAssets(false);
