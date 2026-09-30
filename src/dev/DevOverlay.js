@@ -726,6 +726,10 @@ export class DevOverlay {
               '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
                 (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><div class="tq-world-atlas-grid4" data-atlas-grid4>'+grid4Cells+'</div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
               '</div>'+
+              '<div class="tq-world-atlas-grid4-actions" data-atlas-grid4-actions>'+
+                '<button type="button" class="is-primary" data-atlas-grid4-apply-all>✨ Enquadrar automático · aplicar aos 16</button>'+
+                '<small>Usa a grade 4×4 inteira, da esquerda para a direita e de cima para baixo.</small>'+
+              '</div>'+
               '<div class="tq-world-atlas-point-actions" data-atlas-point-actions>'+
                 '<button type="button" data-atlas-undo>↶ Desfazer</button>'+
                 '<button type="button" data-atlas-clear>Limpar</button>'+
@@ -992,6 +996,32 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       });
+      content.querySelector("[data-atlas-grid4-apply-all]")?.addEventListener("click",()=>{
+        if(!isGridMode())return;
+        const metrics=imageMetrics();
+        if(!metrics)return;
+        const width=metrics.naturalW/4;
+        const height=metrics.naturalH/4;
+        const allRegions={};
+        directionOrder.forEach((direction,index)=>{
+          const column=index%4;
+          const row=Math.floor(index/4);
+          allRegions[direction]={
+            x:column*width,
+            y:row*height,
+            width,
+            height
+          };
+        });
+        this.worldEditor.updatePlayerConfig({sprite:{
+          imageWidth:metrics.naturalW,
+          imageHeight:metrics.naturalH,
+          regions:allRegions
+        }},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      });
+
       content.querySelector("[data-atlas-grid4]")?.addEventListener("click",event=>{
         if(!isGridMode())return;
         const cell=event.target.closest?.("[data-atlas-grid-cell]");
