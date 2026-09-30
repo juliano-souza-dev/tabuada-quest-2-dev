@@ -165,6 +165,12 @@ export class WorldEditor {
     return entity;
   }
 
+  fitEntityToPlayableArea(id,commit=true){
+    const entity=this.runtime?.fitEntityToPlayableArea(id,commit)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return entity;
+  }
+
   getEntityMotion(id){
     return this.runtime?.getEntityMotion(id)||null;
   }
