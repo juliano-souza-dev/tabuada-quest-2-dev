@@ -127,3 +127,20 @@
 .tq-stage[data-mode="play"] .tq-node.is-action{cursor:pointer}
 .tq-stage[data-mode="play"] .tq-node.is-action:focus-visible{outline:3px solid #fff;outline-offset:4px}
 .tq-stage[data-mode="play"] .tq-node.is-action-busy{opacity:.72;cursor:progress}
+
+.tq-install-app{
+  position:fixed;
+  right:max(12px,env(safe-area-inset-right));
+  bottom:max(12px,env(safe-area-inset-bottom));
+  z-index:12000;
+  min-height:44px;
+  padding:10px 14px;
+  border:1px solid rgba(126,231,255,.72);
+  border-radius:999px;
+  background:#123b54;
+  color:#fff;
+  font:700 12px/1 system-ui,sans-serif;
+  box-shadow:0 8px 24px rgba(0,0,0,.38);
+}
+.tq-install-app[hidden]{display:none!important}
+.tq-install-app:disabled{opacity:.55}
