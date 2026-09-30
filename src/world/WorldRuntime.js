@@ -1,6 +1,6 @@
 import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20260930-1912";
 import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
-import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1912";
+import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1943";
 import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=20260930-1912";
 import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1912";
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
