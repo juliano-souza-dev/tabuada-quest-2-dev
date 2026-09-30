@@ -326,6 +326,7 @@ export class WorldRuntime {
               handle.removeEventListener("pointercancel",finish);
               this.syncCollisionVisual(entity);
               this.onEntityChange?.(structuredClone(this.cleanEntity(entity)),true);
+              this.onSelectionChange?.(this.getSelected());
             };
             handle.addEventListener("pointermove",move);
             handle.addEventListener("pointerup",finish);
