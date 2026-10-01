@@ -674,13 +674,14 @@ export class DevOverlay {
 
   worldBackgroundOptions(selected=""){
     const oceanAssets=(this.assetCatalog||[])
+      .filter(asset=>asset?.type==="image")
       .map(asset=>String(asset.path||""))
-      .filter(path=>path.startsWith("assets/ocean/"));
+      .filter(path=>path.startsWith("assets/oceans/"));
     const unique=[...new Set(oceanAssets)].sort((a,b)=>a.localeCompare(b,"pt-BR"));
     const none='<option value="none" '+(String(selected)==="none"?'selected':'')+'>Sem background · azul opaco</option>';
     const options=unique.map(path=>{
       const value="./"+path;
-      const label=path.slice("assets/ocean/".length)||path.split("/").pop();
+      const label=path.slice("assets/oceans/".length)||path.split("/").pop();
       return '<option value="'+this.escapeHtml(value)+'" '+(value===selected?'selected':'')+'>'+this.escapeHtml(label)+'</option>';
     }).join("");
     return none+options;
@@ -2196,7 +2197,7 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20261001-1934",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20261001-2122",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
       this.assetCatalog=manifest.assets||[];
