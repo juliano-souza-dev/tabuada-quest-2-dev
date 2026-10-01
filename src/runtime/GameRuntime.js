@@ -46,6 +46,7 @@ export class GameRuntime {
     this.started=false;
     this.persistenceKey=String(this.manifest.persistence?.sessionKey||"tq.game.runtime:v1");
     this.restoreSession=this.manifest.persistence?.restoreSession!==false;
+    this.localRestored=false;
     this.cleanups=[];
   }
 
@@ -86,7 +87,7 @@ export class GameRuntime {
     this.installNavigationActions();
     this.installGameActions();
 
-    if(this.restoreSession)this.restorePersistedState();
+    if(this.restoreSession)this.localRestored=this.restorePersistedState();
 
     const save=()=>this.saveState();
     const visibility=()=>{if(document.visibilityState==="hidden")save()};
@@ -198,7 +199,8 @@ export class GameRuntime {
         return this.openWorld(target,{pushHistory:true,spawnId:params.spawnId||null});
       })
       .register("resume-game",()=>this.resumeGame())
-      .register("go-back",()=>this.back());
+      .register("go-back",()=>this.back())
+      .register("complete-region",()=>this.completeCurrentRegion());
   }
 
   executeAction(action,context={}){
@@ -213,6 +215,35 @@ export class GameRuntime {
     return fallback.kind==="world"
       ?this.openWorld(fallback,{pushHistory:false})
       :this.openScene(fallback,{pushHistory:false});
+  }
+
+  completeCurrentRegion(){
+    const regionId=this.current?.kind==="world"?String(this.current.id||""):"";
+    if(!regionId)return false;
+    this.flags={
+      ...(this.flags||{}),
+      completedRegions:[...new Set([...(Array.isArray(this.flags?.completedRegions)?this.flags.completedRegions:[]),regionId])]
+    };
+    this.saveState();
+    this.syncCloud("region-complete");
+    globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{regionId}}));
+    return true;
+  }
+
+  syncCloud(reason="manual"){
+    if(!this.playerStateStore)return false;
+    try{
+      this.captureCurrentState();
+      this.writeSessionState();
+      const account=this.exportAccountState();
+      this.accountState=clone(account);
+      this.playerStateStore.save(account,{sync:true});
+      globalThis.dispatchEvent?.(new CustomEvent("tq:cloudsync",{detail:{reason,at:Date.now()}}));
+      return true;
+    }catch(error){
+      console.warn("Cloud sync failed",reason,error);
+      return false;
+    }
   }
 
   registerAction(id,handler,options={}){
@@ -238,7 +269,7 @@ export class GameRuntime {
       ?game.runtime
       :(state.schema==="tq.game-state"?state:null);
 
-    if(runtime){
+    if(runtime&&!this.localRestored){
       this.current=runtime.current?clone(runtime.current):this.current;
       this.history=Array.isArray(runtime.history)?clone(runtime.history):this.history;
       this.worldStates=runtime.worldStates&&typeof runtime.worldStates==="object"?clone(runtime.worldStates):this.worldStates;
@@ -774,7 +805,7 @@ export class GameRuntime {
 
   restorePersistedState(){
     try{
-      const raw=sessionStorage.getItem(this.persistenceKey);
+      const raw=localStorage.getItem(this.persistenceKey);
       if(!raw)return false;
       const state=JSON.parse(raw);
       if(state?.schema!=="tq.game-state")return false;
@@ -808,7 +839,7 @@ export class GameRuntime {
           equippedShip:this.playerShips.equippedShip
         }
       };
-      sessionStorage.setItem(this.persistenceKey,JSON.stringify(state));
+      localStorage.setItem(this.persistenceKey,JSON.stringify(state));
       return true;
     }catch{
       return false;
@@ -819,20 +850,15 @@ export class GameRuntime {
     try{
       this.captureCurrentState();
       this.writeSessionState();
-      if(this.playerStateStore){
-        const account=this.exportAccountState();
-        this.accountState=clone(account);
-        this.playerStateStore.save(account,{sync:true});
-      }
       return true;
     }catch(error){
-      console.warn("GameRuntime state save failed",error);
+      console.warn("GameRuntime local state save failed",error);
       return false;
     }
   }
 
   clearSavedState(){
-    try{sessionStorage.removeItem(this.persistenceKey)}catch{}
+    try{localStorage.removeItem(this.persistenceKey)}catch{}
   }
 
   emitChange(){
