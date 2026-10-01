@@ -65,7 +65,13 @@ export class WorldEditor {
 
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
-      createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.(context)??{
+      createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
+        ...context,
+        kind:context?.entity?.type==="treasure"?"treasure":"world-interaction",
+        worldId:world.id,
+        entityId:context?.entity?.id,
+        entityType:context?.entity?.type
+      })??{
         available:false,
         code:"pedagogy_rules_unavailable",
         message:"Regras pedagógicas não disponíveis nesta conta."
