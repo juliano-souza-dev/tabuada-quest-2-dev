@@ -141,6 +141,11 @@ export class ShipEditor{
       cellHeight:Math.max(1,Number(combatSprite.cellHeight||combatSprite.frameHeight)||400)
     };
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
+    if(value.combat?.animations&&typeof value.combat.animations==="object"){
+      for(const [key,animation] of Object.entries(value.combat.animations)){
+        if(!value.animations[key])value.animations[key]=clone(animation);
+      }
+    }
     value.animationGroups=value.animationGroups&&typeof value.animationGroups==="object"?value.animationGroups:{};
     for(const key of Object.keys(value.animations)){
       if(!value.animationGroups[key]){
@@ -217,13 +222,14 @@ export class ShipEditor{
       type:"player",
       available:true,
       animations:{
+        idle:{frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[0]},
         fireRight:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[4,5,6,7]},
         fireLeft:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[]},
         hit:{frameMs:120,loop:false,cellWidth:400,cellHeight:400,frames:[]},
         critical:{frameMs:160,loop:true,cellWidth:400,cellHeight:400,frames:[]},
         defeat:{frameMs:180,loop:false,cellWidth:400,cellHeight:400,frames:[]}
       },
-      animationGroups:{fireRight:"combat",fireLeft:"combat",hit:"combat",critical:"combat",defeat:"combat"},
+      animationGroups:{idle:"combat",fireRight:"combat",fireLeft:"combat",hit:"combat",critical:"combat",defeat:"combat"},
       editor:{draft:true,createdAt:Date.now(),updatedAt:Date.now()}
     });
     this.drafts.push(ship);
