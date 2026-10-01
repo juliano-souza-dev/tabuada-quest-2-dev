@@ -675,7 +675,7 @@ export class ShipEditor{
     const content=host.querySelector("[data-ship-v2-content]");
 
     if(tab==="general"){
-      content.innerHTML=`
+      content.innerHTML=this.atlasControlsHtml(ship)+`
         <section class="tq-ships__panel">
           <div class="tq-ships__panel-title"><div><strong>Identidade do navio</strong><small>Uma definição para PLAYER ou NPC.</small></div><span>tq.ship v2</span></div>
           <div class="tq-ships__top">
@@ -689,6 +689,7 @@ export class ShipEditor{
           </div>
           <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>O runtime consome spritesheets; frames individuais ficam fora do fluxo principal.</small></div>
         </section>`;
+      this.bindAtlasControls(content);
       content.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
       content.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
       content.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
@@ -713,7 +714,7 @@ export class ShipEditor{
         return 'background-image:url(&quot;'+this.escape(sprite.src)+'&quot;);background-size:'+(columns*100)+'% '+(rows*100)+'%;background-position:'+x+'% '+y+'%;';
       };
       const selectedFrame=Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames?.[selected])||0));
-      content.innerHTML=`
+      content.innerHTML=this.atlasControlsHtml(ship)+`
         <section class="tq-ships__panel">
           <div class="tq-ships__panel-title"><div><strong>Comportamento de navegação</strong><small>Física do navio no oceano.</small></div></div>
           <div class="tq-ships__settings tq-ships__settings--v2">
@@ -764,6 +765,7 @@ export class ShipEditor{
           <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet.</small>
         </section>`;
 
+      this.bindAtlasControls(content);
       const updateNav=patch=>this.updateShip({navigation:{...ship.navigation,...patch}});
       const values=()=>({
         width:Math.max(32,Number(content.querySelector("[data-nav-width]")?.value)||230),
