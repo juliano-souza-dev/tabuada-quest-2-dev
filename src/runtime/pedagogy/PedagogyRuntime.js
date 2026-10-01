@@ -181,10 +181,18 @@ export class PedagogyRuntime {
 
     const progress=this.progress();
     const isTreasure=context.kind==="treasure"||context.entityType==="treasure";
+    const isCombat=context.kind==="combat"||(context.entityType==="ship"&&context.combat===true);
     if(isTreasure&&this.curriculum?.bonusChallenges?.treasureChest?.enabled!==false){
       return {
         facts:this.factsForRegion(progress.region),
         source:"curriculum-current-region",
+        region:progress.region
+      };
+    }
+    if(isCombat){
+      return {
+        facts:this.factsForRegion(progress.region),
+        source:"curriculum-current-region-combat",
         region:progress.region
       };
     }
@@ -219,6 +227,8 @@ export class PedagogyRuntime {
     this.lastFactKey=key;
     const expected=fact.a*fact.b;
     const isTreasure=context.kind==="treasure"||context.entityType==="treasure";
+    const isCombat=context.kind==="combat"||(context.entityType==="ship"&&context.combat===true);
+    const isBonus=isTreasure||isCombat;
 
     return {
       available:true,
@@ -230,10 +240,10 @@ export class PedagogyRuntime {
       prompt:fact.a+" × "+fact.b+" = ?",
       source:selection.source,
       region:selection.region,
-      bonus:isTreasure,
+      bonus:isBonus,
       countsTowardPlanned:isTreasure
         ?this.curriculum?.bonusChallenges?.treasureChest?.countTowardPlannedPresentations===true
-        :true,
+        :(isCombat?false:true),
       context:{
         worldId:String(context.worldId||""),
         entityId:String(context.entityId||""),
