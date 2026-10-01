@@ -1770,6 +1770,7 @@ export class WorldRuntime {
     const enemyMaxHp=Math.max(1,Math.min(9,Number(entity.combat?.hp)||3));
     const playerMaxHp=Math.max(1,Math.min(9,Number(this.config.combat?.playerHp)||3));
     this.combatActive={entity,enemyMaxHp,enemyHp:enemyMaxHp,playerMaxHp,playerHp:playerMaxHp,challenge:null};
+    this.applyEnvironmentVisual();
     if(this.combatTitle)this.combatTitle.textContent=String(entity.label||"Navio inimigo");
     if(this.combatWrap)this.combatWrap.hidden=false;
     this.syncCombatPlayerShip();
