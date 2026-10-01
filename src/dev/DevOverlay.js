@@ -2496,7 +2496,8 @@ export class DevOverlay {
     const configs=[
       [".tq-dev__panel","config"],
       [".tq-dev__scenes","scenes"],
-      [".tq-dev__worlds","worlds"],
+      [".tq-dev__worlds","regions"],
+      [".tq-dev__flow","flow"],
       [".tq-dev__assets","assets"]
     ];
 
