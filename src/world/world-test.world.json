@@ -562,5 +562,10 @@
       }
     },
     "renderer": "webgl"
+  },
+  "playerSpawn": {
+    "x": 4000,
+    "y": 7000,
+    "direction": "n"
   }
 }
