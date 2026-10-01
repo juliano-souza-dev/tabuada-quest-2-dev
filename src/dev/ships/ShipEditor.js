@@ -10,8 +10,9 @@ export class ShipEditor{
     this.drafts=[];
     this.selectedId=null;
     this.animationByShip=new Map();
+    this.tabByShip=new Map();
     this.previewTimer=0;
-    this.storageKey="tq.dev.ship-drafts:v2";
+    this.storageKey="tq.dev.ship-drafts:v3";
     this.el=null;
   }
 
@@ -60,9 +61,59 @@ export class ShipEditor{
 
   normalizeShip(ship){
     const value=clone(ship||{});
+    value.schema="tq.ship";
+    value.version=2;
     value.type=value.type==="npc"?"npc":"player";
     value.name=String(value.name||value.id||"Navio");
+    const profile=(value.type==="npc"?value.npc:value.player)||value.runtime||value.player||value.npc||{};
+    value.navigation=value.navigation&&typeof value.navigation==="object"?value.navigation:{};
+    value.navigation={
+      width:Number(value.navigation.width??profile.width??230),
+      height:Number(value.navigation.height??profile.height??230),
+      speed:Number(value.navigation.speed??420),
+      acceleration:Number(value.navigation.acceleration??1100),
+      braking:Number(value.navigation.braking??.12),
+      roll:Number(value.navigation.roll??2.4),
+      heave:Number(value.navigation.heave??3.2),
+      sway:Number(value.navigation.sway??0),
+      periodMs:Number(value.navigation.periodMs??3600),
+      wake:value.navigation.wake!==false,
+      shadow:value.navigation.shadow!==false,
+      src:value.navigation.src||profile.src||profile.sprite?.src||"",
+      sprite:clone(value.navigation.sprite||profile.sprite||null),
+      compiled:clone(value.navigation.compiled||{})
+    };
+    value.combat=value.combat&&typeof value.combat==="object"?value.combat:{};
+    value.combat={
+      recoil:Number(value.combat.recoil??18),
+      shake:Number(value.combat.shake??5),
+      muzzleFlash:value.combat.muzzleFlash!==false,
+      smoke:value.combat.smoke!==false,
+      impact:value.combat.impact!==false,
+      compiled:clone(value.combat.compiled||{})
+    };
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
+    value.animationGroups=value.animationGroups&&typeof value.animationGroups==="object"?value.animationGroups:{};
+    for(const key of Object.keys(value.animations)){
+      if(!value.animationGroups[key]){
+        value.animationGroups[key]=["fireRight","fireLeft","hit","critical","defeat"].includes(key)?"combat":"navigation";
+      }
+    }
+    if(profile.combatSprite&&!Object.keys(value.animations).some(key=>value.animationGroups[key]==="combat")){
+      for(const key of ["fireRight","fireLeft"]){
+        const legacy=profile.combatSprite.animations?.[key];
+        if(!legacy)continue;
+        value.animations[key]={
+          frameMs:Number(legacy.frameMs)||135,
+          loop:false,
+          cellWidth:Number(profile.combatSprite.frameWidth)||400,
+          cellHeight:Number(profile.combatSprite.frameHeight)||400,
+          frames:[]
+        };
+        value.animationGroups[key]="combat";
+      }
+      value.combat.legacySprite=clone(profile.combatSprite);
+    }
     return value;
   }
 
@@ -112,21 +163,26 @@ export class ShipEditor{
 
   createShip(){
     const id="ship-"+Date.now();
-    const ship={
-      schema:"tq.ship",
-      version:1,
+    const ship=this.normalizeShip({
       id,
       name:"Novo navio",
       type:"player",
       available:true,
       animations:{
-        idle:{frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[]}
+        idle:{frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[]},
+        fireRight:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[]},
+        fireLeft:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[]},
+        hit:{frameMs:120,loop:false,cellWidth:400,cellHeight:400,frames:[]},
+        critical:{frameMs:160,loop:true,cellWidth:400,cellHeight:400,frames:[]},
+        defeat:{frameMs:180,loop:false,cellWidth:400,cellHeight:400,frames:[]}
       },
+      animationGroups:{idle:"navigation",fireRight:"combat",fireLeft:"combat",hit:"combat",critical:"combat",defeat:"combat"},
       editor:{draft:true,createdAt:Date.now(),updatedAt:Date.now()}
-    };
+    });
     this.drafts.push(ship);
     this.save();
     this.selectedId=id;
+    this.tabByShip.set(id,"general");
     this.animationByShip.set(id,"idle");
     this.render();
   }
@@ -141,11 +197,13 @@ export class ShipEditor{
 
   currentAnimationKey(ship=this.current()){
     if(!ship)return null;
-    const keys=Object.keys(ship.animations||{});
+    const tab=this.tabByShip.get(ship.id)||"general";
+    const group=tab==="combat"?"combat":"navigation";
+    const keys=Object.keys(ship.animations||{}).filter(key=>(ship.animationGroups?.[key]||"navigation")===group);
     if(!keys.length)return null;
     let key=this.animationByShip.get(ship.id);
-    if(!key||!ship.animations[key]){
-      key=ship.animations.idle?"idle":keys[0];
+    if(!key||!ship.animations[key]||!keys.includes(key)){
+      key=keys.includes("idle")?"idle":keys[0];
       this.animationByShip.set(ship.id,key);
     }
     return key;
@@ -165,6 +223,8 @@ export class ShipEditor{
     let final=key,n=2;
     while(ship.animations[final])final=key+"-"+n++;
     ship.animations[final]={frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[]};
+    ship.animationGroups=ship.animationGroups||{};
+    ship.animationGroups[final]=(this.tabByShip.get(ship.id)==="combat"?"combat":"navigation");
     this.animationByShip.set(ship.id,final);
     this.save();this.render();
   }
@@ -174,6 +234,7 @@ export class ShipEditor{
     const key=this.currentAnimationKey(ship);
     if(!ship||!key)return;
     delete ship.animations[key];
+    if(ship.animationGroups)delete ship.animationGroups[key];
     const next=ship.animations.idle?"idle":(Object.keys(ship.animations)[0]||null);
     this.animationByShip.set(ship.id,next);
     this.save();this.render();
@@ -274,67 +335,146 @@ export class ShipEditor{
     const host=this.el.querySelector("[data-ship-editor]");
     const ship=this.current();
     if(!ship){host.innerHTML='<div class="tq-ships__empty">Selecione ou crie um navio.</div>';return}
-    const keys=Object.keys(ship.animations||{});
+    const tab=this.tabByShip.get(ship.id)||"general";
+    host.innerHTML=`
+      <div class="tq-ships__tabs">
+        <button type="button" data-ship-tab="general" class="${tab==="general"?"is-active":""}">⚙ Geral</button>
+        <button type="button" data-ship-tab="navigation" class="${tab==="navigation"?"is-active":""}">🧭 Navegação</button>
+        <button type="button" data-ship-tab="combat" class="${tab==="combat"?"is-active":""}">💥 Combate</button>
+      </div>
+      <div data-ship-v2-content></div>`;
+    host.querySelectorAll("[data-ship-tab]").forEach(button=>button.addEventListener("click",()=>{
+      this.tabByShip.set(ship.id,button.dataset.shipTab);
+      this.renderEditor();
+    }));
+    const content=host.querySelector("[data-ship-v2-content]");
+    if(tab==="general"){
+      content.innerHTML=`
+        <section class="tq-ships__panel">
+          <div class="tq-ships__panel-title"><div><strong>Identidade do navio</strong><small>Uma definição para PLAYER ou NPC.</small></div><span>tq.ship v2</span></div>
+          <div class="tq-ships__top">
+            <label><span>Nome</span><input data-ship-name value="${this.escape(ship.name)}"></label>
+            <label><span>ID</span><input value="${this.escape(ship.id)}" disabled></label>
+            <label><span>Tipo</span><select data-ship-type><option value="player" ${ship.type!=="npc"?"selected":""}>Jogador</option><option value="npc" ${ship.type==="npc"?"selected":""}>NPC</option></select></label>
+          </div>
+          <div class="tq-ships__general-grid">
+            <article><b>🧭 Navegação</b><span>${Object.keys(ship.animations||{}).filter(k=>(ship.animationGroups?.[k]||"navigation")==="navigation").length} animações</span><small>${Math.round(ship.navigation.speed)} px/s · ${Math.round(ship.navigation.width)}×${Math.round(ship.navigation.height)}</small></article>
+            <article><b>💥 Combate</b><span>${Object.keys(ship.animations||{}).filter(k=>ship.animationGroups?.[k]==="combat").length} animações</span><small>recoil ${Math.round(ship.combat.recoil)} · shake ${Math.round(ship.combat.shake)}</small></article>
+          </div>
+          <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>Movimento e estilo de batalha pertencem ao navio; HP e pedagogia continuam no sistema de combate.</small></div>
+        </section>`;
+      content.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
+      content.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
+      content.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
+      return;
+    }
+
+    const section=tab==="combat"?"combat":"navigation";
+    const keys=Object.keys(ship.animations||{}).filter(key=>(ship.animationGroups?.[key]||"navigation")===section);
     const animationKey=this.currentAnimationKey(ship);
     const anim=this.animation();
     const frames=Array.isArray(anim?.frames)?anim.frames:[];
-    host.innerHTML=`
-      <div class="tq-ships__top">
-        <label><span>Nome</span><input data-ship-name value="${this.escape(ship.name)}"></label>
-        <label><span>ID</span><input data-ship-id-input value="${this.escape(ship.id)}" disabled></label>
-        <label><span>Tipo</span><select data-ship-type><option value="player" ${ship.type!=="npc"?"selected":""}>Jogador</option><option value="npc" ${ship.type==="npc"?"selected":""}>NPC</option></select></label>
-      </div>
-      <div class="tq-ships__workspace">
-        <section class="tq-ships__preview">
-          <div class="tq-ships__preview-stage">${frames.length?'<img data-ship-preview alt="Preview do navio">':'<div class="tq-ships__preview-empty" data-ship-preview-empty><b>Sem frames</b><small>Adicione o primeiro frame desta animação.</small></div>'}</div>
-          <small>Preview frame a frame</small>
-        </section>
-        <section class="tq-ships__animation">
-          <div class="tq-ships__animation-head">
-            <label><span>Animação</span><select data-ship-animation>${keys.map(key=>'<option value="'+this.escape(key)+'" '+(key===animationKey?'selected':'')+'>'+this.escape(key)+'</option>').join("")}</select></label>
-            <button type="button" data-animation-add>＋ Animação</button>
-            <button type="button" data-animation-delete ${animationKey?"":"disabled"}>Excluir</button>
-          </div>
-          ${anim?`
-          <div class="tq-ships__settings">
-            <label><span>Frame ms</span><input data-animation-ms type="number" min="40" max="2000" value="${Number(anim.frameMs)||140}"></label>
-            <label><span>Célula W</span><input data-animation-w type="number" min="32" max="2048" value="${Number(anim.cellWidth)||400}"></label>
-            <label><span>Célula H</span><input data-animation-h type="number" min="32" max="2048" value="${Number(anim.cellHeight)||400}"></label>
-            <label class="tq-ships__check"><input data-animation-loop type="checkbox" ${anim.loop!==false?"checked":""}><span>Loop</span></label>
-          </div>
-          <div class="tq-ships__frames">
-            ${frames.map((frame,index)=>`
-              <article class="tq-ship-frame">
-                <b>#${index+1}</b>
-                <img src="${this.escape(frame.src)}" alt="Frame ${index+1}">
-                <small title="${this.escape(frame.src)}">${this.escape(frame.src.split("/").pop())}</small>
-                <div><button data-frame-left="${index}" ${index===0?"disabled":""}>←</button><button data-frame-right="${index}" ${index===frames.length-1?"disabled":""}>→</button><button data-frame-remove="${index}">×</button></div>
-              </article>`).join("")}
-            <button type="button" class="tq-ship-frame tq-ship-frame--add" data-frame-add>＋<small>Adicionar frame</small></button>
-          </div>
-          <div class="tq-ships__compile">
-            <button type="button" class="is-primary" data-atlas-generate ${frames.length?"":"disabled"}>⚙ Gerar atlas WebP</button>
-            <button type="button" data-ship-export>⇩ JSON do navio</button>
-            <small>O editor trabalha com arquivos individuais. O atlas é gerado por animação para reduzir trocas de textura no runtime.</small>
-          </div>`:'<div class="tq-ships__empty">Crie uma animação para adicionar frames.</div>'}
-        </section>
-      </div>`;
+    const settings=section==="navigation"?`
+      <section class="tq-ships__panel">
+        <div class="tq-ships__panel-title"><div><strong>Comportamento de navegação</strong><small>Personalidade física aplicada pelo runtime.</small></div></div>
+        <div class="tq-ships__settings tq-ships__settings--v2">
+          <label><span>Largura</span><input data-nav-width type="number" min="32" max="800" value="${Math.round(ship.navigation.width)}"></label>
+          <label><span>Altura</span><input data-nav-height type="number" min="32" max="800" value="${Math.round(ship.navigation.height)}"></label>
+          <label><span>Velocidade</span><input data-nav-speed type="number" min="40" max="1200" value="${Math.round(ship.navigation.speed)}"></label>
+          <label><span>Aceleração</span><input data-nav-accel type="number" min="100" max="3000" value="${Math.round(ship.navigation.acceleration)}"></label>
+          <label><span>Roll °</span><input data-nav-roll type="number" min="0" max="20" step=".1" value="${ship.navigation.roll}"></label>
+          <label><span>Heave px</span><input data-nav-heave type="number" min="0" max="40" step=".1" value="${ship.navigation.heave}"></label>
+          <label><span>Sway px</span><input data-nav-sway type="number" min="0" max="40" step=".1" value="${ship.navigation.sway}"></label>
+          <label><span>Período ms</span><input data-nav-period type="number" min="500" max="10000" value="${Math.round(ship.navigation.periodMs)}"></label>
+          <label class="tq-ships__check"><input data-nav-wake type="checkbox" ${ship.navigation.wake!==false?"checked":""}><span>Esteira</span></label>
+          <label class="tq-ships__check"><input data-nav-shadow type="checkbox" ${ship.navigation.shadow!==false?"checked":""}><span>Sombra</span></label>
+        </div>
+      </section>`:`
+      <section class="tq-ships__panel">
+        <div class="tq-ships__panel-title"><div><strong>Estilo de batalha</strong><small>Resposta visual do navio durante o duelo.</small></div></div>
+        <div class="tq-ships__settings tq-ships__settings--v2">
+          <label><span>Recoil px</span><input data-combat-recoil type="number" min="0" max="80" value="${Math.round(ship.combat.recoil)}"></label>
+          <label><span>Shake px</span><input data-combat-shake type="number" min="0" max="30" value="${Math.round(ship.combat.shake)}"></label>
+          <label class="tq-ships__check"><input data-combat-flash type="checkbox" ${ship.combat.muzzleFlash!==false?"checked":""}><span>Flash</span></label>
+          <label class="tq-ships__check"><input data-combat-smoke type="checkbox" ${ship.combat.smoke!==false?"checked":""}><span>Fumaça</span></label>
+          <label class="tq-ships__check"><input data-combat-impact type="checkbox" ${ship.combat.impact!==false?"checked":""}><span>Impacto</span></label>
+        </div>
+        <div class="tq-ships__combat-flow"><span>idle</span><b>→</b><span>fireLeft / fireRight</span><b>→</b><span>hit / critical</span><b>→</b><span>defeat</span></div>
+      </section>`;
 
-    host.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
-    host.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
-    host.querySelector("[data-ship-animation]")?.addEventListener("change",e=>{this.animationByShip.set(ship.id,e.currentTarget.value);this.renderEditor()});
-    host.querySelector("[data-animation-add]")?.addEventListener("click",()=>{const name=prompt("Nome da animação","combat-fire");if(name)this.addAnimation(name)});
-    host.querySelector("[data-animation-delete]")?.addEventListener("click",()=>this.deleteAnimation());
-    host.querySelector("[data-animation-ms]")?.addEventListener("change",e=>this.updateAnimation({frameMs:Math.max(40,Number(e.currentTarget.value)||140)}));
-    host.querySelector("[data-animation-w]")?.addEventListener("change",e=>this.updateAnimation({cellWidth:Math.max(32,Number(e.currentTarget.value)||400)}));
-    host.querySelector("[data-animation-h]")?.addEventListener("change",e=>this.updateAnimation({cellHeight:Math.max(32,Number(e.currentTarget.value)||400)}));
-    host.querySelector("[data-animation-loop]")?.addEventListener("change",e=>this.updateAnimation({loop:e.currentTarget.checked}));
-    host.querySelector("[data-frame-add]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,animationKey}));
-    host.querySelectorAll("[data-frame-left]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameLeft),-1)));
-    host.querySelectorAll("[data-frame-right]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameRight),1)));
-    host.querySelectorAll("[data-frame-remove]").forEach(b=>b.addEventListener("click",()=>this.removeFrame(Number(b.dataset.frameRemove))));
-    host.querySelector("[data-atlas-generate]")?.addEventListener("click",()=>this.generateAtlas());
-    host.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
+    content.innerHTML=settings+`
+      <section class="tq-ships__animation tq-ships__animation--v2">
+        <div class="tq-ships__workspace tq-ships__workspace--v2">
+          <section class="tq-ships__preview">
+            <div class="tq-ships__preview-stage">${frames.length?'<img data-ship-preview alt="Preview do navio">':'<div class="tq-ships__preview-empty"><b>Sem frames</b><small>Adicione frames para esta animação.</small></div>'}</div>
+            <small>Preview · ${this.escape(animationKey||"sem animação")}</small>
+          </section>
+          <section>
+            <div class="tq-ships__animation-head">
+              <label><span>Animação</span><select data-ship-animation>${keys.map(key=>'<option value="'+this.escape(key)+'" '+(key===animationKey?'selected':'')+'>'+this.escape(key)+'</option>').join("")}</select></label>
+              <button type="button" data-animation-add>＋ Animação</button>
+              <button type="button" data-animation-delete ${!animationKey||animationKey==="idle"?"disabled":""}>Excluir</button>
+            </div>
+            ${anim?`
+            <div class="tq-ships__settings">
+              <label><span>Frame ms</span><input data-animation-ms type="number" min="40" max="2000" value="${Number(anim.frameMs)||140}"></label>
+              <label><span>Célula W</span><input data-animation-w type="number" min="32" max="2048" value="${Number(anim.cellWidth)||400}"></label>
+              <label><span>Célula H</span><input data-animation-h type="number" min="32" max="2048" value="${Number(anim.cellHeight)||400}"></label>
+              <label class="tq-ships__check"><input data-animation-loop type="checkbox" ${anim.loop!==false?"checked":""}><span>Loop</span></label>
+            </div>
+            <div class="tq-ships__frames">
+              ${frames.map((frame,index)=>`
+                <article class="tq-ship-frame">
+                  <b>#${index+1}</b><img src="${this.escape(frame.src)}" alt="Frame ${index+1}">
+                  <small title="${this.escape(frame.src)}">${this.escape(frame.src.split("/").pop())}</small>
+                  <div><button data-frame-left="${index}" ${index===0?"disabled":""}>←</button><button data-frame-right="${index}" ${index===frames.length-1?"disabled":""}>→</button><button data-frame-remove="${index}">×</button></div>
+                </article>`).join("")}
+              <button type="button" class="tq-ship-frame tq-ship-frame--add" data-frame-add>＋<small>Adicionar frame</small></button>
+            </div>
+            <div class="tq-ships__compile"><button type="button" class="is-primary" data-atlas-generate ${frames.length?"":"disabled"}>⚙ Gerar atlas WebP</button><button type="button" data-ship-export>⇩ JSON V2</button><small>Editor frame a frame; runtime em atlas.</small></div>`:'<div class="tq-ships__empty">Crie uma animação para adicionar frames.</div>'}
+          </section>
+        </div>
+      </section>`;
+
+    if(section==="navigation"){
+      const read=()=>({
+        navigation:{...ship.navigation,
+          width:Math.max(32,Number(content.querySelector("[data-nav-width]")?.value)||230),
+          height:Math.max(32,Number(content.querySelector("[data-nav-height]")?.value)||230),
+          speed:Math.max(40,Number(content.querySelector("[data-nav-speed]")?.value)||420),
+          acceleration:Math.max(100,Number(content.querySelector("[data-nav-accel]")?.value)||1100),
+          roll:Math.max(0,Number(content.querySelector("[data-nav-roll]")?.value)||0),
+          heave:Math.max(0,Number(content.querySelector("[data-nav-heave]")?.value)||0),
+          sway:Math.max(0,Number(content.querySelector("[data-nav-sway]")?.value)||0),
+          periodMs:Math.max(500,Number(content.querySelector("[data-nav-period]")?.value)||3600),
+          wake:content.querySelector("[data-nav-wake]")?.checked!==false,
+          shadow:content.querySelector("[data-nav-shadow]")?.checked!==false
+        }
+      });
+      content.querySelectorAll("[data-nav-width],[data-nav-height],[data-nav-speed],[data-nav-accel],[data-nav-roll],[data-nav-heave],[data-nav-sway],[data-nav-period],[data-nav-wake],[data-nav-shadow]").forEach(el=>el.addEventListener("change",()=>this.updateShip(read())));
+    }else{
+      const read=()=>({combat:{...ship.combat,
+        recoil:Math.max(0,Number(content.querySelector("[data-combat-recoil]")?.value)||0),
+        shake:Math.max(0,Number(content.querySelector("[data-combat-shake]")?.value)||0),
+        muzzleFlash:content.querySelector("[data-combat-flash]")?.checked!==false,
+        smoke:content.querySelector("[data-combat-smoke]")?.checked!==false,
+        impact:content.querySelector("[data-combat-impact]")?.checked!==false
+      }});
+      content.querySelectorAll("[data-combat-recoil],[data-combat-shake],[data-combat-flash],[data-combat-smoke],[data-combat-impact]").forEach(el=>el.addEventListener("change",()=>this.updateShip(read())));
+    }
+    content.querySelector("[data-ship-animation]")?.addEventListener("change",e=>{this.animationByShip.set(ship.id,e.currentTarget.value);this.renderEditor()});
+    content.querySelector("[data-animation-add]")?.addEventListener("click",()=>{const name=prompt("Nome da animação",section==="combat"?"fireRight":"idle");if(name)this.addAnimation(name)});
+    content.querySelector("[data-animation-delete]")?.addEventListener("click",()=>this.deleteAnimation());
+    content.querySelector("[data-animation-ms]")?.addEventListener("change",e=>this.updateAnimation({frameMs:Math.max(40,Number(e.currentTarget.value)||140)}));
+    content.querySelector("[data-animation-w]")?.addEventListener("change",e=>this.updateAnimation({cellWidth:Math.max(32,Number(e.currentTarget.value)||400)}));
+    content.querySelector("[data-animation-h]")?.addEventListener("change",e=>this.updateAnimation({cellHeight:Math.max(32,Number(e.currentTarget.value)||400)}));
+    content.querySelector("[data-animation-loop]")?.addEventListener("change",e=>this.updateAnimation({loop:e.currentTarget.checked}));
+    content.querySelector("[data-frame-add]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,animationKey,section}));
+    content.querySelectorAll("[data-frame-left]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameLeft),-1)));
+    content.querySelectorAll("[data-frame-right]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameRight),1)));
+    content.querySelectorAll("[data-frame-remove]").forEach(b=>b.addEventListener("click",()=>this.removeFrame(Number(b.dataset.frameRemove))));
+    content.querySelector("[data-atlas-generate]")?.addEventListener("click",()=>this.generateAtlas());
+    content.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
     this.startPreview();
   }
 
@@ -368,13 +508,15 @@ export class ShipEditor{
       ctx.drawImage(image,col*cellW+(cellW-w)/2,row*cellH+(cellH-h)/2,w,h);
     });
     const animationKey=this.currentAnimationKey(ship);
+    const section=ship.animationGroups?.[animationKey]==="combat"?"combat":"navigation";
     const animName=slug(animationKey);
-    const fileBase=slug(ship.id)+"_"+animName;
+    const fileBase=slug(ship.id)+"_"+section+"_"+animName;
     const descriptor={
       schema:"tq.ship-animation-atlas",
-      version:1,
+      version:2,
       shipId:ship.id,
       shipType:ship.type,
+      section,
       animation:animationKey,
       src:"./assets/ships/generated/"+slug(ship.id)+"/"+fileBase+".webp",
       imageWidth:canvas.width,imageHeight:canvas.height,
@@ -382,6 +524,10 @@ export class ShipEditor{
       frameCount:frames.length,frameMs:Number(anim.frameMs)||140,loop:anim.loop!==false,
       frames:frames.map((_,index)=>({index,x:(index%columns)*cellW,y:Math.floor(index/columns)*cellH,width:cellW,height:cellH}))
     };
+    const draft=this.editableCurrent();
+    draft[section].compiled=draft[section].compiled||{};
+    draft[section].compiled[animationKey]=clone(descriptor);
+    this.save();
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/webp",.94));
     if(blob)this.downloadBlob(blob,fileBase+".webp");
     this.downloadBlob(new Blob([JSON.stringify(descriptor,null,2)],{type:"application/json"}),fileBase+".atlas.json");
@@ -390,7 +536,20 @@ export class ShipEditor{
   exportShipJson(){
     const ship=this.current();
     if(!ship)return;
-    this.downloadBlob(new Blob([JSON.stringify(ship,null,2)],{type:"application/json"}),slug(ship.id)+".ship.json");
+    const output=this.normalizeShip(ship);
+    const navAnimations={},combatAnimations={};
+    for(const [key,animation] of Object.entries(output.animations||{})){
+      if(output.animationGroups?.[key]==="combat")combatAnimations[key]=clone(animation);
+      else navAnimations[key]=clone(animation);
+    }
+    output.navigation={...output.navigation,animations:navAnimations};
+    output.combat={...output.combat,animations:combatAnimations};
+    delete output.animations;
+    delete output.animationGroups;
+    delete output.player;
+    delete output.npc;
+    delete output.runtime;
+    this.downloadBlob(new Blob([JSON.stringify(output,null,2)],{type:"application/json"}),slug(output.id)+".ship.json");
   }
 
   downloadBlob(blob,name){
