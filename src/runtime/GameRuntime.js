@@ -133,6 +133,10 @@ export class GameRuntime {
       }
     };
 
+    const localAutosave=setInterval(()=>{
+      if(this.current?.kind==="world")this.saveState();
+    },3000);
+
     globalThis.addEventListener?.("pagehide",save);
     globalThis.addEventListener?.("tq:auth-entry-ready",authReady);
     globalThis.addEventListener?.("tq:auth-signed-out",signedOut);
@@ -142,6 +146,7 @@ export class GameRuntime {
       globalThis.removeEventListener?.("tq:auth-entry-ready",authReady);
       globalThis.removeEventListener?.("tq:auth-signed-out",signedOut);
       document.removeEventListener?.("visibilitychange",visibility);
+      clearInterval(localAutosave);
     });
 
     return this;
