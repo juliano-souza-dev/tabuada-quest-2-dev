@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1116";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1306";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1412";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -1657,7 +1657,8 @@ export class DevOverlay {
     this.assetPickTarget={
       kind:"ship-frame",
       shipId:String(context.shipId||this.shipEditor?.selectedId||""),
-      animationKey:String(context.animationKey||"")
+      animationKey:String(context.animationKey||""),
+      section:context.section==="combat"?"combat":"navigation"
     };
     if(this.assetNodeIndex.has("assets/ships"))this.assetDirectoryPath="assets/ships";
     const search=this.el.querySelector("[data-asset-search]");
@@ -1680,7 +1681,7 @@ export class DevOverlay {
 
     if(target.kind==="ship-frame"){
       const src="./"+asset.path;
-      const added=this.shipEditor?.addFrameTo?.(target.shipId,target.animationKey,src)===true;
+      const added=this.shipEditor?.addFrameTo?.(target.shipId,target.animationKey,src,target.section)===true;
       this.assetPickTarget=null;
       this.toggleAssets(false);
       this.toggleShips(true);
