@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 1,
+  "version": 2,
   "defaultShipId": "pirate-default",
   "ships": [
     {
@@ -144,7 +144,8 @@
             }
           }
         }
-      }
+      },
+      "type": "player"
     },
     {
       "id": "pirate-halloween",
@@ -257,7 +258,18 @@
             }
           }
         }
-      }
+      },
+      "type": "player"
+    }
+  ],
+  "shipTypes": [
+    {
+      "id": "player",
+      "label": "Jogador"
+    },
+    {
+      "id": "npc",
+      "label": "NPC"
     }
   ]
 }
