@@ -366,7 +366,7 @@ export class GameRuntime {
       acceleration:Number(navigation?.acceleration??legacy.acceleration??1100),
       braking:Number(navigation?.braking??legacy.braking??.12),
       effects,
-      combat:combat||legacy.combat||null,
+      combatVisual:combat||legacy.combatVisual||null,
       combatSprite:legacy.combatSprite||null
     };
   }
