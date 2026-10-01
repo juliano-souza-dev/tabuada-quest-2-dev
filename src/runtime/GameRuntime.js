@@ -201,6 +201,14 @@ export class GameRuntime {
       .register("resume-game",()=>this.resumeGame())
       .register("go-back",()=>this.back())
       .register("complete-region",()=>this.completeCurrentRegion());
+
+    for(const definition of this.actionRuntime.list()){
+      this.sceneRuntime.registerAction(definition.id,({node})=>{
+        const params={};
+        for(const param of definition.params||[])params[param.key]=node?.[param.key]??"";
+        return this.executeAction({actionId:definition.id,params},{nodeId:node?.id||"",sceneId:this.current?.kind==="scene"?this.current.id:""});
+      },{label:definition.name||definition.id});
+    }
   }
 
   executeAction(action,context={}){
