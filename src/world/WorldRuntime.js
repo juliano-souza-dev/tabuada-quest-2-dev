@@ -65,11 +65,11 @@ const normalizePlayerWaterEffects=player=>{
   const fx=player?.effects||{};
   return {
     wakeActive:fx.wakeActive!==false,
-    wakeOpacity:clamp(Number(fx.wakeOpacity??.72),0,1),
-    wakeWidth:clamp(Number(fx.wakeWidth??54),18,180),
-    wakeLength:clamp(Number(fx.wakeLength??150),50,420),
-    wakeRate:clamp(Number(fx.wakeRate??70),35,220),
-    wakeMinSpeed:clamp(Number(fx.wakeMinSpeed??48),0,280),
+    wakeOpacity:clamp(Number(fx.wakeOpacity??.78),0,1),
+    wakeWidth:clamp(Number(fx.wakeWidth??66),18,220),
+    wakeLength:clamp(Number(fx.wakeLength??240),50,520),
+    wakeRate:clamp(Number(fx.wakeRate??55),30,220),
+    wakeMinSpeed:clamp(Number(fx.wakeMinSpeed??35),0,280),
     shadowActive:fx.shadowActive!==false,
     shadowOpacity:clamp(Number(fx.shadowOpacity??.34),0,.9),
     shadowBlur:clamp(Number(fx.shadowBlur??9),0,30),
@@ -165,7 +165,9 @@ export class WorldRuntime {
     this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
     this.lastWakeSpawn=0;
+    this.lastWakeSample=0;
     this.wakeParticleCount=0;
+    this.wakeSamples=[];
     this.minimapLastRender=0;
     this.cleanups=[];
   }
@@ -1516,6 +1518,8 @@ export class WorldRuntime {
     this.playerWakeLayer?.replaceChildren();
     this.wakeParticleCount=0;
     this.lastWakeSpawn=0;
+    this.lastWakeSample=0;
+    this.wakeSamples=[];
   }
 
   updatePlayerWaterEffects(time){
@@ -1523,6 +1527,7 @@ export class WorldRuntime {
     const width=Math.max(24,Number(this.config.player?.width)||108);
     const height=Math.max(24,Number(this.config.player?.height)||150);
     const speed=Math.hypot(this.player.vx,this.player.vy);
+    const wakeLifetime=clamp(1100+effects.wakeLength*6.2,1600,4600);
 
     if(this.playerShadowEl){
       this.playerShadowEl.hidden=!effects.shadowActive;
@@ -1534,6 +1539,66 @@ export class WorldRuntime {
       this.playerShadowEl.style.opacity=String(effects.shadowOpacity);
       this.playerShadowEl.style.filter=`blur(${effects.shadowBlur}px)`;
       this.playerShadowEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation+idle.roll*.35}deg)`;
+    }
+
+    // Keep the world-space trail history even after the ship slows down so the
+    // foam can dissipate naturally instead of vanishing with the throttle.
+    this.wakeSamples=(this.wakeSamples||[]).filter(sample=>
+      Number(time)-Number(sample.time||0)<wakeLifetime
+    );
+
+    const webglWake=Boolean(
+      this.config.ocean?.renderer==="webgl"
+      &&this.oceanRenderer?.ready
+    );
+
+    if(
+      this.mode==="play"
+      &&effects.wakeActive
+      &&speed>=effects.wakeMinSpeed
+      &&Number(time)-this.lastWakeSample>=effects.wakeRate
+    ){
+      this.lastWakeSample=Number(time);
+
+      const angle=this.player.rotation*Math.PI/180;
+      const forwardX=Math.sin(angle);
+      const forwardY=-Math.cos(angle);
+      const sternDistance=height*.35+8;
+      const sample={
+        x:this.player.x-forwardX*sternDistance,
+        y:this.player.y-forwardY*sternDistance,
+        heading:this.player.rotation,
+        speedFactor:clamp(speed/Math.max(120,Number(this.config.player?.speed)||420),.18,1),
+        time:Number(time)
+      };
+
+      const list=this.wakeSamples||[];
+      const previous=list[list.length-1];
+      if(!previous||distance(previous,sample)>=4){
+        list.push(sample);
+      }
+
+      // Bound trail length in world space. This preserves old points through
+      // curves while preventing an endlessly growing GPU vertex buffer.
+      let totalDistance=0;
+      let keepFrom=Math.max(0,list.length-1);
+      const maxPath=effects.wakeLength*(.95+sample.speedFactor*.38);
+      for(let i=list.length-1;i>0;i--){
+        totalDistance+=distance(list[i],list[i-1]);
+        keepFrom=i-1;
+        if(totalDistance>=maxPath)break;
+      }
+      if(keepFrom>0)list.splice(0,keepFrom);
+      if(list.length>72)list.splice(0,list.length-72);
+      this.wakeSamples=list;
+    }
+
+    if(webglWake){
+      // The WebGL ocean pass draws the whole wake from wakeSamples in one
+      // additional draw call. The old DOM particles remain only as fallback.
+      this.playerWakeLayer?.replaceChildren();
+      this.wakeParticleCount=0;
+      return;
     }
 
     if(
@@ -2845,7 +2910,14 @@ export class WorldRuntime {
         zoom:this.mode==="play"?this.playZoom:this.zoom,
         ocean,
         width:this.viewportSize?.width||1,
-        height:this.viewportSize?.height||1
+        height:this.viewportSize?.height||1,
+        wake:{
+          active:this.mode==="play"&&this.playerWaterEffects().wakeActive,
+          samples:this.wakeSamples||[],
+          width:this.playerWaterEffects().wakeWidth,
+          opacity:this.playerWaterEffects().wakeOpacity,
+          lifetime:clamp(1100+this.playerWaterEffects().wakeLength*6.2,1600,4600)
+        }
       });
 
     if(webglRendered)return;
