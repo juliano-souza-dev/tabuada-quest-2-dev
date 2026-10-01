@@ -508,14 +508,28 @@ export class ShipEditor{
     const ship=this.editableCurrent();
     if(!ship)return;
     ship.navigation.sprite={...(ship.navigation.sprite||{}),...clone(patch)};
+    if(ship.autoFrame!==false&&("imageWidth" in patch||"imageHeight" in patch||"src" in patch)){
+      this.frameSpriteByCell(ship.navigation.sprite,ship.cellSize||400,{navigation:true});
+    }
     this.syncNavigationRegions(ship);
+    if(ship.spriteMode==="combined")this.syncCombinedAtlas(ship);
     this.save();this.renderEditor();
   }
 
   updateCombatSprite(patch={}){
     const ship=this.editableCurrent();
     if(!ship)return;
-    ship.combat.sprite={...(ship.combat.sprite||{}),...clone(patch)};
+    if(ship.spriteMode==="combined"){
+      ship.navigation.sprite={...(ship.navigation.sprite||{}),...clone(patch)};
+      if(ship.autoFrame!==false)this.frameSpriteByCell(ship.navigation.sprite,ship.cellSize||400,{navigation:true});
+      this.syncNavigationRegions(ship);
+      this.syncCombinedAtlas(ship);
+    }else{
+      ship.combat.sprite={...(ship.combat.sprite||{}),...clone(patch)};
+      if(ship.autoFrame!==false&&("imageWidth" in patch||"imageHeight" in patch||"src" in patch)){
+        this.frameSpriteByCell(ship.combat.sprite,ship.cellSize||400);
+      }
+    }
     this.save();this.renderEditor();
   }
 
