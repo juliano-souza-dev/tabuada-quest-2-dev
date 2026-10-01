@@ -115,7 +115,7 @@ export class DevOverlay {
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
-    this.shipEditor.mount(this.el);
+    this.shipEditorReady=this.shipEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -632,6 +632,7 @@ export class DevOverlay {
     this.saveLocalWorlds();
 
     if(this.workspace==="scene"&&!this.sceneBeforeWorld)this.sceneBeforeWorld=structuredClone(this.runtime.scene||null);
+    await this.shipEditorReady;
     await this.worldEditor.openLocal(entry,world);
     this.workspace="world";
     this.selected=null;
@@ -650,6 +651,7 @@ export class DevOverlay {
       ?this.persistentPlayerShipProfile(this.worldEditor?.getPlayerConfig?.())
       :null;
     try{
+      await this.shipEditorReady;
       if(this.workspace==="scene"&&!this.sceneBeforeWorld)this.sceneBeforeWorld=structuredClone(this.runtime.scene||null);
       this.removeWorldSceneBackButton();
       const local=this.localWorlds.find(item=>item.entry.id===id);
