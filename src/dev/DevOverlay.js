@@ -646,6 +646,9 @@ export class DevOverlay {
 
       const presetOptions=[["calm","Calmo"],["adventure","Aventura"],["storm","Tempestade"]]
         .map(([value,label])=>'<option value="'+value+'" '+(ocean.preset===value?'selected':'')+'>'+label+'</option>').join("");
+      const environmentPreset=String(world.environment?.preset||"day");
+      const environmentOptions=[["day","Dia"],["night","Noite"],["storm","Tempestade"],["snow","Nevando"],["halloween","Halloween"]]
+        .map(([value,label])=>'<option value="'+value+'" '+(environmentPreset===value?'selected':'')+'>'+label+'</option>').join("");
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
       const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
@@ -818,6 +821,10 @@ export class DevOverlay {
               '<small class="tq-world-editor-note">O rastro acompanha direção e velocidade do navio. A sombra fica sobre a superfície sem alterar o WebGL do oceano.</small>'+
             '</div>'+
           '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Ambiente</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-world-field"><span>Predefinição</span><select data-environment-preset>'+environmentOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Aplica em conjunto oceano, cor, contraste, brilho, movimento, rastro, sombra e balanço do navio. Depois você pode ajustar qualquer controle manualmente.</small>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · textura e cor</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
             '<label class="tq-world-field"><span>Renderer</span><select data-ocean-prop="renderer"><option value="webgl" '+(ocean.renderer==="webgl"?'selected':'')+'>WebGL2</option><option value="css" '+(ocean.renderer==="css"?'selected':'')+'>CSS fallback</option></select></label>'+
@@ -826,6 +833,10 @@ export class DevOverlay {
             shaderRange("tileSize","Escala da textura",240,1600,10," px")+
             shaderRange("brightness","Brilho",50,150,1,"%")+
             shaderRange("saturation","Saturação",0,180,1,"%")+
+            shaderRange("contrast","Contraste",50,150,1,"%")+
+            shaderRange("tintR","Tom vermelho",50,150,1,"%")+
+            shaderRange("tintG","Tom verde",50,150,1,"%")+
+            shaderRange("tintB","Tom azul",50,150,1,"%")+
             '<small class="tq-world-editor-note">WebGL2 é o renderer principal. CSS fica apenas como fallback de compatibilidade.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · movimento</strong><span>▾</span></button><div class="tq-config-area__body">'+
@@ -1324,8 +1335,14 @@ export class DevOverlay {
         input.addEventListener("change",()=>apply(true));
       });
 
+      content.querySelector("[data-environment-preset]")?.addEventListener("change",event=>{
+        this.worldEditor.applyEnvironmentPreset(event.target.value,true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      });
+
       const numeric=new Set([
-        "speed","directionX","directionY","swell","tileSize","brightness","saturation",
+        "speed","directionX","directionY","swell","tileSize","brightness","saturation","contrast","tintR","tintG","tintB",
         "distortion","waveFrequencyA","waveFrequencyB","waveMix","foamMix",
         "sparkleIntensity","sparkleSharpness"
       ]);
