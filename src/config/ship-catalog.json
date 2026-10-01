@@ -734,132 +734,6 @@
           "muzzleFlash": true,
           "smoke": true,
           "impact": true,
-          "sprite": {
-            "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
-            "imageWidth": 2400,
-            "imageHeight": 7200,
-            "columns": 4,
-            "rows": 12,
-            "cellWidth": 600,
-            "cellHeight": 600,
-            "initialDirection": "n",
-            "directionFrames": {
-              "n": 8,
-              "nne": 9,
-              "ne": 10,
-              "ene": 11,
-              "e": 12,
-              "ese": 13,
-              "se": 14,
-              "sse": 15,
-              "s": 0,
-              "ssw": 1,
-              "sw": 2,
-              "wsw": 3,
-              "w": 4,
-              "wnw": 5,
-              "nw": 6,
-              "nnw": 7
-            },
-            "regions": {
-              "n": {
-                "x": 0,
-                "y": 1200,
-                "width": 600,
-                "height": 600
-              },
-              "nne": {
-                "x": 600,
-                "y": 1200,
-                "width": 600,
-                "height": 600
-              },
-              "ne": {
-                "x": 1200,
-                "y": 1200,
-                "width": 600,
-                "height": 600
-              },
-              "ene": {
-                "x": 1800,
-                "y": 1200,
-                "width": 600,
-                "height": 600
-              },
-              "e": {
-                "x": 0,
-                "y": 1800,
-                "width": 600,
-                "height": 600
-              },
-              "ese": {
-                "x": 600,
-                "y": 1800,
-                "width": 600,
-                "height": 600
-              },
-              "se": {
-                "x": 1200,
-                "y": 1800,
-                "width": 600,
-                "height": 600
-              },
-              "sse": {
-                "x": 1800,
-                "y": 1800,
-                "width": 600,
-                "height": 600
-              },
-              "s": {
-                "x": 0,
-                "y": 0,
-                "width": 600,
-                "height": 600
-              },
-              "ssw": {
-                "x": 600,
-                "y": 0,
-                "width": 600,
-                "height": 600
-              },
-              "sw": {
-                "x": 1200,
-                "y": 0,
-                "width": 600,
-                "height": 600
-              },
-              "wsw": {
-                "x": 1800,
-                "y": 0,
-                "width": 600,
-                "height": 600
-              },
-              "w": {
-                "x": 0,
-                "y": 600,
-                "width": 600,
-                "height": 600
-              },
-              "wnw": {
-                "x": 600,
-                "y": 600,
-                "width": 600,
-                "height": 600
-              },
-              "nw": {
-                "x": 1200,
-                "y": 600,
-                "width": 600,
-                "height": 600
-              },
-              "nnw": {
-                "x": 1800,
-                "y": 600,
-                "width": 600,
-                "height": 600
-              }
-            }
-          },
           "animations": {
             "idle": {
               "frames": [
@@ -925,7 +799,8 @@
               "cellWidth": 600,
               "cellHeight": 600
             }
-          }
+          },
+          "useNavigationAtlas": true
         }
       },
       "navigation": {
@@ -1074,132 +949,6 @@
         "muzzleFlash": true,
         "smoke": true,
         "impact": true,
-        "sprite": {
-          "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
-          "imageWidth": 2400,
-          "imageHeight": 7200,
-          "columns": 4,
-          "rows": 12,
-          "cellWidth": 600,
-          "cellHeight": 600,
-          "initialDirection": "n",
-          "directionFrames": {
-            "n": 8,
-            "nne": 9,
-            "ne": 10,
-            "ene": 11,
-            "e": 12,
-            "ese": 13,
-            "se": 14,
-            "sse": 15,
-            "s": 0,
-            "ssw": 1,
-            "sw": 2,
-            "wsw": 3,
-            "w": 4,
-            "wnw": 5,
-            "nw": 6,
-            "nnw": 7
-          },
-          "regions": {
-            "n": {
-              "x": 0,
-              "y": 1200,
-              "width": 600,
-              "height": 600
-            },
-            "nne": {
-              "x": 600,
-              "y": 1200,
-              "width": 600,
-              "height": 600
-            },
-            "ne": {
-              "x": 1200,
-              "y": 1200,
-              "width": 600,
-              "height": 600
-            },
-            "ene": {
-              "x": 1800,
-              "y": 1200,
-              "width": 600,
-              "height": 600
-            },
-            "e": {
-              "x": 0,
-              "y": 1800,
-              "width": 600,
-              "height": 600
-            },
-            "ese": {
-              "x": 600,
-              "y": 1800,
-              "width": 600,
-              "height": 600
-            },
-            "se": {
-              "x": 1200,
-              "y": 1800,
-              "width": 600,
-              "height": 600
-            },
-            "sse": {
-              "x": 1800,
-              "y": 1800,
-              "width": 600,
-              "height": 600
-            },
-            "s": {
-              "x": 0,
-              "y": 0,
-              "width": 600,
-              "height": 600
-            },
-            "ssw": {
-              "x": 600,
-              "y": 0,
-              "width": 600,
-              "height": 600
-            },
-            "sw": {
-              "x": 1200,
-              "y": 0,
-              "width": 600,
-              "height": 600
-            },
-            "wsw": {
-              "x": 1800,
-              "y": 0,
-              "width": 600,
-              "height": 600
-            },
-            "w": {
-              "x": 0,
-              "y": 600,
-              "width": 600,
-              "height": 600
-            },
-            "wnw": {
-              "x": 600,
-              "y": 600,
-              "width": 600,
-              "height": 600
-            },
-            "nw": {
-              "x": 1200,
-              "y": 600,
-              "width": 600,
-              "height": 600
-            },
-            "nnw": {
-              "x": 1800,
-              "y": 600,
-              "width": 600,
-              "height": 600
-            }
-          }
-        },
         "animations": {
           "idle": {
             "frames": [
@@ -1265,7 +1014,8 @@
             "cellWidth": 600,
             "cellHeight": 600
           }
-        }
+        },
+        "useNavigationAtlas": true
       },
       "animations": {
         "idle": {
