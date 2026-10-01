@@ -2145,7 +2145,7 @@ export class WorldRuntime {
     shipEl.dataset.muzzleFlash=style.muzzleFlash===false?"off":"on";
     shipEl.dataset.smoke=style.smoke===false?"off":"on";
     shipEl.dataset.impact=style.impact===false?"off":"on";
-    shipEl.style.transform="none";
+    shipEl.style.removeProperty("transform");
   }
 
   syncCombatPlayerShip(){
