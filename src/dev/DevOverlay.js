@@ -1042,6 +1042,7 @@ export class DevOverlay {
       const spriteSrc=String(sprite.src||"");
       const playerEffects={
         wakeActive:player.effects?.wakeActive!==false,
+        wakeScale:Number(player.effects?.wakeScale??1),
         wakeOpacity:Number(player.effects?.wakeOpacity??.78),
         wakeWidth:Number(player.effects?.wakeWidth??66),
         wakeLength:Number(player.effects?.wakeLength??240),
@@ -1211,14 +1212,15 @@ export class DevOverlay {
             '<div class="tq-world-player-fx">'+
               '<strong>Rastro e sombra</strong>'+
               '<label class="tq-field tq-field--check"><span>Rastro na água</span><input data-player-effect-prop="wakeActive" type="checkbox" '+(playerEffects.wakeActive?'checked':'')+'></label>'+
+              playerEffectRange("wakeScale","Tamanho geral do rastro",.35,2.5,.05,"×")+
               playerEffectRange("wakeOpacity","Intensidade do rastro",0,1,.01)+
-              playerEffectRange("wakeWidth","Largura do rastro",18,180,1," px")+
-              playerEffectRange("wakeLength","Comprimento do rastro",50,420,5," px")+
+              playerEffectRange("wakeWidth","Largura base",18,220,1," px")+
+              playerEffectRange("wakeLength","Comprimento base",50,520,5," px")+
               '<label class="tq-field tq-field--check"><span>Sombra do navio</span><input data-player-effect-prop="shadowActive" type="checkbox" '+(playerEffects.shadowActive?'checked':'')+'></label>'+
               playerEffectRange("shadowOpacity","Intensidade da sombra",0,.9,.01)+
               playerEffectRange("shadowBlur","Desfoque da sombra",0,30,1," px")+
               playerEffectRange("shadowOffset","Deslocamento da sombra",-40,80,1," px")+
-              '<small class="tq-world-editor-note">Em WebGL2, o rastro usa histórico real da trajetória: duas faixas laterais de espuma + turbulência central, permanecendo na água durante curvas. Em CSS, usa o fallback antigo.</small>'+
+              '<small class="tq-world-editor-note">Tamanho geral multiplica largura e comprimento sem apagar os ajustes finos. Em WebGL2, o rastro usa histórico real da trajetória: duas faixas laterais de espuma + turbulência central.</small>'+
             '</div>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
