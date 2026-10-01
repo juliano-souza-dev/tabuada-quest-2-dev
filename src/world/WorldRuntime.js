@@ -65,6 +65,7 @@ const normalizePlayerWaterEffects=player=>{
   const fx=player?.effects||{};
   return {
     wakeActive:fx.wakeActive!==false,
+    wakeScale:clamp(Number(fx.wakeScale??1),.35,2.5),
     wakeOpacity:clamp(Number(fx.wakeOpacity??.78),0,1),
     wakeWidth:clamp(Number(fx.wakeWidth??66),18,220),
     wakeLength:clamp(Number(fx.wakeLength??240),50,520),
@@ -1527,7 +1528,10 @@ export class WorldRuntime {
     const width=Math.max(24,Number(this.config.player?.width)||108);
     const height=Math.max(24,Number(this.config.player?.height)||150);
     const speed=Math.hypot(this.player.vx,this.player.vy);
-    const wakeLifetime=clamp(1100+effects.wakeLength*6.2,1600,4600);
+    const wakeScale=effects.wakeScale;
+    const wakeWidth=effects.wakeWidth*wakeScale;
+    const wakeLength=effects.wakeLength*wakeScale;
+    const wakeLifetime=clamp(1100+wakeLength*6.2,1600,6200);
 
     if(this.playerShadowEl){
       this.playerShadowEl.hidden=!effects.shadowActive;
@@ -1582,7 +1586,7 @@ export class WorldRuntime {
       // curves while preventing an endlessly growing GPU vertex buffer.
       let totalDistance=0;
       let keepFrom=Math.max(0,list.length-1);
-      const maxPath=effects.wakeLength*(.95+sample.speedFactor*.38);
+      const maxPath=wakeLength*(.95+sample.speedFactor*.38);
       for(let i=list.length-1;i>0;i--){
         totalDistance+=distance(list[i],list[i-1]);
         keepFrom=i-1;
@@ -1620,9 +1624,9 @@ export class WorldRuntime {
     const baseX=this.player.x-forwardX*sternDistance;
     const baseY=this.player.y-forwardY*sternDistance;
     const speedFactor=clamp(speed/420,.2,1);
-    const sideOffset=effects.wakeWidth*.23;
-    const drift=effects.wakeLength*(.52+.48*speedFactor);
-    const duration=clamp(900+effects.wakeLength*4.8,1100,2900);
+    const sideOffset=wakeWidth*.23;
+    const drift=wakeLength*(.52+.48*speedFactor);
+    const duration=clamp(900+wakeLength*4.8,1100,4200);
 
     const spawn=(side,center=false)=>{
       if(this.wakeParticleCount>=84){
@@ -1635,12 +1639,12 @@ export class WorldRuntime {
       const lateral=center?0:side*sideOffset;
       puff.style.left=(baseX+rightX*lateral)+"px";
       puff.style.top=(baseY+rightY*lateral)+"px";
-      puff.style.width=(center?effects.wakeWidth*.52:effects.wakeWidth)+"px";
-      puff.style.height=(center?Math.max(16,effects.wakeWidth*.46):Math.max(18,effects.wakeWidth*.62))+"px";
+      puff.style.width=(center?wakeWidth*.52:wakeWidth)+"px";
+      puff.style.height=(center?Math.max(16,wakeWidth*.46):Math.max(18,wakeWidth*.62))+"px";
       puff.style.setProperty("--wake-opacity",String(effects.wakeOpacity*(center?.55:1)));
       puff.style.setProperty("--wake-rotation",this.player.rotation+"deg");
-      puff.style.setProperty("--wake-drift-x",(-forwardX*drift+rightX*side*effects.wakeWidth*.22)+"px");
-      puff.style.setProperty("--wake-drift-y",(-forwardY*drift+rightY*side*effects.wakeWidth*.22)+"px");
+      puff.style.setProperty("--wake-drift-x",(-forwardX*drift+rightX*side*wakeWidth*.22)+"px");
+      puff.style.setProperty("--wake-drift-y",(-forwardY*drift+rightY*side*wakeWidth*.22)+"px");
       puff.style.setProperty("--wake-duration",duration+"ms");
       puff.addEventListener("animationend",()=>{
         if(puff.isConnected){
@@ -2911,13 +2915,16 @@ export class WorldRuntime {
         ocean,
         width:this.viewportSize?.width||1,
         height:this.viewportSize?.height||1,
-        wake:{
-          active:this.mode==="play"&&this.playerWaterEffects().wakeActive,
-          samples:this.wakeSamples||[],
-          width:this.playerWaterEffects().wakeWidth,
-          opacity:this.playerWaterEffects().wakeOpacity,
-          lifetime:clamp(1100+this.playerWaterEffects().wakeLength*6.2,1600,4600)
-        }
+        wake:(()=>{
+          const fx=this.playerWaterEffects();
+          return {
+            active:this.mode==="play"&&fx.wakeActive,
+            samples:this.wakeSamples||[],
+            width:fx.wakeWidth*fx.wakeScale,
+            opacity:fx.wakeOpacity,
+            lifetime:clamp(1100+(fx.wakeLength*fx.wakeScale)*6.2,1600,6200)
+          };
+        })()
       });
 
     if(webglRendered)return;
