@@ -1,7 +1,7 @@
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 
-const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene","combat"]);
+const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene","enter-world","combat"]);
 
 export function inferCollisionAction(entity={},collision={}){
   const explicit=VALID_ACTIONS.has(String(collision.action||""))
@@ -11,6 +11,7 @@ export function inferCollisionAction(entity={},collision={}){
 
   const type=String(entity.type||"object");
   const category=String(entity.effect?.category||"");
+  if(type==="region-exit"&&entity.destinationWorldId)return "enter-world";
   if(type==="treasure"||type==="barrel")return "collect";
   if(type==="ship"&&entity.combat?.enabled===true)return "combat";
   if((type==="location"||type==="island"||category==="island")&&entity.scene)return "enter-scene";
@@ -23,10 +24,12 @@ export function defaultCollision(entity={}){
   const category=String(entity.effect?.category||"");
   const isBackground=type==="background"||category==="background";
   const isIsland=type==="island"||category==="island"||(type==="location"&&Boolean(entity.scene));
+  const isRegionExit=type==="region-exit";
   const isCollectible=type==="treasure"||type==="barrel";
   const isShip=type==="ship";
 
   if(isBackground)return {active:false,shape:"box",scaleX:1,scaleY:1,padding:0,action:"none",message:""};
+  if(isRegionExit)return {active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world",message:""};
   if(isIsland)return {active:true,shape:"ellipse",scaleX:.72,scaleY:.52,padding:10,action:"auto",message:""};
   if(isCollectible)return {active:true,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"auto",message:""};
   if(isShip)return {active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:entity.combat?.enabled===true?"combat":"none",message:""};
@@ -54,6 +57,7 @@ export function collisionMessage(entity={},collision={}){
   if(collision.message)return collision.message;
   if(action==="collect")return "Você encontrou "+label+".";
   if(action==="enter-scene")return "Você chegou a "+label+".";
+  if(action==="enter-world")return "Você chegou ao limite desta região.";
   if(action==="combat")return label+" bloqueia sua rota.";
   return "";
 }
@@ -62,6 +66,7 @@ export function collisionActionLabel(entity={},collision={}){
   const action=inferCollisionAction(entity,collision);
   if(action==="collect")return "Recolher";
   if(action==="enter-scene")return "Acessar";
+  if(action==="enter-world")return "Navegar";
   if(action==="combat")return "Combater";
   return "";
 }
