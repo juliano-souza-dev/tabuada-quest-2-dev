@@ -192,9 +192,9 @@
 .tq-world-combat__ship--player::before,.tq-world-combat__ship--player::after{content:"";position:absolute;pointer-events:none;opacity:0}
 .tq-world-combat__ship--player::before{left:54%;top:24%;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle,#fff7c2 0 8%,#ffbd45 20%,#ff5a24 42%,transparent 68%);filter:blur(.2px);transform:translate(-50%,-50%) scale(.3);z-index:3}
 .tq-world-combat__ship--player::after{left:52%;top:14%;width:42px;height:52px;border-radius:50%;background:radial-gradient(ellipse at 50% 75%,rgba(90,90,90,.72),rgba(54,54,54,.52) 42%,rgba(15,15,15,0) 72%);filter:blur(4px);transform:translate(-50%,0) scale(.55);z-index:2}
-.tq-world-combat__ship--player.is-taking-hit{animation:tq-combat-ship-hit .68s cubic-bezier(.2,.8,.2,1) both}
-.tq-world-combat__ship--player.is-taking-hit::before{animation:tq-combat-impact-flash .46s ease-out both}
-.tq-world-combat__ship--player.is-taking-hit::after{animation:tq-combat-impact-smoke .72s ease-out both}
+.tq-world-combat__ship--player.is-taking-hit{animation:tq-combat-ship-hit 1.18s cubic-bezier(.2,.8,.2,1) both}
+.tq-world-combat__ship--player.is-taking-hit::before{animation:tq-combat-impact-flash .76s ease-out both}
+.tq-world-combat__ship--player.is-taking-hit::after{animation:tq-combat-impact-smoke 1.28s ease-out both}
 .tq-world-combat__ship--player.is-damaged::after{opacity:.34;animation:tq-combat-damage-smoke 2.8s ease-in-out infinite}
 .tq-world-combat__ship--player.is-critical{filter:drop-shadow(0 10px 8px rgba(0,0,0,.48)) brightness(.9) saturate(.84)}
 .tq-world-combat__ship--player.is-critical::after{opacity:.62;animation:tq-combat-damage-smoke 1.65s ease-in-out infinite}
@@ -203,9 +203,9 @@
 .tq-world-combat__trajectory{position:relative;height:100%;min-height:120px}
 .tq-world-combat__shot{position:absolute;left:8px;top:48%;width:13px;height:13px;border-radius:50%;background:#1f1f1f;box-shadow:0 0 7px #ffb54a;z-index:3}
 .tq-world-combat__shot[hidden],.tq-world-combat__splash[hidden],.tq-world-combat__hit[hidden]{display:none!important}
-.tq-world-combat__shot.is-player-shot{animation:tq-combat-shot-player .58s ease-in forwards}
-.tq-world-combat__shot.is-enemy-shot{left:auto;right:8px;animation:tq-combat-shot-enemy .58s ease-in forwards}
-.tq-world-combat__splash,.tq-world-combat__hit{position:absolute;left:50%;top:63%;transform:translate(-50%,-50%);z-index:4;font-size:34px;animation:tq-combat-pop .48s ease-out both}
+.tq-world-combat__shot.is-player-shot{animation:tq-combat-shot-player .9s ease-in forwards}
+.tq-world-combat__shot.is-enemy-shot{left:auto;right:8px;animation:tq-combat-shot-enemy .9s ease-in forwards}
+.tq-world-combat__splash,.tq-world-combat__hit{position:absolute;left:50%;top:63%;transform:translate(-50%,-50%);z-index:4;font-size:38px;animation:tq-combat-pop .82s ease-out both}
 .tq-world-combat__hit.is-player-result{left:95%;top:47%}
 .tq-world-combat__hit.is-enemy-result{left:5%;top:47%}
 .tq-world-combat__splash.is-player-result{left:70%}
