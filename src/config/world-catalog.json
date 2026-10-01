@@ -25,6 +25,12 @@
       "name": "Teste Navio Halloween 48F",
       "type": "ocean",
       "path": "./src/world/halloween-48-test.world.json"
+    },
+    {
+      "id": "npc-red-600-test",
+      "name": "Teste NPC Vermelho 600",
+      "type": "ocean",
+      "path": "./src/world/npc-red-600-test.world.json"
     }
   ]
 }
