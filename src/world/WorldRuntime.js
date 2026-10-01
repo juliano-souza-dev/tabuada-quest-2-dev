@@ -58,6 +58,7 @@ export class WorldRuntime {
     this.challengeTimer=0;
     this.combatActive=null;
     this.combatTimer=0;
+    this.combatSpriteTimer=0;
     this.state=structuredClone(options.state||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
@@ -1634,18 +1635,77 @@ export class WorldRuntime {
     }
   }
 
+  combatSpriteConfig(){
+    const sprite=this.config.player?.combatSprite;
+    return sprite&&typeof sprite==="object"&&sprite.src?sprite:null;
+  }
+
+  applyCombatSpriteFrame(frame=0){
+    const sprite=this.combatSpriteConfig();
+    if(!sprite||!this.combatPlayerShip)return false;
+    const columns=Math.max(1,Number(sprite.columns)||4);
+    const rows=Math.max(1,Number(sprite.rows)||4);
+    const index=Math.max(0,Math.min(columns*rows-1,Number(frame)||0));
+    const column=index%columns;
+    const row=Math.floor(index/columns);
+    const safe=String(sprite.src||"").replace(/["\\]/g,"");
+    this.combatPlayerShip.style.backgroundImage=safe?'url("'+safe+'")':"none";
+    this.combatPlayerShip.style.backgroundSize=(columns*100)+"% "+(rows*100)+"%";
+    this.combatPlayerShip.style.backgroundPosition=
+      (columns===1?0:(column/(columns-1))*100)+"% "+
+      (rows===1?0:(row/(rows-1))*100)+"%";
+    this.combatPlayerShip.style.backgroundRepeat="no-repeat";
+    return true;
+  }
+
+  playCombatSpriteAnimation(name="fireRight"){
+    const sprite=this.combatSpriteConfig();
+    const animation=sprite?.animations?.[name];
+    const frames=Array.isArray(animation?.frames)?animation.frames:[];
+    if(!sprite||!frames.length)return false;
+    if(this.combatSpriteTimer){
+      clearTimeout(this.combatSpriteTimer);
+      this.combatSpriteTimer=0;
+    }
+    const frameMs=Math.max(60,Math.min(500,Number(animation.frameMs)||135));
+    let cursor=0;
+    const step=()=>{
+      if(!this.combatActive)return;
+      this.applyCombatSpriteFrame(frames[cursor]);
+      cursor+=1;
+      if(cursor<frames.length){
+        this.combatSpriteTimer=setTimeout(step,frameMs);
+      }else{
+        this.combatSpriteTimer=setTimeout(()=>{
+          this.combatSpriteTimer=0;
+          this.applyCombatSpriteFrame(Number(sprite.idleFrame)||0);
+        },frameMs);
+      }
+    };
+    step();
+    return true;
+  }
+
   syncCombatPlayerShip(){
     if(!this.combatPlayerShip||!this.playerEl)return;
-    this.updatePlayerVisual(performance.now(),1/60);
-    const source=this.playerEl.style;
-    for(const property of ["backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat"]){
-      this.combatPlayerShip.style[property]=source[property]||"";
+    const combatSprite=this.combatSpriteConfig();
+    if(combatSprite){
+      this.applyCombatSpriteFrame(Number(combatSprite.idleFrame)||0);
+      this.combatPlayerShip.classList.add("has-combat-sprite");
+    }else{
+      this.combatPlayerShip.classList.remove("has-combat-sprite");
+      this.updatePlayerVisual(performance.now(),1/60);
+      const source=this.playerEl.style;
+      for(const property of ["backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat"]){
+        this.combatPlayerShip.style[property]=source[property]||"";
+      }
     }
     this.combatPlayerShip.style.transform="none";
   }
 
   closeCombat(){
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
+    if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
     this.combatActive=null;
     if(this.combatWrap)this.combatWrap.hidden=true;
     if(this.combatFeedback)this.combatFeedback.textContent="";
@@ -1709,11 +1769,13 @@ export class WorldRuntime {
     if(result.correct===true){
       active.enemyHp=Math.max(0,active.enemyHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
+      this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:true});
       setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),320);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
+      this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:false});
       setTimeout(()=>this.playCombatFx({from:"enemy",hit:true}),320);
     }
