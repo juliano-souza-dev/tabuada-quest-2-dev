@@ -694,6 +694,7 @@
 
 /* Map NPC population controls */
 .tq-config-area--npc-map .tq-config-area__body{display:grid;gap:10px}
+.tq-config-area--npc-map .tq-config-area__body[hidden]{display:none}
 .tq-world-npc-types{display:grid;gap:8px}
 .tq-world-npc-row{
   display:grid;
