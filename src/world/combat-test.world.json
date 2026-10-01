@@ -1,0 +1,426 @@
+{
+  "schema": "tq.world",
+  "version": 1,
+  "id": "combat-test",
+  "name": "Oceano Teste de Combate",
+  "width": 6000,
+  "height": 6000,
+  "playableArea": {
+    "x": 250,
+    "y": 250,
+    "width": 5500,
+    "height": 5500
+  },
+  "player": {
+    "x": 3000,
+    "y": 5200,
+    "width": 230,
+    "height": 230,
+    "direction": "n",
+    "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+    "sprite": {
+      "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "regions": {
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
+      }
+    }
+  },
+  "playerSpawn": {
+    "x": 3000,
+    "y": 5200,
+    "direction": "n"
+  },
+  "combat": {
+    "playerHp": 3
+  },
+  "environment": {
+    "preset": "day",
+    "weather": "none"
+  },
+  "ocean": {
+    "active": true,
+    "renderer": "webgl",
+    "background": "./assets/ocean/ocean.png",
+    "preset": "adventure",
+    "speed": 28,
+    "directionX": 0.82,
+    "directionY": 0.32,
+    "swell": 28,
+    "tileSize": 1100,
+    "brightness": 106,
+    "saturation": 108,
+    "contrast": 102,
+    "tintR": 100,
+    "tintG": 100,
+    "tintB": 100,
+    "distortion": 48,
+    "waveFrequencyA": 18,
+    "waveFrequencyB": 15,
+    "waveMix": 34,
+    "foamMix": 20,
+    "sparkleIntensity": 34,
+    "sparkleSharpness": 18
+  },
+  "minimap": {
+    "enabled": true,
+    "showLocations": false,
+    "showCamera": true,
+    "showShips": true,
+    "types": [
+      "ship"
+    ],
+    "frameAsset": "./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"
+  },
+  "entities": [
+    {
+      "id": "enemy.colombo-01",
+      "type": "ship",
+      "label": "Corsário Colombo",
+      "src": "./assets/ships/el-colombo.webp",
+      "x": 1450,
+      "y": 1350,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": 18,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Corsário Colombo está pronto para o duelo."
+      }
+    },
+    {
+      "id": "enemy.pirata-02",
+      "type": "ship",
+      "label": "Pirata da Enseada",
+      "src": "./assets/ships/navio_pirata_tabuadas.webp",
+      "x": 3050,
+      "y": 1200,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": -22,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Pirata da Enseada está pronto para o duelo."
+      }
+    },
+    {
+      "id": "enemy.halloween-03",
+      "type": "ship",
+      "label": "Capitão Abóbora",
+      "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp",
+      "x": 4650,
+      "y": 1550,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": 28,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Capitão Abóbora está pronto para o duelo."
+      }
+    },
+    {
+      "id": "enemy.colombo-04",
+      "type": "ship",
+      "label": "Corsário do Oeste",
+      "src": "./assets/ships/colombo.png",
+      "x": 1350,
+      "y": 3300,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": 72,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Corsário do Oeste está pronto para o duelo."
+      }
+    },
+    {
+      "id": "enemy.pirata-05",
+      "type": "ship",
+      "label": "Barba de Bronze",
+      "src": "./assets/ships/navio_pirata_tabuadas.webp",
+      "x": 4400,
+      "y": 3450,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": -65,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Barba de Bronze está pronto para o duelo."
+      }
+    },
+    {
+      "id": "enemy.halloween-06",
+      "type": "ship",
+      "label": "Marujo Fantasma",
+      "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp",
+      "x": 3000,
+      "y": 2850,
+      "width": 250,
+      "height": 250,
+      "z": 24,
+      "rotation": 0,
+      "lockAspect": true,
+      "showLabel": false,
+      "combat": {
+        "enabled": true,
+        "hp": 3
+      },
+      "motion": {
+        "active": true,
+        "preset": "navigation",
+        "speed": 42,
+        "heave": 24,
+        "pitch": 18,
+        "roll": 12,
+        "sway": 8
+      },
+      "effect": {
+        "category": "ship",
+        "preset": "none"
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.52,
+        "scaleY": 0.62,
+        "padding": 170,
+        "action": "combat",
+        "message": "Marujo Fantasma está pronto para o duelo."
+      }
+    }
+  ],
+  "editor": {
+    "cameraX": 3000,
+    "cameraY": 3000,
+    "zoom": 0.28
+  },
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "sourceRevision": "20261001-combat-v1",
+    "editorVersion": 1,
+    "layoutRevision": "20261001-combat-test-v1",
+    "playableAreaPurpose": "combat-test"
+  }
+}
