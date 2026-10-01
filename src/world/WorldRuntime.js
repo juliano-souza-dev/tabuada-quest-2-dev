@@ -1589,7 +1589,7 @@ export class WorldRuntime {
     ship.classList.remove("is-taking-hit");
     void ship.offsetWidth;
     ship.classList.add("is-taking-hit");
-    setTimeout(()=>ship.classList.remove("is-taking-hit"),720);
+    setTimeout(()=>ship.classList.remove("is-taking-hit"),1280);
   }
 
   clearCombatFx(){
@@ -1611,7 +1611,7 @@ export class WorldRuntime {
       target.hidden=false;
       target.classList.add(from==="enemy"?"is-enemy-result":"is-player-result");
     }
-    setTimeout(()=>this.clearCombatFx(),620);
+    setTimeout(()=>this.clearCombatFx(),1050);
   }
 
   combatChoices(challenge){
@@ -1801,7 +1801,7 @@ export class WorldRuntime {
       if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
       this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:true});
-      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),320);
+      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),620);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
@@ -1810,25 +1810,25 @@ export class WorldRuntime {
       setTimeout(()=>{
         this.playCombatFx({from:"enemy",hit:true});
         this.playCombatDamageFx();
-      },320);
+      },620);
     }
     this.updateCombatHud();
 
     if(active.enemyHp<=0){
       this.completeCollection(active.entity);
       if(this.combatFeedback)this.combatFeedback.textContent="Navio inimigo derrotado!";
-      this.combatTimer=setTimeout(()=>this.closeCombat(),1050);
+      this.combatTimer=setTimeout(()=>this.closeCombat(),1700);
       return;
     }
     if(active.playerHp<=0){
       if(this.combatFeedback)this.combatFeedback.textContent="Seu navio perdeu o duelo. Afaste-se e tente novamente.";
-      this.combatTimer=setTimeout(()=>this.closeCombat(),1250);
+      this.combatTimer=setTimeout(()=>this.closeCombat(),2200);
       return;
     }
     this.combatTimer=setTimeout(async()=>{
       this.combatTimer=0;
       await this.loadCombatRound();
-    },980);
+    },1750);
   }
 
   stopForChallenge(){
