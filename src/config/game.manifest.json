@@ -11,7 +11,8 @@
     "scenes": "./src/config/scene-catalog.json",
     "worlds": "./src/config/world-catalog.json",
     "ships": "./src/config/ship-catalog.json",
-    "pedagogy": "./src/config/pedagogy-curriculum.json"
+    "pedagogy": "./src/config/pedagogy-curriculum.json",
+    "actions": "./src/config/action-catalog.json"
   },
   "start": {
     "kind": "scene",
