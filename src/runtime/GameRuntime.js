@@ -109,12 +109,23 @@ export class GameRuntime {
       });
     };
 
+    const signedOut=()=>{
+      this.authenticated=false;
+      this.pendingAuthRoute=null;
+      const login={kind:"scene",id:String(this.manifest.auth?.loginSceneId||"login")};
+      if(this.started){
+        queueMicrotask(()=>this.openScene(login,{pushHistory:false}).catch(error=>console.warn("Login restore failed",error)));
+      }
+    };
+
     globalThis.addEventListener?.("pagehide",save);
     globalThis.addEventListener?.("tq:auth-entry-ready",authReady);
+    globalThis.addEventListener?.("tq:auth-signed-out",signedOut);
     document.addEventListener?.("visibilitychange",visibility);
     this.cleanups.push(()=>{
       globalThis.removeEventListener?.("pagehide",save);
       globalThis.removeEventListener?.("tq:auth-entry-ready",authReady);
+      globalThis.removeEventListener?.("tq:auth-signed-out",signedOut);
       document.removeEventListener?.("visibilitychange",visibility);
     });
 
@@ -167,6 +178,8 @@ export class GameRuntime {
 
   attachPlayerStateStore(store){
     this.playerStateStore=store||null;
+    const status=this.playerStateStore?.status?.();
+    this.authenticated=status?.authenticated===true;
     const state=this.playerStateStore?.load?.();
     if(state)this.importAccountState(state);
     return this;
@@ -425,10 +438,22 @@ export class GameRuntime {
   }
 
   async start(override=null){
-    const requested=override
-      ||this.pendingAuthRoute
-      ||(this.restoreSession&&this.current?this.current:this.manifest.start)
-      ||{kind:"scene",id:"login"};
+    const authRequired=this.manifest.auth?.required===true;
+    const login={kind:"scene",id:String(this.manifest.auth?.loginSceneId||"login")};
+
+    let requested=null;
+    if(override){
+      requested=override;
+    }else if(authRequired&&!this.authenticated){
+      requested=login;
+    }else{
+      requested=this.pendingAuthRoute
+        ||(this.restoreSession&&this.current?this.current:null)
+        ||(this.authenticated?this.manifest.afterAuth:null)
+        ||this.manifest.start
+        ||login;
+    }
+
     this.pendingAuthRoute=null;
     const kind=String(requested.kind||requested.type||"scene").toLowerCase();
     this.started=true;
