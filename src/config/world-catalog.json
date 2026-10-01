@@ -13,6 +13,12 @@
       "name": "Teste Navio 8 Direções",
       "type": "ocean",
       "path": "./src/world/directional-ship-test.world.json"
+    },
+    {
+      "id": "combat-test",
+      "name": "Teste de Combate Naval",
+      "type": "ocean",
+      "path": "./src/world/combat-test.world.json"
     }
   ]
 }
