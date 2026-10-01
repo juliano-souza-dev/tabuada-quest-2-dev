@@ -1691,7 +1691,8 @@ export class DevOverlay {
       kind:"ship-frame",
       shipId:String(context.shipId||this.shipEditor?.selectedId||""),
       animationKey:String(context.animationKey||""),
-      section:context.section==="combat"?"combat":"navigation"
+      section:context.section==="combat"?"combat":"navigation",
+      mode:context.mode==="sprite"?"sprite":"frame"
     };
     if(this.assetNodeIndex.has("assets/ships"))this.assetDirectoryPath="assets/ships";
     const search=this.el.querySelector("[data-asset-search]");
@@ -1714,7 +1715,9 @@ export class DevOverlay {
 
     if(target.kind==="ship-frame"){
       const src="./"+asset.path;
-      const added=this.shipEditor?.addFrameTo?.(target.shipId,target.animationKey,src,target.section)===true;
+      const added=target.mode==="sprite"
+        ?this.shipEditor?.setSpriteAsset?.(target.shipId,target.section,src)===true
+        :this.shipEditor?.addFrameTo?.(target.shipId,target.animationKey,src,target.section)===true;
       this.assetPickTarget=null;
       this.toggleAssets(false);
       this.toggleShips(true);
