@@ -215,6 +215,10 @@ export class WorldEditor {
       rotation:0,
       lockAspect:false,
       destinationWorldId:String(destinationWorldId||""),
+      interaction:{
+        actionId:"enter-region",
+        params:{regionId:String(destinationWorldId||""),spawnId:""}
+      },
       transitionMessage:"",
       transitionActionLabel:"Navegar",
       motion:{active:false,preset:"none",speed:0,heave:0,pitch:0,roll:0,sway:0},
