@@ -66,6 +66,10 @@ export class ShipEditor{
     value.version=2;
     value.type=value.type==="npc"?"npc":"player";
     value.name=String(value.name||value.id||"Navio");
+    const declaredSpriteMode=value.spriteMode;
+    value.spriteMode=declaredSpriteMode==="combined"?"combined":"split";
+    value.autoFrame=value.autoFrame!==false;
+    value.cellSize=[400,600,800].includes(Number(value.cellSize))?Number(value.cellSize):400;
     const profile=(value.type==="npc"?value.npc:value.player)||value.runtime||value.player||value.npc||{};
     value.navigation=value.navigation&&typeof value.navigation==="object"?value.navigation:{};
     value.navigation={
@@ -140,36 +144,42 @@ export class ShipEditor{
       cellWidth:Math.max(1,Number(combatSprite.cellWidth||combatSprite.frameWidth)||400),
       cellHeight:Math.max(1,Number(combatSprite.cellHeight||combatSprite.frameHeight)||400)
     };
-    // Game combat atlases use the technical 400x400 cell contract. Older drafts
-    // could keep the default 4x4 grid after selecting a 1600x4800 (48-frame)
-    // sheet, producing 400x1200 cells and leaking whole strips of the atlas.
+
+    if(!declaredSpriteMode&&value.navigation.sprite.src&&value.combat.sprite.src===value.navigation.sprite.src){
+      value.spriteMode="combined";
+    }
+    if(value.spriteMode==="combined"&&value.navigation.sprite.src){
+      value.combat.sprite={
+        ...value.combat.sprite,
+        src:value.navigation.sprite.src,
+        imageWidth:value.navigation.sprite.imageWidth,
+        imageHeight:value.navigation.sprite.imageHeight,
+        columns:value.navigation.sprite.columns,
+        rows:value.navigation.sprite.rows,
+        cellWidth:value.navigation.sprite.cellWidth,
+        cellHeight:value.navigation.sprite.cellHeight
+      };
+    }
+    // Legacy repair only when the declared grid does not match the image.
+    // Valid 400/600/800 cell grids are trusted as-is.
     const combatImageW=value.combat.sprite.imageWidth;
     const combatImageH=value.combat.sprite.imageHeight;
-    const canonicalCell=400;
-    const canonicalCols=Math.round(combatImageW/canonicalCell);
-    const canonicalRows=Math.round(combatImageH/canonicalCell);
-    const canonicalGrid=
-      combatImageW%canonicalCell===0
-      &&combatImageH%canonicalCell===0
-      &&canonicalCols>=1&&canonicalCols<=32
-      &&canonicalRows>=1&&canonicalRows<=32;
-    const suspiciousCombatGrid=
-      value.combat.sprite.columns*value.combat.sprite.cellWidth!==combatImageW
-      ||value.combat.sprite.rows*value.combat.sprite.cellHeight!==combatImageH
-      ||(
-        value.combat.sprite.columns===4
-        &&value.combat.sprite.rows===4
-        &&(combatImageW!==1600||combatImageH!==1600)
-      )
-      ||(
-        value.combat.sprite.cellWidth===canonicalCell
-        &&value.combat.sprite.cellHeight!==canonicalCell
-      );
-    if(value.combat.sprite.src&&canonicalGrid&&suspiciousCombatGrid){
-      value.combat.sprite.columns=canonicalCols;
-      value.combat.sprite.rows=canonicalRows;
-      value.combat.sprite.cellWidth=canonicalCell;
-      value.combat.sprite.cellHeight=canonicalCell;
+    const combatGridValid=
+      value.combat.sprite.columns*value.combat.sprite.cellWidth===combatImageW
+      &&value.combat.sprite.rows*value.combat.sprite.cellHeight===combatImageH;
+    if(value.combat.sprite.src&&!combatGridValid){
+      const preferred=value.cellSize;
+      if(
+        combatImageW%preferred===0
+        &&combatImageH%preferred===0
+        &&combatImageW/preferred<=32
+        &&combatImageH/preferred<=32
+      ){
+        value.combat.sprite.columns=Math.max(1,Math.round(combatImageW/preferred));
+        value.combat.sprite.rows=Math.max(1,Math.round(combatImageH/preferred));
+        value.combat.sprite.cellWidth=preferred;
+        value.combat.sprite.cellHeight=preferred;
+      }
     }
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
     if(value.combat?.animations&&typeof value.combat.animations==="object"){
