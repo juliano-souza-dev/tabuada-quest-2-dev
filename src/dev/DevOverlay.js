@@ -1470,6 +1470,7 @@ export class DevOverlay {
             '<option value="collect" '+(collision.action==="collect"?'selected':'')+'>Recolher item</option>'+
             '<option value="enter-scene" '+(collision.action==="enter-scene"?'selected':'')+'>Acessar cena / ilha</option>'+
             '<option value="enter-world" '+(collision.action==="enter-world"?'selected':'')+'>Navegar para outro mar</option>'+
+            '<option value="combat" '+(collision.action==="combat"?'selected':'')+'>Combate naval</option>'+
           '</select></label>'+
           '<label class="tq-world-field"><span>Mensagem</span><input data-collision-prop="message" type="text" maxlength="240" value="'+this.escapeHtml(collision.message||"")+'" placeholder="Deixe vazio para mensagem automática"></label>'+
           '<small class="tq-world-editor-note">Se houver função, tocar na área mostra a mensagem e o botão da ação. Sem função, o navio desliza e contorna o obstáculo em vez de insistir contra ele.</small>'+
