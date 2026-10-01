@@ -759,6 +759,10 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
+          '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🌊 Fundo do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao mundo atual e pode ser diferente em cada região.</small>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Câmera do jogo</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
               '<input data-world-camera-prop="playZoom" type="range" min="0.55" max="1.40" step="0.01" value="'+cameraPlayZoom+'">'+
@@ -848,7 +852,6 @@ export class DevOverlay {
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · textura e cor</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
             '<label class="tq-world-field"><span>Renderer</span><select data-ocean-prop="renderer"><option value="webgl" '+(ocean.renderer==="webgl"?'selected':'')+'>WebGL2</option><option value="css" '+(ocean.renderer==="css"?'selected':'')+'>CSS fallback</option></select></label>'+
-            '<label class="tq-world-field"><span>Textura base</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-ocean-prop="preset">'+presetOptions+'</select></label>'+
             shaderRange("tileSize","Escala da textura",240,1600,10," px")+
             shaderRange("brightness","Brilho",50,150,1,"%")+
@@ -1388,6 +1391,11 @@ export class DevOverlay {
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false};
     const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0,action:"auto",message:""};
+    const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{enabled:false,hp:3};
+    const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
+    const shipOptions=(this.shipEditor?.allShips?.()||[]).map(ship=>
+      '<option value="'+this.escapeHtml(ship.id)+'" '+(entity.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+' · '+(ship.type==="npc"?"NPC":"PLAYER")+'</option>'
+    ).join("");
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
     const text=(key,label)=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="text" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
@@ -1466,6 +1474,22 @@ export class DevOverlay {
           '<label class="tq-world-field"><span>Mensagem</span><input data-collision-prop="message" type="text" maxlength="240" value="'+this.escapeHtml(collision.message||"")+'" placeholder="Deixe vazio para mensagem automática"></label>'+
           '<small class="tq-world-editor-note">Se houver função, tocar na área mostra a mensagem e o botão da ação. Sem função, o navio desliza e contorna o obstáculo em vez de insistir contra ele.</small>'+
         '</div></section>'+
+        (entity.type==="ship"
+          ? '<section class="tq-config-area tq-config-area--combat"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>⚔ Combate naval</strong><span>▾</span></button><div class="tq-config-area__body">'+
+              '<label class="tq-world-field"><span>Navio do catálogo</span><select data-world-prop="shipId"><option value="">Asset local / sem catálogo</option>'+shipOptions+'</select></label>'+
+              '<label class="tq-field tq-field--check"><span>Combate ativo</span><input data-entity-combat-prop="enabled" type="checkbox" '+(combat.enabled===true?'checked':'')+'></label>'+
+              '<label class="tq-world-field"><span>HP do inimigo</span><input data-entity-combat-prop="hp" type="number" min="1" max="20" value="'+Math.max(1,Number(combat.hp)||3)+'"></label>'+
+              '<small class="tq-world-editor-note">Ative para transformar este navio em inimigo. Funciona em qualquer mundo, não apenas no mapa de teste.</small>'+
+            '</div></section>'+
+            '<section class="tq-config-area tq-config-area--rewards"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🎁 Recompensas da vitória</strong><span>▾</span></button><div class="tq-config-area__body">'+
+              '<label class="tq-world-field"><span>Moedas</span><input data-entity-reward-prop="coins" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.coins)||0)+'"></label>'+
+              '<label class="tq-world-field"><span>XP</span><input data-entity-reward-prop="xp" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.xp)||0)+'"></label>'+
+              '<label class="tq-world-field"><span>Item / recompensa ID</span><input data-entity-reward-prop="itemId" type="text" value="'+this.escapeHtml(rewards.itemId||"")+'" placeholder="ex.: mapa-tesouro-01"></label>'+
+              '<label class="tq-world-field"><span>Quantidade do item</span><input data-entity-reward-prop="quantity" type="number" min="1" max="999" value="'+Math.max(1,Number(rewards.quantity)||1)+'"></label>'+
+              '<label class="tq-world-field"><span>Desbloquear navio</span><select data-entity-reward-prop="shipId"><option value="">Nenhum</option>'+((this.shipEditor?.allShips?.()||[]).map(ship=>'<option value="'+this.escapeHtml(ship.id)+'" '+(rewards.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>').join(""))+'</select></label>'+
+              '<small class="tq-world-editor-note">As recompensas são concedidas uma única vez quando este inimigo é derrotado.</small>'+
+            '</div></section>'
+          : '')+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Comportamento</strong><span>▾</span></button><div class="tq-config-area__body">'+
           num("interactionRadius","Raio de interação",0,2000)+
           text("scene","Cena vinculada")+
@@ -1537,6 +1561,30 @@ export class DevOverlay {
       const rotation=value===0?0:Math.max(-180,Math.min(180,current+value));
       this.selected=this.worldEditor.updateEntity(entity.id,{rotation},true)||this.selected;
       this.renderWorldInspector();
+    }));
+
+    content.querySelectorAll("[data-entity-combat-prop]").forEach(input=>input.addEventListener("change",()=>{
+      const key=input.dataset.entityCombatProp;
+      const value=input.type==="checkbox"?input.checked:Number(input.value);
+      const next={...(this.worldEditor.getSelected()?.combat||combat),[key]:value};
+      this.selected=this.worldEditor.updateEntity(entity.id,{combat:next},true)||this.selected;
+      if(key==="enabled"){
+        this.worldEditor.updateEntityCollision(entity.id,{
+          active:true,
+          shape:"ellipse",
+          action:value===true?"combat":"none"
+        },true);
+        this.selected=this.worldEditor.getSelected()||this.selected;
+        this.renderWorldInspector();
+      }
+    }));
+
+    const rewardNumeric=new Set(["coins","xp","quantity"]);
+    content.querySelectorAll("[data-entity-reward-prop]").forEach(input=>input.addEventListener("change",()=>{
+      const key=input.dataset.entityRewardProp;
+      const value=rewardNumeric.has(key)?Math.max(key==="quantity"?1:0,Number(input.value)||0):input.value;
+      const current=this.worldEditor.getSelected()?.rewards||rewards;
+      this.selected=this.worldEditor.updateEntity(entity.id,{rewards:{...current,[key]:value}},true)||this.selected;
     }));
 
     const collisionNumeric=new Set(["scaleX","scaleY","padding"]);
