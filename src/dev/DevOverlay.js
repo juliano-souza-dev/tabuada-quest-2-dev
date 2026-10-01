@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1116";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1438";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1412";
 export class DevOverlay {
   constructor(root,runtime,options={}){
@@ -1400,7 +1400,7 @@ export class DevOverlay {
     const effectPresets=effectPresetItems.map(item=>'<option value="'+item.id+'" '+(effect.preset===item.id?'selected':'')+'>'+this.escapeHtml(item.label||item.id)+'</option>').join("");
     const motionPresets=[["none","Sem balanço"],["calm","Mar calmo"],["navigation","Navegação natural"],["rough","Mar agitado"],["heavy","Objeto pesado"]]
       .map(([value,label])=>'<option value="'+value+'" '+(motion.preset===value?'selected':'')+'>'+label+'</option>').join("");
-    const destinationWorldOptions=this.allWorldEntries().map(world=>
+    const destinationWorldOptions=this.allWorldEntries().filter(world=>world.id!==this.worldEditor?.entry?.id).map(world=>
       '<option value="'+this.escapeHtml(world.id)+'" '+(entity.destinationWorldId===world.id?'selected':'')+'>'+this.escapeHtml(world.name||world.id)+' · '+this.escapeHtml(world.id)+'</option>'
     ).join("");
 
