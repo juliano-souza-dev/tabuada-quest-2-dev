@@ -282,7 +282,7 @@ export class WorldRuntime {
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
           const entity=this.createGeneratedNpc({
             shipId:typeConfig.shipId,
-            index,
+            index:total,
             typeConfig,
             population,
             random,
