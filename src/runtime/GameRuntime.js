@@ -23,6 +23,7 @@ export class GameRuntime {
     this.sceneCatalog=null;
     this.worldCatalog=null;
     this.shipCatalog=null;
+    this.pedagogyCurriculum=null;
     this.sceneRuntime=null;
     this.worldRuntime=null;
     this.sceneHost=null;
@@ -57,14 +58,17 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,pedagogyCurriculum]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
-      this.loadJson(catalogs.ships||"./src/config/ship-catalog.json")
+      this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
+      this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json")
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
     this.shipCatalog=shipCatalog;
+    this.pedagogyCurriculum=pedagogyCurriculum;
+    this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
     this.ensurePlayerShips();
 
     this.sceneRuntime=new SceneRuntime(
@@ -408,7 +412,10 @@ export class GameRuntime {
       a:Number(result.a),
       b:Number(result.b),
       answer:result.answer===null||result.answer===undefined||result.answer===""?null:(Number.isFinite(Number(result.answer))?Number(result.answer):null),
-      correct:result.correct===true
+      correct:result.correct===true,
+      region:Number(result.region)||null,
+      bonus:result.bonus===true,
+      countsTowardPlanned:result.countsTowardPlanned!==false
     });
     this.accountState={
       ...base,
@@ -426,14 +433,50 @@ export class GameRuntime {
 
   handleTreasureCollected({entity,challenge}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    const pedagogy=game.pedagogy&&typeof game.pedagogy==="object"?game.pedagogy:{};
+    const bonus=pedagogy.bonus&&typeof pedagogy.bonus==="object"?pedagogy.bonus:{};
+    const openedChestIds=Array.isArray(bonus.openedChestIds)?[...bonus.openedChestIds]:[];
+    const worldId=String(challenge?.context?.worldId||this.current?.id||"");
+    const chestKey=worldId+":"+String(cleanEntity.id||"");
+    const region=Number(challenge?.region)||Number(pedagogy.progress?.region)||1;
+    const chestsOpenedByRegion={
+      ...(bonus.chestsOpenedByRegion&&typeof bonus.chestsOpenedByRegion==="object"?bonus.chestsOpenedByRegion:{})
+    };
+
+    if(cleanEntity.id&&!openedChestIds.includes(chestKey)){
+      openedChestIds.push(chestKey);
+      chestsOpenedByRegion[String(region)]=Number(chestsOpenedByRegion[String(region)]||0)+1;
+    }
+
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        pedagogy:{
+          ...pedagogy,
+          bonus:{
+            ...bonus,
+            openedChestIds,
+            chestsOpenedByRegion,
+            totalChestChallenges:Object.values(chestsOpenedByRegion).reduce((sum,value)=>sum+Number(value||0),0)
+          }
+        }
+      }
+    };
+
     globalThis.dispatchEvent?.(new CustomEvent("tq:treasurecollected",{
       detail:{
         entity:cleanEntity,
+        region,
         challenge:challenge?{
           id:challenge.id,
           operation:challenge.operation,
           a:challenge.a,
-          b:challenge.b
+          b:challenge.b,
+          bonus:challenge.bonus===true,
+          countsTowardPlanned:challenge.countsTowardPlanned!==false
         }:null
       }
     }));
@@ -462,8 +505,10 @@ export class GameRuntime {
       editorEnabled:false,
       state:restored||{},
       createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
+        kind:entity?.type==="treasure"?"treasure":"world-interaction",
         worldId,
-        entityId:entity?.id
+        entityId:entity?.id,
+        entityType:entity?.type
       }),
       onPedagogyResult:result=>this.recordPedagogyResult({
         ...result,
