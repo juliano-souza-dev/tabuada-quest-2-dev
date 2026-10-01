@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2256";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2258";
 
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
@@ -14,7 +14,7 @@ if(rawStart){
   }
 }
 
-const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2256");
+const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2258");
 await game.start(start);
 
 globalThis.TabuadaQuest={
