@@ -1,8 +1,9 @@
-import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2258";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2258";
+import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2212";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2212";
 
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
+const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(Boolean))];
 
 export class GameRuntime {
   static async load(root,manifestUrl="./src/config/game.manifest.json",options={}){
@@ -20,6 +21,7 @@ export class GameRuntime {
     this.manifestUrl=options.manifestUrl||"";
     this.sceneCatalog=null;
     this.worldCatalog=null;
+    this.shipCatalog=null;
     this.sceneRuntime=null;
     this.worldRuntime=null;
     this.sceneHost=null;
@@ -29,6 +31,10 @@ export class GameRuntime {
     this.worldStates={};
     this.flags={};
     this.inventory=[];
+    this.playerShips={ownedShips:[],equippedShip:null};
+    this.playerStateStore=null;
+    this.accountState={};
+    this.started=false;
     this.persistenceKey=String(this.manifest.persistence?.sessionKey||"tq.game.runtime:v1");
     this.restoreSession=this.manifest.persistence?.restoreSession!==false;
     this.cleanups=[];
@@ -47,12 +53,15 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
-      this.loadJson(catalogs.worlds||"./src/config/world-catalog.json")
+      this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
+      this.loadJson(catalogs.ships||"./src/config/ship-catalog.json")
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
+    this.shipCatalog=shipCatalog;
+    this.ensurePlayerShips();
 
     this.sceneRuntime=new SceneRuntime(
       this.sceneHost,
@@ -65,10 +74,27 @@ export class GameRuntime {
 
     const save=()=>this.saveState();
     const visibility=()=>{if(document.visibilityState==="hidden")save()};
+    const authReady=event=>{
+      const state=event?.detail?.state;
+      if(!state)return;
+      this.importAccountState(state);
+      if(this.started&&this.current){
+        const route=this.routeSnapshot();
+        queueMicrotask(()=>{
+          const task=route.kind==="world"
+            ?this.openWorld(route,{pushHistory:false})
+            :this.openScene(route,{pushHistory:false});
+          Promise.resolve(task).catch(error=>console.warn("Account state route restore failed",error));
+        });
+      }
+    };
+
     globalThis.addEventListener?.("pagehide",save);
+    globalThis.addEventListener?.("tq:auth-entry-ready",authReady);
     document.addEventListener?.("visibilitychange",visibility);
     this.cleanups.push(()=>{
       globalThis.removeEventListener?.("pagehide",save);
+      globalThis.removeEventListener?.("tq:auth-entry-ready",authReady);
       document.removeEventListener?.("visibilitychange",visibility);
     });
 
@@ -102,11 +128,171 @@ export class GameRuntime {
       if(typeof target==="string"&&target.startsWith("scene:"))return this.openScene(target.slice(6));
       throw new Error("game.goto requires targetKind or a scene:/world: target");
     },{label:"Navegar"});
+    this.sceneRuntime.registerAction("game.equipShip",({node})=>{
+      const shipId=node.shipId||node.targetShip||node.target;
+      if(!shipId)throw new Error("game.equipShip requires shipId, targetShip or target");
+      return this.equipShip(shipId);
+    },{label:"Equipar navio"});
+    this.sceneRuntime.registerAction("game.grantShip",({node})=>{
+      const shipId=node.shipId||node.targetShip||node.target;
+      if(!shipId)throw new Error("game.grantShip requires shipId, targetShip or target");
+      return this.grantShip(shipId,{equip:node.equip===true});
+    },{label:"Desbloquear navio"});
   }
 
   registerAction(id,handler,options={}){
     this.sceneRuntime.registerAction(id,handler,options);
     return this;
+  }
+
+  attachPlayerStateStore(store){
+    this.playerStateStore=store||null;
+    const state=this.playerStateStore?.load?.();
+    if(state)this.importAccountState(state);
+    return this;
+  }
+
+  importAccountState(state){
+    if(!state||typeof state!=="object")return false;
+    this.accountState=clone(state);
+
+    const game=state.game&&typeof state.game==="object"?state.game:{};
+    const runtime=game.runtime&&typeof game.runtime==="object"
+      ?game.runtime
+      :(state.schema==="tq.game-state"?state:null);
+
+    if(runtime){
+      this.current=runtime.current?clone(runtime.current):this.current;
+      this.history=Array.isArray(runtime.history)?clone(runtime.history):this.history;
+      this.worldStates=runtime.worldStates&&typeof runtime.worldStates==="object"?clone(runtime.worldStates):this.worldStates;
+      this.flags=runtime.flags&&typeof runtime.flags==="object"?clone(runtime.flags):this.flags;
+      this.inventory=Array.isArray(runtime.inventory)?clone(runtime.inventory):this.inventory;
+    }
+
+    const ships=(
+      game.ships&&typeof game.ships==="object"?game.ships:
+      state.ships&&typeof state.ships==="object"?state.ships:
+      {}
+    );
+    this.playerShips={
+      ownedShips:unique(ships.ownedShips),
+      equippedShip:ships.equippedShip?String(ships.equippedShip):null
+    };
+    this.ensurePlayerShips();
+    this.writeSessionState();
+    return true;
+  }
+
+  exportAccountState(){
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    return {
+      ...base,
+      game:{
+        ...(base.game&&typeof base.game==="object"?base.game:{}),
+        runtime:this.runtimeSnapshot(),
+        ships:{
+          ownedShips:[...this.playerShips.ownedShips],
+          equippedShip:this.playerShips.equippedShip
+        }
+      }
+    };
+  }
+
+  shipEntry(id){
+    return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[]).find(ship=>ship.id===id)||null;
+  }
+
+  listAvailableShips(){
+    return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[])
+      .filter(ship=>ship.available!==false)
+      .map(ship=>clone(ship));
+  }
+
+  listOwnedShips(){
+    const owned=new Set(this.playerShips.ownedShips);
+    return this.listAvailableShips().filter(ship=>owned.has(ship.id));
+  }
+
+  ensurePlayerShips(){
+    const available=this.listAvailableShips();
+    const validIds=new Set(available.map(ship=>ship.id));
+    let owned=unique(this.playerShips?.ownedShips).filter(id=>validIds.has(id));
+    const defaultId=String(
+      this.manifest.player?.defaultShipId
+      ||this.shipCatalog?.defaultShipId
+      ||available[0]?.id
+      ||""
+    );
+
+    if(!owned.length&&defaultId&&validIds.has(defaultId)&&this.manifest.player?.grantDefaultShip!==false){
+      owned=[defaultId];
+    }
+
+    let equipped=this.playerShips?.equippedShip?String(this.playerShips.equippedShip):null;
+    if(!equipped||!owned.includes(equipped)||!validIds.has(equipped)){
+      equipped=owned[0]||defaultId||null;
+    }
+
+    this.playerShips={ownedShips:owned,equippedShip:equipped};
+    return this.playerShips;
+  }
+
+  getEquippedShip(){
+    this.ensurePlayerShips();
+    return this.playerShips.equippedShip?clone(this.shipEntry(this.playerShips.equippedShip)):null;
+  }
+
+  async grantShip(id,{equip=false,save=true}={}){
+    const ship=this.shipEntry(String(id||""));
+    if(!ship||ship.available===false)return false;
+    if(!this.playerShips.ownedShips.includes(ship.id))this.playerShips.ownedShips.push(ship.id);
+    if(equip||!this.playerShips.equippedShip)this.playerShips.equippedShip=ship.id;
+    this.ensurePlayerShips();
+    if(save)this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shipgranted",{detail:{ship:clone(ship),equipped:this.playerShips.equippedShip}}));
+    return true;
+  }
+
+  async equipShip(id,{save=true,reloadWorld=true}={}){
+    const shipId=String(id||"");
+    const ship=this.shipEntry(shipId);
+    if(!ship||ship.available===false||!this.playerShips.ownedShips.includes(shipId))return false;
+    if(this.playerShips.equippedShip===shipId)return true;
+
+    this.playerShips.equippedShip=shipId;
+    if(save)this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shipequipped",{detail:{ship:clone(ship)}}));
+
+    if(reloadWorld&&this.current?.kind==="world"){
+      this.captureCurrentState();
+      const route=this.routeSnapshot();
+      await this.openWorld(route,{pushHistory:false});
+    }
+    return true;
+  }
+
+  resolveWorldPlayer(world){
+    const legacy=world?.player&&typeof world.player==="object"?clone(world.player):{};
+    const spawn=world?.playerSpawn&&typeof world.playerSpawn==="object"?clone(world.playerSpawn):{};
+    const ship=this.getEquippedShip();
+    const shipPlayer=ship?.player&&typeof ship.player==="object"?clone(ship.player):{};
+
+    const navigation={
+      x:Number(spawn.x??legacy.x??world.width/2),
+      y:Number(spawn.y??legacy.y??world.height/2),
+      direction:String(spawn.direction??legacy.direction??"n")
+    };
+
+    return {
+      ...legacy,
+      ...shipPlayer,
+      ...navigation,
+      effects:{
+        ...(legacy.effects&&typeof legacy.effects==="object"?legacy.effects:{}),
+        ...(shipPlayer.effects&&typeof shipPlayer.effects==="object"?shipPlayer.effects:{})
+      },
+      shipId:ship?.id||legacy.shipId||null
+    };
   }
 
   sceneEntry(ref){
@@ -183,7 +369,9 @@ export class GameRuntime {
       this.worldRuntime=null;
     }
 
-    const world=await this.loadJson(entry.path);
+    const sourceWorld=await this.loadJson(entry.path);
+    const world=clone(sourceWorld);
+    world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
     const restored=state||this.worldStates[worldId]||null;
 
@@ -219,20 +407,32 @@ export class GameRuntime {
   async start(override=null){
     const requested=override||(this.restoreSession&&this.current?this.current:this.manifest.start)||{kind:"scene",id:"login"};
     const kind=String(requested.kind||requested.type||"scene").toLowerCase();
+    this.started=true;
     if(kind==="world")return this.openWorld(requested,{pushHistory:false});
     return this.openScene(requested,{pushHistory:false});
   }
 
-  getState(){
-    this.captureCurrentState();
+  runtimeSnapshot(){
     return {
       schema:"tq.game-state",
-      version:1,
+      version:2,
       current:this.routeSnapshot(),
       history:clone(this.history),
       worldStates:clone(this.worldStates),
       flags:clone(this.flags),
       inventory:clone(this.inventory)
+    };
+  }
+
+  getState(){
+    this.captureCurrentState();
+    return {
+      ...this.runtimeSnapshot(),
+      ships:{
+        availableShips:this.listAvailableShips().map(ship=>ship.id),
+        ownedShips:[...this.playerShips.ownedShips],
+        equippedShip:this.playerShips.equippedShip
+      }
     };
   }
 
@@ -247,6 +447,29 @@ export class GameRuntime {
       this.worldStates=state.worldStates&&typeof state.worldStates==="object"?clone(state.worldStates):{};
       this.flags=state.flags&&typeof state.flags==="object"?clone(state.flags):{};
       this.inventory=Array.isArray(state.inventory)?clone(state.inventory):[];
+      if(state.ships&&typeof state.ships==="object"){
+        this.playerShips={
+          ownedShips:unique(state.ships.ownedShips),
+          equippedShip:state.ships.equippedShip?String(state.ships.equippedShip):null
+        };
+      }
+      this.ensurePlayerShips();
+      return true;
+    }catch{
+      return false;
+    }
+  }
+
+  writeSessionState(){
+    try{
+      const state={
+        ...this.runtimeSnapshot(),
+        ships:{
+          ownedShips:[...this.playerShips.ownedShips],
+          equippedShip:this.playerShips.equippedShip
+        }
+      };
+      sessionStorage.setItem(this.persistenceKey,JSON.stringify(state));
       return true;
     }catch{
       return false;
@@ -256,16 +479,12 @@ export class GameRuntime {
   saveState(){
     try{
       this.captureCurrentState();
-      const state={
-        schema:"tq.game-state",
-        version:1,
-        current:this.routeSnapshot(),
-        history:clone(this.history),
-        worldStates:clone(this.worldStates),
-        flags:clone(this.flags),
-        inventory:clone(this.inventory)
-      };
-      sessionStorage.setItem(this.persistenceKey,JSON.stringify(state));
+      this.writeSessionState();
+      if(this.playerStateStore){
+        const account=this.exportAccountState();
+        this.accountState=clone(account);
+        this.playerStateStore.save(account,{sync:true});
+      }
       return true;
     }catch(error){
       console.warn("GameRuntime state save failed",error);
@@ -279,7 +498,11 @@ export class GameRuntime {
 
   emitChange(){
     globalThis.dispatchEvent?.(new CustomEvent("tq:gameroutechange",{
-      detail:{current:this.routeSnapshot(),history:clone(this.history)}
+      detail:{
+        current:this.routeSnapshot(),
+        history:clone(this.history),
+        equippedShip:this.playerShips.equippedShip
+      }
     }));
   }
 
