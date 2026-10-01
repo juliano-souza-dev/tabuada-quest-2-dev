@@ -1,4 +1,4 @@
-import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-1851";
+import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-1851";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20260930-2315";
