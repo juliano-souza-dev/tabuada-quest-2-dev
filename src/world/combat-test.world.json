@@ -237,7 +237,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Corsário Colombo está pronto para o duelo."
-      }
+      },
+      "shipId": "corsario-colombo",
+      "role": "npc"
     },
     {
       "id": "enemy.pirata-02",
@@ -277,7 +279,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Pirata da Enseada está pronto para o duelo."
-      }
+      },
+      "shipId": "pirata-enseada",
+      "role": "npc"
     },
     {
       "id": "enemy.halloween-03",
@@ -317,7 +321,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Capitão Abóbora está pronto para o duelo."
-      }
+      },
+      "shipId": "pirata-halloween-npc",
+      "role": "npc"
     },
     {
       "id": "enemy.colombo-04",
@@ -357,7 +363,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Corsário do Oeste está pronto para o duelo."
-      }
+      },
+      "shipId": "corsario-colombo",
+      "role": "npc"
     },
     {
       "id": "enemy.pirata-05",
@@ -397,7 +405,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Barba de Bronze está pronto para o duelo."
-      }
+      },
+      "shipId": "pirata-enseada",
+      "role": "npc"
     },
     {
       "id": "enemy.halloween-06",
@@ -437,7 +447,9 @@
         "padding": 170,
         "action": "combat",
         "message": "Marujo Fantasma está pronto para o duelo."
-      }
+      },
+      "shipId": "pirata-halloween-npc",
+      "role": "npc"
     }
   ],
   "editor": {
@@ -451,6 +463,7 @@
     "sourceRevision": "20261001-combat-v1",
     "editorVersion": 1,
     "layoutRevision": "20261001-combat-test-v1",
-    "playableAreaPurpose": "combat-test"
+    "playableAreaPurpose": "combat-test",
+    "shipCatalogIntegration": "v1"
   }
 }
