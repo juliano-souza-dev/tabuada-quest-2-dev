@@ -586,6 +586,782 @@
           47
         ]
       }
+    },
+    {
+      "id": "pirate-red-600-test-npc",
+      "name": "Pirata Vermelho 600 · NPC Teste",
+      "available": true,
+      "type": "npc",
+      "spriteMode": "combined",
+      "autoFrame": true,
+      "cellSize": 600,
+      "npc": {
+        "width": 260,
+        "height": 260,
+        "speed": 95,
+        "acceleration": 700,
+        "braking": 0.12,
+        "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+        "sprite": {
+          "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+          "imageWidth": 2400,
+          "imageHeight": 7200,
+          "columns": 4,
+          "rows": 12,
+          "cellWidth": 600,
+          "cellHeight": 600,
+          "initialDirection": "n",
+          "directionFrames": {
+            "n": 8,
+            "nne": 9,
+            "ne": 10,
+            "ene": 11,
+            "e": 12,
+            "ese": 13,
+            "se": 14,
+            "sse": 15,
+            "s": 0,
+            "ssw": 1,
+            "sw": 2,
+            "wsw": 3,
+            "w": 4,
+            "wnw": 5,
+            "nw": 6,
+            "nnw": 7
+          },
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "nne": {
+              "x": 600,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ne": {
+              "x": 1200,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ene": {
+              "x": 1800,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "e": {
+              "x": 0,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "ese": {
+              "x": 600,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "se": {
+              "x": 1200,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "sse": {
+              "x": 1800,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "s": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "ssw": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "sw": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "wsw": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "w": {
+              "x": 0,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "wnw": {
+              "x": 600,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nw": {
+              "x": 1200,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nnw": {
+              "x": 1800,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            }
+          }
+        },
+        "combatVisual": {
+          "recoil": 18,
+          "shake": 5,
+          "muzzleFlash": true,
+          "smoke": true,
+          "impact": true,
+          "sprite": {
+            "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+            "imageWidth": 2400,
+            "imageHeight": 7200,
+            "columns": 4,
+            "rows": 12,
+            "cellWidth": 600,
+            "cellHeight": 600,
+            "initialDirection": "n",
+            "directionFrames": {
+              "n": 8,
+              "nne": 9,
+              "ne": 10,
+              "ene": 11,
+              "e": 12,
+              "ese": 13,
+              "se": 14,
+              "sse": 15,
+              "s": 0,
+              "ssw": 1,
+              "sw": 2,
+              "wsw": 3,
+              "w": 4,
+              "wnw": 5,
+              "nw": 6,
+              "nnw": 7
+            },
+            "regions": {
+              "n": {
+                "x": 0,
+                "y": 1200,
+                "width": 600,
+                "height": 600
+              },
+              "nne": {
+                "x": 600,
+                "y": 1200,
+                "width": 600,
+                "height": 600
+              },
+              "ne": {
+                "x": 1200,
+                "y": 1200,
+                "width": 600,
+                "height": 600
+              },
+              "ene": {
+                "x": 1800,
+                "y": 1200,
+                "width": 600,
+                "height": 600
+              },
+              "e": {
+                "x": 0,
+                "y": 1800,
+                "width": 600,
+                "height": 600
+              },
+              "ese": {
+                "x": 600,
+                "y": 1800,
+                "width": 600,
+                "height": 600
+              },
+              "se": {
+                "x": 1200,
+                "y": 1800,
+                "width": 600,
+                "height": 600
+              },
+              "sse": {
+                "x": 1800,
+                "y": 1800,
+                "width": 600,
+                "height": 600
+              },
+              "s": {
+                "x": 0,
+                "y": 0,
+                "width": 600,
+                "height": 600
+              },
+              "ssw": {
+                "x": 600,
+                "y": 0,
+                "width": 600,
+                "height": 600
+              },
+              "sw": {
+                "x": 1200,
+                "y": 0,
+                "width": 600,
+                "height": 600
+              },
+              "wsw": {
+                "x": 1800,
+                "y": 0,
+                "width": 600,
+                "height": 600
+              },
+              "w": {
+                "x": 0,
+                "y": 600,
+                "width": 600,
+                "height": 600
+              },
+              "wnw": {
+                "x": 600,
+                "y": 600,
+                "width": 600,
+                "height": 600
+              },
+              "nw": {
+                "x": 1200,
+                "y": 600,
+                "width": 600,
+                "height": 600
+              },
+              "nnw": {
+                "x": 1800,
+                "y": 600,
+                "width": 600,
+                "height": 600
+              }
+            }
+          },
+          "animations": {
+            "idle": {
+              "frames": [
+                8
+              ],
+              "frameMs": 140,
+              "loop": true,
+              "cellWidth": 600,
+              "cellHeight": 600
+            },
+            "fireRight": {
+              "frames": [
+                12,
+                28,
+                44
+              ],
+              "frameMs": 150,
+              "loop": false,
+              "cellWidth": 600,
+              "cellHeight": 600
+            },
+            "fireLeft": {
+              "frames": [
+                4,
+                20,
+                36
+              ],
+              "frameMs": 150,
+              "loop": false,
+              "cellWidth": 600,
+              "cellHeight": 600
+            },
+            "hit": {
+              "frames": [
+                8,
+                24,
+                40
+              ],
+              "frameMs": 150,
+              "loop": false,
+              "cellWidth": 600,
+              "cellHeight": 600
+            },
+            "critical": {
+              "frames": [
+                0,
+                16,
+                32
+              ],
+              "frameMs": 170,
+              "loop": false,
+              "cellWidth": 600,
+              "cellHeight": 600
+            },
+            "defeat": {
+              "frames": [
+                0,
+                16,
+                32
+              ],
+              "frameMs": 190,
+              "loop": false,
+              "cellWidth": 600,
+              "cellHeight": 600
+            }
+          }
+        }
+      },
+      "navigation": {
+        "width": 260,
+        "height": 260,
+        "speed": 95,
+        "acceleration": 700,
+        "braking": 0.12,
+        "roll": 2.2,
+        "heave": 3,
+        "sway": 0,
+        "periodMs": 3400,
+        "wake": true,
+        "shadow": true,
+        "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+        "sprite": {
+          "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+          "imageWidth": 2400,
+          "imageHeight": 7200,
+          "columns": 4,
+          "rows": 12,
+          "cellWidth": 600,
+          "cellHeight": 600,
+          "initialDirection": "n",
+          "directionFrames": {
+            "n": 8,
+            "nne": 9,
+            "ne": 10,
+            "ene": 11,
+            "e": 12,
+            "ese": 13,
+            "se": 14,
+            "sse": 15,
+            "s": 0,
+            "ssw": 1,
+            "sw": 2,
+            "wsw": 3,
+            "w": 4,
+            "wnw": 5,
+            "nw": 6,
+            "nnw": 7
+          },
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "nne": {
+              "x": 600,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ne": {
+              "x": 1200,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ene": {
+              "x": 1800,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "e": {
+              "x": 0,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "ese": {
+              "x": 600,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "se": {
+              "x": 1200,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "sse": {
+              "x": 1800,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "s": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "ssw": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "sw": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "wsw": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "w": {
+              "x": 0,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "wnw": {
+              "x": 600,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nw": {
+              "x": 1200,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nnw": {
+              "x": 1800,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            }
+          }
+        }
+      },
+      "combat": {
+        "recoil": 18,
+        "shake": 5,
+        "muzzleFlash": true,
+        "smoke": true,
+        "impact": true,
+        "sprite": {
+          "src": "./assets/ships/pirate_red_spritesheet_48frames_600.webp",
+          "imageWidth": 2400,
+          "imageHeight": 7200,
+          "columns": 4,
+          "rows": 12,
+          "cellWidth": 600,
+          "cellHeight": 600,
+          "initialDirection": "n",
+          "directionFrames": {
+            "n": 8,
+            "nne": 9,
+            "ne": 10,
+            "ene": 11,
+            "e": 12,
+            "ese": 13,
+            "se": 14,
+            "sse": 15,
+            "s": 0,
+            "ssw": 1,
+            "sw": 2,
+            "wsw": 3,
+            "w": 4,
+            "wnw": 5,
+            "nw": 6,
+            "nnw": 7
+          },
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "nne": {
+              "x": 600,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ne": {
+              "x": 1200,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "ene": {
+              "x": 1800,
+              "y": 1200,
+              "width": 600,
+              "height": 600
+            },
+            "e": {
+              "x": 0,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "ese": {
+              "x": 600,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "se": {
+              "x": 1200,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "sse": {
+              "x": 1800,
+              "y": 1800,
+              "width": 600,
+              "height": 600
+            },
+            "s": {
+              "x": 0,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "ssw": {
+              "x": 600,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "sw": {
+              "x": 1200,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "wsw": {
+              "x": 1800,
+              "y": 0,
+              "width": 600,
+              "height": 600
+            },
+            "w": {
+              "x": 0,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "wnw": {
+              "x": 600,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nw": {
+              "x": 1200,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            },
+            "nnw": {
+              "x": 1800,
+              "y": 600,
+              "width": 600,
+              "height": 600
+            }
+          }
+        },
+        "animations": {
+          "idle": {
+            "frames": [
+              8
+            ],
+            "frameMs": 140,
+            "loop": true,
+            "cellWidth": 600,
+            "cellHeight": 600
+          },
+          "fireRight": {
+            "frames": [
+              12,
+              28,
+              44
+            ],
+            "frameMs": 150,
+            "loop": false,
+            "cellWidth": 600,
+            "cellHeight": 600
+          },
+          "fireLeft": {
+            "frames": [
+              4,
+              20,
+              36
+            ],
+            "frameMs": 150,
+            "loop": false,
+            "cellWidth": 600,
+            "cellHeight": 600
+          },
+          "hit": {
+            "frames": [
+              8,
+              24,
+              40
+            ],
+            "frameMs": 150,
+            "loop": false,
+            "cellWidth": 600,
+            "cellHeight": 600
+          },
+          "critical": {
+            "frames": [
+              0,
+              16,
+              32
+            ],
+            "frameMs": 170,
+            "loop": false,
+            "cellWidth": 600,
+            "cellHeight": 600
+          },
+          "defeat": {
+            "frames": [
+              0,
+              16,
+              32
+            ],
+            "frameMs": 190,
+            "loop": false,
+            "cellWidth": 600,
+            "cellHeight": 600
+          }
+        }
+      },
+      "animations": {
+        "idle": {
+          "frames": [
+            8
+          ],
+          "frameMs": 140,
+          "loop": true,
+          "cellWidth": 600,
+          "cellHeight": 600
+        },
+        "fireRight": {
+          "frames": [
+            12,
+            28,
+            44
+          ],
+          "frameMs": 150,
+          "loop": false,
+          "cellWidth": 600,
+          "cellHeight": 600
+        },
+        "fireLeft": {
+          "frames": [
+            4,
+            20,
+            36
+          ],
+          "frameMs": 150,
+          "loop": false,
+          "cellWidth": 600,
+          "cellHeight": 600
+        },
+        "hit": {
+          "frames": [
+            8,
+            24,
+            40
+          ],
+          "frameMs": 150,
+          "loop": false,
+          "cellWidth": 600,
+          "cellHeight": 600
+        },
+        "critical": {
+          "frames": [
+            0,
+            16,
+            32
+          ],
+          "frameMs": 170,
+          "loop": false,
+          "cellWidth": 600,
+          "cellHeight": 600
+        },
+        "defeat": {
+          "frames": [
+            0,
+            16,
+            32
+          ],
+          "frameMs": 190,
+          "loop": false,
+          "cellWidth": 600,
+          "cellHeight": 600
+        }
+      },
+      "animationGroups": {
+        "idle": "combat",
+        "fireRight": "combat",
+        "fireLeft": "combat",
+        "hit": "combat",
+        "critical": "combat",
+        "defeat": "combat"
+      },
+      "meta": {
+        "testOnly": true,
+        "spriteGrid": "4x12",
+        "frameCount": 48,
+        "cellSize": 600,
+        "directionContract": "rows 1-4: S→SSW→SW→WSW / W→WNW→NW→NNW / N→NNE→NE→ENE / E→ESE→SE→SSE",
+        "effectCycles": [
+          [
+            0,
+            15
+          ],
+          [
+            16,
+            31
+          ],
+          [
+            32,
+            47
+          ]
+        ]
+      }
     }
   ],
   "shipTypes": [
