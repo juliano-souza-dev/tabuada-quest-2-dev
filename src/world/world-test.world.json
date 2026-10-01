@@ -567,5 +567,10 @@
     "x": 4000,
     "y": 7000,
     "direction": "n"
+  },
+  "minimap": {
+    "enabled": true,
+    "showLocations": true,
+    "showCamera": true
   }
 }
