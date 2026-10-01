@@ -492,6 +492,71 @@ export class DevOverlay {
     }).join("");
   }
 
+  async worldDocument(entry){
+    if(!entry?.id)return null;
+    const local=this.localWorlds.find(item=>item.entry.id===entry.id);
+    if(local)return structuredClone(local.world);
+    if(!entry.path)return null;
+    try{
+      const response=await fetch(entry.path,{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      return await response.json();
+    }catch(error){
+      console.warn("World load for link validation failed",entry.id,error);
+      return null;
+    }
+  }
+
+  async worldInboundLinks(targetId){
+    const links=[];
+    for(const entry of this.allWorldEntries()){
+      if(entry.id===targetId)continue;
+      const world=await this.worldDocument(entry);
+      if(!world)continue;
+      for(const entity of Array.isArray(world.entities)?world.entities:[]){
+        if(entity?.type!=="region-exit")continue;
+        if(String(entity.destinationWorldId||"")!==String(targetId))continue;
+        links.push({
+          worldId:entry.id,
+          worldName:entry.name||entry.id,
+          entityId:entity.id||"",
+          entityLabel:entity.label||"Saída de região"
+        });
+      }
+    }
+    return links;
+  }
+
+  async deleteWorld(id){
+    const entry=this.allWorldEntries().find(world=>world.id===id);
+    if(!entry)return false;
+
+    const links=await this.worldInboundLinks(id);
+    if(links.length){
+      const description=links.map(link=>"- "+link.worldName+" ("+link.worldId+") · "+link.entityLabel).join("\n");
+      alert("Este mundo não pode ser apagado porque ainda recebe link de acesso:\n\n"+description+"\n\nRemova ou altere esses region exits primeiro.");
+      return false;
+    }
+
+    if(!entry.local){
+      alert("Este mundo está versionado no repositório. A exclusão pelo editor está disponível para mundos criados no próprio editor. Para este mundo versionado, remova o arquivo e a entrada do world-catalog no repositório.");
+      return false;
+    }
+
+    const confirmed=confirm('Apagar definitivamente o mundo "'+(entry.name||entry.id)+'"?');
+    if(!confirmed)return false;
+
+    this.localWorlds=this.localWorlds.filter(item=>item.entry.id!==id);
+    this.saveLocalWorlds();
+
+    if(this.worldEditor?.entry?.id===id){
+      this.exitWorldWorkspace({restoreScene:true});
+    }
+
+    this.renderWorlds();
+    return true;
+  }
+
   renderWorlds(){
     const list=this.el?.querySelector("[data-worlds-list]");
     const actions=this.el?.querySelector("[data-worlds-actions]");
@@ -500,13 +565,17 @@ export class DevOverlay {
     const current=this.worldEditor?.entry?.id||"";
 
     list.innerHTML=worlds.length?worlds.map(world=>
-      '<button type="button" class="tq-world-item '+(world.id===current?'is-current':'')+'" data-world-open="'+this.escapeHtml(world.id)+'">'+
-        '<span><b>'+this.escapeHtml(world.name||world.id)+'</b><small>'+this.escapeHtml(world.type||"ocean")+' · '+this.escapeHtml(world.id)+(world.local?' · LOCAL':'')+'</small></span>'+
-        '<strong>'+(world.id===current?'ABERTO':'EDITAR')+'</strong>'+
-      '</button>'
+      '<div class="tq-world-item '+(world.id===current?'is-current':'')+'">'+
+        '<button type="button" class="tq-world-item__open" data-world-open="'+this.escapeHtml(world.id)+'">'+
+          '<span><b>'+this.escapeHtml(world.name||world.id)+'</b><small>'+this.escapeHtml(world.type||"ocean")+' · '+this.escapeHtml(world.id)+(world.local?' · LOCAL':'')+'</small></span>'+
+          '<strong>'+(world.id===current?'ABERTO':'EDITAR')+'</strong>'+
+        '</button>'+
+        '<button type="button" class="tq-world-item__delete" data-world-delete="'+this.escapeHtml(world.id)+'" '+(world.local?'':'disabled')+' title="'+(world.local?'Apagar mundo':'Mundo versionado no repositório')+'">🗑</button>'+
+      '</div>'
     ).join(""):'<div class="tq-scenes__empty">Nenhum mundo cadastrado.</div>';
 
     list.querySelectorAll("[data-world-open]").forEach(button=>button.addEventListener("click",()=>this.openWorld(button.dataset.worldOpen)));
+    list.querySelectorAll("[data-world-delete]").forEach(button=>button.addEventListener("click",()=>this.deleteWorld(button.dataset.worldDelete)));
 
     actions.innerHTML=this.worldEditor?.active
       ? '<button type="button" data-world-ocean-config>⚙ Oceano</button><button type="button" data-world-region-exit-add>⇄ Saída de região</button><button type="button" data-world-export>⇩ JSON</button><button type="button" data-world-exit>← Cenas</button>'
@@ -1663,7 +1732,8 @@ export class DevOverlay {
           num("interactionRadius","Raio de interação",0,2000)+
           text("scene","Cena vinculada")+
           (entity.type==="region-exit"
-            ? '<label class="tq-world-field"><span>Mar de destino</span><select data-world-prop="destinationWorldId">'+destinationWorldOptions+'</select></label>'+
+            ? '<label class="tq-world-field"><span>Mundo / mapa linkado</span><select data-world-prop="destinationWorldId"><option value="">Selecione o mundo de destino</option>'+destinationWorldOptions+'</select></label>'+
+              '<small class="tq-world-editor-note">Este region exit funcionará como link para o mundo selecionado. O mundo de destino não poderá ser apagado enquanto este link existir.</small>'+
               '<label class="tq-world-field"><span>Texto do popup</span><input data-world-prop="transitionMessage" type="text" maxlength="240" value="'+this.escapeHtml(entity.transitionMessage||"")+'" placeholder="Deseja navegar para a próxima região?"></label>'+
               '<label class="tq-world-field"><span>Texto do botão</span><input data-world-prop="transitionActionLabel" type="text" maxlength="48" value="'+this.escapeHtml(entity.transitionActionLabel||"Navegar")+'"></label>'+
               '<small class="tq-world-editor-note">Esta área existe apenas como gatilho lógico. No Play ela fica invisível e abre automaticamente a confirmação quando o navio toca a área.</small>'
@@ -1705,6 +1775,10 @@ export class DevOverlay {
           destinationWorldId:entity.destinationWorldId||this.allWorldEntries().find(world=>world.id!==this.worldEditor?.entry?.id)?.id||""
         });
         this.worldEditor.updateEntityCollision(entity.id,{active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world"},true);
+      }
+      if(key==="destinationWorldId"){
+        const linked=this.allWorldEntries().find(world=>world.id===value);
+        patch.destinationWorldName=linked?.name||"";
       }
       const updated=this.worldEditor.updateEntity(entity.id,patch,true);
       this.selected=updated||this.selected;
