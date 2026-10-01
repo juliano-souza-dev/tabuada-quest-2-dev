@@ -1,8 +1,8 @@
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-1851";
-import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0037";
-import { DevOverlay } from "./dev/DevOverlay.js?v=20261001-0037";
+import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0047";
+import { DevOverlay } from "./dev/DevOverlay.js?v=20261001-0047";
 import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20260930-2242";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20260930-1851";
 
@@ -29,7 +29,7 @@ if(worldTest){
   const services=await installAuthRuntime(runtime,{
     configUrl:"./src/config/firebase-public.json?v=20260930-1851"
   });
-  const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0043",{cache:"no-store"});
+  const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
   const pedagogyCurriculum=await pedagogyResponse.json();
   const pedagogyRuntime=new PedagogyRuntime({
