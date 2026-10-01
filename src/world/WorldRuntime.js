@@ -6,7 +6,7 @@ import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=202
 import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1912";
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
-import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-1545";
+import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-1552";
 import {
   normalizeCollision,
   inferCollisionAction,
