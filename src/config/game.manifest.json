@@ -13,8 +13,8 @@
     "ships": "./src/config/ship-catalog.json"
   },
   "start": {
-    "kind": "world",
-    "id": "ocean-prototype"
+    "kind": "scene",
+    "id": "login"
   },
   "persistence": {
     "restoreSession": true,
@@ -23,5 +23,9 @@
   "player": {
     "defaultShipId": "pirate-default",
     "grantDefaultShip": true
+  },
+  "afterAuth": {
+    "kind": "world",
+    "id": "ocean-prototype"
   }
 }
