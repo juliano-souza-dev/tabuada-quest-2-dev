@@ -1,0 +1,54 @@
+{
+  "schema": "tq.action-catalog",
+  "version": 1,
+  "actions": [
+    {
+      "id": "open-scene",
+      "name": "Abrir cena",
+      "category": "navigation",
+      "description": "Abre uma cena cadastrada no repositório.",
+      "params": [
+        {
+          "key": "sceneId",
+          "label": "Cena",
+          "type": "scene",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "enter-region",
+      "name": "Entrar em região",
+      "category": "navigation",
+      "description": "Navega para outra região e opcionalmente usa um ponto de entrada.",
+      "params": [
+        {
+          "key": "regionId",
+          "label": "Região",
+          "type": "region",
+          "required": true
+        },
+        {
+          "key": "spawnId",
+          "label": "Ponto de entrada",
+          "type": "text",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "resume-game",
+      "name": "Continuar jogo",
+      "category": "flow",
+      "description": "Restaura a última região/cena e o progresso local do jogador.",
+      "params": []
+    },
+    {
+      "id": "go-back",
+      "name": "Voltar",
+      "category": "navigation",
+      "description": "Volta para a rota anterior do jogo.",
+      "params": []
+    }
+  ]
+}
