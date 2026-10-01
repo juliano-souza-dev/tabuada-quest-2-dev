@@ -2136,12 +2136,9 @@ export class WorldRuntime {
     };
   }
 
-  combatSpriteConfig(side="player",entity=null,animationName="idle"){
-    const source=this.combatSource(side,entity);
-    const v2=this.v2CombatAtlas(source,animationName);
-    if(v2)return v2;
-    const sprite=source?.combatSprite;
-    return sprite&&typeof sprite==="object"&&sprite.src?sprite:null;
+  combatSpriteConfig(){
+    // Combat keeps the current directional ship frame. Visual feedback is dynamic.
+    return null;
   }
 
   combatShipElement(side="player"){
