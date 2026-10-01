@@ -69,10 +69,31 @@
       "visible": true,
       "locked": true,
       "parentId": "viewport"
+    },
+    {
+      "id": "world-test-island.back",
+      "kind": "text",
+      "text": "← Voltar ao oceano",
+      "x": 78,
+      "y": 704,
+      "width": 234,
+      "height": 54,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 10,
+      "visible": true,
+      "locked": true,
+      "parentId": "viewport",
+      "action": "game.back",
+      "actionLabel": "Voltar ao oceano"
     }
   ],
   "meta": {
-    "sourceRevision": "20260930-0030",
-    "prototype": true
+    "sourceRevision": "20260930-2256",
+    "prototype": true,
+    "runtimeNavigation": true
   }
 }
