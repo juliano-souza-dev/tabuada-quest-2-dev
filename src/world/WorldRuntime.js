@@ -49,6 +49,7 @@ export class WorldRuntime {
     this.editorEnabled=options.editorEnabled===true;
     this.mode=this.editorEnabled?"edit":"play";
     this.onEnterScene=options.onEnterScene||null;
+    this.onEnterWorld=options.onEnterWorld||null;
     this.onSelectionChange=options.onSelectionChange||null;
     this.onEntityChange=options.onEntityChange||null;
     this.createPedagogyChallenge=typeof options.createPedagogyChallenge==="function"?options.createPedagogyChallenge:null;
@@ -56,6 +57,7 @@ export class WorldRuntime {
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.challengeActive=null;
     this.challengeTimer=0;
+    this.closeRegionTransition();
     this.combatActive=null;
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
@@ -110,6 +112,8 @@ export class WorldRuntime {
     this.raf=0;
     this.nearby=null;
     this.contactEntity=null;
+    this.regionTransitionActive=null;
+    this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
     this.lastWakeSpawn=0;
     this.wakeParticleCount=0;
@@ -159,6 +163,17 @@ export class WorldRuntime {
           <span class="tq-world-action__message" data-world-action-message></span>
           <button type="button" data-world-action></button>
         </div>
+      </div>
+      <div class="tq-world-region-transition" data-world-region-transition hidden>
+        <section class="tq-world-region-transition__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-region-transition-title">
+          <small>LIMITE DA REGIÃO</small>
+          <h2 id="tq-world-region-transition-title">Navegar para outro mar?</h2>
+          <p data-world-region-transition-message></p>
+          <div class="tq-world-region-transition__actions">
+            <button type="button" data-world-region-transition-cancel>Continuar nesta região</button>
+            <button type="button" class="is-primary" data-world-region-transition-confirm>Navegar</button>
+          </div>
+        </section>
       </div>
       <div class="tq-world-challenge" data-world-challenge hidden>
         <section class="tq-world-challenge__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
@@ -234,6 +249,10 @@ export class WorldRuntime {
     this.actionWrap=this.host.querySelector(".tq-world-action");
     this.actionMessage=this.host.querySelector("[data-world-action-message]");
     this.actionButton=this.host.querySelector("[data-world-action]");
+    this.regionTransitionWrap=this.host.querySelector("[data-world-region-transition]");
+    this.regionTransitionMessage=this.host.querySelector("[data-world-region-transition-message]");
+    this.regionTransitionCancel=this.host.querySelector("[data-world-region-transition-cancel]");
+    this.regionTransitionConfirm=this.host.querySelector("[data-world-region-transition-confirm]");
     this.minimapEl=this.host.querySelector("[data-world-minimap]");
     this.minimapCanvas=this.host.querySelector("[data-world-minimap-canvas]");
     this.minimapFrameEl=this.host.querySelector("[data-world-minimap-frame]");
@@ -280,6 +299,7 @@ export class WorldRuntime {
     this.bindControls();
     this.bindChallengeControls();
     this.bindCombatControls();
+    this.bindRegionTransitionControls();
     this.bindCameraPan();
     this.resize();
     this.onResize=()=>this.resize();
@@ -1031,6 +1051,7 @@ export class WorldRuntime {
       this.clearNavigationTarget();
       this.clearPlayerWake();
       this.nearby=null;
+      this.closeRegionTransition();
       if(this.actionWrap)this.actionWrap.hidden=true;
       if(this.recenterButton)this.recenterButton.hidden=true;
       this.zoom=clamp(Number(this.zoom||.58),.25,1.5);
@@ -1523,6 +1544,43 @@ export class WorldRuntime {
     const ty=Math.round(vh/2-this.camera.y*zoom);
     this.stage.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${zoom})`;
     this.syncGizmo();
+  }
+
+  bindRegionTransitionControls(){
+    const cancel=()=>this.closeRegionTransition({dismiss:true});
+    const confirm=()=>this.confirmRegionTransition();
+    this.regionTransitionCancel?.addEventListener("click",cancel);
+    this.regionTransitionConfirm?.addEventListener("click",confirm);
+    this.cleanups.push(()=>{
+      this.regionTransitionCancel?.removeEventListener("click",cancel);
+      this.regionTransitionConfirm?.removeEventListener("click",confirm);
+    });
+  }
+
+  openRegionTransition(entity){
+    if(!entity||this.regionTransitionActive)return;
+    this.stopForChallenge();
+    this.regionTransitionActive=entity;
+    const destination=String(entity.destinationWorldName||entity.destinationWorldId||"próxima região");
+    const message=String(entity.transitionMessage||"Deseja navegar para "+destination+"?");
+    if(this.regionTransitionMessage)this.regionTransitionMessage.textContent=message;
+    if(this.regionTransitionConfirm)this.regionTransitionConfirm.textContent=String(entity.transitionActionLabel||"Navegar");
+    if(this.regionTransitionWrap)this.regionTransitionWrap.hidden=false;
+  }
+
+  closeRegionTransition({dismiss=false}={}){
+    if(dismiss&&this.regionTransitionActive?.id)this.regionExitDismissedId=this.regionTransitionActive.id;
+    this.regionTransitionActive=null;
+    if(this.regionTransitionWrap)this.regionTransitionWrap.hidden=true;
+  }
+
+  confirmRegionTransition(){
+    const entity=this.regionTransitionActive;
+    if(!entity?.destinationWorldId||!this.onEnterWorld)return;
+    const clean=this.cleanEntity(entity);
+    const state=this.getState();
+    this.closeRegionTransition();
+    this.onEnterWorld(clean,state);
   }
 
   bindChallengeControls(){
@@ -2075,12 +2133,18 @@ export class WorldRuntime {
     this.nearby=entity;
 
     if(!entity){
+      this.regionExitDismissedId=null;
       this.actionWrap.hidden=true;
       return;
     }
 
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
+    if(action==="enter-world"){
+      this.actionWrap.hidden=true;
+      if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
+      return;
+    }
     if(action==="none"){
       this.actionWrap.hidden=true;
       return;
@@ -2119,6 +2183,11 @@ export class WorldRuntime {
     if(action==="enter-scene"&&entity.scene&&this.onEnterScene){
       this.actionWrap.hidden=true;
       this.onEnterScene(this.cleanEntity(entity),this.getState());
+      return;
+    }
+
+    if(action==="enter-world"&&entity.destinationWorldId&&this.onEnterWorld){
+      this.openRegionTransition(entity);
     }
   }
 
