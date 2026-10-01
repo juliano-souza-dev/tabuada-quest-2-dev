@@ -2028,9 +2028,13 @@ export class WorldRuntime {
   }
 
   minimapConfig(){
-    return this.config.minimap&&typeof this.config.minimap==="object"
+    const raw=this.config.minimap&&typeof this.config.minimap==="object"
       ?this.config.minimap
       :{};
+    return {
+      frameAsset:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp",
+      ...raw
+    };
   }
 
   minimapEnabled(){
@@ -2081,6 +2085,13 @@ export class WorldRuntime {
     const enabled=this.minimapEnabled()&&this.mode==="play";
     this.minimapEl.hidden=!enabled;
     if(!enabled)return;
+
+    const frameAsset=String(this.minimapConfig().frameAsset??"").trim();
+    this.minimapEl.classList.toggle("has-frame",Boolean(frameAsset));
+    this.minimapEl.style.setProperty(
+      "--tq-world-minimap-frame",
+      frameAsset?'url("'+frameAsset.replace(/["\\]/g,"")+'")':"none"
+    );
     if(!force&&time-this.minimapLastRender<100)return;
     this.minimapLastRender=time;
 
