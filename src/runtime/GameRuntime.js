@@ -579,6 +579,12 @@ export class GameRuntime {
       onEnterScene:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         return this.openScene(entity.scene,{pushHistory:true});
+      },
+      onEnterWorld:(entity,worldState)=>{
+        if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
+        const target=entity?.destinationWorldId;
+        if(!target)return false;
+        return this.openWorld(target,{pushHistory:true});
       }
     });
     this.worldRuntime.mount();
