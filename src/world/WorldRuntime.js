@@ -180,7 +180,7 @@ export class WorldRuntime {
           <button type="button" class="tq-world-combat__close" data-world-combat-close aria-label="Sair do combate">×</button>
           <small>DUELO NAVAL</small>
           <h2 id="tq-world-combat-title" data-world-combat-title>Navio inimigo</h2>
-          <div class="tq-world-combat__arena">
+          <div class="tq-world-combat__arena tq-world-combat__arena--day" data-world-combat-arena>
             <div class="tq-world-combat__ship tq-world-combat__ship--player" data-world-combat-player-ship></div>
             <div class="tq-world-combat__trajectory" aria-hidden="true">
               <span class="tq-world-combat__shot" data-world-combat-shot></span>
@@ -245,6 +245,7 @@ export class WorldRuntime {
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
     this.combatWrap=this.host.querySelector("[data-world-combat]");
+    this.combatArena=this.host.querySelector("[data-world-combat-arena]");
     this.combatOptions=this.host.querySelector("[data-world-combat-options]");
     this.combatFeedback=this.host.querySelector("[data-world-combat-feedback]");
     this.combatPrompt=this.host.querySelector("[data-world-combat-prompt]");
@@ -2083,8 +2084,12 @@ export class WorldRuntime {
   }
 
   applyEnvironmentVisual(){
-    if(!this.weatherEl)return;
     const env=this.environmentConfig();
+    if(this.combatArena){
+      this.combatArena.className="tq-world-combat__arena tq-world-combat__arena--"+env.preset;
+      this.combatArena.dataset.environment=env.preset;
+    }
+    if(!this.weatherEl)return;
     const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
     if(this.weatherEl.dataset.weather===weather)return;
     this.weatherEl.dataset.weather=weather;
