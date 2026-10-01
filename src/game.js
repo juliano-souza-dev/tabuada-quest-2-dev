@@ -1,4 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2258";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2312";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-2312";
 
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
@@ -14,11 +15,19 @@ if(rawStart){
   }
 }
 
-const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2258");
+const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2312");
+const services=await installAuthRuntime(game,{
+  configUrl:"./src/config/firebase-public.json?v=20260930-1851"
+});
+game.attachPlayerStateStore(services.playerState);
+
 await game.start(start);
 
 globalThis.TabuadaQuest={
   ...(globalThis.TabuadaQuest||{}),
   game,
-  runtime:game
+  runtime:game,
+  auth:services.auth,
+  playerState:services.playerState,
+  getAccessStatus:services.getStatus
 };
