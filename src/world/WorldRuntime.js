@@ -2088,6 +2088,17 @@ export class WorldRuntime {
     if(this.combatArena){
       this.combatArena.className="tq-world-combat__arena tq-world-combat__arena--"+env.preset;
       this.combatArena.dataset.environment=env.preset;
+      const ocean=normalizeOceanConfig(this.config.ocean||{});
+      const deep=ocean.layers?.deep||{};
+      const waterSource=String(deep.background||ocean.background||"").replace(/["\\]/g,"");
+      if(waterSource){
+        this.combatArena.style.setProperty("--combat-water-image",'url("'+waterSource+'")');
+        const tile=Math.max(96,Math.min(520,Number(ocean.tileSize||256)*Number(deep.tileScale||1)));
+        this.combatArena.style.setProperty("--combat-water-size",tile+"px auto");
+      }else{
+        this.combatArena.style.setProperty("--combat-water-image","none");
+        this.combatArena.style.removeProperty("--combat-water-size");
+      }
     }
     if(!this.weatherEl)return;
     const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
@@ -2261,6 +2272,7 @@ export class WorldRuntime {
       el.style.opacity=String(layer.opacity);
       el.style.transformOrigin="center center";
     }
+    this.applyEnvironmentVisual();
   }
 
   updateOceanFrame(time){
