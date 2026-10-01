@@ -1,6 +1,7 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20261001-1740";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0854";
+import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1828";
 
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
@@ -24,6 +25,8 @@ export class GameRuntime {
     this.worldCatalog=null;
     this.shipCatalog=null;
     this.pedagogyCurriculum=null;
+    this.actionCatalog=null;
+    this.actionRuntime=null;
     this.sceneRuntime=null;
     this.worldRuntime=null;
     this.sceneHost=null;
@@ -59,16 +62,18 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,pedagogyCurriculum]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
-      this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json")
+      this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
+      this.loadJson(catalogs.actions||"./src/config/action-catalog.json")
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
     this.shipCatalog=shipCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
+    this.actionCatalog=actionCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
     this.ensurePlayerShips();
 
@@ -77,7 +82,9 @@ export class GameRuntime {
       this.manifest.reference||{width:390,height:844},
       {editorEnabled:false}
     );
+    this.actionRuntime=new ActionRuntime({catalog:this.actionCatalog});
     this.installNavigationActions();
+    this.installGameActions();
 
     if(this.restoreSession)this.restorePersistedState();
 
@@ -176,6 +183,36 @@ export class GameRuntime {
       if(!shipId)throw new Error("game.grantShip requires shipId, targetShip or target");
       return this.grantShip(shipId,{equip:node.equip===true});
     },{label:"Desbloquear navio"});
+  }
+
+  installGameActions(){
+    this.actionRuntime
+      .register("open-scene",({params})=>{
+        const target=params.sceneId||params.target;
+        if(!target)throw new Error("open-scene requires sceneId");
+        return this.openScene(target);
+      })
+      .register("enter-region",({params})=>{
+        const target=params.regionId||params.worldId||params.target;
+        if(!target)throw new Error("enter-region requires regionId");
+        return this.openWorld(target,{pushHistory:true,spawnId:params.spawnId||null});
+      })
+      .register("resume-game",()=>this.resumeGame())
+      .register("go-back",()=>this.back());
+  }
+
+  executeAction(action,context={}){
+    return this.actionRuntime.execute(action,context);
+  }
+
+  async resumeGame(){
+    const route=this.routeSnapshot()||clone(this.current)||clone(this.manifest.afterAuth||this.manifest.start);
+    if(route?.kind==="world")return this.openWorld(route,{pushHistory:false});
+    if(route?.kind==="scene")return this.openScene(route,{pushHistory:false});
+    const fallback=clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"});
+    return fallback.kind==="world"
+      ?this.openWorld(fallback,{pushHistory:false})
+      :this.openScene(fallback,{pushHistory:false});
   }
 
   registerAction(id,handler,options={}){
@@ -661,6 +698,10 @@ export class GameRuntime {
         const target=entity?.destinationWorldId;
         if(!target)return false;
         return this.openWorld(target,{pushHistory:true});
+      },
+      onExecuteAction:(interaction,entity,worldState)=>{
+        if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
+        return this.executeAction(interaction,{entity:clone(entity||{}),worldId});
       }
     });
     this.worldRuntime.mount();
