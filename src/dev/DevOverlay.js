@@ -152,6 +152,7 @@ export class DevOverlay {
         if(this.mode==="config")this.renderWorldInspector();
       }
       this.renderWorlds();
+      if(!this.el.querySelector(".tq-dev__flow")?.hidden)this.renderFlow();
     });
     window.addEventListener("tq:worldchange",()=>{
       if(this.workspace!=="world")return;
@@ -168,6 +169,18 @@ export class DevOverlay {
       if(this.workspace!=="world")return;
       const target=e.detail?.entity?.destinationWorldId;
       if(target)this.openWorld(target,{preserveMode:true,preservePlayer:true});
+    });
+    window.addEventListener("tq:worldexecuteaction",e=>{
+      if(this.workspace!=="world")return;
+      const interaction=e.detail?.interaction||{};
+      const params=interaction.params||{};
+      if(interaction.actionId==="enter-region"&&params.regionId){
+        this.openWorld(params.regionId,{preserveMode:true,preservePlayer:true});
+        return;
+      }
+      if(interaction.actionId==="open-scene"&&params.sceneId){
+        this.openWorldLinkedScene({id:e.detail?.entity?.id||"",scene:params.sceneId});
+      }
     });
   }
 
@@ -639,8 +652,11 @@ export class DevOverlay {
       const world=await this.worldDocument(entry);
       if(!world)continue;
       for(const entity of Array.isArray(world.entities)?world.entities:[]){
-        if(entity?.type!=="region-exit")continue;
-        if(String(entity.destinationWorldId||"")!==String(targetId))continue;
+        const actionTarget=entity?.interaction?.actionId==="enter-region"
+          ?String(entity.interaction?.params?.regionId||"")
+          :"";
+        const legacyTarget=entity?.type==="region-exit"?String(entity.destinationWorldId||""):"";
+        if(actionTarget!==String(targetId)&&legacyTarget!==String(targetId))continue;
         links.push({
           worldId:entry.id,
           worldName:entry.name||entry.id,
@@ -1032,17 +1048,17 @@ export class DevOverlay {
           '<input data-player-effect-prop="'+key+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+value+'" data-player-effect-suffix="'+suffix+'"></label>';
       };
 
-      title.textContent=(world.name||world.id)+" · oceano";
+      title.textContent=(world.name||world.id)+" · região oceânica";
       content.innerHTML=
         '<div class="tq-inspector">'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Mundo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Região</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Nome</span><input data-world-root-prop="name" type="text" value="'+this.escapeHtml(world.name||"")+'"></label>'+
             '<label class="tq-world-field"><span>ID</span><input value="'+this.escapeHtml(world.id)+'" readonly></label>'+
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--npc-map"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🚢 NPCs do mapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
-            '<label class="tq-field tq-field--check"><span>NPCs ativos neste mundo</span><input data-npc-enabled type="checkbox" '+(npcPopulation.enabled===true?'checked':'')+'></label>'+
+            '<label class="tq-field tq-field--check"><span>NPCs ativos nesta região</span><input data-npc-enabled type="checkbox" '+(npcPopulation.enabled===true?'checked':'')+'></label>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
               '<label class="tq-world-field"><span>Margem das bordas</span><input data-npc-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(npcPopulation.spread.margin)||0)+'"></label>'+
@@ -1051,11 +1067,11 @@ export class DevOverlay {
             '</div>'+
             '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
-            '<small class="tq-world-editor-note">Os NPCs são exclusivos deste mundo. Eles surgem em pontos pseudoaleatórios e, nesta primeira versão, navegam em linha reta. IA, rotas, desvio de ilhas e perseguição ficam para a próxima etapa.</small>'+
+            '<small class="tq-world-editor-note">Os NPCs são exclusivos desta região. Eles surgem em pontos pseudoaleatórios e, nesta primeira versão, navegam em linha reta. IA, rotas, desvio de ilhas e perseguição ficam para a próxima etapa.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao mundo atual e pode ser diferente em cada região.</small>'+
+            '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao região atual e pode ser diferente em cada região.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
@@ -1763,6 +1779,26 @@ export class DevOverlay {
     const destinationWorldOptions=this.allWorldEntries().filter(world=>world.id!==this.worldEditor?.entry?.id).map(world=>
       '<option value="'+this.escapeHtml(world.id)+'" '+(entity.destinationWorldId===world.id?'selected':'')+'>'+this.escapeHtml(world.name||world.id)+' · '+this.escapeHtml(world.id)+'</option>'
     ).join("");
+    const legacyInteraction=entity.type==="region-exit"&&entity.destinationWorldId
+      ?{actionId:"enter-region",params:{regionId:entity.destinationWorldId,spawnId:entity.destinationSpawnId||""}}
+      :(entity.scene?{actionId:"open-scene",params:{sceneId:entity.scene}}:null);
+    const interaction=entity.interaction&&typeof entity.interaction==="object"?entity.interaction:(legacyInteraction||{actionId:"",params:{}});
+    const actionOptions='<option value="">Nenhuma função</option>'+this.actionDefinitions().map(action=>
+      '<option value="'+this.escapeHtml(action.id)+'" '+(interaction.actionId===action.id?'selected':'')+'>'+this.escapeHtml(action.name||action.id)+'</option>'
+    ).join("");
+    const selectedAction=this.actionDefinition(interaction.actionId);
+    const sceneOptions=this.allSceneEntries().map(scene=>
+      '<option value="'+this.escapeHtml(scene.id)+'" '+(String(interaction.params?.sceneId||"")===scene.id?'selected':'')+'>'+this.escapeHtml(scene.name||scene.id)+'</option>'
+    ).join("");
+    const regionOptions=this.allWorldEntries().filter(region=>region.id!==this.worldEditor?.entry?.id).map(region=>
+      '<option value="'+this.escapeHtml(region.id)+'" '+(String(interaction.params?.regionId||entity.destinationWorldId||"")===region.id?'selected':'')+'>'+this.escapeHtml(region.name||region.id)+'</option>'
+    ).join("");
+    const actionParamFields=(selectedAction?.params||[]).map(param=>{
+      const value=interaction.params?.[param.key]??"";
+      if(param.type==="scene")return '<label class="tq-world-field"><span>'+this.escapeHtml(param.label||param.key)+'</span><select data-entity-action-param="'+this.escapeHtml(param.key)+'"><option value="">Selecione</option>'+sceneOptions+'</select></label>';
+      if(param.type==="region")return '<label class="tq-world-field"><span>'+this.escapeHtml(param.label||param.key)+'</span><select data-entity-action-param="'+this.escapeHtml(param.key)+'"><option value="">Selecione</option>'+regionOptions+'</select></label>';
+      return '<label class="tq-world-field"><span>'+this.escapeHtml(param.label||param.key)+'</span><input data-entity-action-param="'+this.escapeHtml(param.key)+'" type="text" value="'+this.escapeHtml(value)+'"></label>';
+    }).join("");
 
     title.textContent=entity.id+" · "+(entity.type||"object");
     content.innerHTML=
@@ -1845,6 +1881,11 @@ export class DevOverlay {
               '<small class="tq-world-editor-note">Esta recompensa é concedida uma única vez quando a entidade é conquistada, recolhida ou derrotada.</small>'+
             '</div></section>'
           : '')+
+        '<section class="tq-config-area tq-config-area--function"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>⚙ Função / ação</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+          '<label class="tq-world-field"><span>Ao interagir</span><select data-entity-action-id>'+actionOptions+'</select></label>'+
+          actionParamFields+
+          (selectedAction?'<small class="tq-world-editor-note">'+this.escapeHtml(selectedAction.description||"Ação configurada pelo catálogo do repositório.")+'</small>':'<small class="tq-world-editor-note">Selecione uma função publicada em action-catalog.json.</small>')+
+        '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Comportamento</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           num("interactionRadius","Raio de interação",0,2000)+
           text("scene","Cena vinculada")+
@@ -1856,7 +1897,7 @@ export class DevOverlay {
               '<small class="tq-world-editor-note">Esta área existe apenas como gatilho lógico. No Play ela fica invisível e abre automaticamente a confirmação quando o navio toca a área.</small>'
             : '')+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ações</strong><span>▾</span></button><div class="tq-config-area__body tq-world-inspector-actions">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ações</strong><span>▸</span></button><div class="tq-config-area__body tq-world-inspector-actions" hidden>'+
           (entity.scene?'<button type="button" class="is-primary" data-world-open-scene>Editar cena vinculada</button>':"")+
           '<button type="button" class="is-danger" data-world-delete>Excluir entidade</button>'+
         '</div></section>'+
@@ -1884,13 +1925,24 @@ export class DevOverlay {
           src:"",
           showLabel:false,
           lockAspect:false,
-          destinationWorldId:entity.destinationWorldId||this.allWorldEntries().find(world=>world.id!==this.worldEditor?.entry?.id)?.id||""
+          destinationWorldId:entity.destinationWorldId||this.allWorldEntries().find(world=>world.id!==this.worldEditor?.entry?.id)?.id||"",
+          interaction:{
+            actionId:"enter-region",
+            params:{
+              regionId:entity.destinationWorldId||this.allWorldEntries().find(world=>world.id!==this.worldEditor?.entry?.id)?.id||"",
+              spawnId:""
+            }
+          }
         });
         this.worldEditor.updateEntityCollision(entity.id,{active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world"},true);
       }
       if(key==="destinationWorldId"){
         const linked=this.allWorldEntries().find(world=>world.id===value);
         patch.destinationWorldName=linked?.name||"";
+        patch.interaction={
+          actionId:"enter-region",
+          params:{...(entity.interaction?.params||{}),regionId:String(value||""),spawnId:String(entity.interaction?.params?.spawnId||entity.destinationSpawnId||"")}
+        };
       }
       const updated=this.worldEditor.updateEntity(entity.id,patch,true);
       this.selected=updated||this.selected;
@@ -1916,6 +1968,44 @@ export class DevOverlay {
       const rotation=value===0?0:Math.max(-180,Math.min(180,current+value));
       this.selected=this.worldEditor.updateEntity(entity.id,{rotation},true)||this.selected;
       this.renderWorldInspector();
+    }));
+
+    content.querySelector("[data-entity-action-id]")?.addEventListener("change",event=>{
+      const actionId=String(event.currentTarget.value||"");
+      const definition=this.actionDefinition(actionId);
+      const params={};
+      for(const param of definition?.params||[])params[param.key]="";
+      const patch={interaction:actionId?{actionId,params}:null};
+      if(actionId==="enter-region"){
+        patch.destinationWorldId="";
+        patch.destinationWorldName="";
+        this.worldEditor.updateEntityCollision(entity.id,{active:true,shape:"box",action:"enter-world"},true);
+      }else if(actionId==="open-scene"){
+        patch.scene="";
+        this.worldEditor.updateEntityCollision(entity.id,{active:true,action:"enter-scene"},true);
+      }
+      this.selected=this.worldEditor.updateEntity(entity.id,patch,true)||this.selected;
+      this.renderWorldInspector();
+    });
+
+    content.querySelectorAll("[data-entity-action-param]").forEach(input=>input.addEventListener("change",()=>{
+      const key=input.dataset.entityActionParam;
+      const current=this.worldEditor.getSelected()||entity;
+      const nextInteraction={
+        ...(current.interaction||interaction),
+        params:{...(current.interaction?.params||interaction.params||{}),[key]:input.value}
+      };
+      const patch={interaction:nextInteraction};
+      if(nextInteraction.actionId==="enter-region"&&key==="regionId"){
+        const linked=this.allWorldEntries().find(region=>region.id===input.value);
+        patch.destinationWorldId=input.value;
+        patch.destinationWorldName=linked?.name||"";
+      }
+      if(nextInteraction.actionId==="enter-region"&&key==="spawnId")patch.destinationSpawnId=input.value;
+      if(nextInteraction.actionId==="open-scene"&&key==="sceneId")patch.scene=input.value;
+      this.selected=this.worldEditor.updateEntity(entity.id,patch,true)||this.selected;
+      this.syncLocalWorldFromEditor();
+      this.renderFlow();
     }));
 
     content.querySelectorAll("[data-entity-combat-prop]").forEach(input=>input.addEventListener("change",()=>{
@@ -2467,8 +2557,14 @@ export class DevOverlay {
     if(this.workspace==="world")this.worldEditor?.setMode(mode);
     else this.runtime.setMode(mode);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
-    this.el.querySelector(".tq-dev__panel").hidden=mode!=="config";this.el.classList.toggle("is-play",mode==="play");
-    if(mode==="config"){this.el.querySelector(".tq-dev__assets").hidden=true;this.el.querySelector(".tq-dev__scenes").hidden=true;this.el.querySelector(".tq-dev__worlds").hidden=true;this.renderInspector();}
+    this.el.classList.toggle("is-play",mode==="play");
+    if(mode==="config"){
+      this.closeToolPanels("config");
+      this.el.querySelector(".tq-dev__panel").hidden=false;
+      this.renderInspector();
+    }else{
+      this.el.querySelector(".tq-dev__panel").hidden=true;
+    }
   }
 
   normalizeInferencePath(value){
