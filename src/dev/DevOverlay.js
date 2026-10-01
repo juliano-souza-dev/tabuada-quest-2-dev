@@ -494,6 +494,10 @@ export class DevOverlay {
 
   async worldDocument(entry){
     if(!entry?.id)return null;
+    if(this.worldEditor?.entry?.id===entry.id&&this.worldEditor?.active){
+      const current=this.worldEditor.getWorld();
+      if(current)return structuredClone(current);
+    }
     const local=this.localWorlds.find(item=>item.entry.id===entry.id);
     if(local)return structuredClone(local.world);
     if(!entry.path)return null;
@@ -1659,7 +1663,7 @@ export class DevOverlay {
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Transformação</strong><span>▾</span></button><div class="tq-config-area__body">'+
           num("x","Position X")+num("y","Position Y")+
-          num("width","Width",16,2400)+num("height","Height",16,2400)+
+          num("width","Width",16,entity.type==="region-exit"?"":2400)+num("height","Height",16,entity.type==="region-exit"?"":2400)+
           '<label class="tq-field tq-field--check"><span>Manter proporção</span><input data-world-prop="lockAspect" type="checkbox" '+(entity.lockAspect!==false?'checked':'')+'></label>'+
           '<label class="tq-world-motion-range"><span><b>Rotação</b><output data-world-transform-output="rotation">'+Math.round(Number(entity.rotation||0))+'°</output></span><input data-world-prop="rotation" type="range" min="-180" max="180" step="1" value="'+Number(entity.rotation||0)+'"></label>'+
           '<label class="tq-world-motion-range"><span><b>Inclinação X</b><output data-world-transform-output="skewX">'+Math.round(Number(entity.skewX||0))+'°</output></span><input data-world-prop="skewX" type="range" min="-75" max="75" step="1" value="'+Number(entity.skewX||0)+'"></label>'+
