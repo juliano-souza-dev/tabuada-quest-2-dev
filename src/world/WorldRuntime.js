@@ -61,6 +61,7 @@ export class WorldRuntime {
     this.playZoom=1;
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
+    this.playCameraRecenterAt=0;
     this.suppressNavigationClick=false;
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
@@ -596,6 +597,7 @@ export class WorldRuntime {
         this.suppressNavigationClick=true;
         if(this.mode==="play"){
           this.playCameraDetached=true;
+          this.playCameraRecenterAt=0;
           if(this.recenterButton)this.recenterButton.hidden=false;
         }
         this.host?.classList.add("is-camera-dragging");
@@ -621,7 +623,11 @@ export class WorldRuntime {
     };
 
     const finishPan=()=>{
+      const dragged=Boolean(pan?.dragging);
       this.host?.classList.remove("is-camera-dragging");
+      if(this.mode==="play"&&dragged&&this.playCameraDetached){
+        this.playCameraRecenterAt=performance.now()+3000;
+      }
       pan=null;
     };
 
@@ -884,6 +890,7 @@ export class WorldRuntime {
       event?.stopPropagation?.();
       if(this.mode!=="play")return;
       this.playCameraDetached=false;
+      this.playCameraRecenterAt=0;
       this.playCameraOffset.x=0;
       this.playCameraOffset.y=0;
       if(this.recenterButton)this.recenterButton.hidden=true;
@@ -920,6 +927,7 @@ export class WorldRuntime {
       this.playCameraOffset.x=0;
       this.playCameraOffset.y=0;
       this.playCameraDetached=false;
+      this.playCameraRecenterAt=0;
       if(this.recenterButton)this.recenterButton.hidden=true;
       this.zoom=this.playZoom;
       this.selectEntity(null);
@@ -1365,6 +1373,12 @@ export class WorldRuntime {
       const zoom=this.playZoom;
       const halfW=Math.min(this.config.width/2,vw/(2*zoom));
       const halfH=Math.min(this.config.height/2,vh/(2*zoom));
+
+      if(this.playCameraDetached&&this.playCameraRecenterAt>0&&performance.now()>=this.playCameraRecenterAt){
+        this.playCameraDetached=false;
+        this.playCameraRecenterAt=0;
+        if(this.recenterButton)this.recenterButton.hidden=true;
+      }
 
       if(this.playCameraDetached){
         this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
