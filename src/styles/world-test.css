@@ -127,6 +127,22 @@
   text-shadow:0 2px 4px #000,0 0 8px #000;
 }
 .tq-world-action button,.tq-world-editor-back{min-height:46px;padding:10px 16px;border:2px solid #fff2a2;border-radius:13px;background:#6d4017;color:#fff;font:900 14px/1.1 system-ui;box-shadow:0 5px 16px #0008;touch-action:manipulation}
+.tq-world-challenge{position:fixed;inset:0;z-index:850;display:grid;place-items:center;padding:22px;background:rgba(1,13,22,.72);backdrop-filter:blur(5px);pointer-events:auto}
+.tq-world-challenge[hidden]{display:none}
+.tq-world-challenge__card{position:relative;width:min(410px,100%);padding:24px 22px 22px;border:2px solid #ffe59a;border-radius:20px;background:linear-gradient(180deg,#17374a,#0c2231);box-shadow:0 18px 50px #000b;color:#fff;text-align:center}
+.tq-world-challenge__card>small{display:block;margin-bottom:6px;color:#ffe59a;font:900 11px/1.1 system-ui;letter-spacing:.16em}
+.tq-world-challenge__card h2{margin:0 34px 16px;font:900 20px/1.15 system-ui}
+.tq-world-challenge__close{position:absolute;right:10px;top:10px;width:42px;height:42px;padding:0;border:1px solid #ffffff4d;border-radius:50%;background:#071923;color:#fff;font:800 26px/1 system-ui;touch-action:manipulation}
+.tq-world-challenge__prompt{display:block;margin:10px 0 18px;color:#fff7cb;font:900 clamp(34px,10vw,54px)/1 system-ui;font-variant-numeric:tabular-nums}
+.tq-world-challenge__card form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.tq-world-challenge__card label{display:grid;gap:6px;text-align:left;color:#cfe8f4;font:800 11px/1.2 system-ui}
+.tq-world-challenge__card input{width:100%;min-width:0;height:52px;box-sizing:border-box;border:2px solid #ffffff55;border-radius:13px;background:#061722;color:#fff;padding:8px 12px;font:900 24px/1 system-ui;text-align:center;outline:none}
+.tq-world-challenge__card input:focus{border-color:#ffe59a;box-shadow:0 0 0 3px rgba(255,229,154,.16)}
+.tq-world-challenge__card form button{min-height:52px;padding:10px 18px;border:2px solid #fff2a2;border-radius:13px;background:#8a561d;color:#fff;font:900 14px/1.1 system-ui;touch-action:manipulation}
+.tq-world-challenge__card button:disabled,.tq-world-challenge__card input:disabled{opacity:.5}
+.tq-world-challenge__feedback{min-height:22px;margin:14px 0 0;color:#d8efff;font:800 13px/1.35 system-ui}
+@media(max-width:430px){.tq-world-challenge__card form{grid-template-columns:1fr}.tq-world-challenge__card form button{width:100%}}
+
 .tq-world-controls{position:fixed;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom));z-index:550;display:flex;align-items:end;justify-content:space-between;padding:0 16px;pointer-events:none}
 .tq-world-host.is-editor .tq-world-controls,.tq-world-host.is-editor .tq-world-action{display:none!important}
 .tq-world-dpad{display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px 58px;pointer-events:auto}
