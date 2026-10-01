@@ -1,5 +1,5 @@
-import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2256";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2256";
+import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2258";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2258";
 
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
