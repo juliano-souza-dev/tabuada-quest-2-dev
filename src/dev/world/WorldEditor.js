@@ -83,6 +83,9 @@ export class WorldEditor {
       onCombatVictory:payload=>{
         window.dispatchEvent(new CustomEvent("tq:combatvictory",{detail:payload}));
       },
+      onRewardCollected:payload=>{
+        window.dispatchEvent(new CustomEvent("tq:rewardcollected",{detail:payload}));
+      },
       onEnterScene:(entity,state)=>{
         window.dispatchEvent(new CustomEvent("tq:worldenterscene",{detail:{entity,state}}));
       },
