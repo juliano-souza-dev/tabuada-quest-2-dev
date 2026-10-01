@@ -555,3 +555,7 @@
   .tq-ships__preview-stage{max-height:260px}
   .tq-ships__settings{grid-template-columns:1fr 1fr}
 }
+
+.tq-ships__preview-empty{display:grid;place-items:center;align-content:center;gap:6px;width:100%;height:100%;min-height:220px;color:#9db5c5;text-align:center}
+.tq-ships__preview-empty b{font-size:16px;color:#d8eef8}
+.tq-ships__preview-empty small{max-width:190px;font-size:10px;line-height:1.35;opacity:.7}
