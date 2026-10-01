@@ -338,9 +338,37 @@ export class GameRuntime {
     if(!ship||typeof ship!=="object")return {};
     const preferred=role==="npc"?ship.npc:ship.player;
     const fallback=ship.runtime||ship.player||ship.npc;
-    return preferred&&typeof preferred==="object"
+    const legacy=preferred&&typeof preferred==="object"
       ?clone(preferred)
       :(fallback&&typeof fallback==="object"?clone(fallback):{});
+    const navigation=ship.navigation&&typeof ship.navigation==="object"?clone(ship.navigation):null;
+    const combat=ship.combat&&typeof ship.combat==="object"?clone(ship.combat):null;
+    if(!navigation&&!combat)return legacy;
+    const effects={
+      ...(legacy.effects&&typeof legacy.effects==="object"?legacy.effects:{}),
+      ...(navigation?{
+        wakeActive:navigation.wake!==false,
+        shadowActive:navigation.shadow!==false,
+        idleBalanceActive:true,
+        idleRoll:Number(navigation.roll??2.4),
+        idleHeave:Number(navigation.heave??3.2),
+        idlePeriod:Number(navigation.periodMs??3600)
+      }:{})
+    };
+    return {
+      ...legacy,
+      ...(navigation||{}),
+      src:navigation?.src||legacy.src||"",
+      sprite:navigation?.sprite||legacy.sprite||null,
+      width:Number(navigation?.width??legacy.width??230),
+      height:Number(navigation?.height??legacy.height??230),
+      speed:Number(navigation?.speed??legacy.speed??420),
+      acceleration:Number(navigation?.acceleration??legacy.acceleration??1100),
+      braking:Number(navigation?.braking??legacy.braking??.12),
+      effects,
+      combat:combat||legacy.combat||null,
+      combatSprite:legacy.combatSprite||null
+    };
   }
 
   resolveWorldShipEntity(entity){
