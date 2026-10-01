@@ -123,9 +123,9 @@
       "player": {
         "width": 230,
         "height": 230,
-        "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+        "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
         "sprite": {
-          "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+          "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
           "imageWidth": 1600,
           "imageHeight": 1600,
           "regions": {
