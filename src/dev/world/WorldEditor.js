@@ -151,9 +151,9 @@ export class WorldEditor {
         effect:{category:"ship",preset:"none"},
         collision:{active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"none",message:""}
       };
-    }else if(path.includes("/backgrounds/")){
-      type="location";width=280;height=190;
-      const category=/ilha|island/i.test(path)?"island":"background";
+    }else if(path.includes("/backgrounds/")||path.includes("/regions/islands/")){
+      const category=/\/islands\/|ilha|island/i.test(path)?"island":"background";
+      type=category;width=280;height=190;
       extra={
         renderMode:"sprite",
         showLabel:false,
