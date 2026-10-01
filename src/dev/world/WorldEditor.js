@@ -1,11 +1,12 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-1512";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
     this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
+    this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
@@ -65,6 +66,7 @@ export class WorldEditor {
 
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
+      resolveShip:this.resolveShip,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
         kind:context?.entity?.type==="treasure"?"treasure":(context?.entity?.type==="ship"&&context?.entity?.combat?.enabled===true?"combat":"world-interaction"),
