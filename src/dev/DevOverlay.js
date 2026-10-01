@@ -146,6 +146,11 @@ export class DevOverlay {
       const entity=e.detail?.entity;
       if(entity?.scene)this.openWorldLinkedScene(entity);
     });
+    window.addEventListener("tq:worldenterworld",e=>{
+      if(this.workspace!=="world")return;
+      const target=e.detail?.entity?.destinationWorldId;
+      if(target)this.openWorld(target);
+    });
   }
 
   loadLocalScenes(){
@@ -446,13 +451,21 @@ export class DevOverlay {
     list.querySelectorAll("[data-world-open]").forEach(button=>button.addEventListener("click",()=>this.openWorld(button.dataset.worldOpen)));
 
     actions.innerHTML=this.worldEditor?.active
-      ? '<button type="button" data-world-ocean-config>⚙ Oceano</button><button type="button" data-world-export>⇩ JSON</button><button type="button" data-world-exit>← Cenas</button>'
+      ? '<button type="button" data-world-ocean-config>⚙ Oceano</button><button type="button" data-world-region-exit-add>⇄ Saída de região</button><button type="button" data-world-export>⇩ JSON</button><button type="button" data-world-exit>← Cenas</button>'
       : '';
 
     actions.querySelector("[data-world-ocean-config]")?.addEventListener("click",()=>{
       this.worldEditor.selectEntity(null);
       this.selected=null;
       this.setMode("config");
+    });
+    actions.querySelector("[data-world-region-exit-add]")?.addEventListener("click",()=>{
+      const destinations=this.allWorldEntries().filter(world=>world.id!==this.worldEditor?.entry?.id);
+      const entity=this.worldEditor.addRegionExit({destinationWorldId:destinations[0]?.id||""});
+      this.selected=entity||null;
+      this.toggleWorlds(false);
+      this.setMode("config");
+      this.renderWorldInspector();
     });
     actions.querySelector("[data-world-export]")?.addEventListener("click",()=>this.worldEditor.exportWorld());
     actions.querySelector("[data-world-exit]")?.addEventListener("click",()=>this.exitWorldWorkspace({restoreScene:true}));
@@ -1381,12 +1394,15 @@ export class DevOverlay {
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
     const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
     const collisionRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-collision-output="'+key+'">'+(Math.round(Number(collision[key]||0)*100)/100)+suffix+'</output></span><input data-collision-prop="'+key+'" data-collision-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(collision[key]??0)+'"></label>';
-    const typeOptions=["object","barrel","treasure","ship","location","island","background"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
+    const typeOptions=["object","barrel","treasure","ship","location","island","background","region-exit"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
     const effectPresets=effectPresetItems.map(item=>'<option value="'+item.id+'" '+(effect.preset===item.id?'selected':'')+'>'+this.escapeHtml(item.label||item.id)+'</option>').join("");
     const motionPresets=[["none","Sem balanço"],["calm","Mar calmo"],["navigation","Navegação natural"],["rough","Mar agitado"],["heavy","Objeto pesado"]]
       .map(([value,label])=>'<option value="'+value+'" '+(motion.preset===value?'selected':'')+'>'+label+'</option>').join("");
+    const destinationWorldOptions=this.allWorldEntries().map(world=>
+      '<option value="'+this.escapeHtml(world.id)+'" '+(entity.destinationWorldId===world.id?'selected':'')+'>'+this.escapeHtml(world.name||world.id)+' · '+this.escapeHtml(world.id)+'</option>'
+    ).join("");
 
     title.textContent=entity.id+" · "+(entity.type||"object");
     content.innerHTML=
@@ -1445,6 +1461,7 @@ export class DevOverlay {
             '<option value="none" '+(collision.action==="none"?'selected':'')+'>Nenhuma · contornar</option>'+
             '<option value="collect" '+(collision.action==="collect"?'selected':'')+'>Recolher item</option>'+
             '<option value="enter-scene" '+(collision.action==="enter-scene"?'selected':'')+'>Acessar cena / ilha</option>'+
+            '<option value="enter-world" '+(collision.action==="enter-world"?'selected':'')+'>Navegar para outro mar</option>'+
           '</select></label>'+
           '<label class="tq-world-field"><span>Mensagem</span><input data-collision-prop="message" type="text" maxlength="240" value="'+this.escapeHtml(collision.message||"")+'" placeholder="Deixe vazio para mensagem automática"></label>'+
           '<small class="tq-world-editor-note">Se houver função, tocar na área mostra a mensagem e o botão da ação. Sem função, o navio desliza e contorna o obstáculo em vez de insistir contra ele.</small>'+
@@ -1452,6 +1469,12 @@ export class DevOverlay {
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Comportamento</strong><span>▾</span></button><div class="tq-config-area__body">'+
           num("interactionRadius","Raio de interação",0,2000)+
           text("scene","Cena vinculada")+
+          (entity.type==="region-exit"
+            ? '<label class="tq-world-field"><span>Mar de destino</span><select data-world-prop="destinationWorldId">'+destinationWorldOptions+'</select></label>'+
+              '<label class="tq-world-field"><span>Texto do popup</span><input data-world-prop="transitionMessage" type="text" maxlength="240" value="'+this.escapeHtml(entity.transitionMessage||"")+'" placeholder="Deseja navegar para a próxima região?"></label>'+
+              '<label class="tq-world-field"><span>Texto do botão</span><input data-world-prop="transitionActionLabel" type="text" maxlength="48" value="'+this.escapeHtml(entity.transitionActionLabel||"Navegar")+'"></label>'+
+              '<small class="tq-world-editor-note">Esta área existe apenas como gatilho lógico. No Play ela fica invisível e abre automaticamente a confirmação quando o navio toca a área.</small>'
+            : '')+
         '</div></section>'+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Ações</strong><span>▾</span></button><div class="tq-config-area__body tq-world-inspector-actions">'+
           (entity.scene?'<button type="button" class="is-primary" data-world-open-scene>Editar cena vinculada</button>':"")+
@@ -1480,6 +1503,16 @@ export class DevOverlay {
         if(key==="height")patch.width=Math.max(16,value*ratio);
       }
 
+      if(key==="type"&&value==="region-exit"){
+        Object.assign(patch,{
+          renderMode:"logical",
+          src:"",
+          showLabel:false,
+          lockAspect:false,
+          destinationWorldId:entity.destinationWorldId||this.allWorldEntries().find(world=>world.id!==this.worldEditor?.entry?.id)?.id||""
+        });
+        this.worldEditor.updateEntityCollision(entity.id,{active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world"},true);
+      }
       const updated=this.worldEditor.updateEntity(entity.id,patch,true);
       this.selected=updated||this.selected;
       if(key==="type"||key==="width"||key==="height"||key==="lockAspect")this.renderWorldInspector();
