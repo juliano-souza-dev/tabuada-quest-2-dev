@@ -1,0 +1,30 @@
+{
+  "schema": "tq.runtime-policy",
+  "version": 2,
+  "sceneParity": {
+    "rule": "same-scene-same-viewport-same-render",
+    "sharedRuntimeRequired": true,
+    "sharedSceneArtifactsRequired": true,
+    "devToolsMayAffectSceneLayout": false,
+    "devToolsExcludedFromProduction": true
+  },
+  "viewport": {
+    "physicalViewport": "full-available-area",
+    "referenceResolutionIsPhysicalLimit": false,
+    "referenceResolutionPurpose": "canonical-coordinate-space",
+    "horizontalFit": "fill-width",
+    "responsiveRequired": true
+  },
+  "development": {
+    "cache": "disabled",
+    "serviceWorker": "disabled",
+    "authoringTools": true
+  },
+  "production": {
+    "runtime": "same-as-develop",
+    "sceneArtifacts": "same-as-develop",
+    "devTools": false,
+    "authoringInteractions": false,
+    "presentation": "player-facing-game"
+  }
+}

@@ -1,0 +1,38 @@
+name: World Prototype Checks
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "src/world/**"
+      - "src/dev/world/**"
+      - "src/config/world-catalog.json"
+      - "src/dev/DevOverlay.js"
+      - "src/styles/world-test.css"
+      - "src/scenes/world-test-*.scene.json"
+      - "tests/world-test-config.test.mjs"
+      - "tests/world-entity-motion.test.mjs"
+      - "tests/world-entity-presentation.test.mjs"
+      - "tests/world-navigation.test.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  world-prototype:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check world editor syntax
+        run: |
+          node --check src/world/WorldRuntime.js
+          node --check src/world/WorldOceanEffect.mjs
+          node --check src/world/WorldEntityMotion.mjs
+          node --check src/world/WorldEntityPresentation.mjs
+          node --check src/world/WorldNavigation.mjs
+          node --check src/dev/world/WorldEditor.js
+          node --check src/dev/DevOverlay.js
+      - name: Validate world prototype
+        run: node --test tests/world-test-config.test.mjs tests/world-ocean-effect.test.mjs tests/world-entity-motion.test.mjs tests/world-entity-presentation.test.mjs tests/world-navigation.test.mjs

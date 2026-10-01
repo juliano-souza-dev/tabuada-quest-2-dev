@@ -1,0 +1,216 @@
+{
+  "schema": "tq.scene",
+  "version": 1,
+  "id": "login",
+  "screenId": "login",
+  "reference": {
+    "width": 390,
+    "height": 844
+  },
+  "root": {
+    "id": "viewport",
+    "kind": "viewport",
+    "canonical": true
+  },
+  "nodes": [
+    {
+      "id": "login.background",
+      "kind": "image",
+      "src": "./assets/backgrounds/background.jpg",
+      "x": -1.4817320703653518,
+      "y": 3.9539918809201433,
+      "width": 389.5372124492557,
+      "height": 828.0974289580513,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 2,
+      "visible": true,
+      "locked": false,
+      "alt": "background.jpg",
+      "parentId": "viewport",
+      "compositionType": "ocean",
+      "composition": {
+        "animation": {
+          "speed": 58,
+          "movement": 28,
+          "shine": 11,
+          "foam": 84,
+          "ripples": true,
+          "quality": "balanced",
+          "preset": "adventure"
+        },
+        "active": true,
+        "area": {
+          "mode": "polygon",
+          "points": [
+            {
+              "x": 0.032369314805125615,
+              "y": 0.44345720225822755
+            },
+            {
+              "x": 0.22294568866422992,
+              "y": 0.4517322419128273
+            },
+            {
+              "x": 0.7448317379764432,
+              "y": 0.4475947220855274
+            },
+            {
+              "x": 0.9911150720751013,
+              "y": 0.4393196824309276
+            },
+            {
+              "x": 0.9969789796353468,
+              "y": 0.5841327658284977
+            },
+            {
+              "x": 0.9383400607192224,
+              "y": 0.5786160727254311
+            },
+            {
+              "x": 0.9471358828880081,
+              "y": 0.5951661520346307
+            },
+            {
+              "x": 0.9324761531589769,
+              "y": 0.6117161944911883
+            },
+            {
+              "x": 0.9178164234299458,
+              "y": 0.6268871005246212
+            },
+            {
+              "x": 0.8855650493633436,
+              "y": 0.6530913927641872
+            },
+            {
+              "x": 0.8855650493633436,
+              "y": 0.6737789919006866
+            },
+            {
+              "x": 0.8855650493633436,
+              "y": 0.6820539578500023
+            },
+            {
+              "x": 0.8005386639408623,
+              "y": 0.6765373384522199
+            },
+            {
+              "x": 0.7682872898742599,
+              "y": 0.7579084880171669
+            },
+            {
+              "x": 0.7272400936388719,
+              "y": 0.7841127065514488
+            },
+            {
+              "x": 0.258129016510955,
+              "y": 0.7813543599999156
+            },
+            {
+              "x": 0.21708180068977573,
+              "y": 0.7399792354322008
+            },
+            {
+              "x": 0.1848304070373821,
+              "y": 0.6723998186249199
+            },
+            {
+              "x": 0.13498735925452157,
+              "y": 0.6544705660399538
+            },
+            {
+              "x": 0.07928042349720688,
+              "y": 0.5910286322073308
+            },
+            {
+              "x": 0.1261915272928403,
+              "y": 0.5758577261738979
+            },
+            {
+              "x": 0.09687208742056941,
+              "y": 0.5524118173385072
+            },
+            {
+              "x": 0.07928042349720688,
+              "y": 0.5275866983747078
+            },
+            {
+              "x": 0.04409709075403397,
+              "y": 0.49310740333318415
+            },
+            {
+              "x": 0.01477764965765112,
+              "y": 0.49862409643625066
+            },
+            {
+              "x": 0.01770959364487821,
+              "y": 0.4627656281189603
+            },
+            {
+              "x": 0.01770959364487821,
+              "y": 0.4420780289824609
+            }
+          ]
+        }
+      },
+      "layout": {
+        "mode": "viewport-cover"
+      }
+    },
+    {
+      "id": "login.navio-pirata-halloween-tabuada-2",
+      "kind": "image",
+      "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp",
+      "x": 119.57916102841679,
+      "y": 263.20703653585923,
+      "width": 143.98917456021653,
+      "height": 205.66170500676577,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 3,
+      "visible": true,
+      "locked": false,
+      "alt": "navio_pirata_halloween_tabuada.webp",
+      "compositionType": "ship",
+      "compositionSelection": "inferred",
+      "composition": {
+        "animation": {
+          "heave": 46,
+          "pitch": 42,
+          "roll": 24,
+          "sway": 14,
+          "inertia": 68,
+          "damping": 54,
+          "coupling": 76,
+          "pivotX": 50,
+          "pivotY": 76,
+          "routePreset": "horizon",
+          "routeSpeed": 70,
+          "routeLoop": false,
+          "wakeEnabled": true,
+          "wakePreset": "navigation",
+          "wakeIntensity": 45,
+          "wakeLength": 100,
+          "wakeSpread": 100,
+          "wakeFoam": 100,
+          "preset": "navigation"
+        },
+        "active": true
+      },
+      "parentId": "viewport"
+    }
+  ],
+  "meta": {
+    "exportedFrom": "tabuada-quest-dev",
+    "schema": "tq.scene",
+    "version": 1,
+    "sourceRevision": "20260930-0012"
+  }
+}

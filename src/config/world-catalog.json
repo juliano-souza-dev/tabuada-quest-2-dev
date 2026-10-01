@@ -1,0 +1,12 @@
+{
+  "schema": "tq.world-catalog",
+  "version": 1,
+  "worlds": [
+    {
+      "id": "ocean-prototype",
+      "name": "Oceano Protótipo",
+      "type": "ocean",
+      "path": "./src/world/world-test.world.json"
+    }
+  ]
+}
