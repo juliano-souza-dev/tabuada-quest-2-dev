@@ -683,16 +683,108 @@ export class ShipEditor{
     list.querySelectorAll("[data-ship-id]").forEach(button=>button.addEventListener("click",()=>this.select(button.dataset.shipId)));
   }
 
+  combinedActionCombatHtml(ship){
+    const sprite=ship.navigation?.sprite||{};
+    const columns=Math.max(1,Number(sprite.columns)||4);
+    const rows=Math.max(1,Number(sprite.rows)||4);
+    const total=columns*rows;
+    const keys=["idle","fireRight","fireLeft","hit","critical","defeat"];
+    const animationRows=keys.map(key=>{
+      const anim=ship.animations?.[key]||{};
+      const nums=Array.isArray(anim.frames)?anim.frames.filter(v=>Number.isFinite(Number(v))).map(Number):[];
+      const start=nums.length?Math.min(...nums):0;
+      const finish=nums.length?Math.max(...nums):start;
+      return `<tr>
+        <td><b>${key}</b></td>
+        <td><input data-action-start="${key}" type="number" min="1" max="${total}" value="${start+1}"></td>
+        <td><input data-action-end="${key}" type="number" min="1" max="${total}" value="${finish+1}"></td>
+        <td><input data-action-ms="${key}" type="number" min="40" max="1000" value="${Number(anim.frameMs)||140}"></td>
+        <td><input data-action-loop="${key}" type="checkbox" ${anim.loop===true?"checked":""}></td>
+      </tr>`;
+    }).join("");
+    return `
+      <section class="tq-ships__panel tq-ships__action-combat">
+        <div class="tq-ships__panel-title">
+          <div><strong>Ações de combate</strong><small>Ranges do mesmo atlas usado para navegação. Nenhum segundo sprite é necessário.</small></div>
+          <span>MESMO ATLAS</span>
+        </div>
+        <div class="tq-ships__settings tq-ships__settings--v2">
+          <label><span>Recoil px</span><input data-action-recoil type="number" min="0" max="80" value="${Math.round(ship.combat.recoil)}"></label>
+          <label><span>Shake px</span><input data-action-shake type="number" min="0" max="30" value="${Math.round(ship.combat.shake)}"></label>
+          <label class="tq-ships__check"><input data-action-flash type="checkbox" ${ship.combat.muzzleFlash!==false?"checked":""}><span>Flash</span></label>
+          <label class="tq-ships__check"><input data-action-smoke type="checkbox" ${ship.combat.smoke!==false?"checked":""}><span>Fumaça</span></label>
+          <label class="tq-ships__check"><input data-action-impact type="checkbox" ${ship.combat.impact!==false?"checked":""}><span>Impacto</span></label>
+        </div>
+        <table class="tq-ships__anim-table">
+          <thead><tr><th>Ação</th><th>Início</th><th>Fim</th><th>ms</th><th>Loop</th></tr></thead>
+          <tbody>${animationRows}</tbody>
+        </table>
+        <small class="tq-world-editor-note">Os frames acima pertencem ao atlas único. Navegação usa o mapeamento direcional e combate usa apenas estes ranges.</small>
+      </section>`;
+  }
+
+  bindCombinedActionCombat(content,ship){
+    const sprite=ship.navigation?.sprite||{};
+    const total=Math.max(1,(Number(sprite.columns)||4)*(Number(sprite.rows)||4));
+    const keys=["idle","fireRight","fireLeft","hit","critical","defeat"];
+    const saveStyle=()=>{
+      const draft=this.editableCurrent();
+      if(!draft)return;
+      draft.combat={
+        ...(draft.combat||{}),
+        recoil:Math.max(0,Number(content.querySelector("[data-action-recoil]")?.value)||0),
+        shake:Math.max(0,Number(content.querySelector("[data-action-shake]")?.value)||0),
+        muzzleFlash:content.querySelector("[data-action-flash]")?.checked!==false,
+        smoke:content.querySelector("[data-action-smoke]")?.checked!==false,
+        impact:content.querySelector("[data-action-impact]")?.checked!==false,
+        useNavigationAtlas:true
+      };
+      delete draft.combat.sprite;
+      this.save();
+    };
+    content.querySelectorAll("[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
+      .forEach(el=>el.addEventListener("change",saveStyle));
+
+    const saveAnim=key=>{
+      const draft=this.editableCurrent();
+      if(!draft)return;
+      draft.animations=draft.animations||{};
+      const start=Math.max(0,Math.min(total-1,(Number(content.querySelector('[data-action-start="'+key+'"]')?.value)||1)-1));
+      const finish=Math.max(start,Math.min(total-1,(Number(content.querySelector('[data-action-end="'+key+'"]')?.value)||start+1)-1));
+      draft.animations[key]={
+        ...(draft.animations[key]||{}),
+        frames:Array.from({length:finish-start+1},(_,i)=>start+i),
+        frameMs:Math.max(40,Number(content.querySelector('[data-action-ms="'+key+'"]')?.value)||140),
+        loop:content.querySelector('[data-action-loop="'+key+'"]')?.checked===true,
+        cellWidth:Number(sprite.cellWidth)||draft.cellSize||400,
+        cellHeight:Number(sprite.cellHeight)||draft.cellSize||400
+      };
+      draft.animationGroups=draft.animationGroups||{};
+      draft.animationGroups[key]="combat";
+      draft.combat={...(draft.combat||{}),useNavigationAtlas:true};
+      delete draft.combat.sprite;
+      this.save();
+    };
+    for(const key of keys){
+      content.querySelectorAll('[data-action-start="'+key+'"],[data-action-end="'+key+'"],[data-action-ms="'+key+'"],[data-action-loop="'+key+'"]')
+        .forEach(el=>el.addEventListener("change",()=>saveAnim(key)));
+    }
+  }
+
   renderEditor(){
     const host=this.el.querySelector("[data-ship-editor]");
     const ship=this.current();
     if(!ship){host.innerHTML='<div class="tq-ships__empty">Selecione ou crie um navio.</div>';return}
-    const tab=this.tabByShip.get(ship.id)||"general";
+    let tab=this.tabByShip.get(ship.id)||"general";
+    if(ship.spriteMode==="combined"&&tab==="combat"){
+      tab="navigation";
+      this.tabByShip.set(ship.id,tab);
+    }
     host.innerHTML=`
       <div class="tq-ships__tabs">
         <button type="button" data-ship-tab="general" class="${tab==="general"?"is-active":""}">⚙ Geral</button>
-        <button type="button" data-ship-tab="navigation" class="${tab==="navigation"?"is-active":""}">🧭 Navegação</button>
-        <button type="button" data-ship-tab="combat" class="${tab==="combat"?"is-active":""}">💥 Combate</button>
+        <button type="button" data-ship-tab="navigation" class="${tab==="navigation"?"is-active":""}">${ship.spriteMode==="combined"?"⚡ Ação":"🧭 Navegação"}</button>
+        ${ship.spriteMode==="split"?'<button type="button" data-ship-tab="combat" class="'+(tab==="combat"?"is-active":"")+'">💥 Combate</button>':""}
       </div>
       <div data-ship-v2-content></div>`;
     host.querySelectorAll("[data-ship-tab]").forEach(button=>button.addEventListener("click",()=>{
@@ -711,8 +803,9 @@ export class ShipEditor{
             <label><span>Tipo</span><select data-ship-type><option value="player" ${ship.type!=="npc"?"selected":""}>Jogador</option><option value="npc" ${ship.type==="npc"?"selected":""}>NPC</option></select></label>
           </div>
           <div class="tq-ships__general-grid">
-            <article><b>🧭 Navegação</b><span>Spritesheet direcional</span><small>${Math.round(ship.navigation.speed)} px/s · ${Math.round(ship.navigation.width)}×${Math.round(ship.navigation.height)}</small></article>
-            <article><b>💥 Combate</b><span>Atlas + animações</span><small>recoil ${Math.round(ship.combat.recoil)} · shake ${Math.round(ship.combat.shake)}</small></article>
+            ${ship.spriteMode==="combined"
+              ?'<article><b>⚡ Ação</b><span>Um atlas · navegação + combate</span><small>'+Math.round(ship.navigation.speed)+' px/s · recoil '+Math.round(ship.combat.recoil)+'</small></article><article><b>▦ Grade</b><span>'+ship.cellSize+'×'+ship.cellSize+'</span><small>um único asset para todas as ações</small></article>'
+              :'<article><b>🧭 Navegação</b><span>Spritesheet direcional</span><small>'+Math.round(ship.navigation.speed)+' px/s · '+Math.round(ship.navigation.width)+'×'+Math.round(ship.navigation.height)+'</small></article><article><b>💥 Combate</b><span>Atlas + animações</span><small>recoil '+Math.round(ship.combat.recoil)+' · shake '+Math.round(ship.combat.shake)+'</small></article>'}
           </div>
           <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>O runtime consome spritesheets; frames individuais ficam fora do fluxo principal.</small></div>
         </section>`;
@@ -790,7 +883,8 @@ export class ShipEditor{
             <label><span>Posição inicial</span><select data-nav-initial>${keys.map(key=>'<option value="'+key+'" '+(sprite.initialDirection===key?'selected':'')+'>'+info[key][1]+'</option>').join("")}</select></label>
           </div>
           <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet. ${ship.autoFrame!==false?"Grade calculada automaticamente em células de "+ship.cellSize+"×"+ship.cellSize+".":"Grade manual ativa."}</small>
-        </section>`;
+        </section>
+        ${ship.spriteMode==="combined"?this.combinedActionCombatHtml(ship):""}`;
 
       this.bindAtlasControls(content);
       const updateNav=patch=>this.updateShip({navigation:{...ship.navigation,...patch}});
@@ -833,6 +927,7 @@ export class ShipEditor{
         this.updateNavigationSprite({directionFrames:{...(sprite.directionFrames||{}),[selected]:frame}});
       });
       content.querySelector("[data-nav-initial]")?.addEventListener("change",e=>this.updateNavigationSprite({initialDirection:e.currentTarget.value}));
+      if(ship.spriteMode==="combined")this.bindCombinedActionCombat(content,ship);
       return;
     }
 
