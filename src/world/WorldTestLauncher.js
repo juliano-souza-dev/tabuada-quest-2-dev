@@ -1,5 +1,6 @@
 import { WorldRuntime } from "./WorldRuntime.js?v=20261001-0850";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
+import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
 export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
   const catalogResponse=await fetch("./src/config/world-catalog.json?v=20260930-1851",{cache:"no-store"});
@@ -13,6 +14,14 @@ export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
 
+  const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
+  if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
+  const pedagogyCurriculum=await pedagogyResponse.json();
+  const pedagogyRuntime=new PedagogyRuntime({
+    getState:()=>({game:{pedagogy:{progress:{region:1,plannedCompleted:0}}}}),
+    curriculum:pedagogyCurriculum
+  });
+
   let world=null;
   let state=null;
 
@@ -20,6 +29,15 @@ export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
     root.innerHTML="";
     world=new WorldRuntime(root,config,{
       state,
+      createPedagogyChallenge:({entity})=>pedagogyRuntime.createChallenge({
+        kind:entity?.type==="treasure"?"treasure":(entity?.type==="ship"&&entity?.combat?.enabled===true?"combat":"world-interaction"),
+        worldId:config.id,
+        entityId:entity?.id,
+        entityType:entity?.type
+      }),
+      onPedagogyResult:result=>{
+        globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogytestresult",{detail:result}));
+      },
       onEnterScene:(entity,nextState)=>{
         state=nextState;
         openScene(entity);
@@ -30,7 +48,9 @@ export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
       ...(globalThis.TabuadaQuest||{}),
       world,
       worldTest:true,
-      worldTestId:config.id
+      worldTestId:config.id,
+      pedagogyRuntime,
+      pedagogyCurriculum
     };
   };
 
