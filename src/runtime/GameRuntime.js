@@ -319,7 +319,7 @@ export class GameRuntime {
     const navigation={
       x:Number(spawn.x??legacy.x??world.width/2),
       y:Number(spawn.y??legacy.y??world.height/2),
-      direction:String(spawn.direction??legacy.direction??"n")
+      direction:String(spawn.direction??legacy.direction??shipPlayer.sprite?.initialDirection??"n")
     };
 
     return {
