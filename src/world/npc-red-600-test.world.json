@@ -1,0 +1,194 @@
+{
+  "schema": "tq.world",
+  "version": 1,
+  "id": "npc-red-600-test",
+  "name": "Teste NPC Vermelho 600",
+  "type": "ocean",
+  "width": 5200,
+  "height": 5200,
+  "player": {
+    "x": 2600,
+    "y": 2600,
+    "width": 230,
+    "height": 230,
+    "direction": "n",
+    "shipId": "pirate-default",
+    "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+    "sprite": {
+      "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "regions": {
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
+      }
+    },
+    "speed": 420,
+    "acceleration": 1100,
+    "braking": 0.12,
+    "effects": {
+      "wakeActive": true,
+      "shadowActive": true,
+      "idleBalanceActive": true,
+      "idleRoll": 2.4,
+      "idleHeave": 3.2,
+      "idlePeriod": 3600
+    }
+  },
+  "playerSpawn": {
+    "x": 2600,
+    "y": 2600,
+    "direction": "n"
+  },
+  "entities": [],
+  "npcPopulation": {
+    "enabled": true,
+    "seed": 60048,
+    "spread": {
+      "mode": "random-spaced",
+      "margin": 420,
+      "minDistance": 700
+    },
+    "movement": {
+      "mode": "straight",
+      "speed": 82
+    },
+    "types": [
+      {
+        "shipId": "pirate-red-600-test-npc",
+        "count": 4,
+        "combat": true,
+        "hp": 3
+      }
+    ]
+  },
+  "camera": {
+    "playZoom": 0.9
+  },
+  "minimap": {
+    "active": true
+  },
+  "ocean": {
+    "active": true,
+    "background": "none",
+    "renderer": "webgl",
+    "preset": "adventure",
+    "speed": 24,
+    "directionX": 0.82,
+    "directionY": 0.32,
+    "swell": 24,
+    "tileSize": 720,
+    "brightness": 100,
+    "saturation": 105
+  },
+  "editor": {
+    "cameraX": 2600,
+    "cameraY": 2600,
+    "zoom": 0.7
+  },
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "editorVersion": 2,
+    "testPurpose": "Validate red NPC 2400x7200 atlas with 600px cells",
+    "npcShipId": "pirate-red-600-test-npc",
+    "npcCount": 4,
+    "spriteGrid": "4x12",
+    "cellSize": 600,
+    "frameCount": 48
+  }
+}
