@@ -66,10 +66,10 @@ export class ShipEditor{
     value.version=2;
     value.type=value.type==="npc"?"npc":"player";
     value.name=String(value.name||value.id||"Navio");
-    const declaredSpriteMode=value.spriteMode;
-    value.spriteMode=declaredSpriteMode==="combined"?"combined":"split";
-    value.autoFrame=value.autoFrame!==false;
-    value.cellSize=[400,600,800].includes(Number(value.cellSize))?Number(value.cellSize):400;
+    // Production contract: one 4x4 atlas, 16 directions, 400x400 per cell.
+    value.spriteMode="combined";
+    value.autoFrame=true;
+    value.cellSize=400;
     const profile=(value.type==="npc"?value.npc:value.player)||value.runtime||value.player||value.npc||{};
     value.navigation=value.navigation&&typeof value.navigation==="object"?value.navigation:{};
     value.navigation={
@@ -147,35 +147,10 @@ export class ShipEditor{
     };
     if(value.autoFrame&&value.spriteMode!=="combined")this.frameSpriteByCell(value.combat.sprite,value.cellSize);
 
-    if(!declaredSpriteMode&&value.navigation.sprite.src&&value.combat.sprite.src===value.navigation.sprite.src){
-      value.spriteMode="combined";
-    }
-    if(value.spriteMode==="combined"){
-      value.combat.useNavigationAtlas=true;
-      delete value.combat.sprite;
-    }else{
-      value.combat.useNavigationAtlas=false;
-      // Legacy repair only when the declared split combat grid does not match the image.
-      const combatImageW=value.combat.sprite.imageWidth;
-      const combatImageH=value.combat.sprite.imageHeight;
-      const combatGridValid=
-        value.combat.sprite.columns*value.combat.sprite.cellWidth===combatImageW
-        &&value.combat.sprite.rows*value.combat.sprite.cellHeight===combatImageH;
-      if(value.combat.sprite.src&&!combatGridValid){
-        const preferred=value.cellSize;
-        if(
-          combatImageW%preferred===0
-          &&combatImageH%preferred===0
-          &&combatImageW/preferred<=32
-          &&combatImageH/preferred<=32
-        ){
-          value.combat.sprite.columns=Math.max(1,Math.round(combatImageW/preferred));
-          value.combat.sprite.rows=Math.max(1,Math.round(combatImageH/preferred));
-          value.combat.sprite.cellWidth=preferred;
-          value.combat.sprite.cellHeight=preferred;
-        }
-      }
-    }
+    // Combat visuals are dynamic WebGL/CSS effects. Do not bind combat to sprite frames.
+    value.combat.useNavigationAtlas=false;
+    delete value.combat.sprite;
+    delete value.combat.compiled;
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
     if(value.combat?.animations&&typeof value.combat.animations==="object"){
       for(const [key,animation] of Object.entries(value.combat.animations)){
@@ -311,45 +286,43 @@ export class ShipEditor{
   }
 
   atlasCellOptions(){
-    return [400,600,800];
+    return [400];
   }
 
-  normalizeCellSize(value){
-    const size=Number(value);
-    return this.atlasCellOptions().includes(size)?size:400;
+  normalizeCellSize(){
+    return 400;
   }
 
   frameSpriteByCell(sprite,cellSize,{navigation=false}={}){
     if(!sprite||typeof sprite!=="object")return sprite;
-    const size=this.normalizeCellSize(cellSize);
-    const imageWidth=Math.max(1,Number(sprite.imageWidth)||size*4);
-    const imageHeight=Math.max(1,Number(sprite.imageHeight)||size*4);
-    const columns=Math.max(1,Math.floor(imageWidth/size));
-    const rows=Math.max(1,Math.floor(imageHeight/size));
-    sprite.imageWidth=imageWidth;
-    sprite.imageHeight=imageHeight;
-    sprite.cellWidth=size;
-    sprite.cellHeight=size;
-    sprite.columns=Math.min(32,columns);
-    sprite.rows=Math.min(32,rows);
-    sprite.autoFrameExact=imageWidth%size===0&&imageHeight%size===0;
+    sprite.imageWidth=1600;
+    sprite.imageHeight=1600;
+    sprite.cellWidth=400;
+    sprite.cellHeight=400;
+    sprite.columns=4;
+    sprite.rows=4;
+    sprite.autoFrameExact=true;
     if(navigation){
-      sprite.directionFrames=sprite.directionFrames||{};
+      sprite.directionFrames={};
       for(let index=0;index<this.directionKeys().length;index++){
-        const key=this.directionKeys()[index];
-        if(!Number.isFinite(Number(sprite.directionFrames[key])))sprite.directionFrames[key]=index;
+        sprite.directionFrames[this.directionKeys()[index]]=index;
       }
     }
     return sprite;
   }
 
   syncCombinedAtlas(ship){
-    if(!ship||ship.spriteMode!=="combined")return;
+    if(!ship)return;
+    ship.spriteMode="combined";
+    ship.autoFrame=true;
+    ship.cellSize=400;
     ship.navigation=ship.navigation||{};
     ship.navigation.sprite=ship.navigation.sprite||{};
+    this.frameSpriteByCell(ship.navigation.sprite,400,{navigation:true});
     ship.combat=ship.combat||{};
-    ship.combat.useNavigationAtlas=true;
+    ship.combat.useNavigationAtlas=false;
     delete ship.combat.sprite;
+    delete ship.combat.compiled;
   }
 
   applyAutoFraming(ship){
@@ -369,88 +342,54 @@ export class ShipEditor{
     }
   }
 
-  updateAtlasSettings(patch={}){
+  updateAtlasSettings(){
     const ship=this.editableCurrent();
     if(!ship)return;
-    const previousMode=ship.spriteMode;
-    Object.assign(ship,clone(patch));
-    ship.spriteMode=ship.spriteMode==="combined"?"combined":"split";
-    ship.autoFrame=ship.autoFrame!==false;
-    ship.cellSize=this.normalizeCellSize(ship.cellSize);
-    if(ship.spriteMode==="combined"){
-      this.syncCombinedAtlas(ship);
-    }else if(previousMode==="combined"){
-      ship.combat=ship.combat||{};
-      ship.combat.useNavigationAtlas=false;
-      ship.combat.sprite={
-        src:"",
-        columns:4,
-        rows:4,
-        imageWidth:(ship.cellSize||400)*4,
-        imageHeight:(ship.cellSize||400)*4,
-        cellWidth:ship.cellSize||400,
-        cellHeight:ship.cellSize||400
-      };
-    }
-    if(ship.autoFrame)this.applyAutoFraming(ship);
+    ship.spriteMode="combined";
+    ship.autoFrame=true;
+    ship.cellSize=400;
+    this.applyAutoFraming(ship);
+    ship.combat=ship.combat||{};
+    ship.combat.useNavigationAtlas=false;
+    delete ship.combat.sprite;
+    delete ship.combat.compiled;
     ship.editor={...(ship.editor||{}),draft:true,updatedAt:Date.now()};
     this.save();
     this.renderEditor();
   }
 
   atlasControlsHtml(ship){
-    const mode=ship.spriteMode==="combined"?"combined":"split";
-    const size=this.normalizeCellSize(ship.cellSize);
     const sprite=ship.navigation?.sprite||{};
-    const imageWidth=Math.max(0,Number(sprite.imageWidth)||0);
-    const imageHeight=Math.max(0,Number(sprite.imageHeight)||0);
-    const gridText=sprite.src
-      ?imageWidth+"×"+imageHeight+" → "+Math.max(1,Number(sprite.columns)||1)+"×"+Math.max(1,Number(sprite.rows)||1)+" células"
-      :"Selecione um spritesheet para calcular a grade.";
-    const exact=sprite.src&&ship.autoFrame!==false?sprite.autoFrameExact!==false:true;
+    const valid=Number(sprite.imageWidth)===1600&&Number(sprite.imageHeight)===1600
+      &&Number(sprite.columns)===4&&Number(sprite.rows)===4
+      &&Number(sprite.cellWidth)===400&&Number(sprite.cellHeight)===400;
     return `
       <section class="tq-ships__panel tq-ships__atlas-settings">
-        <div class="tq-ships__panel-title"><div><strong>Fonte dos sprites</strong><small>Use um atlas único para navegação + combate ou dois atlas separados.</small></div><span>${mode==="combined"?"ATLAS ÚNICO":"2 ATLAS"}</span></div>
-        <div class="tq-ships__atlas-settings-grid">
-          <label><span>Modo do atlas</span><select data-atlas-mode><option value="combined" ${mode==="combined"?"selected":""}>Atlas único</option><option value="split" ${mode==="split"?"selected":""}>Atlas separado</option></select></label>
-          <label class="tq-ships__check tq-ships__auto-frame"><input data-atlas-auto type="checkbox" ${ship.autoFrame!==false?"checked":""}><span>Enquadramento automático</span></label>
-          <label><span>Tamanho da célula</span><select data-atlas-cell ${ship.autoFrame===false?"disabled":""}>${this.atlasCellOptions().map(value=>'<option value="'+value+'" '+(value===size?'selected':'')+'>'+value+' × '+value+'</option>').join("")}</select></label>
+        <div class="tq-ships__panel-title"><div><strong>Spritesheet direcional</strong><small>Padrão único de produção.</small></div><span>16 DIREÇÕES</span></div>
+        <div class="tq-ships__atlas-status ${valid?"is-ok":"is-warning"}">
+          <b>1600×1600 · grade 4×4 · 16 células de 400×400</b>
+          <span>${valid?"Contrato válido. Rotação: 22,5° por frame.":"O asset será normalizado para o contrato 4×4 de 400 px."}</span>
         </div>
-        <small class="tq-world-editor-note">${mode==="combined"
-          ?"O mesmo arquivo alimenta as 16 direções e os ranges de combate."
-          :"Navegação e combate podem usar arquivos diferentes."} Com enquadramento automático, linhas e colunas são calculadas pelas dimensões reais do arquivo.</small>
-        <div class="tq-ships__atlas-status ${exact?"is-ok":"is-warning"}"><b>${gridText}</b><span>${ship.autoFrame===false?"Grade manual.":exact?"Enquadramento exato em "+size+"×"+size+".":"A imagem não é múltipla exata de "+size+" px; haverá sobra fora da grade."}</span></div>
+        <small class="tq-world-editor-note">Combate não usa frames extras: flash, fumaça, impacto, recoil e iluminação são efeitos dinâmicos.</small>
       </section>`;
   }
 
-  bindAtlasControls(content){
-    content.querySelector("[data-atlas-mode]")?.addEventListener("change",event=>this.updateAtlasSettings({spriteMode:event.currentTarget.value}));
-    content.querySelector("[data-atlas-auto]")?.addEventListener("change",event=>this.updateAtlasSettings({autoFrame:event.currentTarget.checked}));
-    content.querySelector("[data-atlas-cell]")?.addEventListener("change",event=>this.updateAtlasSettings({cellSize:Number(event.currentTarget.value)}));
+  bindAtlasControls(){
+    // Fixed production contract: no alternate atlas modes.
   }
 
   syncNavigationRegions(ship){
     const sprite=ship?.navigation?.sprite;
     if(!sprite)return;
-    const columns=Math.max(1,Number(sprite.columns)||4);
-    const rows=Math.max(1,Number(sprite.rows)||4);
-    const imageWidth=Math.max(1,Number(sprite.imageWidth)||columns*400);
-    const imageHeight=Math.max(1,Number(sprite.imageHeight)||rows*400);
-    const cellWidth=Math.max(1,Number(sprite.cellWidth)||Math.floor(imageWidth/columns));
-    const cellHeight=Math.max(1,Number(sprite.cellHeight)||Math.floor(imageHeight/rows));
-    sprite.columns=columns;sprite.rows=rows;sprite.imageWidth=imageWidth;sprite.imageHeight=imageHeight;
-    sprite.cellWidth=cellWidth;sprite.cellHeight=cellHeight;
-    sprite.directionFrames=sprite.directionFrames||{};
-    sprite.regions=sprite.regions||{};
-    const maxFrame=columns*rows-1;
-    for(const key of this.directionKeys()){
-      const frame=Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames[key])||0));
-      sprite.directionFrames[key]=frame;
+    this.frameSpriteByCell(sprite,400,{navigation:true});
+    sprite.regions={};
+    for(let index=0;index<this.directionKeys().length;index++){
+      const key=this.directionKeys()[index];
       sprite.regions[key]={
-        x:(frame%columns)*cellWidth,
-        y:Math.floor(frame/columns)*cellHeight,
-        width:cellWidth,
-        height:cellHeight
+        x:(index%4)*400,
+        y:Math.floor(index/4)*400,
+        width:400,
+        height:400
       };
     }
     ship.navigation.src=sprite.src||"";
@@ -461,8 +400,8 @@ export class ShipEditor{
     if(!current)return false;
     const ship=this.drafts.find(item=>item.id===shipId)||this.editableCurrent();
     if(!ship)return false;
-    const requested=section==="combat"?"combat":"navigation";
-    const target=ship.spriteMode==="combined"?"navigation":requested;
+    const requested="navigation";
+    const target="navigation";
     ship[target]=ship[target]||{};
     ship[target].sprite=ship[target].sprite&&typeof ship[target].sprite==="object"
       ?ship[target].sprite
@@ -478,21 +417,20 @@ export class ShipEditor{
       if(!draft)return;
       const sprite=draft?.[target]?.sprite;
       if(!sprite)return;
-      const imageWidth=image.naturalWidth||image.width||sprite.imageWidth||1600;
-      const imageHeight=image.naturalHeight||image.height||sprite.imageHeight||1600;
-      sprite.imageWidth=imageWidth;
-      sprite.imageHeight=imageHeight;
-
-      if(draft.autoFrame!==false){
-        this.frameSpriteByCell(sprite,draft.cellSize||400,{navigation:target==="navigation"});
-      }else{
-        sprite.columns=Math.max(1,Number(sprite.columns)||4);
-        sprite.rows=Math.max(1,Number(sprite.rows)||4);
-        sprite.cellWidth=Math.max(1,Math.floor(imageWidth/sprite.columns));
-        sprite.cellHeight=Math.max(1,Math.floor(imageHeight/sprite.rows));
+      const imageWidth=image.naturalWidth||image.width||0;
+      const imageHeight=image.naturalHeight||image.height||0;
+      if(imageWidth!==1600||imageHeight!==1600){
+        sprite.src="";
+        draft.navigation.src="";
+        sprite.validationError="Spritesheet inválido: esperado 1600×1600 (4×4 de 400×400).";
+        this.save();
+        if(this.selectedId===shipId)this.renderEditor();
+        console.warn(sprite.validationError,{imageWidth,imageHeight,src});
+        return;
       }
-
-      if(target==="navigation")this.syncNavigationRegions(draft);
+      delete sprite.validationError;
+      this.frameSpriteByCell(sprite,400,{navigation:true});
+      this.syncNavigationRegions(draft);
       if(draft.spriteMode==="combined"){
         this.syncCombinedAtlas(draft);
       }else if(requested==="combat"&&target==="combat"){
@@ -677,29 +615,11 @@ export class ShipEditor{
   }
 
   combinedActionCombatHtml(ship){
-    const sprite=ship.navigation?.sprite||{};
-    const columns=Math.max(1,Number(sprite.columns)||4);
-    const rows=Math.max(1,Number(sprite.rows)||4);
-    const total=columns*rows;
-    const keys=["idle","fireRight","fireLeft","hit","critical","defeat"];
-    const animationRows=keys.map(key=>{
-      const anim=ship.animations?.[key]||{};
-      const nums=Array.isArray(anim.frames)?anim.frames.filter(v=>Number.isFinite(Number(v))).map(Number):[];
-      const start=nums.length?Math.min(...nums):0;
-      const finish=nums.length?Math.max(...nums):start;
-      return `<tr>
-        <td><b>${key}</b></td>
-        <td><input data-action-start="${key}" type="number" min="1" max="${total}" value="${start+1}"></td>
-        <td><input data-action-end="${key}" type="number" min="1" max="${total}" value="${finish+1}"></td>
-        <td><input data-action-ms="${key}" type="number" min="40" max="1000" value="${Number(anim.frameMs)||140}"></td>
-        <td><input data-action-loop="${key}" type="checkbox" ${anim.loop===true?"checked":""}></td>
-      </tr>`;
-    }).join("");
     return `
       <section class="tq-ships__panel tq-ships__action-combat">
         <div class="tq-ships__panel-title">
-          <div><strong>Ações de combate</strong><small>Ranges do mesmo atlas usado para navegação. Nenhum segundo sprite é necessário.</small></div>
-          <span>MESMO ATLAS</span>
+          <div><strong>Efeitos de combate</strong><small>O navio mantém o frame direcional atual; combate é renderizado por efeitos dinâmicos.</small></div>
+          <span>WEBGL FX</span>
         </div>
         <div class="tq-ships__settings tq-ships__settings--v2">
           <label><span>Recoil px</span><input data-action-recoil type="number" min="0" max="80" value="${Math.round(ship.combat.recoil)}"></label>
@@ -708,18 +628,11 @@ export class ShipEditor{
           <label class="tq-ships__check"><input data-action-smoke type="checkbox" ${ship.combat.smoke!==false?"checked":""}><span>Fumaça</span></label>
           <label class="tq-ships__check"><input data-action-impact type="checkbox" ${ship.combat.impact!==false?"checked":""}><span>Impacto</span></label>
         </div>
-        <table class="tq-ships__anim-table">
-          <thead><tr><th>Ação</th><th>Início</th><th>Fim</th><th>ms</th><th>Loop</th></tr></thead>
-          <tbody>${animationRows}</tbody>
-        </table>
-        <small class="tq-world-editor-note">Os frames acima pertencem ao atlas único. Navegação usa o mapeamento direcional e combate usa apenas estes ranges.</small>
+        <small class="tq-world-editor-note">Nenhum frame 17+ é reservado para combate. O atlas inteiro contém apenas as 16 orientações.</small>
       </section>`;
   }
 
-  bindCombinedActionCombat(content,ship){
-    const sprite=ship.navigation?.sprite||{};
-    const total=Math.max(1,(Number(sprite.columns)||4)*(Number(sprite.rows)||4));
-    const keys=["idle","fireRight","fireLeft","hit","critical","defeat"];
+  bindCombinedActionCombat(content){
     const saveStyle=()=>{
       const draft=this.editableCurrent();
       if(!draft)return;
@@ -730,38 +643,14 @@ export class ShipEditor{
         muzzleFlash:content.querySelector("[data-action-flash]")?.checked!==false,
         smoke:content.querySelector("[data-action-smoke]")?.checked!==false,
         impact:content.querySelector("[data-action-impact]")?.checked!==false,
-        useNavigationAtlas:true
+        useNavigationAtlas:false
       };
       delete draft.combat.sprite;
+      delete draft.combat.compiled;
       this.save();
     };
     content.querySelectorAll("[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
       .forEach(el=>el.addEventListener("change",saveStyle));
-
-    const saveAnim=key=>{
-      const draft=this.editableCurrent();
-      if(!draft)return;
-      draft.animations=draft.animations||{};
-      const start=Math.max(0,Math.min(total-1,(Number(content.querySelector('[data-action-start="'+key+'"]')?.value)||1)-1));
-      const finish=Math.max(start,Math.min(total-1,(Number(content.querySelector('[data-action-end="'+key+'"]')?.value)||start+1)-1));
-      draft.animations[key]={
-        ...(draft.animations[key]||{}),
-        frames:Array.from({length:finish-start+1},(_,i)=>start+i),
-        frameMs:Math.max(40,Number(content.querySelector('[data-action-ms="'+key+'"]')?.value)||140),
-        loop:content.querySelector('[data-action-loop="'+key+'"]')?.checked===true,
-        cellWidth:Number(sprite.cellWidth)||draft.cellSize||400,
-        cellHeight:Number(sprite.cellHeight)||draft.cellSize||400
-      };
-      draft.animationGroups=draft.animationGroups||{};
-      draft.animationGroups[key]="combat";
-      draft.combat={...(draft.combat||{}),useNavigationAtlas:true};
-      delete draft.combat.sprite;
-      this.save();
-    };
-    for(const key of keys){
-      content.querySelectorAll('[data-action-start="'+key+'"],[data-action-end="'+key+'"],[data-action-ms="'+key+'"],[data-action-loop="'+key+'"]')
-        .forEach(el=>el.addEventListener("change",()=>saveAnim(key)));
-    }
   }
 
   renderEditor(){
@@ -797,7 +686,7 @@ export class ShipEditor{
           </div>
           <div class="tq-ships__general-grid">
             ${ship.spriteMode==="combined"
-              ?'<article><b>⚡ Ação</b><span>Um atlas · navegação + combate</span><small>'+Math.round(ship.navigation.speed)+' px/s · recoil '+Math.round(ship.combat.recoil)+'</small></article><article><b>▦ Grade</b><span>'+ship.cellSize+'×'+ship.cellSize+'</span><small>um único asset para todas as ações</small></article>'
+              ?'<article><b>⚡ Ação</b><span>Um atlas · 16 orientações</span><small>'+Math.round(ship.navigation.speed)+' px/s · recoil '+Math.round(ship.combat.recoil)+'</small></article><article><b>▦ Grade</b><span>'+ship.cellSize+'×'+ship.cellSize+'</span><small>4×4 fixo · 400 px por célula</small></article>'
               :'<article><b>🧭 Navegação</b><span>Spritesheet direcional</span><small>'+Math.round(ship.navigation.speed)+' px/s · '+Math.round(ship.navigation.width)+'×'+Math.round(ship.navigation.height)+'</small></article><article><b>💥 Combate</b><span>Atlas + animações</span><small>recoil '+Math.round(ship.combat.recoil)+' · shake '+Math.round(ship.combat.shake)+'</small></article>'}
           </div>
           <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>O runtime consome spritesheets; frames individuais ficam fora do fluxo principal.</small></div>
@@ -843,7 +732,7 @@ export class ShipEditor{
         </section>
 
         <section class="tq-ships__panel tq-ships__sprite-panel">
-          <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>${ship.spriteMode==="combined"?"Atlas único: navegação e combate compartilham este arquivo.":"Atlas exclusivo para as 16 direções."}</small></div><button type="button" data-nav-sprite-pick>▦ ${ship.spriteMode==="combined"?"Escolher atlas único":"Escolher sprite"}</button></div>
+          <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>${ship.spriteMode==="combined"?"Atlas único de 16 direções. Combate usa efeitos dinâmicos.":"Atlas exclusivo para as 16 direções."}</small></div><button type="button" data-nav-sprite-pick>▦ ${ship.spriteMode==="combined"?"Escolher atlas 16-dir":"Escolher sprite"}</button></div>
           <div class="tq-ships__sprite-meta">
             <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
             <label><span>Colunas</span><input data-nav-columns type="number" min="1" max="32" value="${columns}" ${ship.autoFrame!==false?"readonly":""}></label>
@@ -872,7 +761,7 @@ export class ShipEditor{
           <div class="tq-ships__direction-config">
             <div class="tq-ships__direction-preview" style="${cellStyle(selected)}"></div>
             <label><span>Direção</span><strong>${this.escape(info[selected][1])}</strong></label>
-            <label><span>Frame do atlas</span><input data-dir-frame type="number" min="1" max="${columns*rows}" value="${selectedFrame+1}"></label>
+            <label><span>Frame do atlas</span><input type="number" value="${selectedFrame+1}" readonly></label>
             <label><span>Posição inicial</span><select data-nav-initial>${keys.map(key=>'<option value="'+key+'" '+(sprite.initialDirection===key?'selected':'')+'>'+info[key][1]+'</option>').join("")}</select></label>
           </div>
           <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet. ${ship.autoFrame!==false?"Grade calculada automaticamente em células de "+ship.cellSize+"×"+ship.cellSize+".":"Grade manual ativa."}</small>
@@ -913,10 +802,6 @@ export class ShipEditor{
       content.querySelector("[data-dir-copy]")?.addEventListener("click",()=>{
         const i=keys.indexOf(selected),prev=keys[(i-1+keys.length)%keys.length];
         const frame=Number(sprite.directionFrames?.[prev])||0;
-        this.updateNavigationSprite({directionFrames:{...(sprite.directionFrames||{}),[selected]:frame}});
-      });
-      content.querySelector("[data-dir-frame]")?.addEventListener("change",e=>{
-        const frame=Math.max(0,Math.min(columns*rows-1,(Number(e.currentTarget.value)||1)-1));
         this.updateNavigationSprite({directionFrames:{...(sprite.directionFrames||{}),[selected]:frame}});
       });
       content.querySelector("[data-nav-initial]")?.addEventListener("change",e=>this.updateNavigationSprite({initialDirection:e.currentTarget.value}));
