@@ -2037,13 +2037,32 @@ export class WorldRuntime {
     return this.minimapConfig().enabled!==false;
   }
 
-  minimapLocations(){
-    if(this.minimapConfig().showLocations===false)return [];
-    return this.entities.filter(entity=>
-      entity.type==="location"
-      &&entity.minimap?.hidden!==true
-      &&entity.visible!==false
+  minimapLogicalType(entity){
+    const explicit=String(entity?.type||"").toLowerCase();
+    const effectType=String(entity?.effect?.category||"").toLowerCase();
+    if(explicit&&explicit!=="object")return explicit;
+    if(effectType&&effectType!=="generic"&&effectType!=="sea-item")return effectType;
+    return explicit||effectType||"object";
+  }
+
+  minimapEntities(){
+    const config=this.minimapConfig();
+    const visibleTypes=new Set(
+      Array.isArray(config.types)&&config.types.length
+        ?config.types.map(value=>String(value).toLowerCase())
+        :["location","island","ship"]
     );
+    if(config.showLocations===false){
+      visibleTypes.delete("location");
+      visibleTypes.delete("island");
+    }
+    if(config.showShips===false)visibleTypes.delete("ship");
+
+    return this.entities.filter(entity=>{
+      if(entity.minimap?.hidden===true||entity.visible===false)return false;
+      if(this.collected.has(entity.id))return false;
+      return visibleTypes.has(this.minimapLogicalType(entity));
+    });
   }
 
   renderMinimap(force=false,time=performance.now()){
@@ -2090,18 +2109,43 @@ export class WorldRuntime {
     ctx.lineWidth=1;
     ctx.strokeRect(offsetX+.5,offsetY+.5,Math.max(0,mapWidth-1),Math.max(0,mapHeight-1));
 
-    for(const entity of this.minimapLocations()){
+    for(const entity of this.minimapEntities()){
       const point=project(entity.visualX??entity.x,entity.visualY??entity.y);
-      const markerW=Math.max(5,Math.min(18,Number(entity.width||200)*scale));
-      const markerH=Math.max(5,Math.min(14,Number(entity.height||160)*scale));
+      const logicalType=this.minimapLogicalType(entity);
       ctx.save();
       ctx.translate(point.x,point.y);
-      ctx.rotate(Math.PI/4);
-      ctx.fillStyle="rgba(238,206,112,.9)";
-      ctx.strokeStyle="rgba(255,248,210,.95)";
-      ctx.lineWidth=1;
-      ctx.fillRect(-markerW/2,-markerH/2,markerW,markerH);
-      ctx.strokeRect(-markerW/2,-markerH/2,markerW,markerH);
+
+      if(logicalType==="ship"){
+        ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
+        ctx.beginPath();
+        ctx.moveTo(0,-6);
+        ctx.lineTo(4.5,5);
+        ctx.lineTo(0,2.8);
+        ctx.lineTo(-4.5,5);
+        ctx.closePath();
+        ctx.fillStyle="rgba(116,221,255,.96)";
+        ctx.strokeStyle="rgba(225,250,255,.98)";
+        ctx.lineWidth=1.5;
+        ctx.fill();
+        ctx.stroke();
+      }else if(logicalType==="island"){
+        const radius=Math.max(4.5,Math.min(10,Math.max(Number(entity.width||180),Number(entity.height||140))*scale*.22));
+        ctx.beginPath();
+        ctx.ellipse(0,0,radius,radius*.68,0,0,Math.PI*2);
+        ctx.fillStyle="rgba(102,187,106,.98)";
+        ctx.strokeStyle="rgba(226,255,210,.98)";
+        ctx.lineWidth=1.5;
+        ctx.fill();
+        ctx.stroke();
+      }else{
+        ctx.rotate(Math.PI/4);
+        ctx.fillStyle="rgba(255,204,92,.98)";
+        ctx.strokeStyle="rgba(255,249,215,.98)";
+        ctx.lineWidth=1.5;
+        ctx.fillRect(-4.5,-4.5,9,9);
+        ctx.strokeRect(-4.5,-4.5,9,9);
+      }
+
       ctx.restore();
     }
 
