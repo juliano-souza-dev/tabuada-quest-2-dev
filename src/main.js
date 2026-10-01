@@ -1,3 +1,4 @@
+import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261001-1934";
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-1851";
@@ -7,6 +8,7 @@ import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261001-1552";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20260930-1851";
 
 const app=document.querySelector("#app");
+await installDevAssetCache();
 const continuity=readAppContinuity();
 const worldTestParam=new URLSearchParams(location.search).get("worldtest");
 const worldTest=Boolean(worldTestParam);
