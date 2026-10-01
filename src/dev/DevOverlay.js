@@ -2459,6 +2459,7 @@ export class DevOverlay {
   toggleCollapse(){
     this.el.classList.toggle("is-collapsed");
     const collapsed=this.el.classList.contains("is-collapsed");
+    if(collapsed)this.closeToolPanels("");
     const b=this.el.querySelector("[data-collapse]");
     b.textContent=collapsed?"›":"‹";
     b.setAttribute("aria-label",collapsed?"Expandir ferramentas":"Recolher ferramentas");
@@ -2623,6 +2624,7 @@ export class DevOverlay {
       this.el.querySelector(".tq-dev__panel").hidden=false;
       this.renderInspector();
     }else{
+      this.closeToolPanels("");
       this.el.querySelector(".tq-dev__panel").hidden=true;
     }
   }
