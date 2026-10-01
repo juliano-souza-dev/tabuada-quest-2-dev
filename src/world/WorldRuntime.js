@@ -31,7 +31,12 @@ const normalizePlayerWaterEffects=player=>{
     shadowBlur:clamp(Number(fx.shadowBlur??9),0,30),
     shadowOffset:clamp(Number(fx.shadowOffset??12),-40,80),
     shadowScaleX:clamp(Number(fx.shadowScaleX??.72),.25,1.5),
-    shadowScaleY:clamp(Number(fx.shadowScaleY??.28),.12,1)
+    shadowScaleY:clamp(Number(fx.shadowScaleY??.28),.12,1),
+    idleBalanceActive:fx.idleBalanceActive!==false,
+    idleBalanceMaxSpeed:clamp(Number(fx.idleBalanceMaxSpeed??8),0,80),
+    idleRoll:clamp(Number(fx.idleRoll??2.4),0,12),
+    idleHeave:clamp(Number(fx.idleHeave??3.2),0,24),
+    idlePeriod:clamp(Number(fx.idlePeriod??3600),800,8000)
   };
 };
 
@@ -63,6 +68,8 @@ export class WorldRuntime {
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
     this.suppressNavigationClick=false;
+    this.playerIdleBalanceMix=0;
+    this.playerIdleVisual={roll:0,heave:0};
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
     this.pointerDirections=new Set();
@@ -1165,12 +1172,13 @@ export class WorldRuntime {
     if(this.playerShadowEl){
       this.playerShadowEl.hidden=!effects.shadowActive;
       this.playerShadowEl.style.left=this.player.x+"px";
-      this.playerShadowEl.style.top=(this.player.y+effects.shadowOffset)+"px";
+      const idle=this.playerIdleVisual||{roll:0,heave:0};
+      this.playerShadowEl.style.top=(this.player.y+effects.shadowOffset+idle.heave*.35)+"px";
       this.playerShadowEl.style.width=(width*effects.shadowScaleX)+"px";
       this.playerShadowEl.style.height=(height*effects.shadowScaleY)+"px";
       this.playerShadowEl.style.opacity=String(effects.shadowOpacity);
       this.playerShadowEl.style.filter=`blur(${effects.shadowBlur}px)`;
-      this.playerShadowEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation}deg)`;
+      this.playerShadowEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation+idle.roll*.35}deg)`;
     }
 
     if(
@@ -1229,9 +1237,29 @@ export class WorldRuntime {
     if(Math.floor(time/effects.wakeRate)%2===0)spawn(0,true);
   }
 
-  updatePlayerVisual(){
+  updatePlayerVisual(time=performance.now(),dt=1/60){
+    const effects=this.playerWaterEffects();
+    const speed=Math.hypot(this.player.vx,this.player.vy);
+    const idle=(
+      this.mode==="play"
+      &&effects.idleBalanceActive
+      &&speed<=effects.idleBalanceMaxSpeed
+    );
+
+    if(idle){
+      const blend=1-Math.exp(-Math.max(.001,dt)*4.5);
+      this.playerIdleBalanceMix+=(1-this.playerIdleBalanceMix)*blend;
+    }else{
+      this.playerIdleBalanceMix=0;
+    }
+
+    const phase=(Number(time)||0)/Math.max(800,effects.idlePeriod)*Math.PI*2;
+    const roll=idle?Math.sin(phase)*effects.idleRoll*this.playerIdleBalanceMix:0;
+    const heave=idle?Math.sin(phase*2+.65)*effects.idleHeave*this.playerIdleBalanceMix:0;
+    this.playerIdleVisual={roll,heave};
+
     this.playerEl.style.left=this.player.x+"px";
-    this.playerEl.style.top=this.player.y+"px";
+    this.playerEl.style.top=(this.player.y+heave)+"px";
 
     const sprite=this.config.player?.sprite;
     const directional=this.config.player?.directions;
@@ -1241,7 +1269,7 @@ export class WorldRuntime {
       if(style)Object.assign(this.playerEl.style,style);
       this.playerEl.dataset.direction=this.player.direction;
       this.playerEl.dataset.renderMode="atlas";
-      this.playerEl.style.transform="translate(-50%,-50%)";
+      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${roll}deg)`;
     }else if(directional&&typeof directional==="object"){
       this.player.direction=directionForHeading(this.player.rotation,this.player.direction,{hysteresis:4});
       const nextSrc=resolveDirectionalSource(directional,this.player.direction,this.config.player?.src||"");
@@ -1249,13 +1277,13 @@ export class WorldRuntime {
       this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
       this.playerEl.style.backgroundSize="contain";
       this.playerEl.style.backgroundPosition="center";
-      this.playerEl.style.transform="translate(-50%,-50%)";
+      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${roll}deg)`;
     }else{
       const safe=String(this.config.player?.src||"").replace(/["\\]/g,"");
       this.playerEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
       this.playerEl.style.backgroundSize="contain";
       this.playerEl.style.backgroundPosition="center";
-      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation}deg)`;
+      this.playerEl.style.transform=`translate(-50%,-50%) rotate(${this.player.rotation+roll}deg)`;
     }
   }
 
@@ -1821,7 +1849,7 @@ export class WorldRuntime {
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
     if(this.mode==="play")this.updatePlayer(dt);
-    this.updatePlayerVisual();
+    this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time);
     this.updateCamera(false,dt);
