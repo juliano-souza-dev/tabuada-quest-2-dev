@@ -1,0 +1,83 @@
+export const WORLD_ENVIRONMENT_PRESETS=Object.freeze({
+  day:Object.freeze({
+    label:"Dia",
+    weather:"none",
+    ocean:Object.freeze({
+      preset:"adventure",speed:28,directionX:.82,directionY:.32,swell:28,tileSize:720,
+      brightness:108,saturation:112,contrast:104,tintR:100,tintG:100,tintB:100,
+      distortion:46,waveFrequencyA:18,waveFrequencyB:15,waveMix:34,foamMix:20,
+      sparkleIntensity:42,sparkleSharpness:18
+    }),
+    ship:Object.freeze({
+      wakeActive:true,wakeOpacity:.72,wakeWidth:54,wakeLength:150,
+      shadowActive:true,shadowOpacity:.30,shadowBlur:9,shadowOffset:12,
+      idleBalanceActive:true,idleRoll:2.4,idleHeave:3.2,idlePeriod:3600
+    })
+  }),
+  night:Object.freeze({
+    label:"Noite",
+    weather:"none",
+    ocean:Object.freeze({
+      preset:"adventure",speed:22,directionX:.72,directionY:.24,swell:24,tileSize:740,
+      brightness:66,saturation:76,contrast:116,tintR:72,tintG:86,tintB:118,
+      distortion:44,waveFrequencyA:18,waveFrequencyB:15,waveMix:32,foamMix:13,
+      sparkleIntensity:15,sparkleSharpness:28
+    }),
+    ship:Object.freeze({
+      wakeActive:true,wakeOpacity:.58,wakeWidth:50,wakeLength:145,
+      shadowActive:true,shadowOpacity:.46,shadowBlur:12,shadowOffset:14,
+      idleBalanceActive:true,idleRoll:2.8,idleHeave:3.8,idlePeriod:3900
+    })
+  }),
+  storm:Object.freeze({
+    label:"Tempestade",
+    weather:"rain",
+    ocean:Object.freeze({
+      preset:"storm",speed:68,directionX:1,directionY:.68,swell:82,tileSize:640,
+      brightness:72,saturation:70,contrast:124,tintR:78,tintG:90,tintB:106,
+      distortion:86,waveFrequencyA:24,waveFrequencyB:20,waveMix:56,foamMix:48,
+      sparkleIntensity:8,sparkleSharpness:32
+    }),
+    ship:Object.freeze({
+      wakeActive:true,wakeOpacity:.92,wakeWidth:82,wakeLength:235,
+      shadowActive:true,shadowOpacity:.52,shadowBlur:15,shadowOffset:18,
+      idleBalanceActive:true,idleRoll:6.8,idleHeave:9.5,idlePeriod:1900
+    })
+  }),
+  snow:Object.freeze({
+    label:"Nevando",
+    weather:"snow",
+    ocean:Object.freeze({
+      preset:"calm",speed:15,directionX:.42,directionY:.16,swell:18,tileSize:780,
+      brightness:108,saturation:62,contrast:96,tintR:90,tintG:101,tintB:116,
+      distortion:32,waveFrequencyA:17,waveFrequencyB:14,waveMix:24,foamMix:24,
+      sparkleIntensity:32,sparkleSharpness:20
+    }),
+    ship:Object.freeze({
+      wakeActive:true,wakeOpacity:.62,wakeWidth:50,wakeLength:135,
+      shadowActive:true,shadowOpacity:.22,shadowBlur:14,shadowOffset:10,
+      idleBalanceActive:true,idleRoll:2.0,idleHeave:2.8,idlePeriod:4200
+    })
+  }),
+  halloween:Object.freeze({
+    label:"Halloween",
+    weather:"halloween",
+    ocean:Object.freeze({
+      preset:"adventure",speed:30,directionX:.76,directionY:.28,swell:34,tileSize:720,
+      brightness:80,saturation:132,contrast:120,tintR:116,tintG:72,tintB:108,
+      distortion:54,waveFrequencyA:19,waveFrequencyB:16,waveMix:38,foamMix:19,
+      sparkleIntensity:24,sparkleSharpness:24
+    }),
+    ship:Object.freeze({
+      wakeActive:true,wakeOpacity:.74,wakeWidth:60,wakeLength:175,
+      shadowActive:true,shadowOpacity:.50,shadowBlur:16,shadowOffset:14,
+      idleBalanceActive:true,idleRoll:3.4,idleHeave:4.6,idlePeriod:3100
+    })
+  })
+});
+
+export const ENVIRONMENT_PRESET_IDS=Object.freeze(Object.keys(WORLD_ENVIRONMENT_PRESETS));
+
+export function environmentPreset(id="day"){
+  return WORLD_ENVIRONMENT_PRESETS[id]||WORLD_ENVIRONMENT_PRESETS.day;
+}
