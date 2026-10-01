@@ -100,7 +100,10 @@ const normalizeLayer=(input={},defaults,background)=>({
 export function normalizeOceanConfig(input={}){
   const preset=OCEAN_PRESETS[input.preset]?input.preset:"adventure";
   const defaults=OCEAN_PRESETS[preset];
-  const background=String(input.background||"./assets/backgrounds/scene-ocean.webp");
+  const rawBackground=String(input.background??"").trim();
+  const background=(rawBackground==="none"||rawBackground==="__none__")
+    ?"none"
+    :(rawBackground||"./assets/backgrounds/scene-ocean.webp");
   const layersInput=input.layers||{};
   return {
     active: input.active!==false,
