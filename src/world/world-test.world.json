@@ -577,6 +577,7 @@
       "location",
       "island",
       "ship"
-    ]
+    ],
+    "frameAsset": "./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"
   }
 }
