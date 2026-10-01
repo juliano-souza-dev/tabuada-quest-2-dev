@@ -76,10 +76,23 @@ export class GameRuntime {
     const visibility=()=>{if(document.visibilityState==="hidden")save()};
     const authReady=event=>{
       const state=event?.detail?.state;
-      if(!state)return;
-      this.importAccountState(state);
-      if(this.started&&this.current){
-        const route=this.routeSnapshot();
+      const wasLogin=this.current?.kind==="scene"&&this.current.id==="login";
+      let accountRoute=null;
+
+      if(state){
+        const game=state.game&&typeof state.game==="object"?state.game:{};
+        const runtime=game.runtime&&typeof game.runtime==="object"
+          ?game.runtime
+          :(state.schema==="tq.game-state"?state:null);
+        accountRoute=runtime?.current?clone(runtime.current):null;
+        if(accountRoute?.kind==="scene"&&accountRoute.id==="login")accountRoute=null;
+        this.importAccountState(state);
+      }
+
+      if(this.started){
+        const route=accountRoute
+          ||(wasLogin?clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"}):this.routeSnapshot());
+        if(!route)return;
         queueMicrotask(()=>{
           const task=route.kind==="world"
             ?this.openWorld(route,{pushHistory:false})
