@@ -155,7 +155,11 @@
 .tq-world-minimap{position:fixed;right:max(12px,env(safe-area-inset-right));top:max(72px,calc(env(safe-area-inset-top) + 58px));z-index:540;width:148px;height:148px;border:1px solid rgba(216,244,255,.56);border-radius:18px;background:rgba(3,23,35,.78);box-shadow:0 10px 30px rgba(0,0,0,.38);overflow:hidden;pointer-events:none;backdrop-filter:blur(4px)}
 .tq-world-minimap[hidden]{display:none!important}
 .tq-world-minimap canvas{display:block;width:100%;height:100%}
-.tq-world-minimap.has-frame::after{content:"";position:absolute;inset:0;z-index:3;background-image:var(--tq-world-minimap-frame);background-repeat:no-repeat;background-position:center;background-size:100% 100%;pointer-events:none}
+.tq-world-minimap__frame{position:absolute;inset:0;z-index:4;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.tq-world-minimap__frame[hidden]{display:none!important}
+.tq-world-minimap.has-frame{border:0;border-radius:0;background:transparent;box-shadow:none;overflow:visible;backdrop-filter:none}
+.tq-world-minimap.has-frame canvas{position:absolute;left:24%;top:24%;width:52%;height:52%;border-radius:50%;background:rgba(5,38,55,.9);overflow:hidden}
+.tq-world-minimap.has-frame .tq-world-minimap__north{display:none}
 .tq-world-minimap__north{position:absolute;left:9px;top:7px;display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:rgba(2,18,28,.82);border:1px solid rgba(255,255,255,.42);color:#fff;font:900 11px/1 system-ui;box-shadow:0 2px 7px rgba(0,0,0,.35)}
 .tq-world-host.is-editor .tq-world-minimap{display:none!important}
 @media(max-width:430px){
