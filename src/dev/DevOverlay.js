@@ -523,9 +523,15 @@ export class DevOverlay {
       type:"ocean",
       width,
       height,
+      playerSpawn:{
+        x:width/2,
+        y:Math.max(120,height-420),
+        direction:"n"
+      },
       player:{
         x:width/2,
         y:Math.max(120,height-420),
+        direction:"n",
         src:"./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
       },
       ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
