@@ -334,6 +334,39 @@ export class GameRuntime {
     };
   }
 
+  shipRuntimeProfile(ship,role="player"){
+    if(!ship||typeof ship!=="object")return {};
+    const preferred=role==="npc"?ship.npc:ship.player;
+    const fallback=ship.runtime||ship.player||ship.npc;
+    return preferred&&typeof preferred==="object"
+      ?clone(preferred)
+      :(fallback&&typeof fallback==="object"?clone(fallback):{});
+  }
+
+  resolveWorldShipEntity(entity){
+    const legacy=entity&&typeof entity==="object"?clone(entity):{};
+    if(legacy.type!=="ship"||!legacy.shipId)return legacy;
+    const ship=this.shipEntry(String(legacy.shipId));
+    if(!ship||ship.available===false)return legacy;
+    const role=String(legacy.role||ship.type||"npc").toLowerCase()==="player"?"player":"npc";
+    const profile=this.shipRuntimeProfile(ship,role);
+    return {
+      ...profile,
+      ...legacy,
+      shipId:ship.id,
+      role,
+      shipName:ship.name||legacy.shipName||legacy.label||ship.id,
+      sprite:legacy.sprite||profile.sprite||null,
+      combatSprite:legacy.combatSprite||profile.combatSprite||null
+    };
+  }
+
+  resolveWorldShips(world){
+    const entities=Array.isArray(world?.entities)?world.entities:[];
+    world.entities=entities.map(entity=>this.resolveWorldShipEntity(entity));
+    return world;
+  }
+
   sceneEntry(ref){
     if(ref&&typeof ref==="object"){
       if(ref.path)return {...ref};
@@ -494,7 +527,7 @@ export class GameRuntime {
     }
 
     const sourceWorld=await this.loadJson(entry.path);
-    const world=clone(sourceWorld);
+    const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
     const restored=state||this.worldStates[worldId]||null;
