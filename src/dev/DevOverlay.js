@@ -227,8 +227,32 @@ export class DevOverlay {
       console.warn("Action catalog load failed",error);
       this.actionCatalog={schema:"tq.action-catalog",version:1,actions:[]};
     }
+    this.registerDevFlowActions();
     this.renderFlow();
     return this.actionCatalog;
+  }
+
+  registerDevFlowActions(){
+    if(!this.runtime?.registerAction)return;
+    for(const action of this.actionDefinitions()){
+      try{
+        this.runtime.registerAction(action.id,({node})=>{
+          const params={};
+          for(const param of action.params||[])params[param.key]=node?.[param.key]??"";
+          if(action.id==="open-scene"&&params.sceneId)return this.openScene(params.sceneId);
+          if(action.id==="enter-region"&&params.regionId)return this.openWorld(params.regionId,{preserveMode:true,preservePlayer:true});
+          if(action.id==="resume-game"){
+            const current=this.worldEditor?.entry?.id;
+            if(current)return this.openWorld(current,{preserveMode:true,preservePlayer:true});
+            const first=this.allWorldEntries()[0];
+            if(first)return this.openWorld(first.id,{preserveMode:true,preservePlayer:true});
+          }
+          if(action.id==="go-back"){
+            if(this.workspace==="world"||this.workspace==="scene-linked")return this.exitWorldWorkspace({restoreScene:true});
+          }
+        },{label:action.name||action.id});
+      }catch{}
+    }
   }
 
   actionDefinitions(){
@@ -2701,7 +2725,15 @@ export class DevOverlay {
           ...(definition?.animation?.controls||[]).map(control=>({compositionControl:control,definition}))
         ]
       },
-      {id:"behavior",title:"Comportamento",fields:[field("action","Ação","runtimeAction"),field("locked","Locked","checkbox")]},
+      {id:"behavior",title:"Comportamento",fields:[
+        field("action","Ação","runtimeAction"),
+        ...((this.actionDefinition(node.action)?.params||[]).map(param=>{
+          if(param.type==="scene")return field(param.key,param.label||param.key,"actionScene");
+          if(param.type==="region")return field(param.key,param.label||param.key,"actionRegion");
+          return field(param.key,param.label||param.key,"text");
+        })),
+        field("locked","Locked","checkbox")
+      ]},
       {id:"danger",title:"Nó",fields:[field("__delete","Excluir nó","delete")]}
     ];
     return sections.filter(section=>section.fields.length);
@@ -2760,6 +2792,16 @@ export class DevOverlay {
       const current=String(node[key]||"");
       const options=(this.runtime.listActions?.()||[]).map(action=>'<option value="'+this.escapeHtml(action.id)+'" '+(current===action.id?'selected':'')+'>'+this.escapeHtml(action.label)+'</option>').join("");
       return '<label class="tq-field"><span>'+label+'</span><select data-prop="'+key+'"><option value="">Sem ação</option>'+options+'</select></label>';
+    }
+    if(type==="actionScene"){
+      const current=String(node[key]||"");
+      const options=this.allSceneEntries().map(scene=>'<option value="'+this.escapeHtml(scene.id)+'" '+(current===scene.id?'selected':'')+'>'+this.escapeHtml(scene.name||scene.id)+'</option>').join("");
+      return '<label class="tq-field"><span>'+label+'</span><select data-prop="'+key+'"><option value="">Selecione</option>'+options+'</select></label>';
+    }
+    if(type==="actionRegion"){
+      const current=String(node[key]||"");
+      const options=this.allWorldEntries().map(region=>'<option value="'+this.escapeHtml(region.id)+'" '+(current===region.id?'selected':'')+'>'+this.escapeHtml(region.name||region.id)+'</option>').join("");
+      return '<label class="tq-field"><span>'+label+'</span><select data-prop="'+key+'"><option value="">Selecione</option>'+options+'</select></label>';
     }
     if(type==="compositionType"){
       const current=node[key]??"";
@@ -3023,6 +3065,13 @@ export class DevOverlay {
     let value=input.type==="checkbox"?input.checked:input.type==="number"?Number(input.value):input.value;
     if(key==="compositionType"&&!value)value=null;
     if(key==="action"&&!value)value=null;
+
+    if(key==="action"){
+      this.runtime.updateNode(this.selected.id,{action:value},true);
+      this.selected=this.runtime.nodes.get(this.selected.id).node;
+      this.renderInspector();
+      return;
+    }
 
     if(key==="compositionType"){
       const patch={compositionType:value,compositionSelection:"manual"};
