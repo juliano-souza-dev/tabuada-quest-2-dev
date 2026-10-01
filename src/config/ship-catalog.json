@@ -260,6 +260,39 @@
         }
       },
       "type": "player"
+    },
+    {
+      "id": "corsario-colombo",
+      "name": "Corsário Colombo",
+      "available": true,
+      "type": "npc",
+      "npc": {
+        "width": 250,
+        "height": 250,
+        "src": "./assets/ships/el-colombo.webp"
+      }
+    },
+    {
+      "id": "pirata-enseada",
+      "name": "Pirata da Enseada",
+      "available": true,
+      "type": "npc",
+      "npc": {
+        "width": 250,
+        "height": 250,
+        "src": "./assets/ships/navio_pirata_tabuadas.webp"
+      }
+    },
+    {
+      "id": "pirata-halloween-npc",
+      "name": "Pirata Halloween",
+      "available": true,
+      "type": "npc",
+      "npc": {
+        "width": 250,
+        "height": 250,
+        "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+      }
     }
   ],
   "shipTypes": [
