@@ -163,27 +163,7 @@ export class ShipEditor{
         value.animationGroups[key]=["fireRight","fireLeft","hit","critical","defeat"].includes(key)?"combat":"navigation";
       }
     }
-    if(profile.combatSprite&&!Object.keys(value.animations).some(key=>value.animationGroups[key]==="combat")){
-      value.animations.idle={
-        frameMs:140,
-        loop:true,
-        cellWidth:Number(profile.combatSprite.frameWidth)||400,
-        cellHeight:Number(profile.combatSprite.frameHeight)||400,
-        frames:[Number(profile.combatSprite.idleFrame)||0]
-      };
-      value.animationGroups.idle="combat";
-      for(const [key,legacy] of Object.entries(profile.combatSprite.animations||{})){
-        value.animations[key]={
-          frameMs:Number(legacy.frameMs)||135,
-          loop:legacy.loop===true,
-          cellWidth:Number(profile.combatSprite.frameWidth)||400,
-          cellHeight:Number(profile.combatSprite.frameHeight)||400,
-          frames:Array.isArray(legacy.frames)?legacy.frames.map(Number).filter(Number.isFinite):[]
-        };
-        value.animationGroups[key]="combat";
-      }
-      value.combat.legacySprite=clone(profile.combatSprite);
-    }
+
     return value;
   }
 
@@ -961,17 +941,10 @@ export class ShipEditor{
     if(!ship)return;
     const output=this.normalizeShip(ship);
     output.navigation={...output.navigation,sprite:clone(output.navigation.sprite||{})};
-    output.combat={...output.combat,animations:{}};
-    if(output.spriteMode==="split"){
-      output.combat.sprite=clone(output.combat.sprite||{});
-      output.combat.useNavigationAtlas=false;
-    }else{
-      output.combat.useNavigationAtlas=true;
-      delete output.combat.sprite;
-    }
-    for(const [key,animation] of Object.entries(output.animations||{})){
-      if(output.animationGroups?.[key]==="combat")output.combat.animations[key]=clone(animation);
-    }
+    output.combat={...output.combat,useNavigationAtlas:false};
+    delete output.combat.sprite;
+    delete output.combat.compiled;
+    delete output.combat.legacySprite;
     delete output.animations;
     delete output.animationGroups;
     delete output.player;
