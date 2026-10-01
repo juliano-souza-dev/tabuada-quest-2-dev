@@ -4,7 +4,7 @@ export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
     this.assetTree=null;this.assetDirectoryPath="assets";this.assetNodeIndex=new Map();this.assetByPath=new Map();this.assetPickTarget=null;
-    this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];
+    this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];this.actionCatalog=null;
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
@@ -17,7 +17,7 @@ export class DevOverlay {
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
     this.worldAtlasSelectionMode=null;
-    try{this.sceneGroupOpen=new Set(JSON.parse(sessionStorage.getItem(this.sceneGroupStorageKey)||"[]"))}catch{this.sceneGroupOpen=new Set()}
+    this.sceneGroupOpen=new Set();
   }
   mount(){
     this.el=document.createElement("aside");this.el.className="tq-dev";
@@ -30,7 +30,8 @@ export class DevOverlay {
         <button data-export>⇩ <span>JSON</span></button>
         <button data-mold>▣ <span>Molde</span></button>
         <button data-scenes>☷ <span>Cenas</span></button>
-        <button data-worlds>🌊 <span>Mundos</span></button>
+        <button data-worlds>🗺️ <span>Regiões</span></button>
+        <button data-flow>⌁ <span>Fluxo</span></button>
         <button data-ships>🚢 <span>Navios</span></button>
         <button data-assets>▦ <span>Assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
@@ -52,12 +53,12 @@ export class DevOverlay {
         </div>
       </section>
       <section class="tq-dev__worlds" hidden>
-        <header><div><strong>Mundos</strong><small>Oceanos e áreas navegáveis</small></div><button data-worlds-close aria-label="Fechar">×</button></header>
+        <header><div><strong>Regiões</strong><small>Áreas navegáveis e conexões do jogo</small></div><button data-worlds-close aria-label="Fechar">×</button></header>
         <div class="tq-worlds__body">
           <div class="tq-world-list" data-worlds-list></div>
-          <button type="button" class="tq-worlds__create-open" data-world-create-open>＋ Criar novo oceano</button>
+          <button type="button" class="tq-worlds__create-open" data-world-create-open>＋ Criar nova região</button>
           <form class="tq-worlds__create" data-world-create-form hidden>
-            <strong>Criar novo oceano</strong>
+            <strong>Criar nova região</strong>
             <label><span>Nome</span><input data-world-create-name type="text" value="Oceano Inicial" autocomplete="off"></label>
             <label><span>ID</span><input data-world-create-id type="text" value="oceano-inicial" autocomplete="off"></label>
             <div class="tq-worlds__create-grid">
@@ -70,7 +71,14 @@ export class DevOverlay {
             <div class="tq-scenes__create-actions"><button type="button" data-world-create-cancel>Cancelar</button><button type="submit" class="is-primary">Criar oceano</button></div>
           </form>
           <div class="tq-worlds__actions" data-worlds-actions></div>
-          <div class="tq-worlds__hint">Crie oceanos, ajuste o movimento da água em Config → Oceano, adicione entidades por Assets e teste tudo no Play.</div>
+          <div class="tq-worlds__hint">Crie regiões, configure o oceano, conecte destinos e teste o fluxo no Play.</div>
+        </div>
+      </section>
+      <section class="tq-dev__flow" hidden>
+        <header><div><strong>Fluxo</strong><small>Cenas, ações e regiões conectadas</small></div><button data-flow-close aria-label="Fechar">×</button></header>
+        <div class="tq-flow__body">
+          <div class="tq-flow__legend"><span>▣ Cena</span><span>⚙ Ação</span><span>🌊 Região</span></div>
+          <div class="tq-flow__canvas" data-flow-canvas></div>
         </div>
       </section>
       <section class="tq-dev__assets" hidden>
@@ -91,10 +99,12 @@ export class DevOverlay {
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportScene());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
-    this.el.querySelector("[data-scenes]").addEventListener("click",()=>this.toggleScenes(true));
+    this.el.querySelector("[data-scenes]").addEventListener("click",()=>this.toggleScenes(this.el.querySelector(".tq-dev__scenes").hidden));
     this.el.querySelector("[data-scenes-close]").addEventListener("click",()=>this.toggleScenes(false));
-    this.el.querySelector("[data-worlds]").addEventListener("click",()=>this.toggleWorlds(true));
+    this.el.querySelector("[data-worlds]").addEventListener("click",()=>this.toggleWorlds(this.el.querySelector(".tq-dev__worlds").hidden));
     this.el.querySelector("[data-worlds-close]").addEventListener("click",()=>this.toggleWorlds(false));
+    this.el.querySelector("[data-flow]").addEventListener("click",()=>this.toggleFlow(this.el.querySelector(".tq-dev__flow").hidden));
+    this.el.querySelector("[data-flow-close]").addEventListener("click",()=>this.toggleFlow(false));
     this.el.querySelector("[data-world-create-open]").addEventListener("click",()=>this.showCreateWorldForm(true));
     this.el.querySelector("[data-world-create-cancel]").addEventListener("click",()=>this.showCreateWorldForm(false));
     this.el.querySelector("[data-world-create-form]").addEventListener("submit",event=>{event.preventDefault();this.createWorldFromForm()});
@@ -110,8 +120,8 @@ export class DevOverlay {
     this.el.querySelector("[data-scene-context]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-event]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-name]").addEventListener("input",event=>{event.currentTarget.dataset.manual="true"});
-    this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(true));
-    this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(true));
+    this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(!this.shipEditor?.visible));
+    this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
@@ -120,6 +130,7 @@ export class DevOverlay {
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
     this.worldCatalogReady=this.loadWorldCatalog();
+    this.actionCatalogReady=this.loadActionCatalog();
     this.mountMold();
     this.enableToolbarDrag();
     this.enablePanelDrag();
@@ -158,6 +169,122 @@ export class DevOverlay {
       const target=e.detail?.entity?.destinationWorldId;
       if(target)this.openWorld(target,{preserveMode:true,preservePlayer:true});
     });
+  }
+
+  closeToolPanels(except=""){
+    const panels={
+      scenes:".tq-dev__scenes",
+      regions:".tq-dev__worlds",
+      flow:".tq-dev__flow",
+      assets:".tq-dev__assets",
+      config:".tq-dev__panel"
+    };
+    for(const [key,selector] of Object.entries(panels)){
+      if(key===except)continue;
+      const panel=this.el?.querySelector(selector);
+      if(panel)panel.hidden=true;
+    }
+    if(except!=="ships")this.shipEditor?.setVisible(false);
+    if(except!=="assets")this.assetPickTarget=null;
+  }
+
+  bindCollapsedAreas(container){
+    if(!container)return;
+    container.querySelectorAll("[data-area-toggle]").forEach(button=>{
+      const body=button.nextElementSibling;
+      if(!body)return;
+      body.hidden=true;
+      button.setAttribute("aria-expanded","false");
+      const caret=button.querySelector("span");
+      if(caret)caret.textContent="▸";
+      button.addEventListener("click",()=>{
+        body.hidden=!body.hidden;
+        button.setAttribute("aria-expanded",String(!body.hidden));
+        if(caret)caret.textContent=body.hidden?"▸":"▾";
+      });
+    });
+  }
+
+  async loadActionCatalog(){
+    try{
+      const response=await fetch("./src/config/action-catalog.json?v=20261001-1828",{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      this.actionCatalog=await response.json();
+    }catch(error){
+      console.warn("Action catalog load failed",error);
+      this.actionCatalog={schema:"tq.action-catalog",version:1,actions:[]};
+    }
+    this.renderFlow();
+    return this.actionCatalog;
+  }
+
+  actionDefinitions(){
+    return Array.isArray(this.actionCatalog?.actions)?this.actionCatalog.actions:[];
+  }
+
+  actionDefinition(id){
+    return this.actionDefinitions().find(action=>action.id===String(id||""))||null;
+  }
+
+  async flowRegionLinks(){
+    const links=[];
+    for(const entry of this.allWorldEntries()){
+      const world=await this.worldDocument(entry);
+      if(!world)continue;
+      for(const entity of Array.isArray(world.entities)?world.entities:[]){
+        const actionId=String(entity?.interaction?.actionId||"");
+        const params=entity?.interaction?.params||{};
+        if(actionId==="enter-region"&&params.regionId){
+          links.push({fromKind:"region",fromId:entry.id,actionId,toKind:"region",toId:String(params.regionId),label:entity.label||entity.id||"region-exit"});
+        }else if(entity?.type==="region-exit"&&entity.destinationWorldId){
+          links.push({fromKind:"region",fromId:entry.id,actionId:"enter-region",toKind:"region",toId:String(entity.destinationWorldId),label:entity.label||entity.id||"region-exit"});
+        }else if(actionId==="open-scene"&&params.sceneId){
+          links.push({fromKind:"region",fromId:entry.id,actionId,toKind:"scene",toId:String(params.sceneId),label:entity.label||entity.id||"objeto"});
+        }else if(entity?.scene){
+          links.push({fromKind:"region",fromId:entry.id,actionId:"open-scene",toKind:"scene",toId:String(entity.scene),label:entity.label||entity.id||"objeto"});
+        }
+      }
+    }
+    return links;
+  }
+
+  async renderFlow(){
+    const canvas=this.el?.querySelector("[data-flow-canvas]");
+    if(!canvas)return;
+    const scenes=this.allSceneEntries();
+    const regions=this.allWorldEntries();
+    const actions=this.actionDefinitions();
+    const links=await this.flowRegionLinks();
+
+    const card=(kind,id,name,meta="")=>
+      '<article class="tq-flow-card tq-flow-card--'+kind+'"><small>'+kind.toUpperCase()+'</small><b>'+this.escapeHtml(name||id)+'</b><span>'+this.escapeHtml(id)+'</span>'+(meta?'<em>'+this.escapeHtml(meta)+'</em>':'')+'</article>';
+
+    const connections=links.length?links.map(link=>{
+      const from=link.fromKind==="region"?(regions.find(item=>item.id===link.fromId)?.name||link.fromId):link.fromId;
+      const to=link.toKind==="region"
+        ?(regions.find(item=>item.id===link.toId)?.name||link.toId)
+        :(scenes.find(item=>item.id===link.toId)?.name||link.toId);
+      const action=this.actionDefinition(link.actionId)?.name||link.actionId;
+      return '<div class="tq-flow-link"><span>'+this.escapeHtml(from)+'</span><b>→ '+this.escapeHtml(action)+' →</b><span>'+this.escapeHtml(to)+'</span><small>'+this.escapeHtml(link.label||"")+'</small></div>';
+    }).join(""):'<div class="tq-flow-empty">Nenhuma conexão configurada ainda.</div>';
+
+    canvas.innerHTML=
+      '<div class="tq-flow-columns">'+
+        '<section><h3>▣ Cenas</h3>'+scenes.map(scene=>card("scene",scene.id,scene.name||scene.id,scene.context||"")).join("")+'</section>'+
+        '<section><h3>⚙ Ações</h3>'+actions.map(action=>card("action",action.id,action.name||action.id,action.category||"")).join("")+'</section>'+
+        '<section><h3>🌊 Regiões</h3>'+regions.map(region=>card("region",region.id,region.name||region.id,region.type||"ocean")).join("")+'</section>'+
+      '</div>'+
+      '<section class="tq-flow-links"><h3>Conexões atuais</h3>'+connections+'</section>';
+  }
+
+  toggleFlow(show){
+    const panel=this.el.querySelector(".tq-dev__flow");
+    if(!panel)return;
+    if(show){
+      this.closeToolPanels("flow");
+      panel.hidden=false;
+      Promise.all([this.sceneCatalogReady,this.worldCatalogReady,this.actionCatalogReady]).then(()=>this.renderFlow());
+    }else panel.hidden=true;
   }
 
   resolveWorldShipProfile(shipId,role="npc"){
@@ -233,9 +360,7 @@ export class DevOverlay {
         this.sceneCatalog=await response.json();
       }
       this.loadLocalScenes();
-      const current=this.runtime.scene?.id;
-      const currentEntry=this.allSceneEntries().find(scene=>scene.id===current);
-      if(currentEntry&&!this.sceneGroupOpen.size)this.sceneGroupOpen.add(currentEntry.screenId);
+      this.sceneGroupOpen.clear();
       this.renderScenes();
     }catch(error){
       console.warn("Scene catalog load failed",error);
@@ -303,14 +428,11 @@ export class DevOverlay {
 
   toggleScenes(show){
     const panel=this.el.querySelector(".tq-dev__scenes");
-    panel.hidden=!show;
     if(show){
-      this.el.querySelector(".tq-dev__assets").hidden=true;
-      this.shipEditor.setVisible(false);
-      this.el.querySelector(".tq-dev__panel").hidden=true;
-      this.el.querySelector(".tq-dev__worlds").hidden=true;
+      this.closeToolPanels("scenes");
+      panel.hidden=false;
       this.renderScenes();
-    }
+    }else panel.hidden=true;
   }
 
   showCreateSceneForm(show){
@@ -406,7 +528,7 @@ export class DevOverlay {
       if(local)this.runtime.loadScene(local.scene);
       else if(entry.path)await this.runtime.load(entry.path);
       else return;
-      this.sceneGroupOpen.add(entry.screenId);
+      this.sceneGroupOpen.clear();
       this.saveSceneGroupState();
       this.selected=null;
       this.toggleScenes(false);
@@ -537,7 +659,7 @@ export class DevOverlay {
     const links=await this.worldInboundLinks(id);
     if(links.length){
       const description=links.map(link=>"- "+link.worldName+" ("+link.worldId+") · "+link.entityLabel).join("\n");
-      alert("Este mundo não pode ser apagado porque ainda recebe link de acesso:\n\n"+description+"\n\nRemova ou altere esses region exits primeiro.");
+      alert("Esta região não pode ser apagada porque ainda recebe link de acesso:\n\n"+description+"\n\nRemova ou altere esses region exits primeiro.");
       return false;
     }
 
@@ -546,7 +668,7 @@ export class DevOverlay {
       return false;
     }
 
-    const confirmed=confirm('Apagar definitivamente o mundo "'+(entry.name||entry.id)+'"?');
+    const confirmed=confirm('Apagar definitivamente a região "'+(entry.name||entry.id)+'"?');
     if(!confirmed)return false;
 
     this.localWorlds=this.localWorlds.filter(item=>item.entry.id!==id);
@@ -573,9 +695,9 @@ export class DevOverlay {
           '<span><b>'+this.escapeHtml(world.name||world.id)+'</b><small>'+this.escapeHtml(world.type||"ocean")+' · '+this.escapeHtml(world.id)+(world.local?' · LOCAL':'')+'</small></span>'+
           '<strong>'+(world.id===current?'ABERTO':'EDITAR')+'</strong>'+
         '</button>'+
-        '<button type="button" class="tq-world-item__delete" data-world-delete="'+this.escapeHtml(world.id)+'" '+(world.local?'':'disabled')+' title="'+(world.local?'Apagar mundo':'Mundo versionado no repositório')+'">🗑</button>'+
+        '<button type="button" class="tq-world-item__delete" data-world-delete="'+this.escapeHtml(world.id)+'" '+(world.local?'':'disabled')+' title="'+(world.local?'Apagar mundo':'Região versionada no repositório')+'">🗑</button>'+
       '</div>'
-    ).join(""):'<div class="tq-scenes__empty">Nenhum mundo cadastrado.</div>';
+    ).join(""):'<div class="tq-scenes__empty">Nenhuma região cadastrada.</div>';
 
     list.querySelectorAll("[data-world-open]").forEach(button=>button.addEventListener("click",()=>this.openWorld(button.dataset.worldOpen)));
     list.querySelectorAll("[data-world-delete]").forEach(button=>button.addEventListener("click",()=>this.deleteWorld(button.dataset.worldDelete)));
@@ -603,15 +725,12 @@ export class DevOverlay {
 
   toggleWorlds(show){
     const panel=this.el.querySelector(".tq-dev__worlds");
-    panel.hidden=!show;
     if(show){
-      this.el.querySelector(".tq-dev__assets").hidden=true;
-      this.shipEditor.setVisible(false);
-      this.el.querySelector(".tq-dev__scenes").hidden=true;
-      this.el.querySelector(".tq-dev__panel").hidden=true;
+      this.closeToolPanels("regions");
+      panel.hidden=false;
       this.renderWorlds();
       if(!this.el.querySelector("[data-world-create-form]").hidden)this.populateCreateWorldBackgrounds();
-    }
+    }else panel.hidden=true;
   }
 
   populateCreateWorldBackgrounds(){
@@ -654,7 +773,7 @@ export class DevOverlay {
       return;
     }
     if(this.allWorldEntries().some(world=>world.id===id)){
-      error.textContent="Já existe um mundo com este ID.";
+      error.textContent="Já existe uma região com este ID.";
       error.hidden=false;
       return;
     }
@@ -739,7 +858,7 @@ export class DevOverlay {
     }catch(error){
       console.error("World open failed",error);
       const list=this.el.querySelector("[data-worlds-list]");
-      if(list)list.insertAdjacentHTML("afterbegin",'<div class="tq-scenes__error">Falha ao abrir o mundo.</div>');
+      if(list)list.insertAdjacentHTML("afterbegin",'<div class="tq-scenes__error">Falha ao abrir a região.</div>');
     }
   }
 
@@ -804,7 +923,7 @@ export class DevOverlay {
       const ocean=this.worldEditor?.getOcean();
       if(!world||!ocean){
         title.textContent="Oceano";
-        content.innerHTML='<div class="tq-dev__empty">Abra um mundo para configurar o oceano.</div>';
+        content.innerHTML='<div class="tq-dev__empty">Abra um região para configurar o oceano.</div>';
         return;
       }
 
@@ -916,13 +1035,13 @@ export class DevOverlay {
       title.textContent=(world.name||world.id)+" · oceano";
       content.innerHTML=
         '<div class="tq-inspector">'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Mundo</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Mundo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Nome</span><input data-world-root-prop="name" type="text" value="'+this.escapeHtml(world.name||"")+'"></label>'+
             '<label class="tq-world-field"><span>ID</span><input value="'+this.escapeHtml(world.id)+'" readonly></label>'+
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
-          '<section class="tq-config-area tq-config-area--npc-map"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🚢 NPCs do mapa</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area tq-config-area--npc-map"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🚢 NPCs do mapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-field tq-field--check"><span>NPCs ativos neste mundo</span><input data-npc-enabled type="checkbox" '+(npcPopulation.enabled===true?'checked':'')+'></label>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
@@ -934,18 +1053,18 @@ export class DevOverlay {
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
             '<small class="tq-world-editor-note">Os NPCs são exclusivos deste mundo. Eles surgem em pontos pseudoaleatórios e, nesta primeira versão, navegam em linha reta. IA, rotas, desvio de ilhas e perseguição ficam para a próxima etapa.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🌊 Fundo do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
             '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao mundo atual e pode ser diferente em cada região.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Câmera do jogo</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
               '<input data-world-camera-prop="playZoom" type="range" min="0.55" max="1.40" step="0.01" value="'+cameraPlayZoom+'">'+
             '</label>'+
             '<div class="tq-world-camera-scale"><small>0.55x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
             '<small class="tq-world-editor-note">Esse valor é salvo neste oceano. Afeta somente o enquadramento visual no Play, sem mudar velocidade, física ou colisões.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Minimapa</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Minimapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-field tq-field--check"><span>Minimapa ativo</span><input data-world-minimap-prop="enabled" type="checkbox" '+(world.minimap?.enabled!==false?'checked':'')+'></label>'+
             '<label class="tq-world-field"><span>Moldura</span><select data-world-minimap-prop="frameAsset">'+
               '<option value="./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp" '+(String(world.minimap?.frameAsset||"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp")==="./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"?'selected':'')+'>Pirata padrão</option>'+
@@ -957,11 +1076,11 @@ export class DevOverlay {
             '<label class="tq-field tq-field--check"><span>Mostrar área da câmera</span><input data-world-minimap-prop="showCamera" type="checkbox" '+(world.minimap?.showCamera!==false?'checked':'')+'></label>'+
             '<small class="tq-world-editor-note">A moldura padrão é a versão pirata normal. Halloween só é usada quando este oceano escolher explicitamente essa opção.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Mensagens de colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Mensagens de colisão</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Asset da mensagem</span><input data-world-ui-prop="interactionMessageAsset" type="text" value="'+this.escapeHtml(world.ui?.interactionMessageAsset||"")+'" placeholder="./assets/..."></label>'+
             '<small class="tq-world-editor-note">Se houver um asset, a mensagem de colisão é escrita sobre ele. Se ficar vazio, o jogo usa uma caixa de texto padrão.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Área jogável</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Área jogável</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<small class="tq-world-editor-note">Limite real de navegação. Deixe espaço externo para câmera, horizonte e decoração.</small>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>X inicial</span><input data-world-playable-prop="x" type="number" min="0" max="'+world.width+'" value="'+Number(world.playableArea?.x??0)+'"></label>'+
@@ -970,7 +1089,7 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Altura jogável</span><input data-world-playable-prop="height" type="number" min="200" max="'+world.height+'" value="'+Number(world.playableArea?.height??world.height)+'"></label>'+
             '</div>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Navio do jogador</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Navio do jogador</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Trocar spritesheet do navio">'+
               (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
               '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
@@ -1020,11 +1139,11 @@ export class DevOverlay {
               '<small class="tq-world-editor-note">O rastro acompanha direção e velocidade do navio. A sombra fica sobre a superfície sem alterar o WebGL do oceano.</small>'+
             '</div>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Ambiente</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-environment-preset>'+environmentOptions+'</select></label>'+
             '<small class="tq-world-editor-note">Aplica em conjunto oceano, cor, contraste, brilho, movimento, rastro, sombra e balanço do navio. Depois você pode ajustar qualquer controle manualmente.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · textura e cor</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>WebGL · textura e cor</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
             '<label class="tq-world-field"><span>Renderer</span><select data-ocean-prop="renderer"><option value="webgl" '+(ocean.renderer==="webgl"?'selected':'')+'>WebGL2</option><option value="css" '+(ocean.renderer==="css"?'selected':'')+'>CSS fallback</option></select></label>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-ocean-prop="preset">'+presetOptions+'</select></label>'+
@@ -1037,7 +1156,7 @@ export class DevOverlay {
             shaderRange("tintB","Tom azul",50,150,1,"%")+
             '<small class="tq-world-editor-note">WebGL2 é o renderer principal. CSS fica apenas como fallback de compatibilidade.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · movimento</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>WebGL · movimento</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             shaderRange("speed","Velocidade",0,100,1)+
             shaderRange("directionX","Direção horizontal",-1,1,.01)+
             shaderRange("directionY","Direção vertical",-1,1,.01)+
@@ -1045,26 +1164,21 @@ export class DevOverlay {
             shaderRange("distortion","Distorção UV",0,100,1)+
             '<small class="tq-world-ocean-note">Direção controla o fluxo global. Ondulação e distorção alteram a deformação da superfície na GPU.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · ondas e profundidade</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>WebGL · ondas e profundidade</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             shaderRange("waveFrequencyA","Frequência de onda A",2,60,1)+
             shaderRange("waveFrequencyB","Frequência de onda B",2,60,1)+
             shaderRange("waveMix","Mistura das ondas",0,100,1,"%")+
             shaderRange("foamMix","Espuma / cristas",0,100,1,"%")+
             '<small class="tq-world-editor-note">As duas frequências cruzadas quebram o padrão repetitivo e criam leitura de profundidade sem mover camadas DOM.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>WebGL · luz e reflexo</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>WebGL · luz e reflexo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             shaderRange("sparkleIntensity","Intensidade dos reflexos",0,100,1,"%")+
             shaderRange("sparkleSharpness","Nitidez dos reflexos",2,48,1)+
             '<small class="tq-world-editor-note">Controla os brilhos especulares dourados calculados no fragment shader.</small>'+
           '</div></section>'+
         '</div>';
 
-      content.querySelectorAll("[data-area-toggle]").forEach(button=>button.addEventListener("click",()=>{
-        const body=button.nextElementSibling;
-        body.hidden=!body.hidden;
-        button.setAttribute("aria-expanded",String(!body.hidden));
-        button.querySelector("span").textContent=body.hidden?"▸":"▾";
-      }));
+      this.bindCollapsedAreas(content);
 
       content.querySelectorAll("[data-world-root-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldRootProp;
@@ -1653,14 +1767,14 @@ export class DevOverlay {
     title.textContent=entity.id+" · "+(entity.type||"object");
     content.innerHTML=
       '<div class="tq-inspector">'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Entidade</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Entidade</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           '<label class="tq-world-field"><span>ID</span><input value="'+this.escapeHtml(entity.id)+'" readonly></label>'+
           '<label class="tq-world-field"><span>Tipo lógico</span><select data-world-prop="type">'+typeOptions+'</select></label>'+
           text("label","Nome")+
           text("src","Asset")+
           '<small class="tq-world-editor-note">Tipo lógico não altera a aparência do asset. Região, location e background continuam sendo renderizados como o sprite original.</small>'+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Transformação</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Transformação</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           num("x","Position X")+num("y","Position Y")+
           num("width","Width",16,entity.type==="region-exit"?"":2400)+num("height","Height",16,entity.type==="region-exit"?"":2400)+
           '<label class="tq-field tq-field--check"><span>Manter proporção</span><input data-world-prop="lockAspect" type="checkbox" '+(entity.lockAspect!==false?'checked':'')+'></label>'+
@@ -1670,7 +1784,7 @@ export class DevOverlay {
           '<div class="tq-world-transform-actions"><button type="button" data-world-rotate="-90">↶ -90°</button><button type="button" data-world-rotate="0">0°</button><button type="button" data-world-rotate="90">↷ +90°</button></div>'+
           '<small class="tq-world-editor-note">Direto no asset: 8 alças redimensionam por cima, baixo, lados e cantos; círculo superior gira; alças roxas inclinam em X e Y.</small>'+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Efeito do objeto</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Efeito do objeto</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           '<label class="tq-world-field"><span>Categoria</span><select data-effect-prop="category">'+effectCategories+'</select></label>'+
           '<label class="tq-world-field"><span>Efeito</span><select data-effect-prop="preset">'+effectPresets+'</select></label>'+
           '<label class="tq-field tq-field--check"><span>Ativo</span><input data-effect-prop="active" type="checkbox" '+(effect.active?'checked':'')+'></label>'+
@@ -1686,7 +1800,7 @@ export class DevOverlay {
           '<label class="tq-field tq-field--check"><span>Orientar no percurso</span><input data-effect-prop="rotateToPath" type="checkbox" '+(effect.rotateToPath?'checked':'')+'></label>'+
           '<small class="tq-world-editor-note">Cada asset pode usar efeito próprio. Parallax compõe profundidade; WebGL distorce/brilha o sprite na GPU; navios podem navegar em percurso automático ao redor do ponto onde foram posicionados.</small>'+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Balanço / água</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Balanço / água</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           '<label class="tq-field tq-field--check"><span>Efeito ativo</span><input data-motion-prop="active" type="checkbox" '+(motion.active?'checked':'')+'></label>'+
           '<label class="tq-world-field"><span>Predefinição</span><select data-motion-prop="preset">'+motionPresets+'</select></label>'+
           motionRange("speed","Velocidade")+
@@ -1696,7 +1810,7 @@ export class DevOverlay {
           motionRange("sway","Deriva lateral")+
           '<small class="tq-world-editor-note">Usa a mesma linguagem do motor de composição de navios: heave, pitch, roll e sway. O preview roda no próprio mundo.</small>'+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Colisão</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           '<label class="tq-field tq-field--check"><span>Colisão ativa</span><input data-collision-prop="active" type="checkbox" '+(collision.active?'checked':'')+'></label>'+
           '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option></select></label>'+
           collisionRange("scaleX","Largura da área",.1,1.5,.01)+
@@ -1714,7 +1828,7 @@ export class DevOverlay {
           '<small class="tq-world-editor-note">Se houver função, tocar na área mostra a mensagem e o botão da ação. Sem função, o navio desliza e contorna o obstáculo em vez de insistir contra ele.</small>'+
         '</div></section>'+
         (entity.type==="ship"
-          ? '<section class="tq-config-area tq-config-area--combat"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>⚔ Combate naval</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          ? '<section class="tq-config-area tq-config-area--combat"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>⚔ Combate naval</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
               '<label class="tq-world-field"><span>Navio do catálogo</span><select data-world-prop="shipId"><option value="">Asset local / sem catálogo</option>'+shipOptions+'</select></label>'+
               '<label class="tq-field tq-field--check"><span>Combate ativo</span><input data-entity-combat-prop="enabled" type="checkbox" '+(combat.enabled===true?'checked':'')+'></label>'+
               '<label class="tq-world-field"><span>HP do inimigo</span><input data-entity-combat-prop="hp" type="number" min="1" max="20" value="'+Math.max(1,Number(combat.hp)||3)+'"></label>'+
@@ -1722,7 +1836,7 @@ export class DevOverlay {
             '</div></section>'
           : '')+
         (!["background","region-exit"].includes(String(entity.type||""))
-          ? '<section class="tq-config-area tq-config-area--rewards"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🎁 Recompensas</strong><span>▾</span></button><div class="tq-config-area__body">'+
+          ? '<section class="tq-config-area tq-config-area--rewards"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🎁 Recompensas</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
               '<label class="tq-world-field"><span>Moedas</span><input data-entity-reward-prop="coins" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.coins)||0)+'"></label>'+
               '<label class="tq-world-field"><span>XP</span><input data-entity-reward-prop="xp" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.xp)||0)+'"></label>'+
               '<label class="tq-world-field"><span>Item / recompensa ID</span><input data-entity-reward-prop="itemId" type="text" value="'+this.escapeHtml(rewards.itemId||"")+'" placeholder="ex.: mapa-tesouro-01"></label>'+
@@ -1731,29 +1845,24 @@ export class DevOverlay {
               '<small class="tq-world-editor-note">Esta recompensa é concedida uma única vez quando a entidade é conquistada, recolhida ou derrotada.</small>'+
             '</div></section>'
           : '')+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Comportamento</strong><span>▾</span></button><div class="tq-config-area__body">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Comportamento</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           num("interactionRadius","Raio de interação",0,2000)+
           text("scene","Cena vinculada")+
           (entity.type==="region-exit"
-            ? '<label class="tq-world-field"><span>Mundo / mapa linkado</span><select data-world-prop="destinationWorldId"><option value="">Selecione o mundo de destino</option>'+destinationWorldOptions+'</select></label>'+
+            ? '<label class="tq-world-field"><span>Região linkada</span><select data-world-prop="destinationWorldId"><option value="">Selecione o mundo de destino</option>'+destinationWorldOptions+'</select></label>'+
               '<small class="tq-world-editor-note">Este region exit funcionará como link para o mundo selecionado. O mundo de destino não poderá ser apagado enquanto este link existir.</small>'+
               '<label class="tq-world-field"><span>Texto do popup</span><input data-world-prop="transitionMessage" type="text" maxlength="240" value="'+this.escapeHtml(entity.transitionMessage||"")+'" placeholder="Deseja navegar para a próxima região?"></label>'+
               '<label class="tq-world-field"><span>Texto do botão</span><input data-world-prop="transitionActionLabel" type="text" maxlength="48" value="'+this.escapeHtml(entity.transitionActionLabel||"Navegar")+'"></label>'+
               '<small class="tq-world-editor-note">Esta área existe apenas como gatilho lógico. No Play ela fica invisível e abre automaticamente a confirmação quando o navio toca a área.</small>'
             : '')+
         '</div></section>'+
-        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Ações</strong><span>▾</span></button><div class="tq-config-area__body tq-world-inspector-actions">'+
+        '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ações</strong><span>▾</span></button><div class="tq-config-area__body tq-world-inspector-actions">'+
           (entity.scene?'<button type="button" class="is-primary" data-world-open-scene>Editar cena vinculada</button>':"")+
           '<button type="button" class="is-danger" data-world-delete>Excluir entidade</button>'+
         '</div></section>'+
       '</div>';
 
-    content.querySelectorAll("[data-area-toggle]").forEach(button=>button.addEventListener("click",()=>{
-      const body=button.nextElementSibling;
-      body.hidden=!body.hidden;
-      button.setAttribute("aria-expanded",String(!body.hidden));
-      button.querySelector("span").textContent=body.hidden?"▸":"▾";
-    }));
+    this.bindCollapsedAreas(content);
 
     const numeric=new Set(["x","y","width","height","rotation","skewX","skewY","interactionRadius"]);
     const commitWorldProp=input=>{
@@ -1959,24 +2068,19 @@ export class DevOverlay {
     }
   }
   toggleShips(show){
-    if(show){
-      this.el.querySelector(".tq-dev__assets").hidden=true;
-      this.el.querySelector(".tq-dev__panel").hidden=true;
-      this.el.querySelector(".tq-dev__scenes").hidden=true;
-      this.el.querySelector(".tq-dev__worlds").hidden=true;
-    }
+    if(show)this.closeToolPanels("ships");
     this.shipEditor.setVisible(show);
   }
 
   toggleAssets(show){
-    const panel=this.el.querySelector(".tq-dev__assets");panel.hidden=!show;
-    if(!show)this.assetPickTarget=null;
+    const panel=this.el.querySelector(".tq-dev__assets");
     if(show){
-      this.shipEditor.setVisible(false);
-      this.el.querySelector(".tq-dev__panel").hidden=true;
-      this.el.querySelector(".tq-dev__scenes").hidden=true;
-      this.el.querySelector(".tq-dev__worlds").hidden=true;
+      this.closeToolPanels("assets");
+      panel.hidden=false;
       this.renderAssets();
+    }else{
+      panel.hidden=true;
+      this.assetPickTarget=null;
     }
   }
 
@@ -2623,20 +2727,14 @@ export class DevOverlay {
     const definition=this.compositionDefinition(node);
     title.textContent=node.id+" · "+node.kind;
     const sections=this.configSections(node);
-    const defaultOpen="animation";
+    const defaultOpen=null;
 
     content.innerHTML='<div class="tq-inspector">'+sections.map(section=>{
       const open=section.id===defaultOpen;
       return '<section class="tq-config-area" data-area="'+section.id+'"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="'+open+'"><strong>'+section.title+'</strong><span>'+(open?'▾':'▸')+'</span></button><div class="tq-config-area__body" '+(open?'':'hidden')+'>'+section.fields.map(field=>this.fieldMarkup(node,field)).join("")+'</div></section>';
     }).join("")+'</div>';
 
-    content.querySelectorAll("[data-area-toggle]").forEach(button=>button.addEventListener("click",()=>{
-      const body=button.nextElementSibling;
-      const open=!body.hidden;
-      body.hidden=open;
-      button.setAttribute("aria-expanded",String(!open));
-      button.querySelector("span").textContent=open?"▸":"▾";
-    }));
+    this.bindCollapsedAreas(content);
 
     content.querySelectorAll("[data-prop]").forEach(input=>input.addEventListener("change",()=>this.applyInput(input)));
 
