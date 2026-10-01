@@ -630,6 +630,16 @@ export class GameRuntime {
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
       state:restored||{},
+      resolveShip:(shipId,role="npc")=>{
+        const ship=this.shipEntry(shipId);
+        if(!ship||ship.available===false)return null;
+        return {
+          ...this.shipRuntimeProfile(ship,role),
+          shipId:ship.id,
+          shipName:ship.name||ship.id,
+          name:ship.name||ship.id
+        };
+      },
       createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
         kind:entity?.type==="treasure"?"treasure":(entity?.type==="ship"&&entity?.combat?.enabled===true?"combat":"world-interaction"),
         worldId,
