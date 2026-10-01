@@ -83,6 +83,9 @@ export class WorldEditor {
       onEnterScene:(entity,state)=>{
         window.dispatchEvent(new CustomEvent("tq:worldenterscene",{detail:{entity,state}}));
       },
+      onEnterWorld:(entity,state)=>{
+        window.dispatchEvent(new CustomEvent("tq:worldenterworld",{detail:{entity,state}}));
+      },
       onSelectionChange:entity=>{
         window.dispatchEvent(new CustomEvent("tq:worldselectionchange",{detail:{entity}}));
       },
@@ -180,6 +183,37 @@ export class WorldEditor {
       lockAspect:true,
       ...extra
     });
+    this.persist();
+    this.emitWorldChange();
+    return entity;
+  }
+
+  addRegionExit({destinationWorldId="",label="Saída de região"}={}){
+    if(!this.runtime)return null;
+    const center=this.runtime.getCameraCenter();
+    const stamp=Date.now().toString(36);
+    const entity=this.runtime.addEntity({
+      id:(this.runtime.config.id||"world")+".region-exit."+stamp,
+      type:"region-exit",
+      label:String(label||"Saída de região"),
+      src:"",
+      renderMode:"logical",
+      showLabel:false,
+      x:center.x,
+      y:center.y,
+      width:420,
+      height:180,
+      z:90,
+      rotation:0,
+      lockAspect:false,
+      destinationWorldId:String(destinationWorldId||""),
+      transitionMessage:"",
+      transitionActionLabel:"Navegar",
+      motion:{active:false,preset:"none",speed:0,heave:0,pitch:0,roll:0,sway:0},
+      effect:{category:"generic",preset:"none",active:false},
+      collision:{active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world",message:""}
+    });
+    this.runtime.selectEntity(entity?.id);
     this.persist();
     this.emitWorldChange();
     return entity;
