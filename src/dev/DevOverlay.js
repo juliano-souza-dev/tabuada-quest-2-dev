@@ -372,8 +372,13 @@ export class DevOverlay {
       ...(ship.combat&&typeof ship.combat==="object"?structuredClone(ship.combat):{}),
       animations:combatAnimations
     };
+    if(ship.spriteMode==="combined"){
+      combat.useNavigationAtlas=true;
+      delete combat.sprite;
+    }
     return {
       shipId:ship.id,
+      spriteMode:ship.spriteMode==="combined"?"combined":"split",
       shipName:ship.name||ship.id,
       name:ship.name||ship.id,
       role,
