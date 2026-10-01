@@ -153,15 +153,21 @@ export class ShipEditor{
       }
     }
     if(profile.combatSprite&&!Object.keys(value.animations).some(key=>value.animationGroups[key]==="combat")){
-      for(const key of ["fireRight","fireLeft"]){
-        const legacy=profile.combatSprite.animations?.[key];
-        if(!legacy)continue;
+      value.animations.idle={
+        frameMs:140,
+        loop:true,
+        cellWidth:Number(profile.combatSprite.frameWidth)||400,
+        cellHeight:Number(profile.combatSprite.frameHeight)||400,
+        frames:[Number(profile.combatSprite.idleFrame)||0]
+      };
+      value.animationGroups.idle="combat";
+      for(const [key,legacy] of Object.entries(profile.combatSprite.animations||{})){
         value.animations[key]={
           frameMs:Number(legacy.frameMs)||135,
-          loop:false,
+          loop:legacy.loop===true,
           cellWidth:Number(profile.combatSprite.frameWidth)||400,
           cellHeight:Number(profile.combatSprite.frameHeight)||400,
-          frames:[]
+          frames:Array.isArray(legacy.frames)?legacy.frames.map(Number).filter(Number.isFinite):[]
         };
         value.animationGroups[key]="combat";
       }
