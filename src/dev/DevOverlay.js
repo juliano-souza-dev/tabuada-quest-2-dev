@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1438";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1412";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1446";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
