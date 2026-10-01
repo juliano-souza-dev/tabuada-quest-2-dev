@@ -58,7 +58,7 @@ export class WorldRuntime {
     this.challengeTimer=0;
     this.combatActive=null;
     this.combatTimer=0;
-    this.combatSpriteTimer=0;
+    this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
     this.state=structuredClone(options.state||{});
     this.player={
@@ -1680,50 +1680,54 @@ export class WorldRuntime {
     }
   }
 
-  combatSpriteConfig(){
-    const sprite=this.config.player?.combatSprite;
+  combatSpriteConfig(side="player",entity=null){
+    const source=side==="enemy"?(entity||this.combatActive?.entity):this.config.player;
+    const sprite=source?.combatSprite;
     return sprite&&typeof sprite==="object"&&sprite.src?sprite:null;
   }
 
-  applyCombatSpriteFrame(frame=0){
-    const sprite=this.combatSpriteConfig();
-    if(!sprite||!this.combatPlayerShip)return false;
+  combatShipElement(side="player"){
+    return side==="enemy"?this.combatEnemyShip:this.combatPlayerShip;
+  }
+
+  applyCombatSpriteFrame(side="player",frame=0,entity=null){
+    const sprite=this.combatSpriteConfig(side,entity);
+    const shipEl=this.combatShipElement(side);
+    if(!sprite||!shipEl)return false;
     const columns=Math.max(1,Number(sprite.columns)||4);
     const rows=Math.max(1,Number(sprite.rows)||4);
     const index=Math.max(0,Math.min(columns*rows-1,Number(frame)||0));
     const column=index%columns;
     const row=Math.floor(index/columns);
     const safe=String(sprite.src||"").replace(/["\\]/g,"");
-    this.combatPlayerShip.style.backgroundImage=safe?'url("'+safe+'")':"none";
-    this.combatPlayerShip.style.backgroundSize=(columns*100)+"% "+(rows*100)+"%";
-    this.combatPlayerShip.style.backgroundPosition=
+    shipEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
+    shipEl.style.backgroundSize=(columns*100)+"% "+(rows*100)+"%";
+    shipEl.style.backgroundPosition=
       (columns===1?0:(column/(columns-1))*100)+"% "+
       (rows===1?0:(row/(rows-1))*100)+"%";
-    this.combatPlayerShip.style.backgroundRepeat="no-repeat";
+    shipEl.style.backgroundRepeat="no-repeat";
     return true;
   }
 
-  playCombatSpriteAnimation(name="fireRight"){
-    const sprite=this.combatSpriteConfig();
+  playCombatSpriteAnimation(side="player",name="fireRight",entity=null){
+    const sprite=this.combatSpriteConfig(side,entity);
     const animation=sprite?.animations?.[name];
     const frames=Array.isArray(animation?.frames)?animation.frames:[];
     if(!sprite||!frames.length)return false;
-    if(this.combatSpriteTimer){
-      clearTimeout(this.combatSpriteTimer);
-      this.combatSpriteTimer=0;
-    }
+    const currentTimer=this.combatSpriteTimers?.[side];
+    if(currentTimer)clearTimeout(currentTimer);
     const frameMs=Math.max(60,Math.min(500,Number(animation.frameMs)||135));
     let cursor=0;
     const step=()=>{
       if(!this.combatActive)return;
-      this.applyCombatSpriteFrame(frames[cursor]);
+      this.applyCombatSpriteFrame(side,frames[cursor],entity);
       cursor+=1;
       if(cursor<frames.length){
-        this.combatSpriteTimer=setTimeout(step,frameMs);
+        this.combatSpriteTimers[side]=setTimeout(step,frameMs);
       }else{
-        this.combatSpriteTimer=setTimeout(()=>{
-          this.combatSpriteTimer=0;
-          this.applyCombatSpriteFrame(Number(sprite.idleFrame)||0);
+        this.combatSpriteTimers[side]=setTimeout(()=>{
+          this.combatSpriteTimers[side]=0;
+          this.applyCombatSpriteFrame(side,Number(sprite.idleFrame)||0,entity);
         },frameMs);
       }
     };
@@ -1731,26 +1735,46 @@ export class WorldRuntime {
     return true;
   }
 
-  syncCombatPlayerShip(){
-    if(!this.combatPlayerShip||!this.playerEl)return;
-    const combatSprite=this.combatSpriteConfig();
+  syncCombatShip(side="player",entity=null){
+    const shipEl=this.combatShipElement(side);
+    if(!shipEl)return;
+    const combatSprite=this.combatSpriteConfig(side,entity);
     if(combatSprite){
-      this.applyCombatSpriteFrame(Number(combatSprite.idleFrame)||0);
-      this.combatPlayerShip.classList.add("has-combat-sprite");
+      this.applyCombatSpriteFrame(side,Number(combatSprite.idleFrame)||0,entity);
+      shipEl.classList.add("has-combat-sprite");
     }else{
-      this.combatPlayerShip.classList.remove("has-combat-sprite");
-      this.updatePlayerVisual(performance.now(),1/60);
-      const source=this.playerEl.style;
-      for(const property of ["backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat"]){
-        this.combatPlayerShip.style[property]=source[property]||"";
+      shipEl.classList.remove("has-combat-sprite");
+      if(side==="player"&&this.playerEl){
+        this.updatePlayerVisual(performance.now(),1/60);
+        const source=this.playerEl.style;
+        for(const property of ["backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat"]){
+          shipEl.style[property]=source[property]||"";
+        }
+      }else{
+        const safe=String(entity?.src||"").replace(/["\\]/g,"");
+        shipEl.style.backgroundImage=safe?'url("'+safe+'")':"none";
+        shipEl.style.backgroundSize="contain";
+        shipEl.style.backgroundPosition="center";
+        shipEl.style.backgroundRepeat="no-repeat";
       }
     }
-    this.combatPlayerShip.style.transform="none";
+    shipEl.style.transform="none";
+  }
+
+  syncCombatPlayerShip(){
+    this.syncCombatShip("player");
+  }
+
+  syncCombatEnemyShip(entity=this.combatActive?.entity){
+    this.syncCombatShip("enemy",entity);
   }
 
   closeCombat(){
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
-    if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
+    for(const side of ["player","enemy"]){
+      if(this.combatSpriteTimers?.[side])clearTimeout(this.combatSpriteTimers[side]);
+      if(this.combatSpriteTimers)this.combatSpriteTimers[side]=0;
+    }
     if(this.combatFxTimer){clearTimeout(this.combatFxTimer);this.combatFxTimer=0}
     this.combatActive=null;
     for(const ship of [this.combatPlayerShip,this.combatEnemyShip]){
@@ -1792,8 +1816,7 @@ export class WorldRuntime {
     if(this.combatTitle)this.combatTitle.textContent=String(entity.label||"Navio inimigo");
     if(this.combatWrap)this.combatWrap.hidden=false;
     this.syncCombatPlayerShip();
-    const enemySrc=String(entity.src||"").replace(/["\\]/g,"");
-    if(this.combatEnemyShip)this.combatEnemyShip.style.backgroundImage=enemySrc?'url("'+enemySrc+'")':"none";
+    this.syncCombatEnemyShip(entity);
     this.updateCombatHud();
     this.clearCombatFx();
     await this.loadCombatRound();
@@ -1819,16 +1842,22 @@ export class WorldRuntime {
     if(result.correct===true){
       active.enemyHp=Math.max(0,active.enemyHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
-      this.playCombatSpriteAnimation("fireRight");
+      this.playCombatSpriteAnimation("player","fireRight");
       this.playCombatFx({from:"player",hit:true});
       setTimeout(()=>this.playCombatDamageFx("enemy"),820);
-      if(active.enemyHp>0)setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),1120);
+      if(active.enemyHp>0)setTimeout(()=>{
+        this.playCombatSpriteAnimation("enemy","fireLeft",active.entity);
+        this.playCombatFx({from:"enemy",hit:false});
+      },1120);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
-      this.playCombatSpriteAnimation("fireRight");
+      this.playCombatSpriteAnimation("player","fireRight");
       this.playCombatFx({from:"player",hit:false});
-      setTimeout(()=>this.playCombatFx({from:"enemy",hit:true}),1120);
+      setTimeout(()=>{
+        this.playCombatSpriteAnimation("enemy","fireLeft",active.entity);
+        this.playCombatFx({from:"enemy",hit:true});
+      },1120);
       setTimeout(()=>this.playCombatDamageFx("player"),1900);
     }
     this.updateCombatHud();
@@ -2681,11 +2710,13 @@ export class WorldRuntime {
   destroy(){
     if(this.challengeTimer)clearTimeout(this.challengeTimer);
     if(this.combatTimer)clearTimeout(this.combatTimer);
-    if(this.combatSpriteTimer)clearTimeout(this.combatSpriteTimer);
+    for(const side of ["player","enemy"]){
+      if(this.combatSpriteTimers?.[side])clearTimeout(this.combatSpriteTimers[side]);
+    }
     if(this.combatFxTimer)clearTimeout(this.combatFxTimer);
     this.challengeTimer=0;
     this.combatTimer=0;
-    this.combatSpriteTimer=0;
+    this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
