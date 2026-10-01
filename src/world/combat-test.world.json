@@ -128,7 +128,8 @@
     "direction": "n"
   },
   "combat": {
-    "playerHp": 3
+    "playerHp": 3,
+    "playerPortrait": "./assets/ships/navio_pirata_tabuadas.webp"
   },
   "environment": {
     "preset": "day",
