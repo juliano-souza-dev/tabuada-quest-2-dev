@@ -33,6 +33,7 @@ export class GameRuntime {
     this.worldStates={};
     this.flags={};
     this.inventory=[];
+    this.rewards={coins:0,xp:0,claims:[]};
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerStateStore=null;
     this.accountState={};
@@ -208,6 +209,15 @@ export class GameRuntime {
       this.inventory=Array.isArray(runtime.inventory)?clone(runtime.inventory):this.inventory;
     }
 
+    const rewardSource=game.rewards&&typeof game.rewards==="object"
+      ?game.rewards
+      :(runtime?.rewards&&typeof runtime.rewards==="object"?runtime.rewards:{});
+    this.rewards={
+      coins:Math.max(0,Number(rewardSource.coins)||0),
+      xp:Math.max(0,Number(rewardSource.xp)||0),
+      claims:Array.isArray(rewardSource.claims)?unique(rewardSource.claims):[]
+    };
+
     const ships=(
       game.ships&&typeof game.ships==="object"?game.ships:
       state.ships&&typeof state.ships==="object"?state.ships:
@@ -232,7 +242,8 @@ export class GameRuntime {
         ships:{
           ownedShips:[...this.playerShips.ownedShips],
           equippedShip:this.playerShips.equippedShip
-        }
+        },
+        rewards:clone(this.rewards)
       }
     };
   }
@@ -501,7 +512,7 @@ export class GameRuntime {
 
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
-    const rewardState=game.rewards&&typeof game.rewards==="object"?game.rewards:{};
+    const rewardState=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,xp:0,claims:[]};
     const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
     if(claims.includes(claimKey))return false;
 
@@ -523,16 +534,16 @@ export class GameRuntime {
       }
     }
 
+    this.rewards={
+      coins:Number(rewardState.coins||0)+coins,
+      xp:Number(rewardState.xp||0)+xp,
+      claims
+    };
     this.accountState={
       ...base,
       game:{
         ...game,
-        rewards:{
-          ...rewardState,
-          coins:Number(rewardState.coins||0)+coins,
-          xp:Number(rewardState.xp||0)+xp,
-          claims
-        }
+        rewards:clone(this.rewards)
       }
     };
 
@@ -693,7 +704,8 @@ export class GameRuntime {
       history:clone(this.history),
       worldStates:clone(this.worldStates),
       flags:clone(this.flags),
-      inventory:clone(this.inventory)
+      inventory:clone(this.inventory),
+      rewards:clone(this.rewards)
     };
   }
 
@@ -720,6 +732,9 @@ export class GameRuntime {
       this.worldStates=state.worldStates&&typeof state.worldStates==="object"?clone(state.worldStates):{};
       this.flags=state.flags&&typeof state.flags==="object"?clone(state.flags):{};
       this.inventory=Array.isArray(state.inventory)?clone(state.inventory):[];
+      this.rewards=state.rewards&&typeof state.rewards==="object"
+        ?{coins:Math.max(0,Number(state.rewards.coins)||0),xp:Math.max(0,Number(state.rewards.xp)||0),claims:unique(state.rewards.claims)}
+        :{coins:0,xp:0,claims:[]};
       if(state.ships&&typeof state.ships==="object"){
         this.playerShips={
           ownedShips:unique(state.ships.ownedShips),
