@@ -2,7 +2,7 @@
   "schema": "tq.world",
   "version": 1,
   "id": "directional-ship-test",
-  "name": "Teste Navio 8 Direções",
+  "name": "Teste Navio 16 Direções",
   "type": "ocean",
   "width": 2400,
   "height": 3200,
@@ -12,30 +12,149 @@
     "width": 180,
     "height": 180,
     "direction": "n",
-    "src": "./assets/ships/ship_s.png",
-    "directions": {
-      "n": "./assets/ships/ship_s.png",
-      "ne": "./assets/ships/ship_sw.png",
-      "e": "./assets/ships/ship_w.png",
-      "se": "./assets/ships/ship_nw.png",
-      "s": "./assets/ships/ship_n.png",
-      "sw": "./assets/ships/ship_ne.png",
-      "w": "./assets/ships/ship_e.png",
-      "nw": "./assets/ships/ship_se.png"
+    "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+    "sprite": {
+      "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "columns": 4,
+      "rows": 4,
+      "cellWidth": 400,
+      "cellHeight": 400,
+      "initialDirection": "n",
+      "directionFrames": {
+        "n": 0,
+        "nne": 1,
+        "ne": 2,
+        "ene": 3,
+        "e": 4,
+        "ese": 5,
+        "se": 6,
+        "sse": 7,
+        "s": 8,
+        "ssw": 9,
+        "sw": 10,
+        "wsw": 11,
+        "w": 12,
+        "wnw": 13,
+        "nw": 14,
+        "nnw": 15
+      },
+      "regions": {
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
+      }
     }
   },
   "entities": [],
   "nameplate": {
-    "purpose": "Teste visual das oito vistas direcionais do navio"
+    "purpose": "Teste visual das 16 vistas direcionais do navio"
   },
   "meta": {
     "schema": "tq.world",
     "version": 1,
     "sourceRevision": "20260930-0732",
-    "editorVersion": 1,
-    "testPurpose": "8-direction ship navigation",
+    "editorVersion": 2,
+    "testPurpose": "16-direction ship navigation",
     "directionConvention": "movement-heading",
-    "assetConvention": "camera-viewpoint-opposite-heading"
+    "directionStepDegrees": 22.5,
+    "spriteGrid": "4x4",
+    "frameCount": 16,
+    "cellSize": 400
   },
   "editor": {
     "cameraX": 1200,
