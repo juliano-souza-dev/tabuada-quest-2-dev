@@ -642,3 +642,49 @@
 @media(max-width:560px){
   .tq-world-region-transition__actions{grid-template-columns:1fr}
 }
+
+/* Ship Editor sprite-first */
+.tq-ships__sprite-panel{display:grid;gap:12px}
+.tq-ships__sprite-meta{display:grid;grid-template-columns:minmax(260px,2fr) repeat(4,minmax(90px,.55fr));gap:8px}
+.tq-ships__sprite-meta label{display:grid;gap:5px}
+.tq-ships__sprite-meta span{font-size:9px;opacity:.66;text-transform:uppercase;letter-spacing:.08em}
+.tq-ships__sprite-meta input{min-height:38px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0b2231;color:#fff;padding:8px}
+.tq-ships__sprite-path{min-width:0}
+.tq-ships__sprite-path input{overflow:hidden;text-overflow:ellipsis}
+.tq-ships__direction-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tq-ships__direction-toolbar>span{margin-left:auto;font-size:10px;color:#91dff4}
+.tq-ships__direction-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px}
+.tq-ships__direction-card{position:relative;display:grid!important;grid-template-columns:28px 62px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:72px;padding:7px!important;border:1px solid rgba(255,255,255,.12)!important;border-radius:10px!important;background:rgba(255,255,255,.035)!important;color:#e8f8ff!important;text-align:left!important}
+.tq-ships__direction-card.is-selected{border-color:#62d8ff!important;background:rgba(73,200,255,.13)!important;box-shadow:inset 0 0 0 1px rgba(98,216,255,.16)}
+.tq-ships__direction-arrow{font-size:22px;color:#7ee7ff;text-align:center}
+.tq-ships__direction-thumb{display:grid;place-items:center;width:62px;height:54px;border-radius:8px;background-color:#071b28;background-repeat:no-repeat;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);font-size:20px;color:#5dcdf1}
+.tq-ships__direction-card small{font-size:9px;line-height:1.2;opacity:.78}
+.tq-ships__direction-card em{font-style:normal;font-size:9px;color:#70dcff}
+.tq-ships__direction-config{display:grid;grid-template-columns:112px minmax(150px,1fr) 120px minmax(180px,1fr);align-items:center;gap:10px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(5,24,36,.52)}
+.tq-ships__direction-config label{display:grid;gap:4px}
+.tq-ships__direction-config label>span{font-size:9px;opacity:.6;text-transform:uppercase;letter-spacing:.06em}
+.tq-ships__direction-config input,.tq-ships__direction-config select{min-height:36px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:#0b2231;color:#fff;padding:7px}
+.tq-ships__direction-preview{width:112px;height:96px;border-radius:10px;background-color:#071b28;background-repeat:no-repeat;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.tq-ships__combat-sprite-preview{min-height:240px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background-color:#071b28;background-repeat:no-repeat;background-position:center;background-size:contain}
+.tq-ships__anim-table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:10px}
+.tq-ships__anim-table th{text-align:left;font-size:9px;letter-spacing:.07em;text-transform:uppercase;opacity:.58;padding:0 6px}
+.tq-ships__anim-table td{padding:5px 6px;background:rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.tq-ships__anim-table td:first-child{border-left:1px solid rgba(255,255,255,.06);border-radius:8px 0 0 8px}
+.tq-ships__anim-table td:last-child{border-right:1px solid rgba(255,255,255,.06);border-radius:0 8px 8px 0}
+.tq-ships__anim-table input[type="number"]{width:100%;min-height:34px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:#0a2030;color:#fff;padding:6px}
+.tq-ships__anim-table input[type="checkbox"]{width:18px;height:18px}
+@media(max-width:1050px){
+  .tq-ships__direction-grid{grid-template-columns:repeat(2,minmax(150px,1fr))}
+  .tq-ships__sprite-meta{grid-template-columns:1fr 1fr 1fr}
+  .tq-ships__sprite-path{grid-column:1/-1}
+  .tq-ships__direction-config{grid-template-columns:100px 1fr 1fr}
+  .tq-ships__direction-config label:last-child{grid-column:2/-1}
+}
+@media(max-width:680px){
+  .tq-ships__direction-grid{grid-template-columns:1fr}
+  .tq-ships__sprite-meta{grid-template-columns:1fr 1fr}
+  .tq-ships__direction-config{grid-template-columns:1fr}
+  .tq-ships__direction-preview{width:100%;height:180px}
+  .tq-ships__direction-config label:last-child{grid-column:auto}
+  .tq-ships__anim-table{font-size:9px}
+}
