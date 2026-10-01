@@ -125,3 +125,22 @@ As camadas visuais padrão do oceano são:
 - foam: parallax 0.68, deriva 36 / 24
 
 O World Editor permite editar textura, parallax, deriva X/Y, escala da camada e opacidade sem alterar a física do mundo.
+
+
+## NPC navigation follow-up
+
+Temporary implementation:
+- per-world NPC population;
+- pseudo-random spawn with configurable spacing;
+- straight-line navigation;
+- wrap at world bounds.
+
+Pending task:
+- replace straight-line movement with full NPC navigation AI;
+- route/path selection;
+- island and obstacle avoidance;
+- collision avoidance between NPC ships;
+- patrol zones;
+- pursuit/escape behavior;
+- combat approach and disengage behavior;
+- persistence of NPC route/state between region transitions.
