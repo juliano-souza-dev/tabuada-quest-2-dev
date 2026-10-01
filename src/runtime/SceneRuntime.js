@@ -343,9 +343,13 @@ export class SceneRuntime {
   }
   beginDrag(event,node,el){
     el.setPointerCapture(event.pointerId);
-    const start={px:event.clientX,py:event.clientY,x:node.x,y:node.y};
+    const layout=this.resolveNodeLayout(node);
+    const coverScale=node?.layout?.mode==="viewport-cover"
+      ?Math.max(.01,Number(layout?.width||node.width||1)/Math.max(1,Number(node.width||1)))
+      :1;
+    const start={px:event.clientX,py:event.clientY,x:node.x,y:node.y,coverScale};
     const move=e=>{
-      const scale=this.viewportScale||1;
+      const scale=(this.viewportScale||1)*start.coverScale;
       node.x=start.x+(e.clientX-start.px)/scale;node.y=start.y+(e.clientY-start.py)/scale;
       this.applyTransform(el,node);this.dispatchEvent("nodechange",{node,parentId:"viewport"});
     };
