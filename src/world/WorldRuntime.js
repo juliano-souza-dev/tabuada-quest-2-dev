@@ -1207,9 +1207,10 @@ export class WorldRuntime {
 
   updatePlayer(dt){
     const input=this.inputVector();
-    const accel=1100;
-    const maxSpeed=420;
-    const drag=Math.pow(0.12,dt);
+    const accel=Math.max(100,Number(this.config.player?.acceleration)||1100);
+    const maxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
+    const braking=clamp(Number(this.config.player?.braking??.12),.01,.98);
+    const drag=Math.pow(braking,dt);
 
     this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
     this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
@@ -1680,8 +1681,36 @@ export class WorldRuntime {
     }
   }
 
-  combatSpriteConfig(side="player",entity=null){
-    const source=side==="enemy"?(entity||this.combatActive?.entity):this.config.player;
+  combatSource(side="player",entity=null){
+    return side==="enemy"?(entity||this.combatActive?.entity):this.config.player;
+  }
+
+  v2CombatAtlas(source,animationName="idle"){
+    const combat=source?.combat;
+    const descriptor=combat?.compiled?.[animationName];
+    if(!descriptor?.src)return null;
+    const frameCount=Math.max(1,Number(descriptor.frameCount)||1);
+    return {
+      src:descriptor.src,
+      columns:Math.max(1,Number(descriptor.columns)||1),
+      rows:Math.max(1,Number(descriptor.rows)||1),
+      frameWidth:Number(descriptor.frameWidth)||400,
+      frameHeight:Number(descriptor.frameHeight)||400,
+      idleFrame:0,
+      animations:{
+        [animationName]:{
+          frames:Array.from({length:frameCount},(_,index)=>index),
+          frameMs:Number(descriptor.frameMs)||140,
+          loop:descriptor.loop!==false
+        }
+      }
+    };
+  }
+
+  combatSpriteConfig(side="player",entity=null,animationName="idle"){
+    const source=this.combatSource(side,entity);
+    const v2=this.v2CombatAtlas(source,animationName);
+    if(v2)return v2;
     const sprite=source?.combatSprite;
     return sprite&&typeof sprite==="object"&&sprite.src?sprite:null;
   }
@@ -1690,8 +1719,8 @@ export class WorldRuntime {
     return side==="enemy"?this.combatEnemyShip:this.combatPlayerShip;
   }
 
-  applyCombatSpriteFrame(side="player",frame=0,entity=null){
-    const sprite=this.combatSpriteConfig(side,entity);
+  applyCombatSpriteFrame(side="player",frame=0,entity=null,animationName="idle"){
+    const sprite=this.combatSpriteConfig(side,entity,animationName);
     const shipEl=this.combatShipElement(side);
     if(!sprite||!shipEl)return false;
     const columns=Math.max(1,Number(sprite.columns)||4);
@@ -1710,7 +1739,7 @@ export class WorldRuntime {
   }
 
   playCombatSpriteAnimation(side="player",name="fireRight",entity=null){
-    const sprite=this.combatSpriteConfig(side,entity);
+    const sprite=this.combatSpriteConfig(side,entity,name);
     const animation=sprite?.animations?.[name];
     const frames=Array.isArray(animation?.frames)?animation.frames:[];
     if(!sprite||!frames.length)return false;
@@ -1720,14 +1749,16 @@ export class WorldRuntime {
     let cursor=0;
     const step=()=>{
       if(!this.combatActive)return;
-      this.applyCombatSpriteFrame(side,frames[cursor],entity);
+      this.applyCombatSpriteFrame(side,frames[cursor],entity,name);
       cursor+=1;
       if(cursor<frames.length){
         this.combatSpriteTimers[side]=setTimeout(step,frameMs);
       }else{
         this.combatSpriteTimers[side]=setTimeout(()=>{
           this.combatSpriteTimers[side]=0;
-          this.applyCombatSpriteFrame(side,Number(sprite.idleFrame)||0,entity);
+          const idle=this.combatSpriteConfig(side,entity,"idle");
+          if(idle)this.applyCombatSpriteFrame(side,Number(idle.idleFrame)||0,entity,"idle");
+          else this.syncCombatShip(side,entity);
         },frameMs);
       }
     };
@@ -1738,9 +1769,9 @@ export class WorldRuntime {
   syncCombatShip(side="player",entity=null){
     const shipEl=this.combatShipElement(side);
     if(!shipEl)return;
-    const combatSprite=this.combatSpriteConfig(side,entity);
+    const combatSprite=this.combatSpriteConfig(side,entity,"idle");
     if(combatSprite){
-      this.applyCombatSpriteFrame(side,Number(combatSprite.idleFrame)||0,entity);
+      this.applyCombatSpriteFrame(side,Number(combatSprite.idleFrame)||0,entity,"idle");
       shipEl.classList.add("has-combat-sprite");
     }else{
       shipEl.classList.remove("has-combat-sprite");
@@ -1758,6 +1789,12 @@ export class WorldRuntime {
         shipEl.style.backgroundRepeat="no-repeat";
       }
     }
+    const style=this.combatSource(side,entity)?.combat||{};
+    shipEl.style.setProperty("--ship-recoil",(Number(style.recoil)||18)+"px");
+    shipEl.style.setProperty("--ship-shake",(Number(style.shake)||5)+"px");
+    shipEl.dataset.muzzleFlash=style.muzzleFlash===false?"off":"on";
+    shipEl.dataset.smoke=style.smoke===false?"off":"on";
+    shipEl.dataset.impact=style.impact===false?"off":"on";
     shipEl.style.transform="none";
   }
 
