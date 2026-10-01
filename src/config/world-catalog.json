@@ -10,7 +10,7 @@
     },
     {
       "id": "directional-ship-test",
-      "name": "Teste Navio 8 Direções",
+      "name": "Teste Navio 16 Direções",
       "type": "ocean",
       "path": "./src/world/directional-ship-test.world.json"
     },
@@ -19,12 +19,6 @@
       "name": "Teste de Combate Naval",
       "type": "ocean",
       "path": "./src/world/combat-test.world.json"
-    },
-    {
-      "id": "halloween-48-test",
-      "name": "Teste Navio Halloween 48F",
-      "type": "ocean",
-      "path": "./src/world/halloween-48-test.world.json"
     },
     {
       "id": "npc-red-600-test",
