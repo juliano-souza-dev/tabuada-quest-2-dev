@@ -860,7 +860,7 @@ export class ShipEditor{
       </section>
 
       <section class="tq-ships__panel tq-ships__sprite-panel">
-        <div class="tq-ships__panel-title"><div><strong>Sprite de combate</strong><small>${ship.spriteMode==="combined"?"Usando o mesmo atlas da navegação; configure apenas os ranges abaixo.":"Atlas de combate separado; as animações apontam para intervalos de células."}</small></div>${ship.spriteMode==="combined"?'<span class="tq-ships__shared-atlas">COMPARTILHADO</span>':'<button type="button" data-combat-sprite-pick>▦ Escolher sprite</button>'}</div>
+        <div class="tq-ships__panel-title"><div><strong>Sprite de combate</strong><small>${ship.spriteMode==="combined"?"Usando o mesmo atlas da navegação; configure apenas os ranges abaixo.":"Atlas de combate separado; as animações apontam para intervalos de células."}</small></div>${ship.spriteMode==="combined"?'<button type="button" data-combined-sprite-pick>▦ Trocar atlas único</button>':'<button type="button" data-combat-sprite-pick>▦ Escolher sprite</button>'}</div>
         <div class="tq-ships__sprite-meta">
           <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
           <label><span>Colunas</span><input data-combat-columns type="number" min="1" max="32" value="${columns}" ${ship.autoFrame!==false?"readonly":""}></label>
@@ -886,6 +886,7 @@ export class ShipEditor{
     }});
     content.querySelectorAll("[data-combat-recoil],[data-combat-shake],[data-combat-flash],[data-combat-smoke],[data-combat-impact]").forEach(el=>el.addEventListener("change",()=>this.updateShip(readStyle())));
     content.querySelector("[data-combat-sprite-pick]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,section:"combat",mode:"sprite"}));
+    content.querySelector("[data-combined-sprite-pick]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,section:"navigation",mode:"sprite"}));
     const resizeCombat=()=>{
       const cols=Math.max(1,Number(content.querySelector("[data-combat-columns]")?.value)||4);
       const rws=Math.max(1,Number(content.querySelector("[data-combat-rows]")?.value)||4);
