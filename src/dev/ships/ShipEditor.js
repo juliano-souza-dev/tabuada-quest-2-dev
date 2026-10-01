@@ -13,7 +13,8 @@ export class ShipEditor{
     this.tabByShip=new Map();
     this.directionByShip=new Map();
     this.previewTimer=0;
-    this.storageKey="tq.dev.ship-drafts:v3";
+    this.storageKey="tq.dev.ship-drafts:v4";
+    this.legacyStorageKeys=["tq.dev.ship-drafts:v3","tq.dev.ship-drafts:v2","tq.dev.ship-drafts:v1"];
     this.el=null;
   }
 
@@ -26,6 +27,8 @@ export class ShipEditor{
       <div class="tq-ships__body">
         <aside class="tq-ships__sidebar">
           <button type="button" class="tq-ships__new" data-ship-new>＋ Novo navio</button>
+          <button type="button" class="tq-ships__new" data-ship-delete-draft>🗑 Excluir rascunho</button>
+          <button type="button" class="tq-ships__new" data-ship-delete-all-drafts>🧹 Excluir todos os rascunhos</button>
           <div class="tq-ships__list" data-ships-list></div>
         </aside>
         <main class="tq-ships__editor" data-ship-editor>
@@ -35,6 +38,8 @@ export class ShipEditor{
     parent.append(this.el);
     this.el.querySelector("[data-ships-close]").addEventListener("click",()=>this.setVisible(false));
     this.el.querySelector("[data-ship-new]").addEventListener("click",()=>this.createShip());
+    this.el.querySelector("[data-ship-delete-draft]").addEventListener("click",()=>this.deleteSelectedDraft());
+    this.el.querySelector("[data-ship-delete-all-drafts]").addEventListener("click",()=>this.deleteAllDrafts());
     await this.load();
   }
 
@@ -48,6 +53,7 @@ export class ShipEditor{
       this.catalog={schema:"tq.ship-catalog",version:2,ships:[]};
     }
     try{
+      for(const key of this.legacyStorageKeys)localStorage.removeItem(key);
       const value=JSON.parse(localStorage.getItem(this.storageKey)||"[]");
       this.drafts=Array.isArray(value)?value.filter(ship=>ship?.id):[];
     }catch{this.drafts=[]}
@@ -192,6 +198,35 @@ export class ShipEditor{
 
   save(){
     try{localStorage.setItem(this.storageKey,JSON.stringify(this.drafts))}catch(error){console.warn("Ship draft save failed",error)}
+  }
+
+  deleteSelectedDraft(){
+    const id=String(this.selectedId||"");
+    if(!id||!this.drafts.some(ship=>ship.id===id))return false;
+    this.drafts=this.drafts.filter(ship=>ship.id!==id);
+    this.animationByShip.delete(id);
+    this.tabByShip.delete(id);
+    this.directionByShip.delete(id);
+    this.save();
+    const catalogShip=this.repositoryShips().find(ship=>ship.id===id);
+    this.selectedId=catalogShip?.id||this.allShips()[0]?.id||null;
+    this.render();
+    return true;
+  }
+
+  deleteAllDrafts(){
+    if(!this.drafts.length)return false;
+    this.drafts=[];
+    this.animationByShip.clear();
+    this.tabByShip.clear();
+    this.directionByShip.clear();
+    try{
+      localStorage.removeItem(this.storageKey);
+      for(const key of this.legacyStorageKeys)localStorage.removeItem(key);
+    }catch(error){console.warn("Ship draft cleanup failed",error)}
+    this.selectedId=this.repositoryShips()[0]?.id||null;
+    this.render();
+    return true;
   }
 
   setVisible(show){
@@ -592,6 +627,11 @@ export class ShipEditor{
         <strong>${this.drafts.some(d=>d.id===ship.id)?"RASCUNHO":"CATÁLOGO"}</strong>
       </button>`).join(""):'<div class="tq-ships__empty">Nenhum navio cadastrado.</div>';
     list.querySelectorAll("[data-ship-id]").forEach(button=>button.addEventListener("click",()=>this.select(button.dataset.shipId)));
+    const selectedIsDraft=Boolean(this.selectedId&&this.drafts.some(d=>d.id===this.selectedId));
+    const deleteOne=this.el.querySelector("[data-ship-delete-draft]");
+    const deleteAll=this.el.querySelector("[data-ship-delete-all-drafts]");
+    if(deleteOne)deleteOne.disabled=!selectedIsDraft;
+    if(deleteAll)deleteAll.disabled=this.drafts.length===0;
   }
 
   combinedActionCombatHtml(ship){
