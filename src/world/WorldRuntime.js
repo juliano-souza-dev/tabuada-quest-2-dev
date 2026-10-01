@@ -2038,6 +2038,7 @@ export class WorldRuntime {
   }
 
   minimapLocations(){
+    if(this.minimapConfig().showLocations===false)return [];
     return this.entities.filter(entity=>
       entity.type==="location"
       &&entity.minimap?.hidden!==true
@@ -2104,7 +2105,7 @@ export class WorldRuntime {
       ctx.restore();
     }
 
-    if(this.viewportSize&&this.zoom>0){
+    if(this.minimapConfig().showCamera!==false&&this.viewportSize&&this.zoom>0){
       const viewW=Math.min(area.width,this.viewportSize.width/this.zoom);
       const viewH=Math.min(area.height,this.viewportSize.height/this.zoom);
       const left=Math.max(area.left,Math.min(area.right-viewW,this.camera.x-viewW/2));
