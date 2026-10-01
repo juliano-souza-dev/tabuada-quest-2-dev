@@ -247,10 +247,10 @@
 @keyframes tq-combat-shot-enemy-water{0%{transform:translate(0,0) scale(.72)}42%{transform:translate(-34px,-9px) scale(1)}78%{transform:translate(-62px,18px) scale(.94)}100%{transform:translate(-72px,48px) scale(.62);opacity:.25}}
 @keyframes tq-combat-water-splash{0%{opacity:0;transform:translate(-50%,-50%) scale(.25,.1)}18%{opacity:.98;transform:translate(-50%,-50%) scale(.72,1.05)}48%{opacity:1;transform:translate(-50%,-50%) scale(1.22,.92)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.65,.45)}}
 @keyframes tq-combat-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}65%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
-@keyframes tq-combat-fire-player{0%,100%{transform:translateX(0) rotate(0)}18%{transform:translateX(-5px) rotate(-2deg)}42%{transform:translateX(2px) rotate(1deg)}}
-@keyframes tq-combat-fire-enemy{0%,100%{transform:scaleX(-1) translateX(0) rotate(0)}18%{transform:scaleX(-1) translateX(-5px) rotate(-2deg)}42%{transform:scaleX(-1) translateX(2px) rotate(1deg)}}
-@keyframes tq-combat-ship-hit-player{0%{transform:translate(0,0) rotate(0) scale(1)}12%{transform:translate(-8px,-2px) rotate(-5deg) scale(1.03)}28%{transform:translate(6px,2px) rotate(4deg) scale(.99)}45%{transform:translate(-4px,0) rotate(-2.5deg)}65%{transform:translate(2px,0) rotate(1.4deg)}100%{transform:translate(0,0) rotate(0) scale(1)}}
-@keyframes tq-combat-ship-hit-enemy{0%{transform:scaleX(-1) translate(0,0) rotate(0)}12%{transform:scaleX(-1) translate(-8px,-2px) rotate(-5deg)}28%{transform:scaleX(-1) translate(6px,2px) rotate(4deg)}45%{transform:scaleX(-1) translate(-4px,0) rotate(-2.5deg)}65%{transform:scaleX(-1) translate(2px,0) rotate(1.4deg)}100%{transform:scaleX(-1) translate(0,0) rotate(0)}}
+@keyframes tq-combat-fire-player{0%,100%{transform:translateX(0) rotate(0)}18%{transform:translateX(var(--ship-recoil-neg,-5px)) rotate(-2deg)}42%{transform:translateX(var(--ship-recoil,2px)) rotate(1deg)}}
+@keyframes tq-combat-fire-enemy{0%,100%{transform:scaleX(-1) translateX(0) rotate(0)}18%{transform:scaleX(-1) translateX(var(--ship-recoil-neg,-5px)) rotate(-2deg)}42%{transform:scaleX(-1) translateX(var(--ship-recoil,2px)) rotate(1deg)}}
+@keyframes tq-combat-ship-hit-player{0%{transform:translate(0,0) rotate(0) scale(1)}12%{transform:translate(var(--ship-shake-neg,-8px),-2px) rotate(-5deg) scale(1.03)}28%{transform:translate(var(--ship-shake,6px),2px) rotate(4deg) scale(.99)}45%{transform:translate(var(--ship-shake-neg,-4px),0) rotate(-2.5deg)}65%{transform:translate(var(--ship-shake,2px),0) rotate(1.4deg)}100%{transform:translate(0,0) rotate(0) scale(1)}}
+@keyframes tq-combat-ship-hit-enemy{0%{transform:scaleX(-1) translate(0,0) rotate(0)}12%{transform:scaleX(-1) translate(var(--ship-shake-neg,-8px),-2px) rotate(-5deg)}28%{transform:scaleX(-1) translate(var(--ship-shake,6px),2px) rotate(4deg)}45%{transform:scaleX(-1) translate(var(--ship-shake-neg,-4px),0) rotate(-2.5deg)}65%{transform:scaleX(-1) translate(var(--ship-shake,2px),0) rotate(1.4deg)}100%{transform:scaleX(-1) translate(0,0) rotate(0)}}
 @keyframes tq-combat-impact-flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.25)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}55%{opacity:.84;transform:translate(-50%,-50%) scale(.9)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)}}
 @keyframes tq-combat-impact-smoke{0%{opacity:0;transform:translate(-50%,10px) scale(.35)}22%{opacity:.78}100%{opacity:0;transform:translate(-50%,-38px) scale(1.35)}}
 @keyframes tq-combat-damage-smoke{0%,100%{transform:translate(-50%,2px) scale(.7);filter:blur(4px)}50%{transform:translate(-43%,-14px) scale(1.02);filter:blur(6px)}}
@@ -559,3 +559,32 @@
 .tq-ships__preview-empty{display:grid;place-items:center;align-content:center;gap:6px;width:100%;height:100%;min-height:220px;color:#9db5c5;text-align:center}
 .tq-ships__preview-empty b{font-size:16px;color:#d8eef8}
 .tq-ships__preview-empty small{max-width:190px;font-size:10px;line-height:1.35;opacity:.7}
+
+/* Ship Editor V2 */
+.tq-ships__tabs{display:flex;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.tq-ships__tabs button{min-height:38px;padding:8px 14px!important;border-radius:10px!important;background:rgba(255,255,255,.04)!important;color:#dbefff!important;border:1px solid rgba(255,255,255,.1)!important}
+.tq-ships__tabs button.is-active{background:rgba(73,200,255,.14)!important;border-color:rgba(73,200,255,.45)!important;color:#9cecff!important;box-shadow:inset 0 -2px 0 #49c8ff}
+.tq-ships__panel{border:1px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.035);padding:12px;margin-bottom:12px}
+.tq-ships__panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.tq-ships__panel-title>div{display:grid;gap:3px}
+.tq-ships__panel-title strong{font-size:13px;color:#e9f8ff}
+.tq-ships__panel-title small{font-size:10px;opacity:.6}
+.tq-ships__panel-title>span{font-size:9px;letter-spacing:.08em;color:#7ee7ff}
+.tq-ships__general-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tq-ships__general-grid article{display:grid;gap:4px;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(5,24,36,.5)}
+.tq-ships__general-grid b{font-size:12px;color:#dff6ff}
+.tq-ships__general-grid span{font-size:11px;color:#7ee7ff}
+.tq-ships__general-grid small{font-size:9px;opacity:.62}
+.tq-ships__settings--v2{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.tq-ships__animation--v2{margin-top:12px}
+.tq-ships__workspace--v2{grid-template-columns:minmax(220px,.72fr) minmax(0,1.8fr)}
+.tq-ships__combat-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:9px 10px;border-radius:10px;background:rgba(4,24,36,.55);font-size:10px;color:#bfdbe8}
+.tq-ships__combat-flow span{padding:5px 8px;border:1px solid rgba(126,231,255,.18);border-radius:999px}
+.tq-world-combat__ship[data-muzzle-flash="off"]::before{display:none!important}
+.tq-world-combat__ship[data-smoke="off"]::after{display:none!important}
+.tq-world-combat__ship[data-impact="off"].is-taking-hit::before{display:none!important}
+@media(max-width:760px){
+  .tq-ships__tabs{position:sticky;top:0;z-index:2;background:#071d2b;padding-top:4px}
+  .tq-ships__general-grid{grid-template-columns:1fr}
+  .tq-ships__workspace--v2{grid-template-columns:1fr}
+}
