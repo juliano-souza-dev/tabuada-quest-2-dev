@@ -268,6 +268,9 @@ export class ShipEditor{
       name:"Novo navio",
       type:"player",
       available:true,
+      spriteMode:"combined",
+      autoFrame:true,
+      cellSize:400,
       animations:{
         idle:{frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[0]},
         fireRight:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[4,5,6,7]},
