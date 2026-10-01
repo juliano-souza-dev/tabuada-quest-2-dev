@@ -408,6 +408,13 @@ export class ShipEditor{
   atlasControlsHtml(ship){
     const mode=ship.spriteMode==="combined"?"combined":"split";
     const size=this.normalizeCellSize(ship.cellSize);
+    const sprite=ship.navigation?.sprite||{};
+    const imageWidth=Math.max(0,Number(sprite.imageWidth)||0);
+    const imageHeight=Math.max(0,Number(sprite.imageHeight)||0);
+    const gridText=sprite.src
+      ?imageWidth+"×"+imageHeight+" → "+Math.max(1,Number(sprite.columns)||1)+"×"+Math.max(1,Number(sprite.rows)||1)+" células"
+      :"Selecione um spritesheet para calcular a grade.";
+    const exact=sprite.src&&ship.autoFrame!==false?sprite.autoFrameExact!==false:true;
     return `
       <section class="tq-ships__panel tq-ships__atlas-settings">
         <div class="tq-ships__panel-title"><div><strong>Fonte dos sprites</strong><small>Use um atlas único para navegação + combate ou dois atlas separados.</small></div><span>${mode==="combined"?"ATLAS ÚNICO":"2 ATLAS"}</span></div>
@@ -419,6 +426,7 @@ export class ShipEditor{
         <small class="tq-world-editor-note">${mode==="combined"
           ?"O mesmo arquivo alimenta as 16 direções e os ranges de combate."
           :"Navegação e combate podem usar arquivos diferentes."} Com enquadramento automático, linhas e colunas são calculadas pelas dimensões reais do arquivo.</small>
+        <div class="tq-ships__atlas-status ${exact?"is-ok":"is-warning"}"><b>${gridText}</b><span>${ship.autoFrame===false?"Grade manual.":exact?"Enquadramento exato em "+size+"×"+size+".":"A imagem não é múltipla exata de "+size+" px; haverá sobra fora da grade."}</span></div>
       </section>`;
   }
 
