@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20260930-2242";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261001-0652";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 
 export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
