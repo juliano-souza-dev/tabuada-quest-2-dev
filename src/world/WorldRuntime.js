@@ -18,6 +18,49 @@ import {
 } from "./WorldCollision.mjs?v=20261001-1438";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
+const hashString=value=>{
+  let hash=2166136261;
+  for(const ch of String(value||"")){
+    hash^=ch.charCodeAt(0);
+    hash=Math.imul(hash,16777619);
+  }
+  return hash>>>0;
+};
+const createSeededRandom=seed=>{
+  let state=(Number(seed)>>>0)||0x9e3779b9;
+  return ()=>{
+    state+=0x6D2B79F5;
+    let t=state;
+    t=Math.imul(t^(t>>>15),t|1);
+    t^=t+Math.imul(t^(t>>>7),t|61);
+    return ((t^(t>>>14))>>>0)/4294967296;
+  };
+};
+const normalizeNpcPopulation=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  const spread=value.spread&&typeof value.spread==="object"?value.spread:{};
+  const movement=value.movement&&typeof value.movement==="object"?value.movement:{};
+  const types=Array.isArray(value.types)?value.types:[];
+  return {
+    enabled:value.enabled===true,
+    seed:Math.max(1,Math.floor(Number(value.seed)||1)),
+    spread:{
+      mode:["random","random-spaced"].includes(String(spread.mode))?String(spread.mode):"random-spaced",
+      margin:clamp(Number(spread.margin??320),0,2000),
+      minDistance:clamp(Number(spread.minDistance??360),0,1800)
+    },
+    movement:{
+      mode:"straight",
+      speed:clamp(Number(movement.speed??80),0,420)
+    },
+    types:types.slice(0,12).map(item=>({
+      shipId:String(item?.shipId||""),
+      count:clamp(Math.floor(Number(item?.count)||0),0,50),
+      combat:item?.combat===true,
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,20)
+    })).filter(item=>item.shipId&&item.count>0)
+  };
+};
 const normalizePlayerWaterEffects=player=>{
   const fx=player?.effects||{};
   return {
@@ -57,6 +100,9 @@ export class WorldRuntime {
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.onCombatVictory=typeof options.onCombatVictory==="function"?options.onCombatVictory:null;
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
+    this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
+    this.config.npcPopulation=normalizeNpcPopulation(this.config.npcPopulation||{});
+    this.generatedNpcIds=new Set();
     this.challengeActive=null;
     this.challengeTimer=0;
     this.combatActive=null;
@@ -108,6 +154,7 @@ export class WorldRuntime {
       normalized.visualRotation=Number(normalized.rotation||0);
       return normalized;
     });
+    this.rebuildNpcPopulation({render:false});
     this.selectedId=null;
     this.lastTime=0;
     this.raf=0;
@@ -120,6 +167,191 @@ export class WorldRuntime {
     this.wakeParticleCount=0;
     this.minimapLastRender=0;
     this.cleanups=[];
+  }
+
+  npcShipProfile(shipId){
+    if(!shipId||!this.resolveShip)return null;
+    try{
+      const profile=this.resolveShip(String(shipId),"npc");
+      return profile&&typeof profile==="object"?structuredClone(profile):null;
+    }catch(error){
+      console.warn("[TabuadaQuest] NPC ship resolve failed",shipId,error);
+      return null;
+    }
+  }
+
+  npcSpawnPoint(random,occupied,population){
+    const area=this.getPlayableBounds();
+    const margin=Math.max(0,Number(population.spread.margin)||0);
+    const left=Math.min(area.right,area.left+margin);
+    const right=Math.max(left,area.right-margin);
+    const top=Math.min(area.bottom,area.top+margin);
+    const bottom=Math.max(top,area.bottom-margin);
+    const minDistance=Math.max(0,Number(population.spread.minDistance)||0);
+    const spaced=population.spread.mode==="random-spaced";
+    let fallback={x:(left+right)/2,y:(top+bottom)/2};
+
+    for(let attempt=0;attempt<80;attempt++){
+      const point={
+        x:left+(right-left)*random(),
+        y:top+(bottom-top)*random()
+      };
+      fallback=point;
+      if(!spaced||!occupied.some(other=>distance(point,other)<minDistance))return point;
+    }
+    return fallback;
+  }
+
+  createGeneratedNpc({shipId,index,typeConfig,population,random,occupied}){
+    const profile=this.npcShipProfile(shipId);
+    if(!profile)return null;
+    const point=this.npcSpawnPoint(random,occupied,population);
+    occupied.push(point);
+    const heading=random()*360-180;
+    const sprite=profile.sprite&&typeof profile.sprite==="object"?structuredClone(profile.sprite):null;
+    const src=String(profile.src||sprite?.src||"");
+    const combatEnabled=typeConfig.combat===true;
+
+    const entity={
+      id:"npc.auto."+String(shipId).replace(/[^a-z0-9._-]+/gi,"-")+"."+(index+1),
+      type:"ship",
+      role:"npc",
+      shipId:String(shipId),
+      shipName:String(profile.shipName||profile.name||shipId),
+      label:String(profile.shipName||profile.name||shipId),
+      src,
+      sprite,
+      width:Math.max(32,Number(profile.width)||180),
+      height:Math.max(32,Number(profile.height)||180),
+      x:point.x,
+      y:point.y,
+      z:22,
+      rotation:heading,
+      direction:directionForHeading(heading,null,{hysteresis:0}),
+      lockAspect:true,
+      runtimeGenerated:true,
+      npcNavigation:{
+        mode:"straight",
+        speed:Math.max(0,Number(population.movement.speed)||0),
+        heading
+      },
+      combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
+      combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
+      combat:{enabled:combatEnabled,hp:Math.max(1,Number(typeConfig.hp)||3)},
+      motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
+      effect:{category:"ship",preset:"none",active:false},
+      collision:{
+        active:true,
+        shape:"ellipse",
+        scaleX:.46,
+        scaleY:.60,
+        padding:8,
+        action:combatEnabled?"combat":"none",
+        message:""
+      }
+    };
+
+    entity.index=this.entities.length;
+    entity.anchorX=entity.x;
+    entity.anchorY=entity.y;
+    entity.visualX=entity.x;
+    entity.visualY=entity.y;
+    entity.visualRotation=entity.rotation;
+    entity.skewX=0;
+    entity.skewY=0;
+    entity.effect=normalizeEntityEffect(entity.effect||{},entity);
+    entity.collision=normalizeCollision(entity.collision||{},entity);
+    return entity;
+  }
+
+  rebuildNpcPopulation({render=true}={}){
+    if(!this.entities)return;
+    this.entities=this.entities.filter(entity=>!entity.runtimeGenerated);
+    this.generatedNpcIds.clear();
+
+    const population=normalizeNpcPopulation(this.config.npcPopulation||{});
+    this.config.npcPopulation=population;
+    if(population.enabled&&population.types.length&&this.resolveShip){
+      const random=createSeededRandom(hashString(this.config.id||"world")^population.seed);
+      const occupied=[
+        {x:Number(this.player?.x??this.config.player?.x??this.config.width/2),y:Number(this.player?.y??this.config.player?.y??this.config.height/2)},
+        ...this.entities.map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}))
+      ];
+      let total=0;
+      for(const typeConfig of population.types){
+        for(let index=0;index<typeConfig.count&&total<80;index++,total++){
+          const entity=this.createGeneratedNpc({
+            shipId:typeConfig.shipId,
+            index,
+            typeConfig,
+            population,
+            random,
+            occupied
+          });
+          if(!entity)continue;
+          entity.index=this.entities.length;
+          this.entities.push(entity);
+          this.generatedNpcIds.add(entity.id);
+        }
+      }
+    }
+
+    this.entities.forEach((entity,index)=>entity.index=index);
+    if(render&&this.entityLayer)this.renderEntities();
+  }
+
+  updateNpcNavigation(entity,dt){
+    if(this.mode!=="play"||!entity?.runtimeGenerated)return;
+    const nav=entity.npcNavigation;
+    if(!nav||nav.mode!=="straight")return;
+    const speed=Math.max(0,Number(nav.speed)||0);
+    if(speed<=0)return;
+
+    const heading=Number(nav.heading??entity.rotation)||0;
+    const rad=heading*Math.PI/180;
+    entity.x+=Math.sin(rad)*speed*dt;
+    entity.y-=Math.cos(rad)*speed*dt;
+
+    const area=this.getPlayableBounds();
+    const halfW=Math.max(8,Number(entity.width)||96)/2;
+    const halfH=Math.max(8,Number(entity.height)||96)/2;
+    const left=area.left+halfW,right=area.right-halfW,top=area.top+halfH,bottom=area.bottom-halfH;
+    if(entity.x<left)entity.x=right;
+    else if(entity.x>right)entity.x=left;
+    if(entity.y<top)entity.y=bottom;
+    else if(entity.y>bottom)entity.y=top;
+
+    entity.rotation=heading;
+    entity.direction=directionForHeading(heading,entity.direction,{hysteresis:0});
+    entity.anchorX=entity.x;
+    entity.anchorY=entity.y;
+  }
+
+  applyEntityDirectionalVisual(entity){
+    const el=entity?.el;
+    if(!el)return false;
+    const sprite=entity.sprite;
+    const img=el.querySelector("img");
+    if(!sprite?.src||!sprite?.regions){
+      el.dataset.direction="";
+      if(el.dataset.renderMode==="atlas")el.dataset.renderMode="sprite";
+      el.style.backgroundImage="";
+      el.style.backgroundSize="";
+      el.style.backgroundPosition="";
+      el.style.backgroundRepeat="";
+      el.style.clipPath="";
+      el.style.webkitClipPath="";
+      if(img)img.hidden=false;
+      return false;
+    }
+    entity.direction=directionForHeading(Number(entity.rotation)||0,entity.direction,{hysteresis:2});
+    const style=directionalRegionStyle(sprite,entity.direction);
+    if(!style)return false;
+    Object.assign(el.style,style);
+    el.dataset.direction=entity.direction;
+    el.dataset.renderMode="atlas";
+    if(img)img.hidden=true;
+    return true;
   }
 
   mount(){
@@ -351,7 +583,7 @@ export class WorldRuntime {
       entity.el=el;
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
-      if(this.editorEnabled)this.bindEntityEditing(entity);
+      if(this.editorEnabled&&!entity.runtimeGenerated)this.bindEntityEditing(entity);
       this.entityLayer.append(el);
       this.syncEntityEffectRenderer(entity);
     }
@@ -375,6 +607,7 @@ export class WorldRuntime {
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+    this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
   }
 
@@ -1448,9 +1681,10 @@ export class WorldRuntime {
     return structuredClone(entity.effect);
   }
 
-  updateEntityMotionFrame(time){
+  updateEntityMotionFrame(time,dt=1/60){
     for(const entity of this.entities){
       if(this.collected.has(entity.id)||!entity.el)continue;
+      this.updateNpcNavigation(entity,dt);
 
       const motion=this.getEntityMotion(entity.id);
       const motionFrame=motion?.active
@@ -1473,17 +1707,19 @@ export class WorldRuntime {
 
       const offsetX=Number(motionFrame.offsetX||0)+Number(effectFrame.offsetX||0);
       const offsetY=Number(motionFrame.offsetY||0)+Number(effectFrame.offsetY||0);
-      const rotation=Number(entity.rotation||0)+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
+      const hasDirectionalSprite=Boolean(entity.sprite?.src&&entity.sprite?.regions);
+      const rotation=(hasDirectionalSprite?0:Number(entity.rotation||0))+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
       const scaleX=Number(effectFrame.scaleX||1);
       const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
 
       entity.visualX=entity.x+offsetX;
       entity.visualY=entity.y+offsetY;
-      entity.visualRotation=rotation;
+      entity.visualRotation=Number(entity.rotation||0);
       entity.el.style.left=entity.visualX+"px";
       entity.el.style.top=entity.visualY+"px";
       entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
       entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
+      if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
       const img=entity.el.querySelector("img");
       const canvas=entity.el.querySelector(".tq-world-entity__webgl");
@@ -1497,7 +1733,7 @@ export class WorldRuntime {
         if(img)img.hidden=rendered;
       }else{
         if(canvas)canvas.hidden=true;
-        if(img)img.hidden=false;
+        if(img)img.hidden=Boolean(entity.sprite?.src&&entity.sprite?.regions);
       }
     }
   }
@@ -2388,6 +2624,25 @@ export class WorldRuntime {
     this.player.x=clamp(this.player.x,travel.left,travel.right);
     this.player.y=clamp(this.player.y,travel.top,travel.bottom);
 
+    if(patch.npcPopulation&&typeof patch.npcPopulation==="object"){
+      this.config.npcPopulation=normalizeNpcPopulation({
+        ...(this.config.npcPopulation||{}),
+        ...structuredClone(patch.npcPopulation),
+        spread:{
+          ...(this.config.npcPopulation?.spread||{}),
+          ...(patch.npcPopulation.spread||{})
+        },
+        movement:{
+          ...(this.config.npcPopulation?.movement||{}),
+          ...(patch.npcPopulation.movement||{})
+        },
+        types:Array.isArray(patch.npcPopulation.types)
+          ?structuredClone(patch.npcPopulation.types)
+          :structuredClone(this.config.npcPopulation?.types||[])
+      });
+      this.rebuildNpcPopulation({render:false});
+    }
+
     for(const entity of this.entities){
       entity.x=clamp(Number(entity.x||0),0,this.config.width);
       entity.y=clamp(Number(entity.y||0),0,this.config.height);
@@ -2395,6 +2650,7 @@ export class WorldRuntime {
       entity.anchorY=entity.y;
       this.applyEntityVisual(entity);
     }
+    if(patch.npcPopulation&&this.entityLayer)this.renderEntities();
     this.clampEditorCamera();
     this.updateCamera(true);
     if(this.nameEl)this.nameEl.textContent=this.config.name||this.config.id||"Mundo";
@@ -2514,7 +2770,7 @@ export class WorldRuntime {
 
   getWorld(){
     const world=structuredClone(this.config);
-    world.entities=this.entities.map(entity=>structuredClone(this.cleanEntity(entity)));
+    world.entities=this.entities.filter(entity=>!entity.runtimeGenerated).map(entity=>structuredClone(this.cleanEntity(entity)));
     world.editor={
       ...(world.editor||{}),
       cameraX:this.camera.x,
@@ -2848,7 +3104,7 @@ export class WorldRuntime {
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive)this.updatePlayer(dt);
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
-    this.updateEntityMotionFrame(time);
+    this.updateEntityMotionFrame(time,dt);
     this.updateCamera(false,dt);
     this.updateOceanFrame(time);
     this.updateNearby();
