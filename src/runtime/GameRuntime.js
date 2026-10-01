@@ -435,6 +435,11 @@ export class GameRuntime {
       :(fallback&&typeof fallback==="object"?clone(fallback):{});
     const navigation=ship.navigation&&typeof ship.navigation==="object"?clone(ship.navigation):null;
     const combat=ship.combat&&typeof ship.combat==="object"?clone(ship.combat):null;
+    const spriteMode=ship.spriteMode==="combined"?"combined":"split";
+    if(combat&&spriteMode==="combined"){
+      combat.useNavigationAtlas=true;
+      delete combat.sprite;
+    }
     if(!navigation&&!combat)return legacy;
     const effects={
       ...(legacy.effects&&typeof legacy.effects==="object"?legacy.effects:{}),
@@ -450,6 +455,7 @@ export class GameRuntime {
     return {
       ...legacy,
       ...(navigation||{}),
+      spriteMode,
       src:navigation?.src||legacy.src||"",
       sprite:navigation?.sprite||legacy.sprite||null,
       width:Number(navigation?.width??legacy.width??230),
