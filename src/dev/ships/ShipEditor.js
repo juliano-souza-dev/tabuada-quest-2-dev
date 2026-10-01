@@ -455,38 +455,48 @@ export class ShipEditor{
     if(!current)return false;
     const ship=this.drafts.find(item=>item.id===shipId)||this.editableCurrent();
     if(!ship)return false;
-    const target=section==="combat"?"combat":"navigation";
+    const requested=section==="combat"?"combat":"navigation";
+    const target=ship.spriteMode==="combined"?"navigation":requested;
     ship[target]=ship[target]||{};
-    ship[target].sprite=ship[target].sprite&&typeof ship[target].sprite==="object"?ship[target].sprite:{columns:4,rows:4,cellWidth:400,cellHeight:400};
+    ship[target].sprite=ship[target].sprite&&typeof ship[target].sprite==="object"
+      ?ship[target].sprite
+      :{columns:4,rows:4,cellWidth:ship.cellSize||400,cellHeight:ship.cellSize||400};
     ship[target].sprite.src=String(src||"");
     if(target==="navigation")ship.navigation.src=String(src||"");
+    if(ship.spriteMode==="combined")this.syncCombinedAtlas(ship);
     ship.editor={...(ship.editor||{}),draft:true,updatedAt:Date.now()};
     this.save();
+
     this.loadImage(src).then(image=>{
       const draft=this.drafts.find(item=>item.id===shipId);
+      if(!draft)return;
       const sprite=draft?.[target]?.sprite;
-      if(!draft||!sprite)return;
-      sprite.imageWidth=image.naturalWidth||image.width||sprite.imageWidth||1600;
-      sprite.imageHeight=image.naturalHeight||image.height||sprite.imageHeight||1600;
-      if(
-        target==="combat"
-        &&sprite.imageWidth%400===0
-        &&sprite.imageHeight%400===0
-        &&sprite.imageWidth/400<=32
-        &&sprite.imageHeight/400<=32
-      ){
-        sprite.columns=Math.max(1,Math.round(sprite.imageWidth/400));
-        sprite.rows=Math.max(1,Math.round(sprite.imageHeight/400));
-        sprite.cellWidth=400;
-        sprite.cellHeight=400;
+      if(!sprite)return;
+      const imageWidth=image.naturalWidth||image.width||sprite.imageWidth||1600;
+      const imageHeight=image.naturalHeight||image.height||sprite.imageHeight||1600;
+      sprite.imageWidth=imageWidth;
+      sprite.imageHeight=imageHeight;
+
+      if(draft.autoFrame!==false){
+        this.frameSpriteByCell(sprite,draft.cellSize||400,{navigation:target==="navigation"});
       }else{
-        sprite.cellWidth=Math.max(1,Math.floor(sprite.imageWidth/Math.max(1,Number(sprite.columns)||4)));
-        sprite.cellHeight=Math.max(1,Math.floor(sprite.imageHeight/Math.max(1,Number(sprite.rows)||4)));
+        sprite.columns=Math.max(1,Number(sprite.columns)||4);
+        sprite.rows=Math.max(1,Number(sprite.rows)||4);
+        sprite.cellWidth=Math.max(1,Math.floor(imageWidth/sprite.columns));
+        sprite.cellHeight=Math.max(1,Math.floor(imageHeight/sprite.rows));
       }
+
       if(target==="navigation")this.syncNavigationRegions(draft);
+      if(draft.spriteMode==="combined"){
+        this.syncCombinedAtlas(draft);
+      }else if(requested==="combat"&&target==="combat"){
+        draft.combat.sprite={...sprite};
+      }
+
       this.save();
       if(this.selectedId===shipId)this.renderEditor();
-    }).catch(()=>{});
+    }).catch(error=>console.warn("Ship spritesheet load failed",error));
+
     this.renderEditor();
     return true;
   }
