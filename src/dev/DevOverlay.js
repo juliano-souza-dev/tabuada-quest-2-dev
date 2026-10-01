@@ -6,10 +6,17 @@ export class DevOverlay {
     this.assetTree=null;this.assetDirectoryPath="assets";this.assetNodeIndex=new Map();this.assetByPath=new Map();this.assetPickTarget=null;
     this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
-    this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];this.worldEditor=new WorldEditor(this.runtime.root,{sceneRuntime:this.runtime,pedagogyRuntime:this.pedagogyRuntime,onPedagogyResult:this.onPedagogyResult});this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
+    this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
+    this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
+    this.worldEditor=new WorldEditor(this.runtime.root,{
+      sceneRuntime:this.runtime,
+      pedagogyRuntime:this.pedagogyRuntime,
+      onPedagogyResult:this.onPedagogyResult,
+      resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role)
+    });
+    this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
     this.worldAtlasSelectionMode=null;
-    this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
     try{this.sceneGroupOpen=new Set(JSON.parse(sessionStorage.getItem(this.sceneGroupStorageKey)||"[]"))}catch{this.sceneGroupOpen=new Set()}
   }
   mount(){
@@ -149,8 +156,58 @@ export class DevOverlay {
     window.addEventListener("tq:worldenterworld",e=>{
       if(this.workspace!=="world")return;
       const target=e.detail?.entity?.destinationWorldId;
-      if(target)this.openWorld(target);
+      if(target)this.openWorld(target,{preserveMode:true,preservePlayer:true});
     });
+  }
+
+  resolveWorldShipProfile(shipId,role="npc"){
+    const ship=this.shipEditor?.allShips?.().find(item=>item.id===String(shipId||""));
+    if(!ship)return null;
+    const navigation=ship.navigation&&typeof ship.navigation==="object"?structuredClone(ship.navigation):{};
+    const combatAnimations={};
+    for(const [key,animation] of Object.entries(ship.animations||{})){
+      if(ship.animationGroups?.[key]==="combat")combatAnimations[key]=structuredClone(animation);
+    }
+    const combat={
+      ...(ship.combat&&typeof ship.combat==="object"?structuredClone(ship.combat):{}),
+      animations:combatAnimations
+    };
+    return {
+      shipId:ship.id,
+      shipName:ship.name||ship.id,
+      name:ship.name||ship.id,
+      role,
+      src:String(navigation.src||navigation.sprite?.src||""),
+      sprite:navigation.sprite?structuredClone(navigation.sprite):null,
+      width:Number(navigation.width)||230,
+      height:Number(navigation.height)||230,
+      speed:Number(navigation.speed)||420,
+      acceleration:Number(navigation.acceleration)||1100,
+      braking:Number(navigation.braking??.12),
+      effects:{
+        wakeActive:navigation.wake!==false,
+        shadowActive:navigation.shadow!==false,
+        idleBalanceActive:true,
+        idleRoll:Number(navigation.roll??2.4),
+        idleHeave:Number(navigation.heave??3.2),
+        idlePeriod:Number(navigation.periodMs??3600)
+      },
+      combatVisual:combat,
+      combatSprite:combat.legacySprite?structuredClone(combat.legacySprite):null
+    };
+  }
+
+  persistentPlayerShipProfile(player){
+    if(!player||typeof player!=="object")return null;
+    const keys=[
+      "shipId","shipName","src","sprite","directions","width","height",
+      "speed","acceleration","braking","effects","combatSprite","combatVisual"
+    ];
+    const profile={};
+    for(const key of keys){
+      if(player[key]!==undefined)profile[key]=structuredClone(player[key]);
+    }
+    return Object.keys(profile).length?profile:null;
   }
 
   loadLocalScenes(){
@@ -559,6 +616,13 @@ export class DevOverlay {
       ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
       minimap:{enabled:true,frameAsset:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp",showLocations:true,showShips:true,showCamera:true,types:["location","island","ship"]},
       entities:[],
+      npcPopulation:{
+        enabled:false,
+        seed:1,
+        spread:{mode:"random-spaced",margin:320,minDistance:360},
+        movement:{mode:"straight",speed:80},
+        types:[]
+      },
       camera:{playZoom:1},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
       meta:{schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev"}
@@ -578,9 +642,13 @@ export class DevOverlay {
     this.renderWorlds();
   }
 
-  async openWorld(id){
+  async openWorld(id,{preserveMode=false,preservePlayer=false}={}){
     const entry=this.allWorldEntries().find(world=>world.id===id);
     if(!entry)return;
+    const previousMode=this.mode;
+    const carriedPlayer=preservePlayer
+      ?this.persistentPlayerShipProfile(this.worldEditor?.getPlayerConfig?.())
+      :null;
     try{
       if(this.workspace==="scene"&&!this.sceneBeforeWorld)this.sceneBeforeWorld=structuredClone(this.runtime.scene||null);
       this.removeWorldSceneBackButton();
@@ -589,9 +657,10 @@ export class DevOverlay {
       else await this.worldEditor.open(entry);
       this.workspace="world";
       this.selected=null;
+      if(carriedPlayer)this.worldEditor.updatePlayerConfig(carriedPlayer,false);
       if(this.mold)this.mold.hidden=true;
       this.toggleWorlds(false);
-      this.setMode("edit");
+      this.setMode(preserveMode&&["edit","config","play"].includes(previousMode)?previousMode:"edit");
       this.renderWorlds();
     }catch(error){
       console.error("World open failed",error);
@@ -674,6 +743,25 @@ export class DevOverlay {
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
       const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
+      const npcPopulation=world.npcPopulation&&typeof world.npcPopulation==="object"
+        ?structuredClone(world.npcPopulation)
+        :{enabled:false,seed:1,spread:{mode:"random-spaced",margin:320,minDistance:360},movement:{mode:"straight",speed:80},types:[]};
+      npcPopulation.spread={mode:"random-spaced",margin:320,minDistance:360,...(npcPopulation.spread||{})};
+      npcPopulation.movement={mode:"straight",speed:80,...(npcPopulation.movement||{})};
+      npcPopulation.types=Array.isArray(npcPopulation.types)?npcPopulation.types:[];
+      const npcShips=(this.shipEditor?.allShips?.()||[]).filter(ship=>ship.type==="npc");
+      const npcShipOptions=selected=>npcShips.map(ship=>
+        '<option value="'+this.escapeHtml(ship.id)+'" '+(String(selected||"")===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
+      ).join("");
+      const npcRows=npcPopulation.types.map((item,index)=>
+        '<div class="tq-world-npc-row" data-npc-row="'+index+'">'+
+          '<label class="tq-world-field"><span>Tipo de NPC</span><select data-npc-type-ship="'+index+'">'+npcShipOptions(item.shipId)+'</select></label>'+
+          '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
+          '<label class="tq-field tq-field--check"><span>Combate</span><input data-npc-type-combat="'+index+'" type="checkbox" '+(item.combat===true?'checked':'')+'></label>'+
+          '<label class="tq-world-field"><span>HP</span><input data-npc-type-hp="'+index+'" type="number" min="1" max="20" value="'+Math.max(1,Number(item.hp)||3)+'"></label>'+
+          '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover tipo de NPC">×</button>'+
+        '</div>'
+      ).join("");
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
       const spriteSrc=String(sprite.src||"");
@@ -759,6 +847,18 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>ID</span><input value="'+this.escapeHtml(world.id)+'" readonly></label>'+
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
+          '</div></section>'+
+          '<section class="tq-config-area tq-config-area--npc-map"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🚢 NPCs do mapa</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-field tq-field--check"><span>NPCs ativos neste mundo</span><input data-npc-enabled type="checkbox" '+(npcPopulation.enabled===true?'checked':'')+'></label>'+
+            '<div class="tq-worlds__create-grid">'+
+              '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
+              '<label class="tq-world-field"><span>Margem das bordas</span><input data-npc-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(npcPopulation.spread.margin)||0)+'"></label>'+
+              '<label class="tq-world-field"><span>Distância mínima</span><input data-npc-spread-distance type="number" min="0" max="1800" value="'+Math.max(0,Number(npcPopulation.spread.minDistance)||0)+'"></label>'+
+              '<label class="tq-world-field"><span>Velocidade provisória</span><input data-npc-movement-speed type="number" min="0" max="420" value="'+Math.max(0,Number(npcPopulation.movement.speed)||0)+'"></label>'+
+            '</div>'+
+            '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
+            '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
+            '<small class="tq-world-editor-note">Os NPCs são exclusivos deste mundo. Eles surgem em pontos pseudoaleatórios e, nesta primeira versão, navegam em linha reta. IA, rotas, desvio de ilhas e perseguição ficam para a próxima etapa.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🌊 Fundo do oceano</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
@@ -900,6 +1000,69 @@ export class DevOverlay {
         this.renderWorlds();
         this.renderWorldInspector();
       }));
+
+      const saveNpcPopulation=next=>{
+        this.worldEditor.updateWorld({npcPopulation:next},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      };
+      const currentNpcPopulation=()=>structuredClone(this.worldEditor?.getWorld()?.npcPopulation||npcPopulation);
+
+      content.querySelector("[data-npc-enabled]")?.addEventListener("change",event=>{
+        const next=currentNpcPopulation();
+        next.enabled=event.currentTarget.checked;
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-spread-mode]")?.addEventListener("change",event=>{
+        const next=currentNpcPopulation();
+        next.spread={...(next.spread||{}),mode:event.currentTarget.value};
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-spread-margin]")?.addEventListener("change",event=>{
+        const next=currentNpcPopulation();
+        next.spread={...(next.spread||{}),margin:Math.max(0,Number(event.currentTarget.value)||0)};
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-spread-distance]")?.addEventListener("change",event=>{
+        const next=currentNpcPopulation();
+        next.spread={...(next.spread||{}),minDistance:Math.max(0,Number(event.currentTarget.value)||0)};
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-movement-speed]")?.addEventListener("change",event=>{
+        const next=currentNpcPopulation();
+        next.movement={mode:"straight",speed:Math.max(0,Number(event.currentTarget.value)||0)};
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-type-add]")?.addEventListener("click",()=>{
+        const first=npcShips[0];
+        if(!first)return;
+        const next=currentNpcPopulation();
+        next.types=Array.isArray(next.types)?next.types:[];
+        next.types.push({shipId:first.id,count:1,combat:false,hp:3});
+        next.enabled=true;
+        saveNpcPopulation(next);
+      });
+      content.querySelector("[data-npc-redistribute]")?.addEventListener("click",()=>{
+        const next=currentNpcPopulation();
+        next.seed=Math.max(1,Number(next.seed)||1)+1;
+        saveNpcPopulation(next);
+      });
+      content.querySelectorAll("[data-npc-type-remove]").forEach(button=>button.addEventListener("click",()=>{
+        const index=Number(button.dataset.npcTypeRemove);
+        const next=currentNpcPopulation();
+        next.types=(Array.isArray(next.types)?next.types:[]).filter((_,i)=>i!==index);
+        saveNpcPopulation(next);
+      }));
+      const updateNpcType=(index,patch)=>{
+        const next=currentNpcPopulation();
+        next.types=Array.isArray(next.types)?next.types:[];
+        next.types[index]={...(next.types[index]||{}),...patch};
+        saveNpcPopulation(next);
+      };
+      content.querySelectorAll("[data-npc-type-ship]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeShip),{shipId:input.value})));
+      content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
+      content.querySelectorAll("[data-npc-type-combat]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCombat),{combat:input.checked})));
+      content.querySelectorAll("[data-npc-type-hp]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeHp),{hp:Math.max(1,Number(input.value)||3)})));
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
         const apply=commit=>{
