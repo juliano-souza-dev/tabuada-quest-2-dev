@@ -100,6 +100,7 @@ export class WorldRuntime {
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.onCombatVictory=typeof options.onCombatVictory==="function"?options.onCombatVictory:null;
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
+    this.onExecuteAction=typeof options.onExecuteAction==="function"?options.onExecuteAction:null;
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.config.npcPopulation=normalizeNpcPopulation(this.config.npcPopulation||{});
     this.generatedNpcIds=new Set();
@@ -1814,11 +1815,17 @@ export class WorldRuntime {
 
   confirmRegionTransition(){
     const entity=this.regionTransitionActive;
-    if(!entity?.destinationWorldId||!this.onEnterWorld)return;
+    if(!entity)return;
     const clean=this.cleanEntity(entity);
     const state=this.getState();
+    const interaction=this.entityInteraction(entity);
     this.closeRegionTransition();
-    this.onEnterWorld(clean,state);
+
+    if(interaction?.actionId==="enter-region"&&this.onExecuteAction){
+      this.onExecuteAction(interaction,clean,state);
+      return;
+    }
+    if(entity.destinationWorldId&&this.onEnterWorld)this.onEnterWorld(clean,state);
   }
 
   bindChallengeControls(){
@@ -2378,6 +2385,31 @@ export class WorldRuntime {
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),900);
   }
 
+  entityInteraction(entity){
+    if(!entity||typeof entity!=="object")return null;
+    const interaction=entity.interaction&&typeof entity.interaction==="object"
+      ?structuredClone(entity.interaction)
+      :null;
+    if(interaction?.actionId)return interaction;
+
+    if(entity.type==="region-exit"&&entity.destinationWorldId){
+      return {
+        actionId:"enter-region",
+        params:{
+          regionId:String(entity.destinationWorldId),
+          spawnId:String(entity.destinationSpawnId||"")
+        }
+      };
+    }
+    if(entity.scene){
+      return {
+        actionId:"open-scene",
+        params:{sceneId:String(entity.scene)}
+      };
+    }
+    return null;
+  }
+
   updateNearby(){
     if(this.challengeActive||this.combatActive){
       this.actionWrap.hidden=true;
@@ -2418,7 +2450,8 @@ export class WorldRuntime {
 
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
-    if(action==="enter-world"){
+    const interaction=this.entityInteraction(entity);
+    if(action==="enter-world"||interaction?.actionId==="enter-region"){
       this.actionWrap.hidden=true;
       if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
       return;
@@ -2458,14 +2491,27 @@ export class WorldRuntime {
       return;
     }
 
+    const interaction=this.entityInteraction(entity);
+    if(interaction?.actionId==="open-scene"&&this.onExecuteAction){
+      this.actionWrap.hidden=true;
+      this.onExecuteAction(interaction,this.cleanEntity(entity),this.getState());
+      return;
+    }
+
     if(action==="enter-scene"&&entity.scene&&this.onEnterScene){
       this.actionWrap.hidden=true;
       this.onEnterScene(this.cleanEntity(entity),this.getState());
       return;
     }
 
-    if(action==="enter-world"&&entity.destinationWorldId&&this.onEnterWorld){
+    if(interaction?.actionId==="enter-region"||action==="enter-world"){
       this.openRegionTransition(entity);
+      return;
+    }
+
+    if(interaction&&this.onExecuteAction){
+      this.actionWrap.hidden=true;
+      this.onExecuteAction(interaction,this.cleanEntity(entity),this.getState());
     }
   }
 
