@@ -717,3 +717,59 @@
   .tq-world-npc-row{grid-template-columns:1fr 1fr}
   .tq-world-npc-row .tq-world-npc-remove{grid-column:2;justify-self:end}
 }
+
+
+/* Ship atlas source modes + automatic framing */
+.tq-ships__atlas-settings{
+  border-color:rgba(255,200,90,.22);
+  background:linear-gradient(180deg,rgba(255,183,55,.055),rgba(255,255,255,.025));
+}
+.tq-ships__atlas-settings-grid{
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(220px,1fr) minmax(150px,.7fr);
+  gap:10px;
+  align-items:end;
+}
+.tq-ships__atlas-settings-grid>label:not(.tq-ships__check){
+  display:grid;
+  gap:5px;
+}
+.tq-ships__atlas-settings-grid>label>span{
+  font-size:9px;
+  opacity:.68;
+  text-transform:uppercase;
+  letter-spacing:.07em;
+}
+.tq-ships__atlas-settings-grid select{
+  min-height:38px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;
+  background:#0b2231;
+  color:#fff;
+  padding:8px;
+}
+.tq-ships__auto-frame{
+  min-height:38px;
+  align-self:end;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:9px;
+  background:rgba(5,24,36,.52);
+}
+.tq-ships__shared-atlas{
+  padding:6px 9px;
+  border:1px solid rgba(255,200,90,.28);
+  border-radius:999px;
+  color:#ffd87d!important;
+  background:rgba(255,183,55,.08);
+}
+.tq-ships__sprite-meta input[readonly]{
+  color:#9fdff1;
+  background:#081c29;
+}
+@media(max-width:920px){
+  .tq-ships__atlas-settings-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .tq-ships__atlas-settings-grid{grid-template-columns:1fr}
+}
