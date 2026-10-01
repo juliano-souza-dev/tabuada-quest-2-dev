@@ -536,7 +536,7 @@ export class DevOverlay {
         src:"./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
       },
       ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
-      minimap:{enabled:true,showLocations:true,showShips:true,showCamera:true,types:["location","island","ship"]},
+      minimap:{enabled:true,frameAsset:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp",showLocations:true,showShips:true,showCamera:true,types:["location","island","ship"]},
       entities:[],
       camera:{playZoom:1},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
