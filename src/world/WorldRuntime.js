@@ -145,6 +145,7 @@ export class WorldRuntime {
       </section>
       <aside class="tq-world-minimap" data-world-minimap aria-label="Minimapa">
         <canvas data-world-minimap-canvas aria-hidden="true"></canvas>
+        <img class="tq-world-minimap__frame" data-world-minimap-frame alt="" aria-hidden="true">
         <span class="tq-world-minimap__north" aria-hidden="true">N</span>
       </aside>
       <div class="tq-world-action" hidden>
@@ -205,6 +206,7 @@ export class WorldRuntime {
     this.actionButton=this.host.querySelector("[data-world-action]");
     this.minimapEl=this.host.querySelector("[data-world-minimap]");
     this.minimapCanvas=this.host.querySelector("[data-world-minimap-canvas]");
+    this.minimapFrameEl=this.host.querySelector("[data-world-minimap-frame]");
     this.minimapCtx=this.minimapCanvas?.getContext?.("2d")||null;
     this.challengeWrap=this.host.querySelector("[data-world-challenge]");
     this.challengeForm=this.host.querySelector("[data-world-challenge-form]");
@@ -2087,11 +2089,17 @@ export class WorldRuntime {
     if(!enabled)return;
 
     const frameAsset=String(this.minimapConfig().frameAsset??"").trim();
-    this.minimapEl.classList.toggle("has-frame",Boolean(frameAsset));
-    this.minimapEl.style.setProperty(
-      "--tq-world-minimap-frame",
-      frameAsset?'url("'+frameAsset.replace(/["\\]/g,"")+'")':"none"
-    );
+    const hasFrame=Boolean(frameAsset);
+    this.minimapEl.classList.toggle("has-frame",hasFrame);
+    if(this.minimapFrameEl){
+      if(hasFrame){
+        if(this.minimapFrameEl.getAttribute("src")!==frameAsset)this.minimapFrameEl.src=frameAsset;
+        this.minimapFrameEl.hidden=false;
+      }else{
+        this.minimapFrameEl.hidden=true;
+        this.minimapFrameEl.removeAttribute("src");
+      }
+    }
     if(!force&&time-this.minimapLastRender<100)return;
     this.minimapLastRender=time;
 
