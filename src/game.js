@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2312";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-2312";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20260930-2314";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-2314";
 
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
@@ -15,7 +15,7 @@ if(rawStart){
   }
 }
 
-const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2312");
+const game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20260930-2314");
 const services=await installAuthRuntime(game,{
   configUrl:"./src/config/firebase-public.json?v=20260930-1851"
 });
