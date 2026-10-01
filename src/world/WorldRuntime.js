@@ -1752,7 +1752,6 @@ export class WorldRuntime {
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
     if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
     if(this.combatFxTimer){clearTimeout(this.combatFxTimer);this.combatFxTimer=0}
-    if(this.combatFxTimer){clearTimeout(this.combatFxTimer);this.combatFxTimer=0}
     this.combatActive=null;
     for(const ship of [this.combatPlayerShip,this.combatEnemyShip]){
       ship?.classList.remove("is-taking-hit","is-firing","is-damaged","is-critical","is-defeated");
@@ -2681,7 +2680,13 @@ export class WorldRuntime {
 
   destroy(){
     if(this.challengeTimer)clearTimeout(this.challengeTimer);
+    if(this.combatTimer)clearTimeout(this.combatTimer);
+    if(this.combatSpriteTimer)clearTimeout(this.combatSpriteTimer);
+    if(this.combatFxTimer)clearTimeout(this.combatFxTimer);
     this.challengeTimer=0;
+    this.combatTimer=0;
+    this.combatSpriteTimer=0;
+    this.combatFxTimer=0;
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
