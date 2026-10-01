@@ -150,37 +150,30 @@ export class ShipEditor{
     if(!declaredSpriteMode&&value.navigation.sprite.src&&value.combat.sprite.src===value.navigation.sprite.src){
       value.spriteMode="combined";
     }
-    if(value.spriteMode==="combined"&&value.navigation.sprite.src){
-      value.combat.sprite={
-        ...value.combat.sprite,
-        src:value.navigation.sprite.src,
-        imageWidth:value.navigation.sprite.imageWidth,
-        imageHeight:value.navigation.sprite.imageHeight,
-        columns:value.navigation.sprite.columns,
-        rows:value.navigation.sprite.rows,
-        cellWidth:value.navigation.sprite.cellWidth,
-        cellHeight:value.navigation.sprite.cellHeight
-      };
-    }
-    // Legacy repair only when the declared grid does not match the image.
-    // Valid 400/600/800 cell grids are trusted as-is.
-    const combatImageW=value.combat.sprite.imageWidth;
-    const combatImageH=value.combat.sprite.imageHeight;
-    const combatGridValid=
-      value.combat.sprite.columns*value.combat.sprite.cellWidth===combatImageW
-      &&value.combat.sprite.rows*value.combat.sprite.cellHeight===combatImageH;
-    if(value.combat.sprite.src&&!combatGridValid){
-      const preferred=value.cellSize;
-      if(
-        combatImageW%preferred===0
-        &&combatImageH%preferred===0
-        &&combatImageW/preferred<=32
-        &&combatImageH/preferred<=32
-      ){
-        value.combat.sprite.columns=Math.max(1,Math.round(combatImageW/preferred));
-        value.combat.sprite.rows=Math.max(1,Math.round(combatImageH/preferred));
-        value.combat.sprite.cellWidth=preferred;
-        value.combat.sprite.cellHeight=preferred;
+    if(value.spriteMode==="combined"){
+      value.combat.useNavigationAtlas=true;
+      delete value.combat.sprite;
+    }else{
+      value.combat.useNavigationAtlas=false;
+      // Legacy repair only when the declared split combat grid does not match the image.
+      const combatImageW=value.combat.sprite.imageWidth;
+      const combatImageH=value.combat.sprite.imageHeight;
+      const combatGridValid=
+        value.combat.sprite.columns*value.combat.sprite.cellWidth===combatImageW
+        &&value.combat.sprite.rows*value.combat.sprite.cellHeight===combatImageH;
+      if(value.combat.sprite.src&&!combatGridValid){
+        const preferred=value.cellSize;
+        if(
+          combatImageW%preferred===0
+          &&combatImageH%preferred===0
+          &&combatImageW/preferred<=32
+          &&combatImageH/preferred<=32
+        ){
+          value.combat.sprite.columns=Math.max(1,Math.round(combatImageW/preferred));
+          value.combat.sprite.rows=Math.max(1,Math.round(combatImageH/preferred));
+          value.combat.sprite.cellWidth=preferred;
+          value.combat.sprite.cellHeight=preferred;
+        }
       }
     }
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
@@ -355,18 +348,8 @@ export class ShipEditor{
     ship.navigation=ship.navigation||{};
     ship.navigation.sprite=ship.navigation.sprite||{};
     ship.combat=ship.combat||{};
-    const nav=ship.navigation.sprite;
-    const current=ship.combat.sprite&&typeof ship.combat.sprite==="object"?ship.combat.sprite:{};
-    ship.combat.sprite={
-      ...current,
-      src:String(nav.src||""),
-      imageWidth:Number(nav.imageWidth)||1600,
-      imageHeight:Number(nav.imageHeight)||1600,
-      columns:Math.max(1,Number(nav.columns)||4),
-      rows:Math.max(1,Number(nav.rows)||4),
-      cellWidth:Math.max(1,Number(nav.cellWidth)||ship.cellSize||400),
-      cellHeight:Math.max(1,Number(nav.cellHeight)||ship.cellSize||400)
-    };
+    ship.combat.useNavigationAtlas=true;
+    delete ship.combat.sprite;
   }
 
   applyAutoFraming(ship){
@@ -396,8 +379,18 @@ export class ShipEditor{
     ship.cellSize=this.normalizeCellSize(ship.cellSize);
     if(ship.spriteMode==="combined"){
       this.syncCombinedAtlas(ship);
-    }else if(previousMode==="combined"&&ship.combat?.sprite?.src===ship.navigation?.sprite?.src){
-      ship.combat.sprite={...ship.combat.sprite};
+    }else if(previousMode==="combined"){
+      ship.combat=ship.combat||{};
+      ship.combat.useNavigationAtlas=false;
+      ship.combat.sprite={
+        src:"",
+        columns:4,
+        rows:4,
+        imageWidth:(ship.cellSize||400)*4,
+        imageHeight:(ship.cellSize||400)*4,
+        cellWidth:ship.cellSize||400,
+        cellHeight:ship.cellSize||400
+      };
     }
     if(ship.autoFrame)this.applyAutoFraming(ship);
     ship.editor={...(ship.editor||{}),draft:true,updatedAt:Date.now()};
@@ -1083,7 +1076,14 @@ export class ShipEditor{
     if(!ship)return;
     const output=this.normalizeShip(ship);
     output.navigation={...output.navigation,sprite:clone(output.navigation.sprite||{})};
-    output.combat={...output.combat,sprite:clone(output.combat.sprite||{}),animations:{}};
+    output.combat={...output.combat,animations:{}};
+    if(output.spriteMode==="split"){
+      output.combat.sprite=clone(output.combat.sprite||{});
+      output.combat.useNavigationAtlas=false;
+    }else{
+      output.combat.useNavigationAtlas=true;
+      delete output.combat.sprite;
+    }
     for(const [key,animation] of Object.entries(output.animations||{})){
       if(output.animationGroups?.[key]==="combat")output.combat.animations[key]=clone(animation);
     }
