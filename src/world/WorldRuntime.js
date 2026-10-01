@@ -1568,29 +1568,37 @@ export class WorldRuntime {
   }
 
   updateCombatDamageState(){
-    const ship=this.combatPlayerShip;
     const active=this.combatActive;
-    if(!ship)return;
-    ship.classList.remove("is-damaged","is-critical","is-defeated");
     if(!active)return;
-    const hp=Math.max(0,Number(active.playerHp)||0);
-    const max=Math.max(1,Number(active.playerMaxHp)||3);
-    if(hp<=0){
-      ship.classList.add("is-defeated");
-    }else if(hp<=Math.max(1,Math.floor(max/3))){
-      ship.classList.add("is-critical");
-    }else if(hp<max){
-      ship.classList.add("is-damaged");
-    }
+    const sync=(ship,hp,max)=>{
+      if(!ship)return;
+      ship.classList.remove("is-damaged","is-critical","is-defeated");
+      const safeHp=Math.max(0,Number(hp)||0);
+      const safeMax=Math.max(1,Number(max)||3);
+      if(safeHp<=0){
+        ship.classList.add("is-defeated");
+      }else if(safeHp<=Math.max(1,Math.floor(safeMax/3))){
+        ship.classList.add("is-critical");
+      }else if(safeHp<safeMax){
+        ship.classList.add("is-damaged");
+      }
+    };
+    sync(this.combatPlayerShip,active.playerHp,active.playerMaxHp);
+    sync(this.combatEnemyShip,active.enemyHp,active.enemyMaxHp);
   }
 
-  playCombatDamageFx(){
-    const ship=this.combatPlayerShip;
+  playCombatShipAction(side="player",action="fire"){
+    const ship=side==="enemy"?this.combatEnemyShip:this.combatPlayerShip;
     if(!ship)return;
-    ship.classList.remove("is-taking-hit");
+    const className=action==="hit"?"is-taking-hit":"is-firing";
+    ship.classList.remove(className);
     void ship.offsetWidth;
-    ship.classList.add("is-taking-hit");
-    setTimeout(()=>ship.classList.remove("is-taking-hit"),1280);
+    ship.classList.add(className);
+    setTimeout(()=>ship.classList.remove(className),action==="hit"?1280:980);
+  }
+
+  playCombatDamageFx(side="player"){
+    this.playCombatShipAction(side,"hit");
   }
 
   clearCombatFx(){
@@ -1603,6 +1611,7 @@ export class WorldRuntime {
 
   playCombatFx({from="player",hit=false}={}){
     this.clearCombatFx();
+    this.playCombatShipAction(from,"fire");
     if(this.combatShot){
       this.combatShot.hidden=false;
       this.combatShot.classList.add(from==="enemy"?"is-enemy-shot":"is-player-shot",hit?"is-hit":"is-miss");
@@ -1612,7 +1621,7 @@ export class WorldRuntime {
       target.hidden=false;
       target.classList.add(from==="enemy"?"is-enemy-result":"is-player-result");
     }
-    setTimeout(()=>this.clearCombatFx(),1050);
+    setTimeout(()=>this.clearCombatFx(),1280);
   }
 
   combatChoices(challenge){
@@ -1735,8 +1744,8 @@ export class WorldRuntime {
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
     if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
     this.combatActive=null;
-    if(this.combatPlayerShip){
-      this.combatPlayerShip.classList.remove("is-taking-hit","is-damaged","is-critical","is-defeated");
+    for(const ship of [this.combatPlayerShip,this.combatEnemyShip]){
+      ship?.classList.remove("is-taking-hit","is-firing","is-damaged","is-critical","is-defeated");
     }
     if(this.combatWrap)this.combatWrap.hidden=true;
     if(this.combatFeedback)this.combatFeedback.textContent="";
@@ -1803,34 +1812,33 @@ export class WorldRuntime {
       if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
       this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:true});
-      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),620);
+      setTimeout(()=>this.playCombatDamageFx("enemy"),820);
+      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),1120);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
       this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:false});
-      setTimeout(()=>{
-        this.playCombatFx({from:"enemy",hit:true});
-        this.playCombatDamageFx();
-      },620);
+      setTimeout(()=>this.playCombatFx({from:"enemy",hit:true}),1120);
+      setTimeout(()=>this.playCombatDamageFx("player"),1900);
     }
     this.updateCombatHud();
 
     if(active.enemyHp<=0){
       this.completeCollection(active.entity);
       if(this.combatFeedback)this.combatFeedback.textContent="Navio inimigo derrotado!";
-      this.combatTimer=setTimeout(()=>this.closeCombat(),1700);
+      this.combatTimer=setTimeout(()=>this.closeCombat(),2650);
       return;
     }
     if(active.playerHp<=0){
       if(this.combatFeedback)this.combatFeedback.textContent="Seu navio perdeu o duelo. Afaste-se e tente novamente.";
-      this.combatTimer=setTimeout(()=>this.closeCombat(),2200);
+      this.combatTimer=setTimeout(()=>this.closeCombat(),3150);
       return;
     }
     this.combatTimer=setTimeout(async()=>{
       this.combatTimer=0;
       await this.loadCombatRound();
-    },1750);
+    },2850);
   }
 
   stopForChallenge(){
