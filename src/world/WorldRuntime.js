@@ -1790,8 +1790,12 @@ export class WorldRuntime {
       }
     }
     const style=this.combatSource(side,entity)?.combat||{};
-    shipEl.style.setProperty("--ship-recoil",(Number(style.recoil)||18)+"px");
-    shipEl.style.setProperty("--ship-shake",(Number(style.shake)||5)+"px");
+    const recoil=Math.max(0,Number(style.recoil)||18);
+    const shake=Math.max(0,Number(style.shake)||5);
+    shipEl.style.setProperty("--ship-recoil",recoil+"px");
+    shipEl.style.setProperty("--ship-recoil-neg",(-recoil)+"px");
+    shipEl.style.setProperty("--ship-shake",shake+"px");
+    shipEl.style.setProperty("--ship-shake-neg",(-shake)+"px");
     shipEl.dataset.muzzleFlash=style.muzzleFlash===false?"off":"on";
     shipEl.dataset.smoke=style.smoke===false?"off":"on";
     shipEl.dataset.impact=style.impact===false?"off":"on";
