@@ -715,6 +715,11 @@
         "path": "assets/ships",
         "children": [
           {
+            "type": "image",
+            "name": "colombo.png",
+            "path": "assets/ships/colombo.png"
+          },
+          {
             "type": "directory",
             "name": "combat",
             "path": "assets/ships/combat",
@@ -725,6 +730,11 @@
                 "path": "assets/ships/combat/pirate_default_combat_1600x1600.png"
               }
             ]
+          },
+          {
+            "type": "image",
+            "name": "el-colombo.webp",
+            "path": "assets/ships/el-colombo.webp"
           },
           {
             "type": "directory",
@@ -761,16 +771,6 @@
             ]
           },
           {
-            "type": "image",
-            "name": "colombo.png",
-            "path": "assets/ships/colombo.png"
-          },
-          {
-            "type": "image",
-            "name": "el-colombo.webp",
-            "path": "assets/ships/el-colombo.webp"
-          },
-          {
             "type": "file",
             "name": "halloween_x5f_ship_x5f_playground (1).html",
             "path": "assets/ships/halloween_x5f_ship_x5f_playground (1).html"
@@ -784,6 +784,11 @@
             "type": "image",
             "name": "navio_pirata_tabuadas.webp",
             "path": "assets/ships/navio_pirata_tabuadas.webp"
+          },
+          {
+            "type": "image",
+            "name": "pirate_red_spritesheet_48frames_600.webp",
+            "path": "assets/ships/pirate_red_spritesheet_48frames_600.webp"
           },
           {
             "type": "image",
@@ -1718,6 +1723,11 @@
       "type": "image",
       "name": "navio_pirata_tabuadas.webp",
       "path": "assets/ships/navio_pirata_tabuadas.webp"
+    },
+    {
+      "type": "image",
+      "name": "pirate_red_spritesheet_48frames_600.webp",
+      "path": "assets/ships/pirate_red_spritesheet_48frames_600.webp"
     },
     {
       "type": "image",
