@@ -11,6 +11,7 @@ export class ShipEditor{
     this.selectedId=null;
     this.animationByShip=new Map();
     this.tabByShip=new Map();
+    this.directionByShip=new Map();
     this.previewTimer=0;
     this.storageKey="tq.dev.ship-drafts:v3";
     this.el=null;
@@ -21,7 +22,7 @@ export class ShipEditor{
     this.el.className="tq-dev__ships";
     this.el.hidden=true;
     this.el.innerHTML=`
-      <header><div><strong>Navios</strong><small>Editor frame a frame · runtime em atlas</small></div><button type="button" data-ships-close aria-label="Fechar">×</button></header>
+      <header><div><strong>Navios</strong><small>Configuração por spritesheet / atlas</small></div><button type="button" data-ships-close aria-label="Fechar">×</button></header>
       <div class="tq-ships__body">
         <aside class="tq-ships__sidebar">
           <button type="button" class="tq-ships__new" data-ship-new>＋ Novo navio</button>
@@ -83,6 +84,42 @@ export class ShipEditor{
       sprite:clone(value.navigation.sprite||profile.sprite||null),
       compiled:clone(value.navigation.compiled||{})
     };
+    const navSprite=value.navigation.sprite&&typeof value.navigation.sprite==="object"?value.navigation.sprite:{};
+    value.navigation.sprite={
+      src:String(navSprite.src||value.navigation.src||profile.sprite?.src||profile.src||""),
+      columns:Math.max(1,Number(navSprite.columns)||4),
+      rows:Math.max(1,Number(navSprite.rows)||4),
+      imageWidth:Math.max(1,Number(navSprite.imageWidth)||1600),
+      imageHeight:Math.max(1,Number(navSprite.imageHeight)||1600),
+      cellWidth:Math.max(1,Number(navSprite.cellWidth)||Math.round((Number(navSprite.imageWidth)||1600)/(Number(navSprite.columns)||4))),
+      cellHeight:Math.max(1,Number(navSprite.cellHeight)||Math.round((Number(navSprite.imageHeight)||1600)/(Number(navSprite.rows)||4))),
+      regions:clone(navSprite.regions||{}),
+      directionFrames:clone(navSprite.directionFrames||{}),
+      initialDirection:String(navSprite.initialDirection||value.navigation.initialDirection||"n")
+    };
+    const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
+    const columns=value.navigation.sprite.columns;
+    const cellWidth=value.navigation.sprite.cellWidth;
+    const cellHeight=value.navigation.sprite.cellHeight;
+    for(let index=0;index<directionOrder.length;index++){
+      const key=directionOrder[index];
+      if(!Number.isFinite(Number(value.navigation.sprite.directionFrames[key]))){
+        const region=value.navigation.sprite.regions[key];
+        if(region&&cellWidth>0&&cellHeight>0){
+          value.navigation.sprite.directionFrames[key]=Math.max(0,Math.round(Number(region.y||0)/cellHeight)*columns+Math.round(Number(region.x||0)/cellWidth));
+        }else value.navigation.sprite.directionFrames[key]=index;
+      }
+      const frame=Math.max(0,Number(value.navigation.sprite.directionFrames[key])||0);
+      if(!value.navigation.sprite.regions[key]){
+        value.navigation.sprite.regions[key]={
+          x:(frame%columns)*cellWidth,
+          y:Math.floor(frame/columns)*cellHeight,
+          width:cellWidth,
+          height:cellHeight
+        };
+      }
+    }
+    value.navigation.src=value.navigation.sprite.src||value.navigation.src||"";
     value.combat=value.combat&&typeof value.combat==="object"?value.combat:{};
     value.combat={
       recoil:Number(value.combat.recoil??18),
@@ -90,7 +127,18 @@ export class ShipEditor{
       muzzleFlash:value.combat.muzzleFlash!==false,
       smoke:value.combat.smoke!==false,
       impact:value.combat.impact!==false,
-      compiled:clone(value.combat.compiled||{})
+      compiled:clone(value.combat.compiled||{}),
+      sprite:clone(value.combat.sprite||profile.combatSprite||null)
+    };
+    const combatSprite=value.combat.sprite&&typeof value.combat.sprite==="object"?value.combat.sprite:{};
+    value.combat.sprite={
+      src:String(combatSprite.src||""),
+      columns:Math.max(1,Number(combatSprite.columns)||4),
+      rows:Math.max(1,Number(combatSprite.rows)||4),
+      imageWidth:Math.max(1,Number(combatSprite.imageWidth)||1600),
+      imageHeight:Math.max(1,Number(combatSprite.imageHeight)||1600),
+      cellWidth:Math.max(1,Number(combatSprite.cellWidth||combatSprite.frameWidth)||400),
+      cellHeight:Math.max(1,Number(combatSprite.cellHeight||combatSprite.frameHeight)||400)
     };
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
     value.animationGroups=value.animationGroups&&typeof value.animationGroups==="object"?value.animationGroups:{};
@@ -169,21 +217,20 @@ export class ShipEditor{
       type:"player",
       available:true,
       animations:{
-        idle:{frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[]},
-        fireRight:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[]},
+        fireRight:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[4,5,6,7]},
         fireLeft:{frameMs:135,loop:false,cellWidth:400,cellHeight:400,frames:[]},
         hit:{frameMs:120,loop:false,cellWidth:400,cellHeight:400,frames:[]},
         critical:{frameMs:160,loop:true,cellWidth:400,cellHeight:400,frames:[]},
         defeat:{frameMs:180,loop:false,cellWidth:400,cellHeight:400,frames:[]}
       },
-      animationGroups:{idle:"navigation",fireRight:"combat",fireLeft:"combat",hit:"combat",critical:"combat",defeat:"combat"},
+      animationGroups:{fireRight:"combat",fireLeft:"combat",hit:"combat",critical:"combat",defeat:"combat"},
       editor:{draft:true,createdAt:Date.now(),updatedAt:Date.now()}
     });
     this.drafts.push(ship);
     this.save();
     this.selectedId=id;
     this.tabByShip.set(id,"general");
-    this.animationByShip.set(id,"idle");
+    this.directionByShip.set(id,"n");
     this.render();
   }
 
@@ -193,6 +240,93 @@ export class ShipEditor{
     Object.assign(ship,clone(patch),{editor:{...(ship.editor||{}),draft:true,updatedAt:Date.now()}});
     this.save();
     this.render();
+  }
+
+  directionKeys(){
+    return ["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
+  }
+
+  directionInfo(){
+    return {
+      n:["↑","Para cima"],nne:["↗","Quase para cima, levemente à direita"],
+      ne:["↗","Diagonal para cima e direita"],ene:["→","Quase para direita, levemente para cima"],
+      e:["→","Para direita"],ese:["→","Quase para direita, levemente para baixo"],
+      se:["↘","Diagonal para baixo e direita"],sse:["↘","Quase para baixo, levemente à direita"],
+      s:["↓","Para baixo"],ssw:["↙","Quase para baixo, levemente à esquerda"],
+      sw:["↙","Diagonal para baixo e esquerda"],wsw:["←","Quase para esquerda, levemente para baixo"],
+      w:["←","Para esquerda"],wnw:["←","Quase para esquerda, levemente para cima"],
+      nw:["↖","Diagonal para cima e esquerda"],nnw:["↖","Quase para cima, levemente à esquerda"]
+    };
+  }
+
+  syncNavigationRegions(ship){
+    const sprite=ship?.navigation?.sprite;
+    if(!sprite)return;
+    const columns=Math.max(1,Number(sprite.columns)||4);
+    const rows=Math.max(1,Number(sprite.rows)||4);
+    const imageWidth=Math.max(1,Number(sprite.imageWidth)||columns*400);
+    const imageHeight=Math.max(1,Number(sprite.imageHeight)||rows*400);
+    const cellWidth=Math.max(1,Number(sprite.cellWidth)||Math.floor(imageWidth/columns));
+    const cellHeight=Math.max(1,Number(sprite.cellHeight)||Math.floor(imageHeight/rows));
+    sprite.columns=columns;sprite.rows=rows;sprite.imageWidth=imageWidth;sprite.imageHeight=imageHeight;
+    sprite.cellWidth=cellWidth;sprite.cellHeight=cellHeight;
+    sprite.directionFrames=sprite.directionFrames||{};
+    sprite.regions=sprite.regions||{};
+    const maxFrame=columns*rows-1;
+    for(const key of this.directionKeys()){
+      const frame=Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames[key])||0));
+      sprite.directionFrames[key]=frame;
+      sprite.regions[key]={
+        x:(frame%columns)*cellWidth,
+        y:Math.floor(frame/columns)*cellHeight,
+        width:cellWidth,
+        height:cellHeight
+      };
+    }
+    ship.navigation.src=sprite.src||"";
+  }
+
+  setSpriteAsset(shipId,section,src){
+    const current=this.allShips().find(item=>item.id===shipId);
+    if(!current)return false;
+    const ship=this.drafts.find(item=>item.id===shipId)||this.editableCurrent();
+    if(!ship)return false;
+    const target=section==="combat"?"combat":"navigation";
+    ship[target]=ship[target]||{};
+    ship[target].sprite=ship[target].sprite&&typeof ship[target].sprite==="object"?ship[target].sprite:{columns:4,rows:4,cellWidth:400,cellHeight:400};
+    ship[target].sprite.src=String(src||"");
+    if(target==="navigation")ship.navigation.src=String(src||"");
+    ship.editor={...(ship.editor||{}),draft:true,updatedAt:Date.now()};
+    this.save();
+    this.loadImage(src).then(image=>{
+      const draft=this.drafts.find(item=>item.id===shipId);
+      const sprite=draft?.[target]?.sprite;
+      if(!draft||!sprite)return;
+      sprite.imageWidth=image.naturalWidth||image.width||sprite.imageWidth||1600;
+      sprite.imageHeight=image.naturalHeight||image.height||sprite.imageHeight||1600;
+      sprite.cellWidth=Math.max(1,Math.floor(sprite.imageWidth/Math.max(1,Number(sprite.columns)||4)));
+      sprite.cellHeight=Math.max(1,Math.floor(sprite.imageHeight/Math.max(1,Number(sprite.rows)||4)));
+      if(target==="navigation")this.syncNavigationRegions(draft);
+      this.save();
+      if(this.selectedId===shipId)this.renderEditor();
+    }).catch(()=>{});
+    this.renderEditor();
+    return true;
+  }
+
+  updateNavigationSprite(patch={}){
+    const ship=this.editableCurrent();
+    if(!ship)return;
+    ship.navigation.sprite={...(ship.navigation.sprite||{}),...clone(patch)};
+    this.syncNavigationRegions(ship);
+    this.save();this.renderEditor();
+  }
+
+  updateCombatSprite(patch={}){
+    const ship=this.editableCurrent();
+    if(!ship)return;
+    ship.combat.sprite={...(ship.combat.sprite||{}),...clone(patch)};
+    this.save();this.renderEditor();
   }
 
   currentAnimationKey(ship=this.current()){
@@ -352,6 +486,7 @@ export class ShipEditor{
       this.renderEditor();
     }));
     const content=host.querySelector("[data-ship-v2-content]");
+
     if(tab==="general"){
       content.innerHTML=`
         <section class="tq-ships__panel">
@@ -362,10 +497,10 @@ export class ShipEditor{
             <label><span>Tipo</span><select data-ship-type><option value="player" ${ship.type!=="npc"?"selected":""}>Jogador</option><option value="npc" ${ship.type==="npc"?"selected":""}>NPC</option></select></label>
           </div>
           <div class="tq-ships__general-grid">
-            <article><b>🧭 Navegação</b><span>${Object.keys(ship.animations||{}).filter(k=>(ship.animationGroups?.[k]||"navigation")==="navigation").length} animações</span><small>${Math.round(ship.navigation.speed)} px/s · ${Math.round(ship.navigation.width)}×${Math.round(ship.navigation.height)}</small></article>
-            <article><b>💥 Combate</b><span>${Object.keys(ship.animations||{}).filter(k=>ship.animationGroups?.[k]==="combat").length} animações</span><small>recoil ${Math.round(ship.combat.recoil)} · shake ${Math.round(ship.combat.shake)}</small></article>
+            <article><b>🧭 Navegação</b><span>Spritesheet direcional</span><small>${Math.round(ship.navigation.speed)} px/s · ${Math.round(ship.navigation.width)}×${Math.round(ship.navigation.height)}</small></article>
+            <article><b>💥 Combate</b><span>Atlas + animações</span><small>recoil ${Math.round(ship.combat.recoil)} · shake ${Math.round(ship.combat.shake)}</small></article>
           </div>
-          <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>Movimento e estilo de batalha pertencem ao navio; HP e pedagogia continuam no sistema de combate.</small></div>
+          <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>O runtime consome spritesheets; frames individuais ficam fora do fluxo principal.</small></div>
         </section>`;
       content.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
       content.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
@@ -373,27 +508,138 @@ export class ShipEditor{
       return;
     }
 
-    const section=tab==="combat"?"combat":"navigation";
-    const keys=Object.keys(ship.animations||{}).filter(key=>(ship.animationGroups?.[key]||"navigation")===section);
-    const animationKey=this.currentAnimationKey(ship);
-    const anim=this.animation();
-    const frames=Array.isArray(anim?.frames)?anim.frames:[];
-    const settings=section==="navigation"?`
-      <section class="tq-ships__panel">
-        <div class="tq-ships__panel-title"><div><strong>Comportamento de navegação</strong><small>Personalidade física aplicada pelo runtime.</small></div></div>
-        <div class="tq-ships__settings tq-ships__settings--v2">
-          <label><span>Largura</span><input data-nav-width type="number" min="32" max="800" value="${Math.round(ship.navigation.width)}"></label>
-          <label><span>Altura</span><input data-nav-height type="number" min="32" max="800" value="${Math.round(ship.navigation.height)}"></label>
-          <label><span>Velocidade</span><input data-nav-speed type="number" min="40" max="1200" value="${Math.round(ship.navigation.speed)}"></label>
-          <label><span>Aceleração</span><input data-nav-accel type="number" min="100" max="3000" value="${Math.round(ship.navigation.acceleration)}"></label>
-          <label><span>Roll °</span><input data-nav-roll type="number" min="0" max="20" step=".1" value="${ship.navigation.roll}"></label>
-          <label><span>Heave px</span><input data-nav-heave type="number" min="0" max="40" step=".1" value="${ship.navigation.heave}"></label>
-          <label><span>Sway px</span><input data-nav-sway type="number" min="0" max="40" step=".1" value="${ship.navigation.sway}"></label>
-          <label><span>Período ms</span><input data-nav-period type="number" min="500" max="10000" value="${Math.round(ship.navigation.periodMs)}"></label>
-          <label class="tq-ships__check"><input data-nav-wake type="checkbox" ${ship.navigation.wake!==false?"checked":""}><span>Esteira</span></label>
-          <label class="tq-ships__check"><input data-nav-shadow type="checkbox" ${ship.navigation.shadow!==false?"checked":""}><span>Sombra</span></label>
-        </div>
-      </section>`:`
+    if(tab==="navigation"){
+      const sprite=ship.navigation.sprite||{};
+      const keys=this.directionKeys();
+      const info=this.directionInfo();
+      const selected=this.directionByShip.get(ship.id)||sprite.initialDirection||"n";
+      this.directionByShip.set(ship.id,selected);
+      const columns=Math.max(1,Number(sprite.columns)||4);
+      const rows=Math.max(1,Number(sprite.rows)||4);
+      const maxFrame=columns*rows-1;
+      const cellStyle=key=>{
+        if(!sprite.src)return "";
+        const frame=Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames?.[key])||0));
+        const col=frame%columns,row=Math.floor(frame/columns);
+        const x=columns===1?0:(col/(columns-1))*100;
+        const y=rows===1?0:(row/(rows-1))*100;
+        return 'background-image:url(&quot;'+this.escape(sprite.src)+'&quot;);background-size:'+(columns*100)+'% '+(rows*100)+'%;background-position:'+x+'% '+y+'%;';
+      };
+      const selectedFrame=Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames?.[selected])||0));
+      content.innerHTML=`
+        <section class="tq-ships__panel">
+          <div class="tq-ships__panel-title"><div><strong>Comportamento de navegação</strong><small>Física do navio no oceano.</small></div></div>
+          <div class="tq-ships__settings tq-ships__settings--v2">
+            <label><span>Largura</span><input data-nav-width type="number" min="32" max="800" value="${Math.round(ship.navigation.width)}"></label>
+            <label><span>Altura</span><input data-nav-height type="number" min="32" max="800" value="${Math.round(ship.navigation.height)}"></label>
+            <label><span>Velocidade</span><input data-nav-speed type="number" min="40" max="1200" value="${Math.round(ship.navigation.speed)}"></label>
+            <label><span>Aceleração</span><input data-nav-accel type="number" min="100" max="3000" value="${Math.round(ship.navigation.acceleration)}"></label>
+            <label><span>Roll °</span><input data-nav-roll type="number" min="0" max="20" step=".1" value="${ship.navigation.roll}"></label>
+            <label><span>Heave px</span><input data-nav-heave type="number" min="0" max="40" step=".1" value="${ship.navigation.heave}"></label>
+            <label class="tq-ships__check"><input data-nav-wake type="checkbox" ${ship.navigation.wake!==false?"checked":""}><span>Esteira</span></label>
+            <label class="tq-ships__check"><input data-nav-shadow type="checkbox" ${ship.navigation.shadow!==false?"checked":""}><span>Sombra</span></label>
+          </div>
+        </section>
+
+        <section class="tq-ships__panel tq-ships__sprite-panel">
+          <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>Um único atlas para as 16 direções.</small></div><button type="button" data-nav-sprite-pick>▦ Escolher sprite</button></div>
+          <div class="tq-ships__sprite-meta">
+            <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
+            <label><span>Colunas</span><input data-nav-columns type="number" min="1" max="32" value="${columns}"></label>
+            <label><span>Linhas</span><input data-nav-rows type="number" min="1" max="32" value="${rows}"></label>
+            <label><span>Célula W</span><input value="${Math.round(Number(sprite.cellWidth)||400)}" readonly></label>
+            <label><span>Célula H</span><input value="${Math.round(Number(sprite.cellHeight)||400)}" readonly></label>
+          </div>
+
+          <div class="tq-ships__direction-toolbar">
+            <button type="button" data-dir-prev>← Anterior</button>
+            <button type="button" data-dir-copy>Copiar anterior</button>
+            <button type="button" data-dir-next>Próxima →</button>
+            <span><b>${keys.indexOf(selected)+1}/16</b> posições</span>
+          </div>
+
+          <div class="tq-ships__direction-grid">
+            ${keys.map(key=>`
+              <button type="button" class="tq-ships__direction-card ${key===selected?"is-selected":""}" data-direction="${key}">
+                <span class="tq-ships__direction-arrow">${info[key][0]}</span>
+                <span class="tq-ships__direction-thumb" style="${cellStyle(key)}">${sprite.src?"":"＋"}</span>
+                <small>${this.escape(info[key][1])}</small>
+                <em>#${Math.max(0,Math.min(maxFrame,Number(sprite.directionFrames?.[key])||0))+1}</em>
+              </button>`).join("")}
+          </div>
+
+          <div class="tq-ships__direction-config">
+            <div class="tq-ships__direction-preview" style="${cellStyle(selected)}"></div>
+            <label><span>Direção</span><strong>${this.escape(info[selected][1])}</strong></label>
+            <label><span>Frame do atlas</span><input data-dir-frame type="number" min="1" max="${columns*rows}" value="${selectedFrame+1}"></label>
+            <label><span>Posição inicial</span><select data-nav-initial>${keys.map(key=>'<option value="'+key+'" '+(sprite.initialDirection===key?'selected':'')+'>'+info[key][1]+'</option>').join("")}</select></label>
+          </div>
+          <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet.</small>
+        </section>`;
+
+      const updateNav=patch=>this.updateShip({navigation:{...ship.navigation,...patch}});
+      const values=()=>({
+        width:Math.max(32,Number(content.querySelector("[data-nav-width]")?.value)||230),
+        height:Math.max(32,Number(content.querySelector("[data-nav-height]")?.value)||230),
+        speed:Math.max(40,Number(content.querySelector("[data-nav-speed]")?.value)||420),
+        acceleration:Math.max(100,Number(content.querySelector("[data-nav-accel]")?.value)||1100),
+        roll:Math.max(0,Number(content.querySelector("[data-nav-roll]")?.value)||0),
+        heave:Math.max(0,Number(content.querySelector("[data-nav-heave]")?.value)||0),
+        wake:content.querySelector("[data-nav-wake]")?.checked!==false,
+        shadow:content.querySelector("[data-nav-shadow]")?.checked!==false
+      });
+      content.querySelectorAll("[data-nav-width],[data-nav-height],[data-nav-speed],[data-nav-accel],[data-nav-roll],[data-nav-heave],[data-nav-wake],[data-nav-shadow]").forEach(el=>el.addEventListener("change",()=>updateNav(values())));
+      content.querySelector("[data-nav-sprite-pick]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,section:"navigation",mode:"sprite"}));
+      const resizeGrid=()=>{
+        const cols=Math.max(1,Number(content.querySelector("[data-nav-columns]")?.value)||4);
+        const rws=Math.max(1,Number(content.querySelector("[data-nav-rows]")?.value)||4);
+        const imageWidth=Math.max(1,Number(sprite.imageWidth)||cols*400);
+        const imageHeight=Math.max(1,Number(sprite.imageHeight)||rws*400);
+        this.updateNavigationSprite({columns:cols,rows:rws,cellWidth:Math.floor(imageWidth/cols),cellHeight:Math.floor(imageHeight/rws)});
+      };
+      content.querySelector("[data-nav-columns]")?.addEventListener("change",resizeGrid);
+      content.querySelector("[data-nav-rows]")?.addEventListener("change",resizeGrid);
+      content.querySelectorAll("[data-direction]").forEach(button=>button.addEventListener("click",()=>{this.directionByShip.set(ship.id,button.dataset.direction);this.renderEditor()}));
+      const selectOffset=delta=>{
+        const i=keys.indexOf(selected);
+        this.directionByShip.set(ship.id,keys[(i+delta+keys.length)%keys.length]);
+        this.renderEditor();
+      };
+      content.querySelector("[data-dir-prev]")?.addEventListener("click",()=>selectOffset(-1));
+      content.querySelector("[data-dir-next]")?.addEventListener("click",()=>selectOffset(1));
+      content.querySelector("[data-dir-copy]")?.addEventListener("click",()=>{
+        const i=keys.indexOf(selected),prev=keys[(i-1+keys.length)%keys.length];
+        const frame=Number(sprite.directionFrames?.[prev])||0;
+        this.updateNavigationSprite({directionFrames:{...(sprite.directionFrames||{}),[selected]:frame}});
+      });
+      content.querySelector("[data-dir-frame]")?.addEventListener("change",e=>{
+        const frame=Math.max(0,Math.min(columns*rows-1,(Number(e.currentTarget.value)||1)-1));
+        this.updateNavigationSprite({directionFrames:{...(sprite.directionFrames||{}),[selected]:frame}});
+      });
+      content.querySelector("[data-nav-initial]")?.addEventListener("change",e=>this.updateNavigationSprite({initialDirection:e.currentTarget.value}));
+      return;
+    }
+
+    const sprite=ship.combat.sprite||{};
+    const columns=Math.max(1,Number(sprite.columns)||4);
+    const rows=Math.max(1,Number(sprite.rows)||4);
+    const total=columns*rows;
+    const combatKeys=["idle","fireRight","fireLeft","hit","critical","defeat"];
+    const animationRows=combatKeys.map(key=>{
+      const anim=ship.animations?.[key]||{};
+      const nums=Array.isArray(anim.frames)?anim.frames.filter(v=>Number.isFinite(Number(v))).map(Number):[];
+      const start=nums.length?Math.min(...nums):0;
+      const finish=nums.length?Math.max(...nums):start;
+      return `<tr>
+        <td><b>${key}</b></td>
+        <td><input data-combat-start="${key}" type="number" min="1" max="${total}" value="${start+1}"></td>
+        <td><input data-combat-end="${key}" type="number" min="1" max="${total}" value="${finish+1}"></td>
+        <td><input data-combat-ms="${key}" type="number" min="40" max="1000" value="${Number(anim.frameMs)||140}"></td>
+        <td><input data-combat-loop="${key}" type="checkbox" ${anim.loop===true?"checked":""}></td>
+      </tr>`;
+    }).join("");
+
+    content.innerHTML=`
       <section class="tq-ships__panel">
         <div class="tq-ships__panel-title"><div><strong>Estilo de batalha</strong><small>Resposta visual do navio durante o duelo.</small></div></div>
         <div class="tq-ships__settings tq-ships__settings--v2">
@@ -403,83 +649,65 @@ export class ShipEditor{
           <label class="tq-ships__check"><input data-combat-smoke type="checkbox" ${ship.combat.smoke!==false?"checked":""}><span>Fumaça</span></label>
           <label class="tq-ships__check"><input data-combat-impact type="checkbox" ${ship.combat.impact!==false?"checked":""}><span>Impacto</span></label>
         </div>
-        <div class="tq-ships__combat-flow"><span>idle</span><b>→</b><span>fireLeft / fireRight</span><b>→</b><span>hit / critical</span><b>→</b><span>defeat</span></div>
-      </section>`;
+      </section>
 
-    content.innerHTML=settings+`
-      <section class="tq-ships__animation tq-ships__animation--v2">
-        <div class="tq-ships__workspace tq-ships__workspace--v2">
-          <section class="tq-ships__preview">
-            <div class="tq-ships__preview-stage">${frames.length?'<img data-ship-preview alt="Preview do navio">':'<div class="tq-ships__preview-empty"><b>Sem frames</b><small>Adicione frames para esta animação.</small></div>'}</div>
-            <small>Preview · ${this.escape(animationKey||"sem animação")}</small>
-          </section>
-          <section>
-            <div class="tq-ships__animation-head">
-              <label><span>Animação</span><select data-ship-animation>${keys.map(key=>'<option value="'+this.escape(key)+'" '+(key===animationKey?'selected':'')+'>'+this.escape(key)+'</option>').join("")}</select></label>
-              <button type="button" data-animation-add>＋ Animação</button>
-              <button type="button" data-animation-delete ${!animationKey||animationKey==="idle"?"disabled":""}>Excluir</button>
-            </div>
-            ${anim?`
-            <div class="tq-ships__settings">
-              <label><span>Frame ms</span><input data-animation-ms type="number" min="40" max="2000" value="${Number(anim.frameMs)||140}"></label>
-              <label><span>Célula W</span><input data-animation-w type="number" min="32" max="2048" value="${Number(anim.cellWidth)||400}"></label>
-              <label><span>Célula H</span><input data-animation-h type="number" min="32" max="2048" value="${Number(anim.cellHeight)||400}"></label>
-              <label class="tq-ships__check"><input data-animation-loop type="checkbox" ${anim.loop!==false?"checked":""}><span>Loop</span></label>
-            </div>
-            <div class="tq-ships__frames">
-              ${frames.map((frame,index)=>`
-                <article class="tq-ship-frame">
-                  <b>#${index+1}</b><img src="${this.escape(frame.src)}" alt="Frame ${index+1}">
-                  <small title="${this.escape(frame.src)}">${this.escape(frame.src.split("/").pop())}</small>
-                  <div><button data-frame-left="${index}" ${index===0?"disabled":""}>←</button><button data-frame-right="${index}" ${index===frames.length-1?"disabled":""}>→</button><button data-frame-remove="${index}">×</button></div>
-                </article>`).join("")}
-              <button type="button" class="tq-ship-frame tq-ship-frame--add" data-frame-add>＋<small>Adicionar frame</small></button>
-            </div>
-            <div class="tq-ships__compile"><button type="button" class="is-primary" data-atlas-generate ${frames.length?"":"disabled"}>⚙ Gerar atlas WebP</button><button type="button" data-ship-export>⇩ JSON V2</button><small>Editor frame a frame; runtime em atlas.</small></div>`:'<div class="tq-ships__empty">Crie uma animação para adicionar frames.</div>'}
-          </section>
+      <section class="tq-ships__panel tq-ships__sprite-panel">
+        <div class="tq-ships__panel-title"><div><strong>Sprite de combate</strong><small>Um atlas; as animações apontam para intervalos de células.</small></div><button type="button" data-combat-sprite-pick>▦ Escolher sprite</button></div>
+        <div class="tq-ships__sprite-meta">
+          <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
+          <label><span>Colunas</span><input data-combat-columns type="number" min="1" max="32" value="${columns}"></label>
+          <label><span>Linhas</span><input data-combat-rows type="number" min="1" max="32" value="${rows}"></label>
+          <label><span>Célula W</span><input value="${Math.round(Number(sprite.cellWidth)||400)}" readonly></label>
+          <label><span>Célula H</span><input value="${Math.round(Number(sprite.cellHeight)||400)}" readonly></label>
         </div>
+        <div class="tq-ships__combat-sprite-preview" style="${sprite.src?'background-image:url(&quot;'+this.escape(sprite.src)+'&quot;);':''}"></div>
+        <table class="tq-ships__anim-table">
+          <thead><tr><th>Animação</th><th>Início</th><th>Fim</th><th>ms</th><th>Loop</th></tr></thead>
+          <tbody>${animationRows}</tbody>
+        </table>
+        <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>Ex.: fireRight 5–8 representa frames [4,5,6,7] no runtime.</small></div>
       </section>`;
 
-    if(section==="navigation"){
-      const read=()=>({
-        navigation:{...ship.navigation,
-          width:Math.max(32,Number(content.querySelector("[data-nav-width]")?.value)||230),
-          height:Math.max(32,Number(content.querySelector("[data-nav-height]")?.value)||230),
-          speed:Math.max(40,Number(content.querySelector("[data-nav-speed]")?.value)||420),
-          acceleration:Math.max(100,Number(content.querySelector("[data-nav-accel]")?.value)||1100),
-          roll:Math.max(0,Number(content.querySelector("[data-nav-roll]")?.value)||0),
-          heave:Math.max(0,Number(content.querySelector("[data-nav-heave]")?.value)||0),
-          sway:Math.max(0,Number(content.querySelector("[data-nav-sway]")?.value)||0),
-          periodMs:Math.max(500,Number(content.querySelector("[data-nav-period]")?.value)||3600),
-          wake:content.querySelector("[data-nav-wake]")?.checked!==false,
-          shadow:content.querySelector("[data-nav-shadow]")?.checked!==false
-        }
-      });
-      content.querySelectorAll("[data-nav-width],[data-nav-height],[data-nav-speed],[data-nav-accel],[data-nav-roll],[data-nav-heave],[data-nav-sway],[data-nav-period],[data-nav-wake],[data-nav-shadow]").forEach(el=>el.addEventListener("change",()=>this.updateShip(read())));
-    }else{
-      const read=()=>({combat:{...ship.combat,
-        recoil:Math.max(0,Number(content.querySelector("[data-combat-recoil]")?.value)||0),
-        shake:Math.max(0,Number(content.querySelector("[data-combat-shake]")?.value)||0),
-        muzzleFlash:content.querySelector("[data-combat-flash]")?.checked!==false,
-        smoke:content.querySelector("[data-combat-smoke]")?.checked!==false,
-        impact:content.querySelector("[data-combat-impact]")?.checked!==false
-      }});
-      content.querySelectorAll("[data-combat-recoil],[data-combat-shake],[data-combat-flash],[data-combat-smoke],[data-combat-impact]").forEach(el=>el.addEventListener("change",()=>this.updateShip(read())));
+    const readStyle=()=>({combat:{...ship.combat,
+      recoil:Math.max(0,Number(content.querySelector("[data-combat-recoil]")?.value)||0),
+      shake:Math.max(0,Number(content.querySelector("[data-combat-shake]")?.value)||0),
+      muzzleFlash:content.querySelector("[data-combat-flash]")?.checked!==false,
+      smoke:content.querySelector("[data-combat-smoke]")?.checked!==false,
+      impact:content.querySelector("[data-combat-impact]")?.checked!==false
+    }});
+    content.querySelectorAll("[data-combat-recoil],[data-combat-shake],[data-combat-flash],[data-combat-smoke],[data-combat-impact]").forEach(el=>el.addEventListener("change",()=>this.updateShip(readStyle())));
+    content.querySelector("[data-combat-sprite-pick]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,section:"combat",mode:"sprite"}));
+    const resizeCombat=()=>{
+      const cols=Math.max(1,Number(content.querySelector("[data-combat-columns]")?.value)||4);
+      const rws=Math.max(1,Number(content.querySelector("[data-combat-rows]")?.value)||4);
+      const imageWidth=Math.max(1,Number(sprite.imageWidth)||cols*400);
+      const imageHeight=Math.max(1,Number(sprite.imageHeight)||rws*400);
+      this.updateCombatSprite({columns:cols,rows:rws,cellWidth:Math.floor(imageWidth/cols),cellHeight:Math.floor(imageHeight/rws)});
+    };
+    content.querySelector("[data-combat-columns]")?.addEventListener("change",resizeCombat);
+    content.querySelector("[data-combat-rows]")?.addEventListener("change",resizeCombat);
+    const saveAnim=key=>{
+      const shipDraft=this.editableCurrent();
+      if(!shipDraft)return;
+      shipDraft.animations=shipDraft.animations||{};
+      const start=Math.max(0,Math.min(total-1,(Number(content.querySelector('[data-combat-start="'+key+'"]')?.value)||1)-1));
+      const finish=Math.max(start,Math.min(total-1,(Number(content.querySelector('[data-combat-end="'+key+'"]')?.value)||start+1)-1));
+      shipDraft.animations[key]={
+        ...(shipDraft.animations[key]||{}),
+        frames:Array.from({length:finish-start+1},(_,i)=>start+i),
+        frameMs:Math.max(40,Number(content.querySelector('[data-combat-ms="'+key+'"]')?.value)||140),
+        loop:content.querySelector('[data-combat-loop="'+key+'"]')?.checked===true,
+        cellWidth:Number(sprite.cellWidth)||400,
+        cellHeight:Number(sprite.cellHeight)||400
+      };
+      shipDraft.animationGroups=shipDraft.animationGroups||{};
+      shipDraft.animationGroups[key]="combat";
+      this.save();
+    };
+    for(const key of combatKeys){
+      content.querySelectorAll('[data-combat-start="'+key+'"],[data-combat-end="'+key+'"],[data-combat-ms="'+key+'"],[data-combat-loop="'+key+'"]').forEach(el=>el.addEventListener("change",()=>saveAnim(key)));
     }
-    content.querySelector("[data-ship-animation]")?.addEventListener("change",e=>{this.animationByShip.set(ship.id,e.currentTarget.value);this.renderEditor()});
-    content.querySelector("[data-animation-add]")?.addEventListener("click",()=>{const name=prompt("Nome da animação",section==="combat"?"fireRight":"idle");if(name)this.addAnimation(name)});
-    content.querySelector("[data-animation-delete]")?.addEventListener("click",()=>this.deleteAnimation());
-    content.querySelector("[data-animation-ms]")?.addEventListener("change",e=>this.updateAnimation({frameMs:Math.max(40,Number(e.currentTarget.value)||140)}));
-    content.querySelector("[data-animation-w]")?.addEventListener("change",e=>this.updateAnimation({cellWidth:Math.max(32,Number(e.currentTarget.value)||400)}));
-    content.querySelector("[data-animation-h]")?.addEventListener("change",e=>this.updateAnimation({cellHeight:Math.max(32,Number(e.currentTarget.value)||400)}));
-    content.querySelector("[data-animation-loop]")?.addEventListener("change",e=>this.updateAnimation({loop:e.currentTarget.checked}));
-    content.querySelector("[data-frame-add]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,animationKey,section}));
-    content.querySelectorAll("[data-frame-left]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameLeft),-1)));
-    content.querySelectorAll("[data-frame-right]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameRight),1)));
-    content.querySelectorAll("[data-frame-remove]").forEach(b=>b.addEventListener("click",()=>this.removeFrame(Number(b.dataset.frameRemove))));
-    content.querySelector("[data-atlas-generate]")?.addEventListener("click",()=>this.generateAtlas());
     content.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
-    this.startPreview();
   }
 
   async loadImage(src){
@@ -541,13 +769,11 @@ export class ShipEditor{
     const ship=this.current();
     if(!ship)return;
     const output=this.normalizeShip(ship);
-    const navAnimations={},combatAnimations={};
+    output.navigation={...output.navigation,sprite:clone(output.navigation.sprite||{})};
+    output.combat={...output.combat,sprite:clone(output.combat.sprite||{}),animations:{}};
     for(const [key,animation] of Object.entries(output.animations||{})){
-      if(output.animationGroups?.[key]==="combat")combatAnimations[key]=clone(animation);
-      else navAnimations[key]=clone(animation);
+      if(output.animationGroups?.[key]==="combat")output.combat.animations[key]=clone(animation);
     }
-    output.navigation={...output.navigation,animations:navAnimations};
-    output.combat={...output.combat,animations:combatAnimations};
     delete output.animations;
     delete output.animationGroups;
     delete output.player;
