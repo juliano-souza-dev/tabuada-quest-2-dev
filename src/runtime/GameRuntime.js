@@ -641,7 +641,7 @@ export class GameRuntime {
         worldId
       }),
       onTreasureCollected:payload=>this.handleTreasureCollected(payload),
-      onCombatVictory:payload=>this.handleCombatVictory(payload),
+      onRewardCollected:payload=>this.handleCombatVictory(payload),
       onEnterScene:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         return this.openScene(entity.scene,{pushHistory:true});
