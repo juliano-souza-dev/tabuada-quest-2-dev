@@ -1993,12 +1993,35 @@ export class WorldRuntime {
     const sprite=combat?.sprite;
     const animation=combat?.animations?.[animationName];
     if(sprite?.src){
+      const imageWidth=Math.max(1,Number(sprite.imageWidth)||0);
+      const imageHeight=Math.max(1,Number(sprite.imageHeight)||0);
+      let columns=Math.max(1,Number(sprite.columns)||4);
+      let rows=Math.max(1,Number(sprite.rows)||4);
+      let frameWidth=Math.max(1,Number(sprite.cellWidth||sprite.frameWidth)||400);
+      let frameHeight=Math.max(1,Number(sprite.cellHeight||sprite.frameHeight)||400);
+      const canonicalGrid=
+        imageWidth>0&&imageHeight>0
+        &&imageWidth%400===0&&imageHeight%400===0
+        &&imageWidth/400<=32&&imageHeight/400<=32;
+      const suspiciousGrid=
+        (imageWidth>0&&columns*frameWidth!==imageWidth)
+        ||(imageHeight>0&&rows*frameHeight!==imageHeight)
+        ||(columns===4&&rows===4&&imageHeight>0&&imageHeight!==1600)
+        ||(frameWidth===400&&frameHeight!==400);
+      if(canonicalGrid&&suspiciousGrid){
+        columns=Math.max(1,Math.round(imageWidth/400));
+        rows=Math.max(1,Math.round(imageHeight/400));
+        frameWidth=400;
+        frameHeight=400;
+      }
       return {
         src:String(sprite.src),
-        columns:Math.max(1,Number(sprite.columns)||4),
-        rows:Math.max(1,Number(sprite.rows)||4),
-        frameWidth:Number(sprite.cellWidth||sprite.frameWidth)||400,
-        frameHeight:Number(sprite.cellHeight||sprite.frameHeight)||400,
+        columns,
+        rows,
+        imageWidth,
+        imageHeight,
+        frameWidth,
+        frameHeight,
         idleFrame:Number(combat?.animations?.idle?.frames?.[0])||0,
         animations:{
           [animationName]:{

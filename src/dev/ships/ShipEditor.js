@@ -140,6 +140,37 @@ export class ShipEditor{
       cellWidth:Math.max(1,Number(combatSprite.cellWidth||combatSprite.frameWidth)||400),
       cellHeight:Math.max(1,Number(combatSprite.cellHeight||combatSprite.frameHeight)||400)
     };
+    // Game combat atlases use the technical 400x400 cell contract. Older drafts
+    // could keep the default 4x4 grid after selecting a 1600x4800 (48-frame)
+    // sheet, producing 400x1200 cells and leaking whole strips of the atlas.
+    const combatImageW=value.combat.sprite.imageWidth;
+    const combatImageH=value.combat.sprite.imageHeight;
+    const canonicalCell=400;
+    const canonicalCols=Math.round(combatImageW/canonicalCell);
+    const canonicalRows=Math.round(combatImageH/canonicalCell);
+    const canonicalGrid=
+      combatImageW%canonicalCell===0
+      &&combatImageH%canonicalCell===0
+      &&canonicalCols>=1&&canonicalCols<=32
+      &&canonicalRows>=1&&canonicalRows<=32;
+    const suspiciousCombatGrid=
+      value.combat.sprite.columns*value.combat.sprite.cellWidth!==combatImageW
+      ||value.combat.sprite.rows*value.combat.sprite.cellHeight!==combatImageH
+      ||(
+        value.combat.sprite.columns===4
+        &&value.combat.sprite.rows===4
+        &&(combatImageW!==1600||combatImageH!==1600)
+      )
+      ||(
+        value.combat.sprite.cellWidth===canonicalCell
+        &&value.combat.sprite.cellHeight!==canonicalCell
+      );
+    if(value.combat.sprite.src&&canonicalGrid&&suspiciousCombatGrid){
+      value.combat.sprite.columns=canonicalCols;
+      value.combat.sprite.rows=canonicalRows;
+      value.combat.sprite.cellWidth=canonicalCell;
+      value.combat.sprite.cellHeight=canonicalCell;
+    }
     value.animations=value.animations&&typeof value.animations==="object"?value.animations:{};
     if(value.combat?.animations&&typeof value.combat.animations==="object"){
       for(const [key,animation] of Object.entries(value.combat.animations)){
@@ -316,8 +347,21 @@ export class ShipEditor{
       if(!draft||!sprite)return;
       sprite.imageWidth=image.naturalWidth||image.width||sprite.imageWidth||1600;
       sprite.imageHeight=image.naturalHeight||image.height||sprite.imageHeight||1600;
-      sprite.cellWidth=Math.max(1,Math.floor(sprite.imageWidth/Math.max(1,Number(sprite.columns)||4)));
-      sprite.cellHeight=Math.max(1,Math.floor(sprite.imageHeight/Math.max(1,Number(sprite.rows)||4)));
+      if(
+        target==="combat"
+        &&sprite.imageWidth%400===0
+        &&sprite.imageHeight%400===0
+        &&sprite.imageWidth/400<=32
+        &&sprite.imageHeight/400<=32
+      ){
+        sprite.columns=Math.max(1,Math.round(sprite.imageWidth/400));
+        sprite.rows=Math.max(1,Math.round(sprite.imageHeight/400));
+        sprite.cellWidth=400;
+        sprite.cellHeight=400;
+      }else{
+        sprite.cellWidth=Math.max(1,Math.floor(sprite.imageWidth/Math.max(1,Number(sprite.columns)||4)));
+        sprite.cellHeight=Math.max(1,Math.floor(sprite.imageHeight/Math.max(1,Number(sprite.rows)||4)));
+      }
       if(target==="navigation")this.syncNavigationRegions(draft);
       this.save();
       if(this.selectedId===shipId)this.renderEditor();
