@@ -492,6 +492,60 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
+  handleCombatVictory({entity,rewards}={}){
+    const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
+    const configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
+    const worldId=String(this.current?.id||"");
+    const claimKey=worldId+":"+String(cleanEntity.id||"");
+    if(!cleanEntity.id)return false;
+
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    const rewardState=game.rewards&&typeof game.rewards==="object"?game.rewards:{};
+    const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
+    if(claims.includes(claimKey))return false;
+
+    claims.push(claimKey);
+    const coins=Math.max(0,Number(configured.coins)||0);
+    const xp=Math.max(0,Number(configured.xp)||0);
+    const itemId=String(configured.itemId||"").trim();
+    const quantity=Math.max(1,Number(configured.quantity)||1);
+    const shipId=String(configured.shipId||"").trim();
+
+    if(itemId){
+      for(let count=0;count<quantity;count++)this.inventory.push(itemId);
+    }
+    if(shipId){
+      const ship=this.shipEntry(shipId);
+      if(ship&&ship.available!==false&&!this.playerShips.ownedShips.includes(ship.id)){
+        this.playerShips.ownedShips.push(ship.id);
+        this.ensurePlayerShips();
+      }
+    }
+
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        rewards:{
+          ...rewardState,
+          coins:Number(rewardState.coins||0)+coins,
+          xp:Number(rewardState.xp||0)+xp,
+          claims
+        }
+      }
+    };
+
+    const detail={
+      worldId,
+      entityId:String(cleanEntity.id),
+      rewards:{coins,xp,itemId,quantity:itemId?quantity:0,shipId}
+    };
+    globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
+    this.saveState();
+    return detail;
+  }
+
   handleTreasureCollected({entity,challenge}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
@@ -576,6 +630,7 @@ export class GameRuntime {
         worldId
       }),
       onTreasureCollected:payload=>this.handleTreasureCollected(payload),
+      onCombatVictory:payload=>this.handleCombatVictory(payload),
       onEnterScene:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         return this.openScene(entity.scene,{pushHistory:true});
