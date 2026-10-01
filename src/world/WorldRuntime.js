@@ -1630,7 +1630,7 @@ export class WorldRuntime {
     this.combatActive={entity,enemyMaxHp,enemyHp:enemyMaxHp,playerMaxHp,playerHp:playerMaxHp,challenge:null};
     if(this.combatTitle)this.combatTitle.textContent=String(entity.label||"Navio inimigo");
     if(this.combatWrap)this.combatWrap.hidden=false;
-    const playerSrc=String(this.config.player?.src||this.config.player?.sprite?.src||"").replace(/["\\]/g,"");
+    const playerSrc=String(this.config.combat?.playerPortrait||this.config.player?.src||this.config.player?.sprite?.src||"").replace(/["\\]/g,"");
     const enemySrc=String(entity.src||"").replace(/["\\]/g,"");
     if(this.combatPlayerShip)this.combatPlayerShip.style.backgroundImage=playerSrc?'url("'+playerSrc+'")':"none";
     if(this.combatEnemyShip)this.combatEnemyShip.style.backgroundImage=enemySrc?'url("'+enemySrc+'")':"none";
