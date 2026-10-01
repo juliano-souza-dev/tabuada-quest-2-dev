@@ -1,9 +1,11 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20260930-2242";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
+    this.pedagogyRuntime=pedagogyRuntime||null;
+    this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
@@ -63,6 +65,15 @@ export class WorldEditor {
 
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
+      createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.(context)??{
+        available:false,
+        code:"pedagogy_rules_unavailable",
+        message:"Regras pedagógicas não disponíveis nesta conta."
+      },
+      onPedagogyResult:result=>this.onPedagogyResult?.(result),
+      onTreasureCollected:payload=>{
+        window.dispatchEvent(new CustomEvent("tq:treasurecollected",{detail:payload}));
+      },
       onEnterScene:(entity,state)=>{
         window.dispatchEvent(new CustomEvent("tq:worldenterscene",{detail:{entity,state}}));
       },
