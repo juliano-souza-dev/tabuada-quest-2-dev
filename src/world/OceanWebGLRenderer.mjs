@@ -121,12 +121,17 @@ export class OceanWebGLRenderer{
     this.gl=null;
     this.program=null;
     this.texture=null;
+    this.buffer=null;
     this.ready=false;
     this.failed=false;
     this.uniforms={};
-    this.image=null;
     this.source="";
+    this.textureLoaded=false;
+    this.textureWidth=0;
+    this.textureHeight=0;
     this.pixelRatio=1;
+    this.cssWidth=0;
+    this.cssHeight=0;
   }
 
   async init(source){
@@ -150,8 +155,8 @@ export class OceanWebGLRenderer{
       gl.useProgram(this.program);
 
       const position=gl.getAttribLocation(this.program,"aPosition");
-      const buffer=gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+      this.buffer=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([
         -1,-1, 1,-1, -1,1,
         -1,1, 1,-1, 1,1
@@ -192,7 +197,7 @@ export class OceanWebGLRenderer{
   async loadTexture(source){
     const src=String(source||"");
     if(!src)throw new Error("Ocean texture missing");
-    if(this.source===src&&(this.image||src==="none"))return;
+    if(this.source===src&&this.textureLoaded)return;
 
     const gl=this.gl;
     if(src==="none"||src==="__none__"){
@@ -202,8 +207,10 @@ export class OceanWebGLRenderer{
       const water=new Uint8Array([8,117,167,255]);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,water);
       gl.generateMipmap(gl.TEXTURE_2D);
-      this.image=null;
       this.source="none";
+      this.textureLoaded=true;
+      this.textureWidth=1;
+      this.textureHeight=1;
       return;
     }
 
@@ -221,13 +228,21 @@ export class OceanWebGLRenderer{
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
     gl.generateMipmap(gl.TEXTURE_2D);
-    this.image=image;
     this.source=src;
+    this.textureLoaded=true;
+    this.textureWidth=Math.max(1,Number(image.naturalWidth||image.width)||1);
+    this.textureHeight=Math.max(1,Number(image.naturalHeight||image.height)||1);
+    image.onload=null;
+    image.onerror=null;
   }
 
   resize(width,height){
     if(!this.gl||!this.canvas)return;
-    const dpr=clamp(Number(globalThis.devicePixelRatio)||1,1,2);
+    const rawDpr=Number(globalThis.devicePixelRatio)||1;
+    const coarsePointer=Boolean(globalThis.matchMedia?.("(pointer: coarse)")?.matches);
+    const mobileViewport=Math.min(Number(globalThis.innerWidth)||9999,Number(globalThis.innerHeight)||9999)<900;
+    const maxDpr=(coarsePointer||mobileViewport)?1.5:2;
+    const dpr=clamp(rawDpr,1,maxDpr);
     const w=Math.max(1,Math.round(Number(width)||1));
     const h=Math.max(1,Math.round(Number(height)||1));
     const pixelW=Math.max(1,Math.round(w*dpr));
@@ -237,8 +252,14 @@ export class OceanWebGLRenderer{
       this.canvas.width=pixelW;
       this.canvas.height=pixelH;
     }
-    this.canvas.style.width=w+"px";
-    this.canvas.style.height=h+"px";
+    if(this.cssWidth!==w){
+      this.canvas.style.width=w+"px";
+      this.cssWidth=w;
+    }
+    if(this.cssHeight!==h){
+      this.canvas.style.height=h+"px";
+      this.cssHeight=h;
+    }
     this.pixelRatio=dpr;
     this.gl.viewport(0,0,pixelW,pixelH);
   }
@@ -286,16 +307,39 @@ export class OceanWebGLRenderer{
     return true;
   }
 
+  getDiagnostics(){
+    const width=Math.max(0,Number(this.textureWidth)||0);
+    const height=Math.max(0,Number(this.textureHeight)||0);
+    const baseBytes=width*height*4;
+    const mipmappedBytes=this.textureLoaded?Math.round(baseBytes*4/3):0;
+    return {
+      renderer:"webgl2",
+      ready:this.ready,
+      source:this.source,
+      pixelRatio:this.pixelRatio,
+      canvasWidth:Number(this.canvas?.width)||0,
+      canvasHeight:Number(this.canvas?.height)||0,
+      textureWidth:width,
+      textureHeight:height,
+      estimatedTextureBytes:mipmappedBytes,
+      drawCallsPerFrame:this.ready?1:0
+    };
+  }
+
   destroy(){
     const gl=this.gl;
     if(gl){
       if(this.texture)gl.deleteTexture(this.texture);
+      if(this.buffer)gl.deleteBuffer(this.buffer);
       if(this.program)gl.deleteProgram(this.program);
     }
     this.ready=false;
+    this.textureLoaded=false;
     this.gl=null;
     this.program=null;
     this.texture=null;
-    this.image=null;
+    this.buffer=null;
+    this.textureWidth=0;
+    this.textureHeight=0;
   }
 }
