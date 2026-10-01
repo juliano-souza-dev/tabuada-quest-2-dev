@@ -10,7 +10,8 @@
   "catalogs": {
     "scenes": "./src/config/scene-catalog.json",
     "worlds": "./src/config/world-catalog.json",
-    "ships": "./src/config/ship-catalog.json"
+    "ships": "./src/config/ship-catalog.json",
+    "pedagogy": "./src/config/pedagogy-curriculum.json"
   },
   "start": {
     "kind": "scene",
