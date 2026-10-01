@@ -1042,9 +1042,9 @@ export class DevOverlay {
       const spriteSrc=String(sprite.src||"");
       const playerEffects={
         wakeActive:player.effects?.wakeActive!==false,
-        wakeOpacity:Number(player.effects?.wakeOpacity??.72),
-        wakeWidth:Number(player.effects?.wakeWidth??54),
-        wakeLength:Number(player.effects?.wakeLength??150),
+        wakeOpacity:Number(player.effects?.wakeOpacity??.78),
+        wakeWidth:Number(player.effects?.wakeWidth??66),
+        wakeLength:Number(player.effects?.wakeLength??240),
         shadowActive:player.effects?.shadowActive!==false,
         shadowOpacity:Number(player.effects?.shadowOpacity??.34),
         shadowBlur:Number(player.effects?.shadowBlur??9),
@@ -1218,7 +1218,7 @@ export class DevOverlay {
               playerEffectRange("shadowOpacity","Intensidade da sombra",0,.9,.01)+
               playerEffectRange("shadowBlur","Desfoque da sombra",0,30,1," px")+
               playerEffectRange("shadowOffset","Deslocamento da sombra",-40,80,1," px")+
-              '<small class="tq-world-editor-note">O rastro acompanha direção e velocidade do navio. A sombra fica sobre a superfície sem alterar o WebGL do oceano.</small>'+
+              '<small class="tq-world-editor-note">Em WebGL2, o rastro usa histórico real da trajetória: duas faixas laterais de espuma + turbulência central, permanecendo na água durante curvas. Em CSS, usa o fallback antigo.</small>'+
             '</div>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
