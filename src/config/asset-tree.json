@@ -1,7 +1,7 @@
 {
   "schema": "tq.asset-tree",
-  "version": 1,
-  "generatedFrom": "repository-filesystem",
+  "version": 2,
+  "generatedFrom": "89fb9c34f189af7afabbda275b495e1e5743c5f8",
   "root": {
     "type": "directory",
     "name": "assets",
@@ -246,6 +246,11 @@
             "type": "image",
             "name": "colecionaveis-background.webp",
             "path": "assets/collectibles/colecionaveis-background.webp"
+          },
+          {
+            "type": "file",
+            "name": "readme.md",
+            "path": "assets/collectibles/readme.md"
           }
         ]
       },
@@ -360,6 +365,30 @@
       },
       {
         "type": "directory",
+        "name": "ocean",
+        "path": "assets/ocean",
+        "children": [
+          {
+            "type": "image",
+            "name": "ocean.png",
+            "path": "assets/ocean/ocean.png"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "oceans",
+        "path": "assets/oceans",
+        "children": [
+          {
+            "type": "image",
+            "name": "ocean-tile-tabuada-region01.webp",
+            "path": "assets/oceans/ocean-tile-tabuada-region01.webp"
+          }
+        ]
+      },
+      {
+        "type": "directory",
         "name": "pets",
         "path": "assets/pets",
         "children": [
@@ -452,6 +481,11 @@
             "type": "image",
             "name": "jujuba.webp",
             "path": "assets/pets/jujuba.webp"
+          },
+          {
+            "type": "file",
+            "name": "manifesto-nomes.txt",
+            "path": "assets/pets/manifesto-nomes.txt"
           },
           {
             "type": "image",
@@ -616,9 +650,58 @@
       },
       {
         "type": "directory",
+        "name": "regions",
+        "path": "assets/regions",
+        "children": [
+          {
+            "type": "directory",
+            "name": "islands",
+            "path": "assets/regions/islands",
+            "children": [
+              {
+                "type": "image",
+                "name": "fortaleza_tralhas_transparente.webp",
+                "path": "assets/regions/islands/fortaleza_tralhas_transparente.webp"
+              },
+              {
+                "type": "image",
+                "name": "r-1-enseada-da-bandeira.webp",
+                "path": "assets/regions/islands/r-1-enseada-da-bandeira.webp"
+              },
+              {
+                "type": "image",
+                "name": "r-1-minas-de-aurum.webp",
+                "path": "assets/regions/islands/r-1-minas-de-aurum.webp"
+              },
+              {
+                "type": "image",
+                "name": "r1-baia-dos-bichos.webp",
+                "path": "assets/regions/islands/r1-baia-dos-bichos.webp"
+              },
+              {
+                "type": "image",
+                "name": "r1-farol-torto.webp",
+                "path": "assets/regions/islands/r1-farol-torto.webp"
+              },
+              {
+                "type": "image",
+                "name": "r1-fortaleza-das-tralhas.webp",
+                "path": "assets/regions/islands/r1-fortaleza-das-tralhas.webp"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
         "name": "screens",
         "path": "assets/screens",
         "children": [
+          {
+            "type": "file",
+            "name": "readme.md",
+            "path": "assets/screens/readme.md"
+          },
           {
             "type": "image",
             "name": "tavern-background.webp",
@@ -633,6 +716,18 @@
         "children": [
           {
             "type": "directory",
+            "name": "combat",
+            "path": "assets/ships/combat",
+            "children": [
+              {
+                "type": "image",
+                "name": "pirate_default_combat_1600x1600.png",
+                "path": "assets/ships/combat/pirate_default_combat_1600x1600.png"
+              }
+            ]
+          },
+          {
+            "type": "directory",
             "name": "events",
             "path": "assets/ships/events",
             "children": [
@@ -643,6 +738,11 @@
                 "children": [
                   {
                     "type": "image",
+                    "name": "navio_halloween_sprite_1600x1600.webp",
+                    "path": "assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp"
+                  },
+                  {
+                    "type": "image",
                     "name": "navio_halloween_spritesheet_48frames_high_quality.webp",
                     "path": "assets/ships/events/halloween/navio_halloween_spritesheet_48frames_high_quality.webp"
                   },
@@ -650,6 +750,11 @@
                     "type": "image",
                     "name": "navio_pirata_halloween_tabuada.webp",
                     "path": "assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "navio_viking_sprite_transparente_1600x1600.webp",
+                    "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
                   }
                 ]
               }
@@ -666,6 +771,11 @@
             "path": "assets/ships/el-colombo.webp"
           },
           {
+            "type": "file",
+            "name": "halloween_x5f_ship_x5f_playground (1).html",
+            "path": "assets/ships/halloween_x5f_ship_x5f_playground (1).html"
+          },
+          {
             "type": "image",
             "name": "navio_halloween_sprite_sheet_hq.webp",
             "path": "assets/ships/navio_halloween_sprite_sheet_hq.webp"
@@ -674,6 +784,11 @@
             "type": "image",
             "name": "navio_pirata_tabuadas.webp",
             "path": "assets/ships/navio_pirata_tabuadas.webp"
+          },
+          {
+            "type": "image",
+            "name": "pirate_ship_16dir_1600x1600_4x4.webp",
+            "path": "assets/ships/pirate_ship_16dir_1600x1600_4x4.webp"
           },
           {
             "type": "image",
@@ -803,6 +918,11 @@
                       },
                       {
                         "type": "image",
+                        "name": "plaquinha_google_v4_transparente.webp",
+                        "path": "assets/ui/icons/events/halloween/plaquinha_google_v4_transparente.webp"
+                      },
+                      {
+                        "type": "image",
                         "name": "tripulacao.png",
                         "path": "assets/ui/icons/events/halloween/tripulacao.png"
                       }
@@ -830,15 +950,19 @@
             ]
           },
           {
-            "type": "directory",
-            "name": "missions",
-            "path": "assets/ui/missions",
-            "children": []
-          },
-          {
             "type": "image",
             "name": "plataforma-madeira-pirata.webp",
             "path": "assets/ui/plataforma-madeira-pirata.webp"
+          },
+          {
+            "type": "image",
+            "name": "ui_minimap_frame_pirate_cartoon_hq.webp",
+            "path": "assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"
+          },
+          {
+            "type": "image",
+            "name": "ui_minimap_frame_pirate_halloween_hq.webp",
+            "path": "assets/ui/ui_minimap_frame_pirate_halloween_hq.webp"
           }
         ]
       },
@@ -1156,6 +1280,11 @@
       "path": "assets/collectibles/colecionaveis-background.webp"
     },
     {
+      "type": "file",
+      "name": "readme.md",
+      "path": "assets/collectibles/readme.md"
+    },
+    {
       "type": "image",
       "name": "atirador.webp",
       "path": "assets/crew/atirador.webp"
@@ -1252,6 +1381,16 @@
     },
     {
       "type": "image",
+      "name": "ocean.png",
+      "path": "assets/ocean/ocean.png"
+    },
+    {
+      "type": "image",
+      "name": "ocean-tile-tabuada-region01.webp",
+      "path": "assets/oceans/ocean-tile-tabuada-region01.webp"
+    },
+    {
+      "type": "image",
       "name": "axolotl-captain.webp",
       "path": "assets/pets/axolotl-captain.webp"
     },
@@ -1339,6 +1478,11 @@
       "type": "image",
       "name": "jujuba.webp",
       "path": "assets/pets/jujuba.webp"
+    },
+    {
+      "type": "file",
+      "name": "manifesto-nomes.txt",
+      "path": "assets/pets/manifesto-nomes.txt"
     },
     {
       "type": "image",
@@ -1487,6 +1631,41 @@
     },
     {
       "type": "image",
+      "name": "fortaleza_tralhas_transparente.webp",
+      "path": "assets/regions/islands/fortaleza_tralhas_transparente.webp"
+    },
+    {
+      "type": "image",
+      "name": "r-1-enseada-da-bandeira.webp",
+      "path": "assets/regions/islands/r-1-enseada-da-bandeira.webp"
+    },
+    {
+      "type": "image",
+      "name": "r-1-minas-de-aurum.webp",
+      "path": "assets/regions/islands/r-1-minas-de-aurum.webp"
+    },
+    {
+      "type": "image",
+      "name": "r1-baia-dos-bichos.webp",
+      "path": "assets/regions/islands/r1-baia-dos-bichos.webp"
+    },
+    {
+      "type": "image",
+      "name": "r1-farol-torto.webp",
+      "path": "assets/regions/islands/r1-farol-torto.webp"
+    },
+    {
+      "type": "image",
+      "name": "r1-fortaleza-das-tralhas.webp",
+      "path": "assets/regions/islands/r1-fortaleza-das-tralhas.webp"
+    },
+    {
+      "type": "file",
+      "name": "readme.md",
+      "path": "assets/screens/readme.md"
+    },
+    {
+      "type": "image",
       "name": "tavern-background.webp",
       "path": "assets/screens/tavern-background.webp"
     },
@@ -1497,8 +1676,18 @@
     },
     {
       "type": "image",
+      "name": "pirate_default_combat_1600x1600.png",
+      "path": "assets/ships/combat/pirate_default_combat_1600x1600.png"
+    },
+    {
+      "type": "image",
       "name": "el-colombo.webp",
       "path": "assets/ships/el-colombo.webp"
+    },
+    {
+      "type": "image",
+      "name": "navio_halloween_sprite_1600x1600.webp",
+      "path": "assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp"
     },
     {
       "type": "image",
@@ -1512,6 +1701,16 @@
     },
     {
       "type": "image",
+      "name": "navio_viking_sprite_transparente_1600x1600.webp",
+      "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
+    },
+    {
+      "type": "file",
+      "name": "halloween_x5f_ship_x5f_playground (1).html",
+      "path": "assets/ships/halloween_x5f_ship_x5f_playground (1).html"
+    },
+    {
+      "type": "image",
       "name": "navio_halloween_sprite_sheet_hq.webp",
       "path": "assets/ships/navio_halloween_sprite_sheet_hq.webp"
     },
@@ -1519,6 +1718,11 @@
       "type": "image",
       "name": "navio_pirata_tabuadas.webp",
       "path": "assets/ships/navio_pirata_tabuadas.webp"
+    },
+    {
+      "type": "image",
+      "name": "pirate_ship_16dir_1600x1600_4x4.webp",
+      "path": "assets/ships/pirate_ship_16dir_1600x1600_4x4.webp"
     },
     {
       "type": "image",
@@ -1612,6 +1816,11 @@
     },
     {
       "type": "image",
+      "name": "plaquinha_google_v4_transparente.webp",
+      "path": "assets/ui/icons/events/halloween/plaquinha_google_v4_transparente.webp"
+    },
+    {
+      "type": "image",
       "name": "tripulacao.png",
       "path": "assets/ui/icons/events/halloween/tripulacao.png"
     },
@@ -1629,6 +1838,16 @@
       "type": "image",
       "name": "plataforma-madeira-pirata.webp",
       "path": "assets/ui/plataforma-madeira-pirata.webp"
+    },
+    {
+      "type": "image",
+      "name": "ui_minimap_frame_pirate_cartoon_hq.webp",
+      "path": "assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"
+    },
+    {
+      "type": "image",
+      "name": "ui_minimap_frame_pirate_halloween_hq.webp",
+      "path": "assets/ui/ui_minimap_frame_pirate_halloween_hq.webp"
     }
   ]
 }
