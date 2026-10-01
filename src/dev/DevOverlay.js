@@ -743,6 +743,18 @@ export class DevOverlay {
             '<div class="tq-world-camera-scale"><small>0.55x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
             '<small class="tq-world-editor-note">Esse valor é salvo neste oceano. Afeta somente o enquadramento visual no Play, sem mudar velocidade, física ou colisões.</small>'+
           '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Minimapa</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-field tq-field--check"><span>Minimapa ativo</span><input data-world-minimap-prop="enabled" type="checkbox" '+(world.minimap?.enabled!==false?'checked':'')+'></label>'+
+            '<label class="tq-world-field"><span>Moldura</span><select data-world-minimap-prop="frameAsset">'+
+              '<option value="./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp" '+(String(world.minimap?.frameAsset||"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp")==="./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"?'selected':'')+'>Pirata padrão</option>'+
+              '<option value="./assets/ui/ui_minimap_frame_pirate_halloween_hq.webp" '+(String(world.minimap?.frameAsset||"")==="./assets/ui/ui_minimap_frame_pirate_halloween_hq.webp"?'selected':'')+'>Halloween</option>'+
+              '<option value="" '+(world.minimap?.frameAsset===""?'selected':'')+'>Sem moldura</option>'+
+            '</select></label>'+
+            '<label class="tq-field tq-field--check"><span>Mostrar ilhas/localizações</span><input data-world-minimap-prop="showLocations" type="checkbox" '+(world.minimap?.showLocations!==false?'checked':'')+'></label>'+
+            '<label class="tq-field tq-field--check"><span>Mostrar outros navios</span><input data-world-minimap-prop="showShips" type="checkbox" '+(world.minimap?.showShips!==false?'checked':'')+'></label>'+
+            '<label class="tq-field tq-field--check"><span>Mostrar área da câmera</span><input data-world-minimap-prop="showCamera" type="checkbox" '+(world.minimap?.showCamera!==false?'checked':'')+'></label>'+
+            '<small class="tq-world-editor-note">A moldura padrão é a versão pirata normal. Halloween só é usada quando este oceano escolher explicitamente essa opção.</small>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Mensagens de colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-world-field"><span>Asset da mensagem</span><input data-world-ui-prop="interactionMessageAsset" type="text" value="'+this.escapeHtml(world.ui?.interactionMessageAsset||"")+'" placeholder="./assets/..."></label>'+
             '<small class="tq-world-editor-note">Se houver um asset, a mensagem de colisão é escrita sobre ele. Se ficar vazio, o jogo usa uma caixa de texto padrão.</small>'+
@@ -877,6 +889,14 @@ export class DevOverlay {
       content.querySelectorAll("[data-world-ui-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldUiProp;
         this.worldEditor.updateWorld({ui:{[key]:input.value}},true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      }));
+
+      content.querySelectorAll("[data-world-minimap-prop]").forEach(input=>input.addEventListener("change",()=>{
+        const key=input.dataset.worldMinimapProp;
+        const value=input.type==="checkbox"?input.checked:input.value;
+        this.worldEditor.updateWorld({minimap:{[key]:value}},true);
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       }));
