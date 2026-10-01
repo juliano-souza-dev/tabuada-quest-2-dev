@@ -59,6 +59,7 @@ export class WorldRuntime {
     this.combatActive=null;
     this.combatTimer=0;
     this.combatSpriteTimer=0;
+    this.combatFxTimer=0;
     this.state=structuredClone(options.state||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
@@ -1610,6 +1611,10 @@ export class WorldRuntime {
   }
 
   playCombatFx({from="player",hit=false}={}){
+    if(this.combatFxTimer){
+      clearTimeout(this.combatFxTimer);
+      this.combatFxTimer=0;
+    }
     this.clearCombatFx();
     this.playCombatShipAction(from,"fire");
     if(this.combatShot){
@@ -1621,7 +1626,10 @@ export class WorldRuntime {
       target.hidden=false;
       target.classList.add(from==="enemy"?"is-enemy-result":"is-player-result");
     }
-    setTimeout(()=>this.clearCombatFx(),1280);
+    this.combatFxTimer=setTimeout(()=>{
+      this.combatFxTimer=0;
+      this.clearCombatFx();
+    },1280);
   }
 
   combatChoices(challenge){
@@ -1743,6 +1751,8 @@ export class WorldRuntime {
   closeCombat(){
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
     if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
+    if(this.combatFxTimer){clearTimeout(this.combatFxTimer);this.combatFxTimer=0}
+    if(this.combatFxTimer){clearTimeout(this.combatFxTimer);this.combatFxTimer=0}
     this.combatActive=null;
     for(const ship of [this.combatPlayerShip,this.combatEnemyShip]){
       ship?.classList.remove("is-taking-hit","is-firing","is-damaged","is-critical","is-defeated");
@@ -1813,7 +1823,7 @@ export class WorldRuntime {
       this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:true});
       setTimeout(()=>this.playCombatDamageFx("enemy"),820);
-      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),1120);
+      if(active.enemyHp>0)setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),1120);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
