@@ -2727,12 +2727,20 @@ export class WorldRuntime {
     this.config.ocean=normalizeOceanConfig(next);
     this.applyOceanStatic();
 
-    if(
-      String(this.config.ocean.renderer)!==previousRenderer
-      ||String(this.config.ocean.background||"")!==previousBackground
-    ){
+    const rendererChanged=String(this.config.ocean.renderer)!==previousRenderer;
+    const backgroundChanged=String(this.config.ocean.background||"")!==previousBackground;
+
+    if(rendererChanged){
       this.resetOceanRenderer();
       this.initOceanRenderer();
+    }else if(backgroundChanged&&this.config.ocean.renderer==="webgl"){
+      if(this.oceanRenderer?.ready){
+        this.oceanRenderer.loadTexture(this.config.ocean.background).catch(error=>{
+          console.warn("[TabuadaQuest] Ocean texture reload failed:",error);
+        });
+      }else{
+        this.initOceanRenderer();
+      }
     }
     return this.getOcean();
   }
@@ -2791,7 +2799,7 @@ export class WorldRuntime {
   }
 
   updateOceanFrame(time){
-    const ocean=normalizeOceanConfig(this.config.ocean||{});
+    const ocean=this.config.ocean||normalizeOceanConfig({});
     const webglRendered=ocean.renderer==="webgl"
       &&this.oceanRenderer?.render?.({
         time,
