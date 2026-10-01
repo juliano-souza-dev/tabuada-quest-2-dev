@@ -248,12 +248,16 @@ export class ShipEditor{
     this.save();this.render();
   }
 
-  addFrameTo(shipId,animationKey,src){
+  addFrameTo(shipId,animationKey,src,section=null){
     let ship=this.drafts.find(item=>item.id===shipId)||null;
     if(!ship&&this.selectedId===shipId)ship=this.editableCurrent();
     if(!ship)return false;
+    const targetSection=section==="combat"?"combat":"navigation";
+    this.tabByShip.set(ship.id,targetSection);
     const key=animationKey&&ship.animations?.[animationKey]?animationKey:this.currentAnimationKey(ship);
     if(!key)return false;
+    ship.animationGroups=ship.animationGroups||{};
+    ship.animationGroups[key]=targetSection;
     const anim=ship.animations[key];
     anim.frames=Array.isArray(anim.frames)?anim.frames:[];
     anim.frames.push({src:String(src),duration:null});
