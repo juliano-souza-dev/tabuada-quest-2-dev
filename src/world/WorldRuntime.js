@@ -63,7 +63,7 @@ export class WorldRuntime {
       y:Number(config.editor?.cameraY??this.player.y)
     };
     this.zoom=Number(config.editor?.zoom??0.58);
-    this.playZoom=1;
+    this.playZoom=clamp(Number(config.camera?.playZoom??1),.55,1.4);
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
@@ -1557,6 +1557,17 @@ export class WorldRuntime {
     if(patch.name!==undefined)this.config.name=String(patch.name||this.config.id||"Mundo");
     if(patch.width!==undefined)this.config.width=clamp(Number(patch.width)||390,390,20000);
     if(patch.height!==undefined)this.config.height=clamp(Number(patch.height)||844,844,20000);
+    if(patch.camera&&typeof patch.camera==="object"){
+      this.config.camera={
+        ...(this.config.camera||{}),
+        ...structuredClone(patch.camera)
+      };
+      if(patch.camera.playZoom!==undefined){
+        this.playZoom=clamp(Number(patch.camera.playZoom)||1,.55,1.4);
+        this.config.camera.playZoom=this.playZoom;
+        if(this.mode==="play")this.zoom=this.playZoom;
+      }
+    }
     if(patch.playableArea&&typeof patch.playableArea==="object"){
       this.config.playableArea={
         ...(this.config.playableArea||{}),
