@@ -1744,6 +1744,25 @@ export class WorldRuntime {
 
   v2CombatAtlas(source,animationName="idle"){
     const combat=source?.combatVisual||source?.combat;
+    const sprite=combat?.sprite;
+    const animation=combat?.animations?.[animationName];
+    if(sprite?.src){
+      return {
+        src:String(sprite.src),
+        columns:Math.max(1,Number(sprite.columns)||4),
+        rows:Math.max(1,Number(sprite.rows)||4),
+        frameWidth:Number(sprite.cellWidth||sprite.frameWidth)||400,
+        frameHeight:Number(sprite.cellHeight||sprite.frameHeight)||400,
+        idleFrame:Number(combat?.animations?.idle?.frames?.[0])||0,
+        animations:{
+          [animationName]:{
+            frames:Array.isArray(animation?.frames)?animation.frames.map(Number).filter(Number.isFinite):[],
+            frameMs:Number(animation?.frameMs)||140,
+            loop:animation?.loop===true
+          }
+        }
+      };
+    }
     const descriptor=combat?.compiled?.[animationName];
     if(!descriptor?.src)return null;
     const frameCount=Math.max(1,Number(descriptor.frameCount)||1);
