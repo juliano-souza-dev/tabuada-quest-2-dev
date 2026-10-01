@@ -263,6 +263,39 @@ export class DevOverlay {
     return this.actionDefinitions().find(action=>action.id===String(id||""))||null;
   }
 
+  async sceneDocument(entry){
+    if(!entry?.id)return null;
+    const local=this.localScenes.find(item=>item.entry.id===entry.id);
+    if(local)return structuredClone(local.scene);
+    if(this.runtime?.scene?.id===entry.id)return structuredClone(this.runtime.scene);
+    if(!entry.path)return null;
+    try{
+      const response=await fetch(entry.path,{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      return await response.json();
+    }catch(error){
+      console.warn("Scene load for flow validation failed",entry.id,error);
+      return null;
+    }
+  }
+
+  async flowSceneLinks(){
+    const links=[];
+    for(const entry of this.allSceneEntries()){
+      const scene=await this.sceneDocument(entry);
+      if(!scene)continue;
+      for(const node of Array.isArray(scene.nodes)?scene.nodes:[]){
+        const actionId=String(node?.action||"");
+        if(actionId==="open-scene"&&node.sceneId){
+          links.push({fromKind:"scene",fromId:entry.id,actionId,toKind:"scene",toId:String(node.sceneId),label:node.id||"nó"});
+        }else if(actionId==="enter-region"&&node.regionId){
+          links.push({fromKind:"scene",fromId:entry.id,actionId,toKind:"region",toId:String(node.regionId),label:node.id||"nó"});
+        }
+      }
+    }
+    return links;
+  }
+
   async flowRegionLinks(){
     const links=[];
     for(const entry of this.allWorldEntries()){
@@ -291,13 +324,16 @@ export class DevOverlay {
     const scenes=this.allSceneEntries();
     const regions=this.allWorldEntries();
     const actions=this.actionDefinitions();
-    const links=await this.flowRegionLinks();
+    const [regionLinks,sceneLinks]=await Promise.all([this.flowRegionLinks(),this.flowSceneLinks()]);
+    const links=[...sceneLinks,...regionLinks];
 
     const card=(kind,id,name,meta="")=>
       '<article class="tq-flow-card tq-flow-card--'+kind+'"><small>'+kind.toUpperCase()+'</small><b>'+this.escapeHtml(name||id)+'</b><span>'+this.escapeHtml(id)+'</span>'+(meta?'<em>'+this.escapeHtml(meta)+'</em>':'')+'</article>';
 
     const connections=links.length?links.map(link=>{
-      const from=link.fromKind==="region"?(regions.find(item=>item.id===link.fromId)?.name||link.fromId):link.fromId;
+      const from=link.fromKind==="region"
+        ?(regions.find(item=>item.id===link.fromId)?.name||link.fromId)
+        :(scenes.find(item=>item.id===link.fromId)?.name||link.fromId);
       const to=link.toKind==="region"
         ?(regions.find(item=>item.id===link.toId)?.name||link.toId)
         :(scenes.find(item=>item.id===link.toId)?.name||link.toId);
