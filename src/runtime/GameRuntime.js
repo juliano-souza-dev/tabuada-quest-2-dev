@@ -34,6 +34,8 @@ export class GameRuntime {
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerStateStore=null;
     this.accountState={};
+    this.authenticated=false;
+    this.pendingAuthRoute=null;
     this.started=false;
     this.persistenceKey=String(this.manifest.persistence?.sessionKey||"tq.game.runtime:v1");
     this.restoreSession=this.manifest.persistence?.restoreSession!==false;
@@ -76,6 +78,7 @@ export class GameRuntime {
     const visibility=()=>{if(document.visibilityState==="hidden")save()};
     const authReady=event=>{
       const state=event?.detail?.state;
+      this.authenticated=event?.detail?.status?.authenticated===true;
       const wasLogin=this.current?.kind==="scene"&&this.current.id==="login";
       let accountRoute=null;
 
@@ -89,17 +92,21 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      if(this.started){
-        const route=accountRoute
-          ||(wasLogin?clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"}):this.routeSnapshot());
-        if(!route)return;
-        queueMicrotask(()=>{
-          const task=route.kind==="world"
-            ?this.openWorld(route,{pushHistory:false})
-            :this.openScene(route,{pushHistory:false});
-          Promise.resolve(task).catch(error=>console.warn("Account state route restore failed",error));
-        });
+      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"});
+
+      if(!this.started){
+        if(this.authenticated)this.pendingAuthRoute=authRoute;
+        return;
       }
+
+      const route=accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot());
+      if(!route)return;
+      queueMicrotask(()=>{
+        const task=route.kind==="world"
+          ?this.openWorld(route,{pushHistory:false})
+          :this.openScene(route,{pushHistory:false});
+        Promise.resolve(task).catch(error=>console.warn("Account state route restore failed",error));
+      });
     };
 
     globalThis.addEventListener?.("pagehide",save);
@@ -418,7 +425,11 @@ export class GameRuntime {
   }
 
   async start(override=null){
-    const requested=override||(this.restoreSession&&this.current?this.current:this.manifest.start)||{kind:"scene",id:"login"};
+    const requested=override
+      ||this.pendingAuthRoute
+      ||(this.restoreSession&&this.current?this.current:this.manifest.start)
+      ||{kind:"scene",id:"login"};
+    this.pendingAuthRoute=null;
     const kind=String(requested.kind||requested.type||"scene").toLowerCase();
     this.started=true;
     if(kind==="world")return this.openWorld(requested,{pushHistory:false});
