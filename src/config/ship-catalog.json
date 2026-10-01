@@ -115,7 +115,7 @@
           }
         },
         "combatSprite": {
-          "src": "./assets/ships/combat/file_0000000041ac820e8a603425e7a23423.png",
+          "src": "./assets/ships/combat/pirate_default_combat_1600x1600.png",
           "imageWidth": 1600,
           "imageHeight": 1600,
           "columns": 4,
