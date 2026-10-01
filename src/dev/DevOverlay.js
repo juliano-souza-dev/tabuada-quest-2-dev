@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1758";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1848";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1740";
 export class DevOverlay {
   constructor(root,runtime,options={}){
@@ -220,7 +220,7 @@ export class DevOverlay {
 
   async loadActionCatalog(){
     try{
-      const response=await fetch("./src/config/action-catalog.json?v=20261001-1828",{cache:"no-store"});
+      const response=await fetch("./src/config/action-catalog.json?v=20261001-1848",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       this.actionCatalog=await response.json();
     }catch(error){
