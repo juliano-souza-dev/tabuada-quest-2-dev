@@ -1928,7 +1928,7 @@ export class WorldRuntime {
     if(!entity||this.combatActive||this.challengeActive||this.mode!=="play")return;
     this.stopForChallenge();
     this.actionWrap.hidden=true;
-    const enemyMaxHp=Math.max(1,Math.min(9,Number(entity.combat?.hp)||3));
+    const enemyMaxHp=Math.max(1,Math.min(20,Number(entity.combat?.hp)||3));
     const playerMaxHp=Math.max(1,Math.min(9,Number(this.config.combat?.playerHp)||3));
     this.combatActive={entity,enemyMaxHp,enemyHp:enemyMaxHp,playerMaxHp,playerHp:playerMaxHp,challenge:null};
     this.applyEnvironmentVisual();
@@ -1987,7 +1987,17 @@ export class WorldRuntime {
         entity:this.cleanEntity(active.entity),
         rewards:structuredClone(active.entity?.rewards||{})
       });
-      if(this.combatFeedback)this.combatFeedback.textContent="Navio inimigo derrotado!";
+      if(this.combatFeedback){
+        const rewards=active.entity?.rewards||{};
+        const parts=[];
+        if(Number(rewards.coins)>0)parts.push(Number(rewards.coins)+" moedas");
+        if(Number(rewards.xp)>0)parts.push(Number(rewards.xp)+" XP");
+        if(rewards.itemId)parts.push((Number(rewards.quantity)||1)+"× "+String(rewards.itemId));
+        if(rewards.shipId)parts.push("navio "+String(rewards.shipId));
+        this.combatFeedback.textContent=parts.length
+          ?"Navio inimigo derrotado! Recompensa: "+parts.join(" · ")+"."
+          :"Navio inimigo derrotado!";
+      }
       this.combatTimer=setTimeout(()=>this.closeCombat(),2650);
       return;
     }
