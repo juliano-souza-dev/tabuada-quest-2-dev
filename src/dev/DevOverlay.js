@@ -530,6 +530,7 @@ export class DevOverlay {
       },
       ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
       entities:[],
+      camera:{playZoom:1},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
       meta:{schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev"}
     };
@@ -639,6 +640,7 @@ export class DevOverlay {
         .map(([value,label])=>'<option value="'+value+'" '+(ocean.preset===value?'selected':'')+'>'+label+'</option>').join("");
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
+      const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
@@ -725,6 +727,13 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>ID</span><input value="'+this.escapeHtml(world.id)+'" readonly></label>'+
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
+          '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Câmera do jogo</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
+              '<input data-world-camera-prop="playZoom" type="range" min="0.55" max="1.40" step="0.01" value="'+cameraPlayZoom+'">'+
+            '</label>'+
+            '<div class="tq-world-camera-scale"><small>0.55x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
+            '<small class="tq-world-editor-note">Esse valor é salvo neste oceano. Afeta somente o enquadramento visual no Play, sem mudar velocidade, física ou colisões.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Mensagens de colisão</strong><span>▾</span></button><div class="tq-config-area__body">'+
             '<label class="tq-world-field"><span>Asset da mensagem</span><input data-world-ui-prop="interactionMessageAsset" type="text" value="'+this.escapeHtml(world.ui?.interactionMessageAsset||"")+'" placeholder="./assets/..."></label>'+
@@ -836,6 +845,19 @@ export class DevOverlay {
         this.renderWorlds();
         this.renderWorldInspector();
       }));
+
+      content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
+        const apply=commit=>{
+          const key=input.dataset.worldCameraProp;
+          const value=Number(input.value);
+          const output=content.querySelector('[data-world-camera-output="'+key+'"]');
+          if(output)output.value=value.toFixed(2)+"x";
+          this.worldEditor.updateWorld({camera:{[key]:value}},commit);
+          if(commit)this.syncLocalWorldFromEditor();
+        };
+        input.addEventListener("input",()=>apply(false));
+        input.addEventListener("change",()=>apply(true));
+      });
 
       content.querySelectorAll("[data-world-playable-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldPlayableProp;
