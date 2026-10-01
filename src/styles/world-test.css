@@ -375,3 +375,6 @@
 .tq-world-recenter{justify-self:center;margin-top:8px;padding:9px 13px;border:1px solid #ffffff40;border-radius:999px;background:#071b2ed9;color:#fff;font:800 12px/1 system-ui,sans-serif;box-shadow:0 8px 24px #001a2e66;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);touch-action:manipulation}
 .tq-world-recenter[hidden]{display:none!important}
 .tq-world-recenter:active{transform:translateY(1px)}
+
+.tq-world-camera-scale{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:-2px;color:#8fb2c3;font-size:9px}
+.tq-world-camera-scale small:nth-child(2){color:#d8e8ef;font-weight:600}
