@@ -29,8 +29,12 @@ if(worldTest){
   const services=await installAuthRuntime(runtime,{
     configUrl:"./src/config/firebase-public.json?v=20260930-1851"
   });
+  const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0043",{cache:"no-store"});
+  if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
+  const pedagogyCurriculum=await pedagogyResponse.json();
   const pedagogyRuntime=new PedagogyRuntime({
-    getState:()=>services.playerState.load()||{}
+    getState:()=>services.playerState.load()||{},
+    curriculum:pedagogyCurriculum
   });
   const recordPedagogyResult=result=>{
     const current=services.playerState.load()||{};
@@ -45,7 +49,10 @@ if(worldTest){
       a:Number(result?.a),
       b:Number(result?.b),
       answer:result?.answer===null||result?.answer===undefined||result?.answer===""?null:(Number.isFinite(Number(result.answer))?Number(result.answer):null),
-      correct:result?.correct===true
+      correct:result?.correct===true,
+      region:Number(result?.region)||null,
+      bonus:result?.bonus===true,
+      countsTowardPlanned:result?.countsTowardPlanned!==false
     });
     services.playerState.save({
       ...current,
@@ -58,6 +65,47 @@ if(worldTest){
       }
     },{sync:true});
   };
+  const recordTreasureCollected=event=>{
+    const payload=event?.detail||{};
+    const entity=payload.entity||{};
+    const challenge=payload.challenge||{};
+    if(!entity.id)return;
+
+    const current=services.playerState.load()||{};
+    const game=current.game&&typeof current.game==="object"?current.game:{};
+    const pedagogy=game.pedagogy&&typeof game.pedagogy==="object"?game.pedagogy:{};
+    const bonus=pedagogy.bonus&&typeof pedagogy.bonus==="object"?pedagogy.bonus:{};
+    const openedChestIds=Array.isArray(bonus.openedChestIds)?[...bonus.openedChestIds]:[];
+    const worldId=String(challenge?.context?.worldId||"dev-world");
+    const chestKey=worldId+":"+String(entity.id);
+    const region=Number(challenge.region)||Number(pedagogy.progress?.region)||1;
+    const chestsOpenedByRegion={
+      ...(bonus.chestsOpenedByRegion&&typeof bonus.chestsOpenedByRegion==="object"?bonus.chestsOpenedByRegion:{})
+    };
+
+    if(!openedChestIds.includes(chestKey)){
+      openedChestIds.push(chestKey);
+      chestsOpenedByRegion[String(region)]=Number(chestsOpenedByRegion[String(region)]||0)+1;
+    }
+
+    services.playerState.save({
+      ...current,
+      game:{
+        ...game,
+        pedagogy:{
+          ...pedagogy,
+          bonus:{
+            ...bonus,
+            openedChestIds,
+            chestsOpenedByRegion,
+            totalChestChallenges:Object.values(chestsOpenedByRegion).reduce((sum,value)=>sum+Number(value||0),0)
+          }
+        }
+      }
+    },{sync:true});
+  };
+  globalThis.addEventListener?.("tq:treasurecollected",recordTreasureCollected);
+
   await runtime.load(resolved.scene.path);
 
   const dev=new DevOverlay(document.body,runtime,{
@@ -77,6 +125,7 @@ if(worldTest){
     auth:services.auth,
     playerState:services.playerState,
     pedagogyRuntime,
+    pedagogyCurriculum,
     getAccessStatus:services.getStatus,
     lifecycle
   };
