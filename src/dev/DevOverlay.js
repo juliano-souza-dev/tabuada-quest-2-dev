@@ -478,18 +478,17 @@ export class DevOverlay {
   }
 
   worldBackgroundOptions(selected=""){
-    const backgrounds=(this.assetCatalog||[]).filter(asset=>{
-      const path=String(asset.path||"");
-      return path.startsWith("assets/ocean/")||path.startsWith("assets/backgrounds/");
-    });
-    const preferred=["assets/ocean/ocean.png","assets/backgrounds/scene-ocean.webp",...backgrounds.map(asset=>asset.path)];
-    const unique=[...new Set(preferred)];
+    const oceanAssets=(this.assetCatalog||[])
+      .map(asset=>String(asset.path||""))
+      .filter(path=>path.startsWith("assets/ocean/"));
+    const unique=[...new Set(oceanAssets)].sort((a,b)=>a.localeCompare(b,"pt-BR"));
     const none='<option value="none" '+(String(selected)==="none"?'selected':'')+'>Sem background · azul opaco</option>';
-    return none+unique.map(path=>{
+    const options=unique.map(path=>{
       const value="./"+path;
-      const label=path.split("/").pop();
+      const label=path.slice("assets/ocean/".length)||path.split("/").pop();
       return '<option value="'+this.escapeHtml(value)+'" '+(value===selected?'selected':'')+'>'+this.escapeHtml(label)+'</option>';
     }).join("");
+    return none+options;
   }
 
   async worldDocument(entry){
