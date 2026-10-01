@@ -254,6 +254,7 @@ export class OceanWebGLRenderer{
       gl.useProgram(this.program);
 
       const position=gl.getAttribLocation(this.program,"aPosition");
+      this.position=position;
       this.buffer=gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([
@@ -385,6 +386,9 @@ export class OceanWebGLRenderer{
     this.resize(width,height);
 
     gl.useProgram(this.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
+    gl.enableVertexAttribArray(this.position);
+    gl.vertexAttribPointer(this.position,2,gl.FLOAT,false,0,0);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D,this.texture);
 
