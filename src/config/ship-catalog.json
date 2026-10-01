@@ -1,0 +1,233 @@
+{
+  "schema": "tq.ship-catalog",
+  "version": 1,
+  "defaultShipId": "pirate-default",
+  "ships": [
+    {
+      "id": "pirate-default",
+      "name": "Navio Pirata",
+      "available": true,
+      "player": {
+        "width": 230,
+        "height": 230,
+        "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+        "sprite": {
+          "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "pirate-halloween",
+      "name": "Navio Pirata Halloween",
+      "available": true,
+      "player": {
+        "width": 230,
+        "height": 230,
+        "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+        "sprite": {
+          "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
+          }
+        }
+      }
+    }
+  ]
+}
