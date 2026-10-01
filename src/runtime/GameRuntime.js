@@ -1,5 +1,6 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2350";
+import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0028";
 
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
@@ -34,6 +35,7 @@ export class GameRuntime {
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerStateStore=null;
     this.accountState={};
+    this.pedagogyRuntime=new PedagogyRuntime({getState:()=>this.accountState});
     this.authenticated=false;
     this.pendingAuthRoute=null;
     this.started=false;
@@ -392,6 +394,52 @@ export class GameRuntime {
     return scene;
   }
 
+  recordPedagogyResult(result={}){
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    const pedagogy=game.pedagogy&&typeof game.pedagogy==="object"?game.pedagogy:{};
+    const activity=Array.isArray(pedagogy.activity)?pedagogy.activity.slice(-199):[];
+    activity.push({
+      at:Date.now(),
+      worldId:String(result.worldId||""),
+      entityId:String(result.entityId||""),
+      challengeId:String(result.challengeId||""),
+      operation:String(result.operation||"multiplication"),
+      a:Number(result.a),
+      b:Number(result.b),
+      answer:Number.isFinite(Number(result.answer))?Number(result.answer):null,
+      correct:result.correct===true
+    });
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        pedagogy:{
+          ...pedagogy,
+          activity
+        }
+      }
+    };
+    this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
+  }
+
+  handleTreasureCollected({entity,challenge}={}){
+    const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
+    globalThis.dispatchEvent?.(new CustomEvent("tq:treasurecollected",{
+      detail:{
+        entity:cleanEntity,
+        challenge:challenge?{
+          id:challenge.id,
+          operation:challenge.operation,
+          a:challenge.a,
+          b:challenge.b
+        }:null
+      }
+    }));
+    this.saveState();
+  }
+
   async openWorld(ref,{pushHistory=true,state=null}={}){
     const entry=this.worldEntry(ref);
     this.captureCurrentState();
@@ -413,6 +461,15 @@ export class GameRuntime {
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
       state:restored||{},
+      createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
+        worldId,
+        entityId:entity?.id
+      }),
+      onPedagogyResult:result=>this.recordPedagogyResult({
+        ...result,
+        worldId
+      }),
+      onTreasureCollected:payload=>this.handleTreasureCollected(payload),
       onEnterScene:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         return this.openScene(entity.scene,{pushHistory:true});
