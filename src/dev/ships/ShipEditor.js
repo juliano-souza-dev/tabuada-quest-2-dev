@@ -312,6 +312,117 @@ export class ShipEditor{
     };
   }
 
+  atlasCellOptions(){
+    return [400,600,800];
+  }
+
+  normalizeCellSize(value){
+    const size=Number(value);
+    return this.atlasCellOptions().includes(size)?size:400;
+  }
+
+  frameSpriteByCell(sprite,cellSize,{navigation=false}={}){
+    if(!sprite||typeof sprite!=="object")return sprite;
+    const size=this.normalizeCellSize(cellSize);
+    const imageWidth=Math.max(1,Number(sprite.imageWidth)||size*4);
+    const imageHeight=Math.max(1,Number(sprite.imageHeight)||size*4);
+    const columns=Math.max(1,Math.floor(imageWidth/size));
+    const rows=Math.max(1,Math.floor(imageHeight/size));
+    sprite.imageWidth=imageWidth;
+    sprite.imageHeight=imageHeight;
+    sprite.cellWidth=size;
+    sprite.cellHeight=size;
+    sprite.columns=Math.min(32,columns);
+    sprite.rows=Math.min(32,rows);
+    sprite.autoFrameExact=imageWidth%size===0&&imageHeight%size===0;
+    if(navigation){
+      sprite.directionFrames=sprite.directionFrames||{};
+      for(let index=0;index<this.directionKeys().length;index++){
+        const key=this.directionKeys()[index];
+        if(!Number.isFinite(Number(sprite.directionFrames[key])))sprite.directionFrames[key]=index;
+      }
+    }
+    return sprite;
+  }
+
+  syncCombinedAtlas(ship){
+    if(!ship||ship.spriteMode!=="combined")return;
+    ship.navigation=ship.navigation||{};
+    ship.navigation.sprite=ship.navigation.sprite||{};
+    ship.combat=ship.combat||{};
+    const nav=ship.navigation.sprite;
+    const current=ship.combat.sprite&&typeof ship.combat.sprite==="object"?ship.combat.sprite:{};
+    ship.combat.sprite={
+      ...current,
+      src:String(nav.src||""),
+      imageWidth:Number(nav.imageWidth)||1600,
+      imageHeight:Number(nav.imageHeight)||1600,
+      columns:Math.max(1,Number(nav.columns)||4),
+      rows:Math.max(1,Number(nav.rows)||4),
+      cellWidth:Math.max(1,Number(nav.cellWidth)||ship.cellSize||400),
+      cellHeight:Math.max(1,Number(nav.cellHeight)||ship.cellSize||400)
+    };
+  }
+
+  applyAutoFraming(ship){
+    if(!ship||ship.autoFrame===false)return;
+    const size=this.normalizeCellSize(ship.cellSize);
+    ship.cellSize=size;
+    ship.navigation=ship.navigation||{};
+    ship.navigation.sprite=ship.navigation.sprite||{};
+    this.frameSpriteByCell(ship.navigation.sprite,size,{navigation:true});
+    this.syncNavigationRegions(ship);
+    if(ship.spriteMode==="combined"){
+      this.syncCombinedAtlas(ship);
+    }else{
+      ship.combat=ship.combat||{};
+      ship.combat.sprite=ship.combat.sprite||{};
+      this.frameSpriteByCell(ship.combat.sprite,size);
+    }
+  }
+
+  updateAtlasSettings(patch={}){
+    const ship=this.editableCurrent();
+    if(!ship)return;
+    const previousMode=ship.spriteMode;
+    Object.assign(ship,clone(patch));
+    ship.spriteMode=ship.spriteMode==="combined"?"combined":"split";
+    ship.autoFrame=ship.autoFrame!==false;
+    ship.cellSize=this.normalizeCellSize(ship.cellSize);
+    if(ship.spriteMode==="combined"){
+      this.syncCombinedAtlas(ship);
+    }else if(previousMode==="combined"&&ship.combat?.sprite?.src===ship.navigation?.sprite?.src){
+      ship.combat.sprite={...ship.combat.sprite};
+    }
+    if(ship.autoFrame)this.applyAutoFraming(ship);
+    ship.editor={...(ship.editor||{}),draft:true,updatedAt:Date.now()};
+    this.save();
+    this.renderEditor();
+  }
+
+  atlasControlsHtml(ship){
+    const mode=ship.spriteMode==="combined"?"combined":"split";
+    const size=this.normalizeCellSize(ship.cellSize);
+    return `
+      <section class="tq-ships__panel tq-ships__atlas-settings">
+        <div class="tq-ships__panel-title"><div><strong>Fonte dos sprites</strong><small>Use um atlas único para navegação + combate ou dois atlas separados.</small></div><span>${mode==="combined"?"ATLAS ÚNICO":"2 ATLAS"}</span></div>
+        <div class="tq-ships__atlas-settings-grid">
+          <label><span>Modo do atlas</span><select data-atlas-mode><option value="combined" ${mode==="combined"?"selected":""}>Atlas único</option><option value="split" ${mode==="split"?"selected":""}>Atlas separado</option></select></label>
+          <label class="tq-ships__check tq-ships__auto-frame"><input data-atlas-auto type="checkbox" ${ship.autoFrame!==false?"checked":""}><span>Enquadramento automático</span></label>
+          <label><span>Tamanho da célula</span><select data-atlas-cell ${ship.autoFrame===false?"disabled":""}>${this.atlasCellOptions().map(value=>'<option value="'+value+'" '+(value===size?'selected':'')+'>'+value+' × '+value+'</option>').join("")}</select></label>
+        </div>
+        <small class="tq-world-editor-note">${mode==="combined"
+          ?"O mesmo arquivo alimenta as 16 direções e os ranges de combate."
+          :"Navegação e combate podem usar arquivos diferentes."} Com enquadramento automático, linhas e colunas são calculadas pelas dimensões reais do arquivo.</small>
+      </section>`;
+  }
+
+  bindAtlasControls(content){
+    content.querySelector("[data-atlas-mode]")?.addEventListener("change",event=>this.updateAtlasSettings({spriteMode:event.currentTarget.value}));
+    content.querySelector("[data-atlas-auto]")?.addEventListener("change",event=>this.updateAtlasSettings({autoFrame:event.currentTarget.checked}));
+    content.querySelector("[data-atlas-cell]")?.addEventListener("change",event=>this.updateAtlasSettings({cellSize:Number(event.currentTarget.value)}));
+  }
+
   syncNavigationRegions(ship){
     const sprite=ship?.navigation?.sprite;
     if(!sprite)return;
