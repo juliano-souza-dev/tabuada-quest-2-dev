@@ -1267,7 +1267,7 @@ export class WorldRuntime {
     this.mode=mode==="play"?"play":"edit";
     this.host?.classList.toggle("is-editor",this.mode==="edit");
     this.host?.classList.toggle("is-play",this.mode==="play");
-    if(this.modeEl)this.modeEl.textContent=this.mode==="edit"?"MUNDO · EDITAR":"MUNDO · PLAY";
+    if(this.modeEl)this.modeEl.textContent=this.mode==="edit"?"REGIÃO · EDITAR":"REGIÃO · PLAY";
     if(this.mode==="play"){
       this.keys.clear();
       this.pointerDirections.clear();
