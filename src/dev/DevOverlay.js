@@ -1481,14 +1481,16 @@ export class DevOverlay {
               '<label class="tq-field tq-field--check"><span>Combate ativo</span><input data-entity-combat-prop="enabled" type="checkbox" '+(combat.enabled===true?'checked':'')+'></label>'+
               '<label class="tq-world-field"><span>HP do inimigo</span><input data-entity-combat-prop="hp" type="number" min="1" max="20" value="'+Math.max(1,Number(combat.hp)||3)+'"></label>'+
               '<small class="tq-world-editor-note">Ative para transformar este navio em inimigo. Funciona em qualquer mundo, não apenas no mapa de teste.</small>'+
-            '</div></section>'+
-            '<section class="tq-config-area tq-config-area--rewards"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🎁 Recompensas da vitória</strong><span>▾</span></button><div class="tq-config-area__body">'+
+            '</div></section>'
+          : '')+
+        (!["background","region-exit"].includes(String(entity.type||""))
+          ? '<section class="tq-config-area tq-config-area--rewards"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>🎁 Recompensas</strong><span>▾</span></button><div class="tq-config-area__body">'+
               '<label class="tq-world-field"><span>Moedas</span><input data-entity-reward-prop="coins" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.coins)||0)+'"></label>'+
               '<label class="tq-world-field"><span>XP</span><input data-entity-reward-prop="xp" type="number" min="0" max="999999" value="'+Math.max(0,Number(rewards.xp)||0)+'"></label>'+
               '<label class="tq-world-field"><span>Item / recompensa ID</span><input data-entity-reward-prop="itemId" type="text" value="'+this.escapeHtml(rewards.itemId||"")+'" placeholder="ex.: mapa-tesouro-01"></label>'+
               '<label class="tq-world-field"><span>Quantidade do item</span><input data-entity-reward-prop="quantity" type="number" min="1" max="999" value="'+Math.max(1,Number(rewards.quantity)||1)+'"></label>'+
               '<label class="tq-world-field"><span>Desbloquear navio</span><select data-entity-reward-prop="shipId"><option value="">Nenhum</option>'+((this.shipEditor?.allShips?.()||[]).map(ship=>'<option value="'+this.escapeHtml(ship.id)+'" '+(rewards.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>').join(""))+'</select></label>'+
-              '<small class="tq-world-editor-note">As recompensas são concedidas uma única vez quando este inimigo é derrotado.</small>'+
+              '<small class="tq-world-editor-note">Esta recompensa é concedida uma única vez quando a entidade é conquistada, recolhida ou derrotada.</small>'+
             '</div></section>'
           : '')+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="true"><strong>Comportamento</strong><span>▾</span></button><div class="tq-config-area__body">'+
