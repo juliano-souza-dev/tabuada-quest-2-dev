@@ -120,7 +120,7 @@ export class DevOverlay {
     this.el.querySelector("[data-scene-context]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-event]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-name]").addEventListener("input",event=>{event.currentTarget.dataset.manual="true"});
-    this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(!this.shipEditor?.visible));
+    this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(this.shipEditor?.el?.hidden!==false));
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
