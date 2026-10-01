@@ -67,7 +67,7 @@ export class WorldEditor {
       editorEnabled:true,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
-        kind:context?.entity?.type==="treasure"?"treasure":"world-interaction",
+        kind:context?.entity?.type==="treasure"?"treasure":(context?.entity?.type==="ship"&&context?.entity?.combat?.enabled===true?"combat":"world-interaction"),
         worldId:world.id,
         entityId:context?.entity?.id,
         entityType:context?.entity?.type
