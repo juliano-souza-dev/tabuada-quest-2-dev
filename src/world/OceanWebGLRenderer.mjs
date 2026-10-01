@@ -192,7 +192,20 @@ export class OceanWebGLRenderer{
   async loadTexture(source){
     const src=String(source||"");
     if(!src)throw new Error("Ocean texture missing");
-    if(this.source===src&&this.image)return;
+    if(this.source===src&&(this.image||src==="none"))return;
+
+    const gl=this.gl;
+    if(src==="none"||src==="__none__"){
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D,this.texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+      const water=new Uint8Array([8,117,167,255]);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,water);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      this.image=null;
+      this.source="none";
+      return;
+    }
 
     const image=new Image();
     image.decoding="async";
@@ -203,7 +216,6 @@ export class OceanWebGLRenderer{
     image.src=src;
     await loaded;
 
-    const gl=this.gl;
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D,this.texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
