@@ -2289,7 +2289,10 @@ export class WorldRuntime {
       this.combatArena.dataset.environment=env.preset;
       const ocean=normalizeOceanConfig(this.config.ocean||{});
       const deep=ocean.layers?.deep||{};
-      const waterSource=String(deep.background||ocean.background||"").replace(/["\\]/g,"");
+      const rawWaterSource=String(deep.background||ocean.background||"");
+      const waterSource=(rawWaterSource==="none"||rawWaterSource==="__none__")
+        ?""
+        :rawWaterSource.replace(/["\\]/g,"");
       if(waterSource){
         this.combatArena.style.setProperty("--combat-water-image",'url("'+waterSource+'")');
         const tile=Math.max(96,Math.min(520,Number(ocean.tileSize||256)*Number(deep.tileScale||1)));
@@ -2403,6 +2406,13 @@ export class WorldRuntime {
     const preset=patch.preset;
     const base=preset&&preset!==current.preset?applyOceanPreset(current,preset):current;
     const next={...base,...structuredClone(patch)};
+    if(patch.background!==undefined){
+      const background=String(patch.background||"none");
+      next.layers={...(base.layers||{})};
+      for(const key of ["deep","wave","foam"]){
+        next.layers[key]={...(base.layers?.[key]||{}),background};
+      }
+    }
     if(patch.layers){
       next.layers={...(base.layers||{})};
       for(const [key,value] of Object.entries(patch.layers)){
@@ -2464,8 +2474,11 @@ export class WorldRuntime {
       const el=this.oceanEls?.[key];
       const layer=ocean.layers?.[key];
       if(!el||!layer)continue;
-      const safeBackground=String(layer.background||ocean.background||"").replace(/["\\]/g,"");
+      const rawBackground=String(layer.background||ocean.background||"");
+      const textureless=rawBackground==="none"||rawBackground==="__none__";
+      const safeBackground=textureless?"":rawBackground.replace(/["\\]/g,"");
       el.style.backgroundImage=safeBackground?'url("'+safeBackground+'")':"none";
+      el.style.backgroundColor="#0875a7";
       el.style.backgroundSize=(ocean.tileSize*layer.tileScale)+"px auto";
       el.style.backgroundRepeat="repeat";
       el.style.opacity=String(layer.opacity);
