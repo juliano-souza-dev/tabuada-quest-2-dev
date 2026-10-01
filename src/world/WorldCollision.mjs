@@ -1,7 +1,7 @@
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 
-const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene"]);
+const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene","combat"]);
 
 export function inferCollisionAction(entity={},collision={}){
   const explicit=VALID_ACTIONS.has(String(collision.action||""))
@@ -12,6 +12,7 @@ export function inferCollisionAction(entity={},collision={}){
   const type=String(entity.type||"object");
   const category=String(entity.effect?.category||"");
   if(type==="treasure"||type==="barrel")return "collect";
+  if(type==="ship"&&entity.combat?.enabled===true)return "combat";
   if((type==="location"||type==="island"||category==="island")&&entity.scene)return "enter-scene";
   if(entity.collectible===true||String(entity.interaction||"")==="collect")return "collect";
   return "none";
@@ -28,7 +29,7 @@ export function defaultCollision(entity={}){
   if(isBackground)return {active:false,shape:"box",scaleX:1,scaleY:1,padding:0,action:"none",message:""};
   if(isIsland)return {active:true,shape:"ellipse",scaleX:.72,scaleY:.52,padding:10,action:"auto",message:""};
   if(isCollectible)return {active:true,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"auto",message:""};
-  if(isShip)return {active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"none",message:""};
+  if(isShip)return {active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:entity.combat?.enabled===true?"combat":"none",message:""};
   return {active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0,action:"auto",message:""};
 }
 
@@ -53,6 +54,7 @@ export function collisionMessage(entity={},collision={}){
   if(collision.message)return collision.message;
   if(action==="collect")return "Você encontrou "+label+".";
   if(action==="enter-scene")return "Você chegou a "+label+".";
+  if(action==="combat")return label+" bloqueia sua rota.";
   return "";
 }
 
@@ -60,6 +62,7 @@ export function collisionActionLabel(entity={},collision={}){
   const action=inferCollisionAction(entity,collision);
   if(action==="collect")return "Recolher";
   if(action==="enter-scene")return "Acessar";
+  if(action==="combat")return "Combater";
   return "";
 }
 
