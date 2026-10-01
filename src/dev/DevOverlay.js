@@ -427,7 +427,8 @@ export class DevOverlay {
     });
     const preferred=["assets/ocean/ocean.png","assets/backgrounds/scene-ocean.webp",...backgrounds.map(asset=>asset.path)];
     const unique=[...new Set(preferred)];
-    return unique.map(path=>{
+    const none='<option value="none" '+(String(selected)==="none"?'selected':'')+'>Sem background · azul opaco</option>';
+    return none+unique.map(path=>{
       const value="./"+path;
       const label=path.split("/").pop();
       return '<option value="'+this.escapeHtml(value)+'" '+(value===selected?'selected':'')+'>'+this.escapeHtml(label)+'</option>';
