@@ -56,6 +56,8 @@ export class WorldRuntime {
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.challengeActive=null;
     this.challengeTimer=0;
+    this.combatActive=null;
+    this.combatTimer=0;
     this.state=structuredClone(options.state||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
@@ -172,6 +174,32 @@ export class WorldRuntime {
           <p class="tq-world-challenge__feedback" data-world-challenge-feedback aria-live="polite"></p>
         </section>
       </div>
+      <div class="tq-world-combat" data-world-combat hidden>
+        <section class="tq-world-combat__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-combat-title">
+          <button type="button" class="tq-world-combat__close" data-world-combat-close aria-label="Sair do combate">×</button>
+          <small>DUELO NAVAL</small>
+          <h2 id="tq-world-combat-title" data-world-combat-title>Navio inimigo</h2>
+          <div class="tq-world-combat__arena">
+            <div class="tq-world-combat__ship tq-world-combat__ship--player" data-world-combat-player-ship></div>
+            <div class="tq-world-combat__trajectory" aria-hidden="true">
+              <span class="tq-world-combat__shot" data-world-combat-shot></span>
+              <span class="tq-world-combat__splash" data-world-combat-splash>💦</span>
+              <span class="tq-world-combat__hit" data-world-combat-hit>💥</span>
+            </div>
+            <div class="tq-world-combat__ship tq-world-combat__ship--enemy" data-world-combat-enemy-ship></div>
+          </div>
+          <div class="tq-world-combat__hp">
+            <span>Você <b data-world-combat-player-hp>❤❤❤</b></span>
+            <span>Inimigo <b data-world-combat-enemy-hp>❤❤❤</b></span>
+          </div>
+          <strong class="tq-world-combat__prompt" data-world-combat-prompt></strong>
+          <form data-world-combat-form>
+            <input type="number" inputmode="numeric" autocomplete="off" data-world-combat-answer aria-label="Resposta">
+            <button type="submit" data-world-combat-submit>Disparar</button>
+          </form>
+          <p class="tq-world-combat__feedback" data-world-combat-feedback aria-live="polite"></p>
+        </section>
+      </div>
       <div class="tq-world-controls" aria-label="Controles de navegação">
         <div class="tq-world-joystick" data-world-joystick aria-label="Joystick analógico">
           <div class="tq-world-joystick__base">
@@ -218,6 +246,21 @@ export class WorldRuntime {
     this.challengeFeedback=this.host.querySelector("[data-world-challenge-feedback]");
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
+    this.combatWrap=this.host.querySelector("[data-world-combat]");
+    this.combatForm=this.host.querySelector("[data-world-combat-form]");
+    this.combatAnswer=this.host.querySelector("[data-world-combat-answer]");
+    this.combatSubmit=this.host.querySelector("[data-world-combat-submit]");
+    this.combatFeedback=this.host.querySelector("[data-world-combat-feedback]");
+    this.combatPrompt=this.host.querySelector("[data-world-combat-prompt]");
+    this.combatTitle=this.host.querySelector("[data-world-combat-title]");
+    this.combatClose=this.host.querySelector("[data-world-combat-close]");
+    this.combatPlayerHp=this.host.querySelector("[data-world-combat-player-hp]");
+    this.combatEnemyHp=this.host.querySelector("[data-world-combat-enemy-hp]");
+    this.combatPlayerShip=this.host.querySelector("[data-world-combat-player-ship]");
+    this.combatEnemyShip=this.host.querySelector("[data-world-combat-enemy-ship]");
+    this.combatShot=this.host.querySelector("[data-world-combat-shot]");
+    this.combatSplash=this.host.querySelector("[data-world-combat-splash]");
+    this.combatHit=this.host.querySelector("[data-world-combat-hit]");
     this.oceanEls={
       deep:this.host.querySelector('[data-ocean-layer="deep"]'),
       wave:this.host.querySelector('[data-ocean-layer="wave"]'),
@@ -238,6 +281,7 @@ export class WorldRuntime {
     this.renderEntities();
     this.bindControls();
     this.bindChallengeControls();
+    this.bindCombatControls();
     this.bindCameraPan();
     this.resize();
     this.onResize=()=>this.resize();
@@ -1496,6 +1540,156 @@ export class WorldRuntime {
     });
   }
 
+  bindCombatControls(){
+    const submit=event=>{event.preventDefault();this.submitCombatAnswer()};
+    const close=()=>this.closeCombat();
+    this.combatForm?.addEventListener("submit",submit);
+    this.combatClose?.addEventListener("click",close);
+    this.cleanups.push(()=>{
+      this.combatForm?.removeEventListener("submit",submit);
+      this.combatClose?.removeEventListener("click",close);
+    });
+  }
+
+  combatHearts(value,max=3){
+    const count=Math.max(0,Math.min(max,Number(value)||0));
+    return "❤".repeat(count)+"♡".repeat(Math.max(0,max-count));
+  }
+
+  updateCombatHud(){
+    const active=this.combatActive;
+    if(!active)return;
+    const maxEnemy=Math.max(1,Number(active.enemyMaxHp)||3);
+    const maxPlayer=Math.max(1,Number(active.playerMaxHp)||3);
+    if(this.combatEnemyHp)this.combatEnemyHp.textContent=this.combatHearts(active.enemyHp,maxEnemy);
+    if(this.combatPlayerHp)this.combatPlayerHp.textContent=this.combatHearts(active.playerHp,maxPlayer);
+  }
+
+  clearCombatFx(){
+    for(const el of [this.combatShot,this.combatSplash,this.combatHit]){
+      if(!el)continue;
+      el.className=el.className.split(" ").filter(token=>!token.startsWith("is-")).join(" ");
+      el.hidden=true;
+    }
+  }
+
+  playCombatFx({from="player",hit=false}={}){
+    this.clearCombatFx();
+    if(this.combatShot){
+      this.combatShot.hidden=false;
+      this.combatShot.classList.add(from==="enemy"?"is-enemy-shot":"is-player-shot",hit?"is-hit":"is-miss");
+    }
+    const target=hit?this.combatHit:this.combatSplash;
+    if(target){
+      target.hidden=false;
+      target.classList.add(from==="enemy"?"is-enemy-result":"is-player-result");
+    }
+    setTimeout(()=>this.clearCombatFx(),620);
+  }
+
+  closeCombat(){
+    if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
+    this.combatActive=null;
+    if(this.combatWrap)this.combatWrap.hidden=true;
+    if(this.combatFeedback)this.combatFeedback.textContent="";
+    if(this.combatAnswer){this.combatAnswer.value="";this.combatAnswer.disabled=false}
+    if(this.combatSubmit)this.combatSubmit.disabled=false;
+    this.clearCombatFx();
+  }
+
+  async loadCombatRound(){
+    const active=this.combatActive;
+    if(!active)return;
+    let challenge=null;
+    try{
+      challenge=this.createPedagogyChallenge
+        ?await this.createPedagogyChallenge({entity:this.cleanEntity(active.entity),worldState:this.getState()})
+        :null;
+    }catch(error){
+      console.warn("Combat pedagogy challenge creation failed",error);
+    }
+    if(!this.combatActive||this.combatActive.entity.id!==active.entity.id)return;
+    active.challenge=challenge;
+    if(this.combatPrompt)this.combatPrompt.textContent=challenge?.available?String(challenge.prompt||""):"Desafio indisponível";
+    if(this.combatFeedback)this.combatFeedback.textContent=challenge?.available?"":"Não foi possível gerar uma conta para este combate.";
+    if(this.combatAnswer){
+      this.combatAnswer.value="";
+      this.combatAnswer.disabled=!challenge?.available;
+    }
+    if(this.combatSubmit)this.combatSubmit.disabled=!challenge?.available;
+    this.updateCombatHud();
+    if(challenge?.available)queueMicrotask(()=>this.combatAnswer?.focus?.());
+  }
+
+  async beginCombat(entity){
+    if(!entity||this.combatActive||this.challengeActive||this.mode!=="play")return;
+    this.stopForChallenge();
+    this.actionWrap.hidden=true;
+    const enemyMaxHp=Math.max(1,Math.min(9,Number(entity.combat?.hp)||3));
+    const playerMaxHp=Math.max(1,Math.min(9,Number(this.config.combat?.playerHp)||3));
+    this.combatActive={entity,enemyMaxHp,enemyHp:enemyMaxHp,playerMaxHp,playerHp:playerMaxHp,challenge:null};
+    if(this.combatTitle)this.combatTitle.textContent=String(entity.label||"Navio inimigo");
+    if(this.combatWrap)this.combatWrap.hidden=false;
+    const playerSrc=String(this.config.player?.src||this.config.player?.sprite?.src||"").replace(/["\\]/g,"");
+    const enemySrc=String(entity.src||"").replace(/["\\]/g,"");
+    if(this.combatPlayerShip)this.combatPlayerShip.style.backgroundImage=playerSrc?'url("'+playerSrc+'")':"none";
+    if(this.combatEnemyShip)this.combatEnemyShip.style.backgroundImage=enemySrc?'url("'+enemySrc+'")':"none";
+    this.updateCombatHud();
+    this.clearCombatFx();
+    await this.loadCombatRound();
+  }
+
+  submitCombatAnswer(){
+    const active=this.combatActive;
+    const challenge=active?.challenge;
+    if(!active||!challenge?.available||typeof challenge.evaluate!=="function")return;
+    const raw=this.combatAnswer?.value??"";
+    if(String(raw).trim()===""){
+      if(this.combatFeedback)this.combatFeedback.textContent="Digite uma resposta.";
+      return;
+    }
+    const result=challenge.evaluate(raw)||{};
+    this.onPedagogyResult?.({
+      entityId:String(active.entity.id||""),
+      challengeId:String(challenge.id||""),
+      operation:String(challenge.operation||challenge.kind||"multiplication"),
+      a:Number(challenge.a),b:Number(challenge.b),answer:result.answer,
+      correct:result.correct===true,region:Number(challenge.region)||null,
+      bonus:false,countsTowardPlanned:challenge.countsTowardPlanned!==false
+    });
+    if(this.combatAnswer)this.combatAnswer.disabled=true;
+    if(this.combatSubmit)this.combatSubmit.disabled=true;
+
+    if(result.correct===true){
+      active.enemyHp=Math.max(0,active.enemyHp-1);
+      if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
+      this.playCombatFx({from:"player",hit:true});
+      setTimeout(()=>this.playCombatFx({from:"enemy",hit:false}),320);
+    }else{
+      active.playerHp=Math.max(0,active.playerHp-1);
+      if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
+      this.playCombatFx({from:"player",hit:false});
+      setTimeout(()=>this.playCombatFx({from:"enemy",hit:true}),320);
+    }
+    this.updateCombatHud();
+
+    if(active.enemyHp<=0){
+      this.completeCollection(active.entity);
+      if(this.combatFeedback)this.combatFeedback.textContent="Navio inimigo derrotado!";
+      this.combatTimer=setTimeout(()=>this.closeCombat(),1050);
+      return;
+    }
+    if(active.playerHp<=0){
+      if(this.combatFeedback)this.combatFeedback.textContent="Seu navio perdeu o duelo. Afaste-se e tente novamente.";
+      this.combatTimer=setTimeout(()=>this.closeCombat(),1250);
+      return;
+    }
+    this.combatTimer=setTimeout(async()=>{
+      this.combatTimer=0;
+      await this.loadCombatRound();
+    },980);
+  }
+
   stopForChallenge(){
     this.keys.clear();
     this.pointerDirections.clear();
@@ -1618,7 +1812,7 @@ export class WorldRuntime {
   }
 
   updateNearby(){
-    if(this.challengeActive){
+    if(this.challengeActive||this.combatActive){
       this.actionWrap.hidden=true;
       return;
     }
@@ -1676,6 +1870,11 @@ export class WorldRuntime {
 
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
+
+    if(action==="combat"){
+      this.beginCombat(entity);
+      return;
+    }
 
     if(action==="collect"){
       if(entity.type==="treasure"){
@@ -2276,7 +2475,7 @@ export class WorldRuntime {
   tick(time){
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
-    if(this.mode==="play"&&!this.challengeActive)this.updatePlayer(dt);
+    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive)this.updatePlayer(dt);
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time);
@@ -2298,7 +2497,8 @@ export class WorldRuntime {
   getState(){
     return {
       player:{x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction},
-      collected:[...this.collected]
+      collected:[...this.collected],
+      combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
     };
   }
 
