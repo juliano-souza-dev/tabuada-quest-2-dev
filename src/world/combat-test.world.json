@@ -120,6 +120,36 @@
           "height": 400
         }
       }
+    },
+    "combatSprite": {
+      "src": "./assets/ships/combat/file_0000000041ac820e8a603425e7a23423.png",
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "columns": 4,
+      "rows": 4,
+      "frameWidth": 400,
+      "frameHeight": 400,
+      "idleFrame": 4,
+      "animations": {
+        "fireRight": {
+          "frames": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "frameMs": 135
+        },
+        "fireLeft": {
+          "frames": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "frameMs": 135
+        }
+      }
     }
   },
   "playerSpawn": {
