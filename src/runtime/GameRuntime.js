@@ -505,7 +505,7 @@ export class GameRuntime {
       editorEnabled:false,
       state:restored||{},
       createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
-        kind:entity?.type==="treasure"?"treasure":"world-interaction",
+        kind:entity?.type==="treasure"?"treasure":(entity?.type==="ship"&&entity?.combat?.enabled===true?"combat":"world-interaction"),
         worldId,
         entityId:entity?.id,
         entityType:entity?.type
