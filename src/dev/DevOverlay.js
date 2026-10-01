@@ -18,6 +18,7 @@ export class DevOverlay {
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
     this.worldAtlasSelectionMode=null;
     this.sceneGroupOpen=new Set();
+    this.configAreaOpenState=new Set();
   }
   mount(){
     this.el=document.createElement("aside");this.el.className="tq-dev";
@@ -206,14 +207,23 @@ export class DevOverlay {
     container.querySelectorAll("[data-area-toggle]").forEach(button=>{
       const body=button.nextElementSibling;
       if(!body)return;
-      body.hidden=true;
-      button.setAttribute("aria-expanded","false");
+      const label=String(button.querySelector("strong")?.textContent||"area").trim();
+      const scope=this.workspace==="world"
+        ?("world:"+(this.selected?.id||this.worldEditor?.entry?.id||"root"))
+        :("scene:"+(this.selected?.id||this.runtime?.scene?.id||"root"));
+      const key=scope+":"+label;
+      const open=this.configAreaOpenState.has(key);
+      body.hidden=!open;
+      button.setAttribute("aria-expanded",String(open));
       const caret=button.querySelector("span");
-      if(caret)caret.textContent="▸";
+      if(caret)caret.textContent=open?"▾":"▸";
       button.addEventListener("click",()=>{
-        body.hidden=!body.hidden;
-        button.setAttribute("aria-expanded",String(!body.hidden));
-        if(caret)caret.textContent=body.hidden?"▸":"▾";
+        const nextOpen=body.hidden;
+        body.hidden=!nextOpen;
+        button.setAttribute("aria-expanded",String(nextOpen));
+        if(caret)caret.textContent=nextOpen?"▾":"▸";
+        if(nextOpen)this.configAreaOpenState.add(key);
+        else this.configAreaOpenState.delete(key);
       });
     });
   }
