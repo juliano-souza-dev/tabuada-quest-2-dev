@@ -1,4 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-1116";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-1128";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -8,6 +9,7 @@ export class DevOverlay {
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];this.worldEditor=new WorldEditor(this.runtime.root,{sceneRuntime:this.runtime,pedagogyRuntime:this.pedagogyRuntime,onPedagogyResult:this.onPedagogyResult});this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
     this.worldAtlasSelectionMode=null;
+    this.shipEditor=new ShipEditor({requestFrameAsset:()=>this.openShipFramePicker()});
     try{this.sceneGroupOpen=new Set(JSON.parse(sessionStorage.getItem(this.sceneGroupStorageKey)||"[]"))}catch{this.sceneGroupOpen=new Set()}
   }
   mount(){
@@ -22,6 +24,7 @@ export class DevOverlay {
         <button data-mold>▣ <span>Molde</span></button>
         <button data-scenes>☷ <span>Cenas</span></button>
         <button data-worlds>🌊 <span>Mundos</span></button>
+        <button data-ships>🚢 <span>Navios</span></button>
         <button data-assets>▦ <span>Assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
       </div>
@@ -100,10 +103,12 @@ export class DevOverlay {
     this.el.querySelector("[data-scene-context]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-event]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-name]").addEventListener("input",event=>{event.currentTarget.dataset.manual="true"});
+    this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(true));
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(true));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
+    this.shipEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -239,6 +244,7 @@ export class DevOverlay {
     panel.hidden=!show;
     if(show){
       this.el.querySelector(".tq-dev__assets").hidden=true;
+      this.shipEditor.setVisible(false);
       this.el.querySelector(".tq-dev__panel").hidden=true;
       this.el.querySelector(".tq-dev__worlds").hidden=true;
       this.renderScenes();
@@ -457,6 +463,7 @@ export class DevOverlay {
     panel.hidden=!show;
     if(show){
       this.el.querySelector(".tq-dev__assets").hidden=true;
+      this.shipEditor.setVisible(false);
       this.el.querySelector(".tq-dev__scenes").hidden=true;
       this.el.querySelector(".tq-dev__panel").hidden=true;
       this.renderWorlds();
@@ -1624,11 +1631,36 @@ export class DevOverlay {
       if(grid)grid.textContent="Falha ao carregar a árvore real de /assets.";
     }
   }
+  toggleShips(show){
+    if(show){
+      this.el.querySelector(".tq-dev__assets").hidden=true;
+      this.el.querySelector(".tq-dev__panel").hidden=true;
+      this.el.querySelector(".tq-dev__scenes").hidden=true;
+      this.el.querySelector(".tq-dev__worlds").hidden=true;
+    }
+    this.shipEditor.setVisible(show);
+  }
+
   toggleAssets(show){
     const panel=this.el.querySelector(".tq-dev__assets");panel.hidden=!show;
-    if(!show)this.assetPickTarget=null;
-    if(show){this.el.querySelector(".tq-dev__panel").hidden=true;this.el.querySelector(".tq-dev__scenes").hidden=true;this.el.querySelector(".tq-dev__worlds").hidden=true;this.renderAssets()}
+    if(!show&&this.assetPickTarget?.kind!=="ship-frame")this.assetPickTarget=null;
+    if(show){
+      this.shipEditor.setVisible(false);
+      this.el.querySelector(".tq-dev__panel").hidden=true;
+      this.el.querySelector(".tq-dev__scenes").hidden=true;
+      this.el.querySelector(".tq-dev__worlds").hidden=true;
+      this.renderAssets();
+    }
   }
+
+  openShipFramePicker(){
+    this.assetPickTarget={kind:"ship-frame"};
+    if(this.assetNodeIndex.has("assets/ships"))this.assetDirectoryPath="assets/ships";
+    const search=this.el.querySelector("[data-asset-search]");
+    if(search)search.value="";
+    this.toggleAssets(true);
+  }
+
   openWorldPlayerSpritePicker(){
     if(this.workspace!=="world"||!this.worldEditor?.active)return;
     this.assetPickTarget={kind:"world-player-sprite"};
@@ -1661,6 +1693,7 @@ export class DevOverlay {
   captureContinuity(){
     const visiblePanel=()=>{
       if(this.el?.querySelector(".tq-dev__assets")?.hidden===false)return "assets";
+      if(this.shipEditor?.el?.hidden===false)return "ships";
       if(this.el?.querySelector(".tq-dev__scenes")?.hidden===false)return "scenes";
       if(this.el?.querySelector(".tq-dev__worlds")?.hidden===false)return "worlds";
       if(this.el?.querySelector(".tq-dev__panel")?.hidden===false)return "config";
@@ -1709,6 +1742,8 @@ export class DevOverlay {
       if(state.panel==="assets"){
         if(state.assetDirectoryPath)this.assetDirectoryPath=state.assetDirectoryPath;
         this.toggleAssets(true);
+      }else if(state.panel==="ships"){
+        this.toggleShips(true);
       }else if(state.panel==="scenes"){
         this.toggleScenes(true);
       }else if(state.panel==="worlds"){
