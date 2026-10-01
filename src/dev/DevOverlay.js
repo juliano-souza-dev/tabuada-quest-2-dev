@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2036";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2140";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2220";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -661,7 +661,7 @@ export class DevOverlay {
 
   async loadWorldCatalog(){
     try{
-      const response=await fetch("./src/config/world-catalog.json?v=20261001-1942",{cache:"no-store"});
+      const response=await fetch("./src/config/world-catalog.json?v=20261001-2220",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       this.worldCatalog=await response.json();
     }catch(error){
@@ -2197,7 +2197,7 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20261001-2122",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20261001-2220",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
       this.assetCatalog=manifest.assets||[];
