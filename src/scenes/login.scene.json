@@ -14,13 +14,13 @@
   },
   "nodes": [
     {
-      "id": "login.background",
+      "id": "login.home-pirate-port",
       "kind": "image",
-      "src": "./assets/backgrounds/background.jpg",
-      "x": -1.4817320703653518,
-      "y": 3.9539918809201433,
-      "width": 389.5372124492557,
-      "height": 828.0974289580513,
+      "src": "./assets/backgrounds/home/home-pirate-port.webp",
+      "x": 28.859925721700186,
+      "y": 439.02095549628024,
+      "width": 128,
+      "height": 128,
       "scaleX": 1,
       "scaleY": 1,
       "rotation": 0,
@@ -29,134 +29,8 @@
       "z": 2,
       "visible": true,
       "locked": false,
-      "alt": "background.jpg",
+      "alt": "home-pirate-port.webp",
       "parentId": "viewport",
-      "compositionType": "ocean",
-      "composition": {
-        "animation": {
-          "speed": 58,
-          "movement": 28,
-          "shine": 11,
-          "foam": 84,
-          "ripples": true,
-          "quality": "balanced",
-          "preset": "adventure"
-        },
-        "active": true,
-        "area": {
-          "mode": "polygon",
-          "points": [
-            {
-              "x": 0.032369314805125615,
-              "y": 0.44345720225822755
-            },
-            {
-              "x": 0.22294568866422992,
-              "y": 0.4517322419128273
-            },
-            {
-              "x": 0.7448317379764432,
-              "y": 0.4475947220855274
-            },
-            {
-              "x": 0.9911150720751013,
-              "y": 0.4393196824309276
-            },
-            {
-              "x": 0.9969789796353468,
-              "y": 0.5841327658284977
-            },
-            {
-              "x": 0.9383400607192224,
-              "y": 0.5786160727254311
-            },
-            {
-              "x": 0.9471358828880081,
-              "y": 0.5951661520346307
-            },
-            {
-              "x": 0.9324761531589769,
-              "y": 0.6117161944911883
-            },
-            {
-              "x": 0.9178164234299458,
-              "y": 0.6268871005246212
-            },
-            {
-              "x": 0.8855650493633436,
-              "y": 0.6530913927641872
-            },
-            {
-              "x": 0.8855650493633436,
-              "y": 0.6737789919006866
-            },
-            {
-              "x": 0.8855650493633436,
-              "y": 0.6820539578500023
-            },
-            {
-              "x": 0.8005386639408623,
-              "y": 0.6765373384522199
-            },
-            {
-              "x": 0.7682872898742599,
-              "y": 0.7579084880171669
-            },
-            {
-              "x": 0.7272400936388719,
-              "y": 0.7841127065514488
-            },
-            {
-              "x": 0.258129016510955,
-              "y": 0.7813543599999156
-            },
-            {
-              "x": 0.21708180068977573,
-              "y": 0.7399792354322008
-            },
-            {
-              "x": 0.1848304070373821,
-              "y": 0.6723998186249199
-            },
-            {
-              "x": 0.13498735925452157,
-              "y": 0.6544705660399538
-            },
-            {
-              "x": 0.07928042349720688,
-              "y": 0.5910286322073308
-            },
-            {
-              "x": 0.1261915272928403,
-              "y": 0.5758577261738979
-            },
-            {
-              "x": 0.09687208742056941,
-              "y": 0.5524118173385072
-            },
-            {
-              "x": 0.07928042349720688,
-              "y": 0.5275866983747078
-            },
-            {
-              "x": 0.04409709075403397,
-              "y": 0.49310740333318415
-            },
-            {
-              "x": 0.01477764965765112,
-              "y": 0.49862409643625066
-            },
-            {
-              "x": 0.01770959364487821,
-              "y": 0.4627656281189603
-            },
-            {
-              "x": 0.01770959364487821,
-              "y": 0.4420780289824609
-            }
-          ]
-        }
-      },
       "layout": {
         "mode": "viewport-cover"
       }
@@ -165,10 +39,10 @@
       "id": "login.navio-pirata-halloween-tabuada-2",
       "kind": "image",
       "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp",
-      "x": 119.57916102841679,
-      "y": 263.20703653585923,
-      "width": 143.98917456021653,
-      "height": 205.66170500676577,
+      "x": 83.75134266157296,
+      "y": 253.63451474937824,
+      "width": 180.85179957507486,
+      "height": 207.19763432663828,
       "scaleX": 1,
       "scaleY": 1,
       "rotation": 0,
@@ -176,7 +50,7 @@
       "skewY": 0,
       "z": 3,
       "visible": true,
-      "locked": false,
+      "locked": true,
       "alt": "navio_pirata_halloween_tabuada.webp",
       "compositionType": "ship",
       "compositionSelection": "inferred",
@@ -196,7 +70,7 @@
           "routeLoop": false,
           "wakeEnabled": true,
           "wakePreset": "navigation",
-          "wakeIntensity": 45,
+          "wakeIntensity": 72,
           "wakeLength": 100,
           "wakeSpread": 100,
           "wakeFoam": 100,
@@ -205,12 +79,141 @@
         "active": true
       },
       "parentId": "viewport"
+    },
+    {
+      "id": "login.background",
+      "kind": "image",
+      "src": "./assets/backgrounds/background.jpg",
+      "x": 369.07098084718245,
+      "y": 300.78616318702234,
+      "width": 128,
+      "height": 128,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 3,
+      "visible": true,
+      "locked": false,
+      "alt": "background.jpg",
+      "parentId": "viewport",
+      "layout": {
+        "mode": "viewport-cover"
+      }
+    },
+    {
+      "id": "login.background-2",
+      "kind": "image",
+      "src": "./assets/backgrounds/background.jpg",
+      "x": 76.26812196118085,
+      "y": 118.61981054629685,
+      "width": 235.51592577105868,
+      "height": 548.8480118129269,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 1,
+      "visible": true,
+      "locked": true,
+      "alt": "background.jpg",
+      "parentId": "viewport",
+      "layout": {
+        "mode": "viewport-cover"
+      },
+      "action": null
+    },
+    {
+      "id": "login.tabuada-quest-logo",
+      "kind": "image",
+      "src": "./assets/ui/logo/tabuada-quest-logo.webp",
+      "x": 81.46587570185527,
+      "y": 25.468583234447095,
+      "width": 195.58145035588888,
+      "height": 172.15832224198817,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 5,
+      "visible": true,
+      "locked": false,
+      "alt": "tabuada-quest-logo.webp",
+      "parentId": "viewport"
+    },
+    {
+      "id": "login.ui-login-google-plaque",
+      "kind": "image",
+      "src": "./assets/ui/icons/ui_login_google_plaque.webp",
+      "x": 10.044635004019753,
+      "y": 454.76425574327584,
+      "width": 354.1673638294951,
+      "height": 185.59772850917477,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 6,
+      "visible": true,
+      "locked": false,
+      "alt": "ui_login_google_plaque.webp",
+      "action": "auth.google.signIn",
+      "parentId": "viewport"
+    },
+    {
+      "id": "login.el-colombo",
+      "kind": "image",
+      "src": "./assets/ships/el-colombo.webp",
+      "x": 294.5778073546982,
+      "y": 276.59508689205285,
+      "width": 89.21747981416831,
+      "height": 67.33028102014032,
+      "scaleX": 1,
+      "scaleY": 1,
+      "rotation": 0,
+      "skewX": 0,
+      "skewY": 0,
+      "z": 7,
+      "visible": true,
+      "locked": false,
+      "alt": "el-colombo.webp",
+      "compositionType": "ship",
+      "compositionSelection": "inferred",
+      "composition": {
+        "animation": {
+          "heave": 100,
+          "pitch": 70,
+          "roll": 100,
+          "sway": 100,
+          "inertia": 100,
+          "damping": 74,
+          "coupling": 100,
+          "pivotX": 97,
+          "pivotY": 93,
+          "routePreset": "straight",
+          "routeSpeed": 100,
+          "routeLoop": false,
+          "wakeEnabled": false,
+          "wakePreset": "strong",
+          "wakeIntensity": 100,
+          "wakeLength": 70,
+          "wakeSpread": 78,
+          "wakeFoam": 86,
+          "preset": "navigation"
+        },
+        "active": false
+      },
+      "parentId": "viewport"
     }
   ],
   "meta": {
     "exportedFrom": "tabuada-quest-dev",
     "schema": "tq.scene",
     "version": 1,
-    "sourceRevision": "20260930-0012"
+    "sourceRevision": "20260930-2349"
   }
 }
