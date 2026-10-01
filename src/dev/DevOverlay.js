@@ -1643,7 +1643,7 @@ export class DevOverlay {
 
   toggleAssets(show){
     const panel=this.el.querySelector(".tq-dev__assets");panel.hidden=!show;
-    if(!show&&this.assetPickTarget?.kind!=="ship-frame")this.assetPickTarget=null;
+    if(!show)this.assetPickTarget=null;
     if(show){
       this.shipEditor.setVisible(false);
       this.el.querySelector(".tq-dev__panel").hidden=true;
