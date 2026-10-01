@@ -24,6 +24,8 @@ uniform float uSpeed;
 uniform float uSwell;
 uniform float uBrightness;
 uniform float uSaturation;
+uniform float uContrast;
+uniform vec3 uTint;
 uniform float uDistortion;
 uniform float uWaveFrequencyA;
 uniform float uWaveFrequencyB;
@@ -78,7 +80,9 @@ void main(){
 
   color*=uBrightness;
   color=saturateColor(color,uSaturation);
-  outColor=vec4(color,1.0);
+  color=(color-0.5)*uContrast+0.5;
+  color*=uTint;
+  outColor=vec4(clamp(color,0.0,1.0),1.0);
 }
 `;
 
@@ -157,7 +161,7 @@ export class OceanWebGLRenderer{
 
       for(const name of [
         "uTexture","uResolution","uCamera","uDirection","uZoom","uTime",
-        "uTileSize","uSpeed","uSwell","uBrightness","uSaturation",
+        "uTileSize","uSpeed","uSwell","uBrightness","uSaturation","uContrast","uTint",
         "uDistortion","uWaveFrequencyA","uWaveFrequencyB","uWaveMix",
         "uFoamMix","uSparkleIntensity","uSparkleSharpness"
       ]){
@@ -251,6 +255,13 @@ export class OceanWebGLRenderer{
     gl.uniform1f(this.uniforms.uSwell,clamp(Number(ocean.swell)||0,0,100));
     gl.uniform1f(this.uniforms.uBrightness,clamp(Number(ocean.brightness)||100,50,150)/100);
     gl.uniform1f(this.uniforms.uSaturation,clamp(Number(ocean.saturation)||100,0,180)/100);
+    gl.uniform1f(this.uniforms.uContrast,clamp(Number(ocean.contrast)||100,50,150)/100);
+    gl.uniform3f(
+      this.uniforms.uTint,
+      clamp(Number(ocean.tintR)||100,50,150)/100,
+      clamp(Number(ocean.tintG)||100,50,150)/100,
+      clamp(Number(ocean.tintB)||100,50,150)/100
+    );
     gl.uniform1f(this.uniforms.uDistortion,clamp(Number(ocean.distortion)||0,0,100));
     gl.uniform1f(this.uniforms.uWaveFrequencyA,clamp(Number(ocean.waveFrequencyA)||18,2,60));
     gl.uniform1f(this.uniforms.uWaveFrequencyB,clamp(Number(ocean.waveFrequencyB)||15,2,60));
