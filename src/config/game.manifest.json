@@ -9,7 +9,8 @@
   },
   "catalogs": {
     "scenes": "./src/config/scene-catalog.json",
-    "worlds": "./src/config/world-catalog.json"
+    "worlds": "./src/config/world-catalog.json",
+    "ships": "./src/config/ship-catalog.json"
   },
   "start": {
     "kind": "world",
@@ -18,5 +19,9 @@
   "persistence": {
     "restoreSession": true,
     "sessionKey": "tq.game.runtime:v1"
+  },
+  "player": {
+    "defaultShipId": "pirate-default",
+    "grantDefaultShip": true
   }
 }
