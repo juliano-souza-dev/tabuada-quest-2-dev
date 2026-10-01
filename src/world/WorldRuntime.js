@@ -55,6 +55,7 @@ export class WorldRuntime {
     this.createPedagogyChallenge=typeof options.createPedagogyChallenge==="function"?options.createPedagogyChallenge:null;
     this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
+    this.onCombatVictory=typeof options.onCombatVictory==="function"?options.onCombatVictory:null;
     this.challengeActive=null;
     this.challengeTimer=0;
     this.combatActive=null;
@@ -1982,6 +1983,10 @@ export class WorldRuntime {
 
     if(active.enemyHp<=0){
       this.completeCollection(active.entity);
+      this.onCombatVictory?.({
+        entity:this.cleanEntity(active.entity),
+        rewards:structuredClone(active.entity?.rewards||{})
+      });
       if(this.combatFeedback)this.combatFeedback.textContent="Navio inimigo derrotado!";
       this.combatTimer=setTimeout(()=>this.closeCombat(),2650);
       return;
