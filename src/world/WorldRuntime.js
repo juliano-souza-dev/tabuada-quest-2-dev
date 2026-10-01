@@ -2000,7 +2000,9 @@ export class WorldRuntime {
 
   v2CombatAtlas(source,animationName="idle"){
     const combat=source?.combatVisual||source?.combat;
-    const sprite=combat?.sprite;
+    const sprite=combat?.useNavigationAtlas===true
+      ?source?.sprite
+      :combat?.sprite;
     const animation=combat?.animations?.[animationName];
     if(sprite?.src){
       const imageWidth=Math.max(1,Number(sprite.imageWidth)||0);
