@@ -101,6 +101,7 @@ export class ShipEditor{
       directionFrames:clone(navSprite.directionFrames||{}),
       initialDirection:String(navSprite.initialDirection||value.navigation.initialDirection||"n")
     };
+    if(value.autoFrame)this.frameSpriteByCell(value.navigation.sprite,value.cellSize,{navigation:true});
     const directionOrder=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
     const columns=value.navigation.sprite.columns;
     const cellWidth=value.navigation.sprite.cellWidth;
@@ -144,6 +145,7 @@ export class ShipEditor{
       cellWidth:Math.max(1,Number(combatSprite.cellWidth||combatSprite.frameWidth)||400),
       cellHeight:Math.max(1,Number(combatSprite.cellHeight||combatSprite.frameHeight)||400)
     };
+    if(value.autoFrame&&value.spriteMode!=="combined")this.frameSpriteByCell(value.combat.sprite,value.cellSize);
 
     if(!declaredSpriteMode&&value.navigation.sprite.src&&value.combat.sprite.src===value.navigation.sprite.src){
       value.spriteMode="combined";
