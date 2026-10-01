@@ -15,7 +15,7 @@ import {
   resolveCircleVsEntity,
   removeVelocityIntoNormal,
   contourVelocity
-} from "./WorldCollision.mjs?v=20261001-0850";
+} from "./WorldCollision.mjs?v=20261001-1438";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 const normalizePlayerWaterEffects=player=>{
@@ -57,7 +57,6 @@ export class WorldRuntime {
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.challengeActive=null;
     this.challengeTimer=0;
-    this.closeRegionTransition();
     this.combatActive=null;
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
