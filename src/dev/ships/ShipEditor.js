@@ -40,7 +40,7 @@ export class ShipEditor{
 
   async load(){
     try{
-      const response=await fetch("./src/config/ship-catalog.json?v=20261001-2140",{cache:"no-store"});
+      const response=await fetch("./src/config/ship-catalog.json?v=20261001-2220",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       this.catalog=await response.json();
     }catch(error){
