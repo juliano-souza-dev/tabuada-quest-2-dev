@@ -1,6 +1,6 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20261001-0850";
-import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0047";
+import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
