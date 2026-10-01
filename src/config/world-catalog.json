@@ -19,6 +19,12 @@
       "name": "Teste de Combate Naval",
       "type": "ocean",
       "path": "./src/world/combat-test.world.json"
+    },
+    {
+      "id": "halloween-48-test",
+      "name": "Teste Navio Halloween 48F",
+      "type": "ocean",
+      "path": "./src/world/halloween-48-test.world.json"
     }
   ]
 }
