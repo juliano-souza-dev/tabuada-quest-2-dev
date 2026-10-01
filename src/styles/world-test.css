@@ -152,6 +152,15 @@
 .tq-world-dpad [data-dir="right"]{grid-column:3;grid-row:2;border-radius:5px 14px 14px 5px}
 .tq-world-dpad [data-dir="down"]{grid-column:2;grid-row:3;border-radius:5px 5px 14px 14px}
 .tq-world-help{padding:8px 10px;border-radius:9px;background:#061b2dbd;color:#d8efff;font-size:10px;line-height:1.35;text-align:right}
+.tq-world-minimap{position:fixed;right:max(12px,env(safe-area-inset-right));top:max(72px,calc(env(safe-area-inset-top) + 58px));z-index:540;width:148px;height:148px;border:1px solid rgba(216,244,255,.56);border-radius:18px;background:rgba(3,23,35,.78);box-shadow:0 10px 30px rgba(0,0,0,.38);overflow:hidden;pointer-events:none;backdrop-filter:blur(4px)}
+.tq-world-minimap[hidden]{display:none!important}
+.tq-world-minimap canvas{display:block;width:100%;height:100%}
+.tq-world-minimap__north{position:absolute;left:9px;top:7px;display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:rgba(2,18,28,.82);border:1px solid rgba(255,255,255,.42);color:#fff;font:900 11px/1 system-ui;box-shadow:0 2px 7px rgba(0,0,0,.35)}
+.tq-world-host.is-editor .tq-world-minimap{display:none!important}
+@media(max-width:430px){
+  .tq-world-minimap{right:max(9px,env(safe-area-inset-right));top:max(66px,calc(env(safe-area-inset-top) + 54px));width:126px;height:126px;border-radius:15px}
+  .tq-world-minimap__north{left:7px;top:6px;width:21px;height:21px;font-size:10px}
+}
 .tq-world-scene-badge{position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));z-index:2147482000;transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:#061b2ddd;border:1px solid #ffffff4d;color:#7ee7ff;font:800 11px system-ui}
 .tq-world-scene-back{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:2147482001;transform:translateX(-50%)}
 .tq-world-editor-back{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:2147482998;transform:translateX(-50%)}
