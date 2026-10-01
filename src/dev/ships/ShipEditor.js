@@ -9,7 +9,7 @@ export class ShipEditor{
     this.catalog=null;
     this.drafts=[];
     this.selectedId=null;
-    this.animationKey=null;
+    this.animationByShip=new Map();
     this.previewTimer=0;
     this.storageKey="tq.dev.ship-drafts:v1";
     this.el=null;
@@ -102,7 +102,11 @@ export class ShipEditor{
 
   select(id){
     this.selectedId=id;
-    this.animationKey=null;
+    const ship=this.allShips().find(item=>item.id===id);
+    if(ship&&!this.animationByShip.has(id)){
+      const keys=Object.keys(ship.animations||{});
+      this.animationByShip.set(id,ship.animations?.idle?"idle":(keys[0]||null));
+    }
     this.render();
   }
 
@@ -123,7 +127,7 @@ export class ShipEditor{
     this.drafts.push(ship);
     this.save();
     this.selectedId=id;
-    this.animationKey="idle";
+    this.animationByShip.set(id,"idle");
     this.render();
   }
 
@@ -135,13 +139,22 @@ export class ShipEditor{
     this.render();
   }
 
-  animation(){
-    const ship=this.current();
+  currentAnimationKey(ship=this.current()){
     if(!ship)return null;
     const keys=Object.keys(ship.animations||{});
     if(!keys.length)return null;
-    if(!this.animationKey||!ship.animations[this.animationKey])this.animationKey=keys[0];
-    return ship.animations[this.animationKey];
+    let key=this.animationByShip.get(ship.id);
+    if(!key||!ship.animations[key]){
+      key=ship.animations.idle?"idle":keys[0];
+      this.animationByShip.set(ship.id,key);
+    }
+    return key;
+  }
+
+  animation(){
+    const ship=this.current();
+    const key=this.currentAnimationKey(ship);
+    return key?ship?.animations?.[key]||null:null;
   }
 
   addAnimation(name){
@@ -152,38 +165,53 @@ export class ShipEditor{
     let final=key,n=2;
     while(ship.animations[final])final=key+"-"+n++;
     ship.animations[final]={frameMs:140,loop:true,cellWidth:400,cellHeight:400,frames:[]};
-    this.animationKey=final;
+    this.animationByShip.set(ship.id,final);
     this.save();this.render();
   }
 
   deleteAnimation(){
     const ship=this.editableCurrent();
-    if(!ship||!this.animationKey)return;
-    delete ship.animations[this.animationKey];
-    this.animationKey=Object.keys(ship.animations)[0]||null;
+    const key=this.currentAnimationKey(ship);
+    if(!ship||!key)return;
+    delete ship.animations[key];
+    const next=ship.animations.idle?"idle":(Object.keys(ship.animations)[0]||null);
+    this.animationByShip.set(ship.id,next);
     this.save();this.render();
   }
 
   updateAnimation(patch){
     const ship=this.editableCurrent();
-    if(!ship||!this.animationKey)return;
-    ship.animations[this.animationKey]={...ship.animations[this.animationKey],...clone(patch)};
+    const key=this.currentAnimationKey(ship);
+    if(!ship||!key)return;
+    ship.animations[key]={...ship.animations[key],...clone(patch)};
     this.save();this.render();
   }
 
-  addFrame(src){
-    const ship=this.editableCurrent();
-    if(!ship)return;
-    if(!this.animationKey)this.addAnimation("idle");
-    const anim=ship.animations[this.animationKey];
+  addFrameTo(shipId,animationKey,src){
+    let ship=this.drafts.find(item=>item.id===shipId)||null;
+    if(!ship&&this.selectedId===shipId)ship=this.editableCurrent();
+    if(!ship)return false;
+    const key=animationKey&&ship.animations?.[animationKey]?animationKey:this.currentAnimationKey(ship);
+    if(!key)return false;
+    const anim=ship.animations[key];
     anim.frames=Array.isArray(anim.frames)?anim.frames:[];
     anim.frames.push({src:String(src),duration:null});
+    this.animationByShip.set(ship.id,key);
+    this.selectedId=ship.id;
     this.save();this.render();
+    return true;
+  }
+
+  addFrame(src){
+    const ship=this.current();
+    const key=this.currentAnimationKey(ship);
+    return ship&&key?this.addFrameTo(ship.id,key,src):false;
   }
 
   moveFrame(index,delta){
     const ship=this.editableCurrent();
-    const frames=ship?.animations?.[this.animationKey]?.frames;
+    const key=this.currentAnimationKey(ship);
+    const frames=ship?.animations?.[key]?.frames;
     if(!Array.isArray(frames))return;
     const target=index+delta;
     if(target<0||target>=frames.length)return;
@@ -193,7 +221,8 @@ export class ShipEditor{
 
   removeFrame(index){
     const ship=this.editableCurrent();
-    const frames=ship?.animations?.[this.animationKey]?.frames;
+    const key=this.currentAnimationKey(ship);
+    const frames=ship?.animations?.[key]?.frames;
     if(!Array.isArray(frames))return;
     frames.splice(index,1);
     this.save();this.render();
@@ -246,7 +275,7 @@ export class ShipEditor{
     const ship=this.current();
     if(!ship){host.innerHTML='<div class="tq-ships__empty">Selecione ou crie um navio.</div>';return}
     const keys=Object.keys(ship.animations||{});
-    if(!this.animationKey||!ship.animations[this.animationKey])this.animationKey=keys[0]||null;
+    const animationKey=this.currentAnimationKey(ship);
     const anim=this.animation();
     const frames=Array.isArray(anim?.frames)?anim.frames:[];
     host.innerHTML=`
@@ -257,14 +286,14 @@ export class ShipEditor{
       </div>
       <div class="tq-ships__workspace">
         <section class="tq-ships__preview">
-          <div class="tq-ships__preview-stage"><img data-ship-preview alt="Preview do navio"></div>
+          <div class="tq-ships__preview-stage">${frames.length?'<img data-ship-preview alt="Preview do navio">':'<div class="tq-ships__preview-empty" data-ship-preview-empty><b>Sem frames</b><small>Adicione o primeiro frame desta animação.</small></div>'}</div>
           <small>Preview frame a frame</small>
         </section>
         <section class="tq-ships__animation">
           <div class="tq-ships__animation-head">
-            <label><span>Animação</span><select data-ship-animation>${keys.map(key=>'<option value="'+this.escape(key)+'" '+(key===this.animationKey?'selected':'')+'>'+this.escape(key)+'</option>').join("")}</select></label>
+            <label><span>Animação</span><select data-ship-animation>${keys.map(key=>'<option value="'+this.escape(key)+'" '+(key===animationKey?'selected':'')+'>'+this.escape(key)+'</option>').join("")}</select></label>
             <button type="button" data-animation-add>＋ Animação</button>
-            <button type="button" data-animation-delete ${this.animationKey?"":"disabled"}>Excluir</button>
+            <button type="button" data-animation-delete ${animationKey?"":"disabled"}>Excluir</button>
           </div>
           ${anim?`
           <div class="tq-ships__settings">
@@ -293,14 +322,14 @@ export class ShipEditor{
 
     host.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
     host.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
-    host.querySelector("[data-ship-animation]")?.addEventListener("change",e=>{this.animationKey=e.currentTarget.value;this.renderEditor()});
+    host.querySelector("[data-ship-animation]")?.addEventListener("change",e=>{this.animationByShip.set(ship.id,e.currentTarget.value);this.renderEditor()});
     host.querySelector("[data-animation-add]")?.addEventListener("click",()=>{const name=prompt("Nome da animação","combat-fire");if(name)this.addAnimation(name)});
     host.querySelector("[data-animation-delete]")?.addEventListener("click",()=>this.deleteAnimation());
     host.querySelector("[data-animation-ms]")?.addEventListener("change",e=>this.updateAnimation({frameMs:Math.max(40,Number(e.currentTarget.value)||140)}));
     host.querySelector("[data-animation-w]")?.addEventListener("change",e=>this.updateAnimation({cellWidth:Math.max(32,Number(e.currentTarget.value)||400)}));
     host.querySelector("[data-animation-h]")?.addEventListener("change",e=>this.updateAnimation({cellHeight:Math.max(32,Number(e.currentTarget.value)||400)}));
     host.querySelector("[data-animation-loop]")?.addEventListener("change",e=>this.updateAnimation({loop:e.currentTarget.checked}));
-    host.querySelector("[data-frame-add]")?.addEventListener("click",()=>this.requestFrameAsset?.());
+    host.querySelector("[data-frame-add]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,animationKey}));
     host.querySelectorAll("[data-frame-left]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameLeft),-1)));
     host.querySelectorAll("[data-frame-right]").forEach(b=>b.addEventListener("click",()=>this.moveFrame(Number(b.dataset.frameRight),1)));
     host.querySelectorAll("[data-frame-remove]").forEach(b=>b.addEventListener("click",()=>this.removeFrame(Number(b.dataset.frameRemove))));
@@ -338,14 +367,15 @@ export class ShipEditor{
       const w=image.naturalWidth*scale,h=image.naturalHeight*scale;
       ctx.drawImage(image,col*cellW+(cellW-w)/2,row*cellH+(cellH-h)/2,w,h);
     });
-    const animName=slug(this.animationKey);
+    const animationKey=this.currentAnimationKey(ship);
+    const animName=slug(animationKey);
     const fileBase=slug(ship.id)+"_"+animName;
     const descriptor={
       schema:"tq.ship-animation-atlas",
       version:1,
       shipId:ship.id,
       shipType:ship.type,
-      animation:this.animationKey,
+      animation:animationKey,
       src:"./assets/ships/generated/"+slug(ship.id)+"/"+fileBase+".webp",
       imageWidth:canvas.width,imageHeight:canvas.height,
       frameWidth:cellW,frameHeight:cellH,columns,rows,
