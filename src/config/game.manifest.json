@@ -1,0 +1,22 @@
+{
+  "schema": "tq.game-manifest",
+  "version": 1,
+  "id": "tabuada-quest",
+  "name": "Tabuada Quest",
+  "reference": {
+    "width": 390,
+    "height": 844
+  },
+  "catalogs": {
+    "scenes": "./src/config/scene-catalog.json",
+    "worlds": "./src/config/world-catalog.json"
+  },
+  "start": {
+    "kind": "world",
+    "id": "ocean-prototype"
+  },
+  "persistence": {
+    "restoreSession": true,
+    "sessionKey": "tq.game.runtime:v1"
+  }
+}
