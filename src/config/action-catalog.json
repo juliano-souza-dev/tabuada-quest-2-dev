@@ -49,6 +49,13 @@
       "category": "navigation",
       "description": "Volta para a rota anterior do jogo.",
       "params": []
+    },
+    {
+      "id": "complete-region",
+      "name": "Concluir região",
+      "category": "progress",
+      "description": "Marca a região atual como concluída e cria um checkpoint para sincronização remota.",
+      "params": []
     }
   ]
 }
