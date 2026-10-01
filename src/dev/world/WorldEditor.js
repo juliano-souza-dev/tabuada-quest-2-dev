@@ -94,6 +94,9 @@ export class WorldEditor {
       onEnterWorld:(entity,state)=>{
         window.dispatchEvent(new CustomEvent("tq:worldenterworld",{detail:{entity,state}}));
       },
+      onExecuteAction:(interaction,entity,state)=>{
+        window.dispatchEvent(new CustomEvent("tq:worldexecuteaction",{detail:{interaction,entity,state}}));
+      },
       onSelectionChange:entity=>{
         window.dispatchEvent(new CustomEvent("tq:worldselectionchange",{detail:{entity}}));
       },
