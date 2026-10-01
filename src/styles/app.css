@@ -178,6 +178,7 @@
 
 
 /* DEV config panel viewport containment fix */
+.tq-dev__panel[hidden]{display:none!important}
 .tq-dev__panel{
   display:flex;
   flex-direction:column;
