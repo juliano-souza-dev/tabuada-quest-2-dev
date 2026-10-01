@@ -108,6 +108,7 @@ export class WorldRuntime {
     this.collisionAvoidance={entityId:null,side:0,until:0};
     this.lastWakeSpawn=0;
     this.wakeParticleCount=0;
+    this.minimapLastRender=0;
     this.cleanups=[];
   }
 
@@ -142,6 +143,10 @@ export class WorldRuntime {
         <span data-world-direction></span>
         <span data-world-zoom></span>
       </section>
+      <aside class="tq-world-minimap" data-world-minimap aria-label="Minimapa">
+        <canvas data-world-minimap-canvas aria-hidden="true"></canvas>
+        <span class="tq-world-minimap__north" aria-hidden="true">N</span>
+      </aside>
       <div class="tq-world-action" hidden>
         <div class="tq-world-action__surface">
           <span class="tq-world-action__message" data-world-action-message></span>
@@ -198,6 +203,9 @@ export class WorldRuntime {
     this.actionWrap=this.host.querySelector(".tq-world-action");
     this.actionMessage=this.host.querySelector("[data-world-action-message]");
     this.actionButton=this.host.querySelector("[data-world-action]");
+    this.minimapEl=this.host.querySelector("[data-world-minimap]");
+    this.minimapCanvas=this.host.querySelector("[data-world-minimap-canvas]");
+    this.minimapCtx=this.minimapCanvas?.getContext?.("2d")||null;
     this.challengeWrap=this.host.querySelector("[data-world-challenge]");
     this.challengeForm=this.host.querySelector("[data-world-challenge-form]");
     this.challengePrompt=this.host.querySelector("[data-world-challenge-prompt]");
@@ -231,6 +239,7 @@ export class WorldRuntime {
     this.cleanups.push(()=>window.removeEventListener("resize",this.onResize));
 
     this.setMode(this.mode);
+    this.renderMinimap(true);
     this.lastTime=performance.now();
     this.raf=requestAnimationFrame(t=>this.tick(t));
     return this;
@@ -1055,6 +1064,7 @@ export class WorldRuntime {
     this.oceanRenderer?.resize?.(rect.width,rect.height);
     this.clampEditorCamera();
     this.updateCamera(true);
+    this.renderMinimap(true);
   }
 
   clampEditorCamera(){
@@ -2017,6 +2027,114 @@ export class WorldRuntime {
     return {x:this.camera.x,y:this.camera.y,zoom:this.zoom};
   }
 
+  minimapConfig(){
+    return this.config.minimap&&typeof this.config.minimap==="object"
+      ?this.config.minimap
+      :{};
+  }
+
+  minimapEnabled(){
+    return this.minimapConfig().enabled!==false;
+  }
+
+  minimapLocations(){
+    return this.entities.filter(entity=>
+      entity.type==="location"
+      &&entity.minimap?.hidden!==true
+      &&entity.visible!==false
+    );
+  }
+
+  renderMinimap(force=false,time=performance.now()){
+    if(!this.minimapEl||!this.minimapCanvas||!this.minimapCtx)return;
+    const enabled=this.minimapEnabled()&&this.mode==="play";
+    this.minimapEl.hidden=!enabled;
+    if(!enabled)return;
+    if(!force&&time-this.minimapLastRender<100)return;
+    this.minimapLastRender=time;
+
+    const rect=this.minimapCanvas.getBoundingClientRect();
+    const width=Math.max(1,Math.round(rect.width||148));
+    const height=Math.max(1,Math.round(rect.height||148));
+    const dpr=Math.max(1,Math.min(3,globalThis.devicePixelRatio||1));
+    const pixelWidth=Math.round(width*dpr);
+    const pixelHeight=Math.round(height*dpr);
+    if(this.minimapCanvas.width!==pixelWidth||this.minimapCanvas.height!==pixelHeight){
+      this.minimapCanvas.width=pixelWidth;
+      this.minimapCanvas.height=pixelHeight;
+    }
+
+    const ctx=this.minimapCtx;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,width,height);
+
+    const area=this.getPlayableBounds();
+    const pad=10;
+    const drawWidth=Math.max(1,width-pad*2);
+    const drawHeight=Math.max(1,height-pad*2);
+    const scale=Math.min(drawWidth/area.width,drawHeight/area.height);
+    const mapWidth=area.width*scale;
+    const mapHeight=area.height*scale;
+    const offsetX=(width-mapWidth)/2;
+    const offsetY=(height-mapHeight)/2;
+    const project=(x,y)=>({
+      x:offsetX+(Number(x)-area.left)*scale,
+      y:offsetY+(Number(y)-area.top)*scale
+    });
+
+    ctx.save();
+    ctx.fillStyle="rgba(5,38,55,.88)";
+    ctx.fillRect(offsetX,offsetY,mapWidth,mapHeight);
+    ctx.strokeStyle="rgba(206,242,255,.75)";
+    ctx.lineWidth=1;
+    ctx.strokeRect(offsetX+.5,offsetY+.5,Math.max(0,mapWidth-1),Math.max(0,mapHeight-1));
+
+    for(const entity of this.minimapLocations()){
+      const point=project(entity.visualX??entity.x,entity.visualY??entity.y);
+      const markerW=Math.max(5,Math.min(18,Number(entity.width||200)*scale));
+      const markerH=Math.max(5,Math.min(14,Number(entity.height||160)*scale));
+      ctx.save();
+      ctx.translate(point.x,point.y);
+      ctx.rotate(Math.PI/4);
+      ctx.fillStyle="rgba(238,206,112,.9)";
+      ctx.strokeStyle="rgba(255,248,210,.95)";
+      ctx.lineWidth=1;
+      ctx.fillRect(-markerW/2,-markerH/2,markerW,markerH);
+      ctx.strokeRect(-markerW/2,-markerH/2,markerW,markerH);
+      ctx.restore();
+    }
+
+    if(this.viewportSize&&this.zoom>0){
+      const viewW=Math.min(area.width,this.viewportSize.width/this.zoom);
+      const viewH=Math.min(area.height,this.viewportSize.height/this.zoom);
+      const left=Math.max(area.left,Math.min(area.right-viewW,this.camera.x-viewW/2));
+      const top=Math.max(area.top,Math.min(area.bottom-viewH,this.camera.y-viewH/2));
+      const view=project(left,top);
+      ctx.strokeStyle="rgba(255,255,255,.42)";
+      ctx.lineWidth=1;
+      ctx.strokeRect(view.x,view.y,Math.max(2,viewW*scale),Math.max(2,viewH*scale));
+    }
+
+    const player=project(this.player.x,this.player.y);
+    ctx.save();
+    ctx.translate(player.x,player.y);
+    ctx.rotate((Number(this.player.rotation)||0)*Math.PI/180);
+    ctx.beginPath();
+    ctx.moveTo(0,-7);
+    ctx.lineTo(5.5,6);
+    ctx.lineTo(0,3.5);
+    ctx.lineTo(-5.5,6);
+    ctx.closePath();
+    ctx.fillStyle="#ffffff";
+    ctx.strokeStyle="rgba(2,24,37,.95)";
+    ctx.lineWidth=2;
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
   updateProgress(){
     const total=this.entities.filter(e=>e.type==="barrel").length;
     const collected=this.entities.filter(e=>e.type==="barrel"&&this.collected.has(e.id)).length;
@@ -2033,6 +2151,7 @@ export class WorldRuntime {
     this.updateCamera(false,dt);
     this.updateOceanFrame(time);
     this.updateNearby();
+    this.renderMinimap(false,time);
 
     if(this.coordsEl){
       const target=this.mode==="edit"?this.camera:this.player;
