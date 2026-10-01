@@ -11,7 +11,7 @@ export class ShipEditor{
     this.selectedId=null;
     this.animationByShip=new Map();
     this.previewTimer=0;
-    this.storageKey="tq.dev.ship-drafts:v1";
+    this.storageKey="tq.dev.ship-drafts:v2";
     this.el=null;
   }
 
