@@ -68,7 +68,13 @@ void main(){
   vec3 foam=texture(uTexture,uvFoam).rgb;
 
   float crest=smoothstep(0.40,0.95,0.5+0.5*sin(base.x*24.0+base.y*19.0+uTime*(0.8+uSpeed*0.008)));
-  float sparkle=pow(max(0.0,sin((base.x-base.y)*58.0+uTime*2.1)),max(2.0,uSparkleSharpness));
+  vec2 sparkleGrid=base*34.0;
+  vec2 sparkleCell=floor(sparkleGrid);
+  vec2 sparkleLocal=fract(sparkleGrid)-0.5;
+  float sparkleHash=fract(sin(dot(sparkleCell,vec2(127.1,311.7)))*43758.5453123);
+  float sparklePulse=0.5+0.5*sin(uTime*(1.4+sparkleHash*1.8)+sparkleHash*6.2831853);
+  float sparkleCore=1.0-smoothstep(0.03,0.20,length(sparkleLocal));
+  float sparkle=pow(max(0.0,sparkleCore*sparklePulse*crest),max(2.0,uSparkleSharpness*0.35))*step(0.84,sparkleHash);
   float waveAmount=clamp(uWaveMix*0.01,0.0,1.0);
   float foamAmount=clamp(uFoamMix*0.01,0.0,1.0);
   float sparkleAmount=clamp(uSparkleIntensity*0.01,0.0,1.0);
