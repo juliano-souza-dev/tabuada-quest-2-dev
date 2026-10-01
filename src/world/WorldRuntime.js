@@ -1686,7 +1686,7 @@ export class WorldRuntime {
   }
 
   v2CombatAtlas(source,animationName="idle"){
-    const combat=source?.combat;
+    const combat=source?.combatVisual||source?.combat;
     const descriptor=combat?.compiled?.[animationName];
     if(!descriptor?.src)return null;
     const frameCount=Math.max(1,Number(descriptor.frameCount)||1);
@@ -1789,7 +1789,8 @@ export class WorldRuntime {
         shipEl.style.backgroundRepeat="no-repeat";
       }
     }
-    const style=this.combatSource(side,entity)?.combat||{};
+    const source=this.combatSource(side,entity);
+    const style=source?.combatVisual||source?.combat||{};
     const recoil=Math.max(0,Number(style.recoil)||18);
     const shake=Math.max(0,Number(style.shake)||5);
     shipEl.style.setProperty("--ship-recoil",recoil+"px");
