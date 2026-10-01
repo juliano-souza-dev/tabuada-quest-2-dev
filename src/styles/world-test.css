@@ -588,3 +588,57 @@
   .tq-ships__general-grid{grid-template-columns:1fr}
   .tq-ships__workspace--v2{grid-template-columns:1fr}
 }
+
+/* Region navigation gates */
+.tq-world-host.is-editor .tq-world-entity--region-exit{
+  visibility:visible!important;
+  outline:3px dashed rgba(126,231,255,.9);
+  outline-offset:-3px;
+  border-radius:14px;
+  background:rgba(60,178,230,.12);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 0 22px rgba(73,200,255,.12);
+}
+.tq-world-host.is-editor .tq-world-entity--region-exit::before{
+  content:"⇄ SAÍDA DE REGIÃO";
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  padding:7px 10px;
+  border-radius:999px;
+  background:#082638e8;
+  border:1px solid rgba(126,231,255,.55);
+  color:#a8efff;
+  font:700 10px/1 system-ui,sans-serif;
+  letter-spacing:.08em;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.tq-world-host.is-play .tq-world-entity--region-exit{visibility:hidden!important}
+
+.tq-world-region-transition{
+  position:fixed;inset:0;z-index:820;
+  display:grid;place-items:center;
+  padding:20px;
+  background:rgba(1,13,22,.58);
+  backdrop-filter:blur(4px);
+  pointer-events:auto;
+}
+.tq-world-region-transition[hidden]{display:none!important}
+.tq-world-region-transition__card{
+  width:min(430px,calc(100vw - 28px));
+  padding:22px;
+  border:1px solid rgba(126,231,255,.28);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(10,42,60,.98),rgba(4,24,36,.98));
+  box-shadow:0 22px 70px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+  color:#eefaff;
+  text-align:center;
+}
+.tq-world-region-transition__card>small{font-size:9px;letter-spacing:.16em;color:#7ee7ff}
+.tq-world-region-transition__card h2{margin:8px 0 8px;font-size:22px}
+.tq-world-region-transition__card p{margin:0;color:#b9d4df;font-size:13px;line-height:1.45}
+.tq-world-region-transition__actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}
+.tq-world-region-transition__actions button{min-height:44px;border-radius:11px}
+@media(max-width:560px){
+  .tq-world-region-transition__actions{grid-template-columns:1fr}
+}
