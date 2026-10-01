@@ -1759,6 +1759,17 @@ export class WorldRuntime {
         ...structuredClone(patch.ui)
       };
     }
+    if(patch.minimap&&typeof patch.minimap==="object"){
+      this.config.minimap={
+        ...(this.config.minimap||{}),
+        ...structuredClone(patch.minimap)
+      };
+      if(Array.isArray(patch.minimap.types)){
+        this.config.minimap.types=[...patch.minimap.types];
+      }
+      this.minimapLastRender=0;
+      this.renderMinimap(true);
+    }
 
     const area=this.getPlayableBounds();
     this.config.playableArea={x:area.left,y:area.top,width:area.width,height:area.height};
