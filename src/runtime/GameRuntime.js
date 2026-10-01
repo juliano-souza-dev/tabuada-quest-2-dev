@@ -1,4 +1,4 @@
-import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2314";
+import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2320";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20260930-2314";
 
 const clone=value=>structuredClone(value);
