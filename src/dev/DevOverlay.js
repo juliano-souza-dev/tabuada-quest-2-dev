@@ -9,7 +9,7 @@ export class DevOverlay {
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];this.worldEditor=new WorldEditor(this.runtime.root,{sceneRuntime:this.runtime,pedagogyRuntime:this.pedagogyRuntime,onPedagogyResult:this.onPedagogyResult});this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
     this.worldAtlasSelectionMode=null;
-    this.shipEditor=new ShipEditor({requestFrameAsset:()=>this.openShipFramePicker()});
+    this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
     try{this.sceneGroupOpen=new Set(JSON.parse(sessionStorage.getItem(this.sceneGroupStorageKey)||"[]"))}catch{this.sceneGroupOpen=new Set()}
   }
   mount(){
@@ -1653,8 +1653,12 @@ export class DevOverlay {
     }
   }
 
-  openShipFramePicker(){
-    this.assetPickTarget={kind:"ship-frame"};
+  openShipFramePicker(context={}){
+    this.assetPickTarget={
+      kind:"ship-frame",
+      shipId:String(context.shipId||this.shipEditor?.selectedId||""),
+      animationKey:String(context.animationKey||"")
+    };
     if(this.assetNodeIndex.has("assets/ships"))this.assetDirectoryPath="assets/ships";
     const search=this.el.querySelector("[data-asset-search]");
     if(search)search.value="";
@@ -1673,6 +1677,15 @@ export class DevOverlay {
   applyAssetPick(asset){
     const target=this.assetPickTarget;
     if(!target||!asset)return false;
+
+    if(target.kind==="ship-frame"){
+      const src="./"+asset.path;
+      const added=this.shipEditor?.addFrameTo?.(target.shipId,target.animationKey,src)===true;
+      this.assetPickTarget=null;
+      this.toggleAssets(false);
+      this.toggleShips(true);
+      return added;
+    }
 
     if(target.kind==="world-player-sprite"){
       const src="./"+asset.path;
