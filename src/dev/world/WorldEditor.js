@@ -243,6 +243,12 @@ export class WorldEditor {
     return ocean;
   }
 
+  applyEnvironmentPreset(id,commit=true){
+    const world=this.runtime?.applyEnvironmentPreset(id)||null;
+    if(commit){this.persist();this.emitWorldChange()}
+    return world;
+  }
+
   getSelected(){
     return this.runtime?.getSelected()||null;
   }
