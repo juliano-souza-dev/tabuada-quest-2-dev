@@ -1580,7 +1580,10 @@ export class WorldRuntime {
       a:Number(challenge.a),
       b:Number(challenge.b),
       answer:result.answer,
-      correct:result.correct===true
+      correct:result.correct===true,
+      region:Number(challenge.region)||null,
+      bonus:challenge.bonus===true,
+      countsTowardPlanned:challenge.countsTowardPlanned!==false
     };
     this.onPedagogyResult?.(detail);
 
