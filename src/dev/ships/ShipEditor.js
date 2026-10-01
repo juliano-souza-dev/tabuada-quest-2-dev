@@ -730,11 +730,11 @@ export class ShipEditor{
         </section>
 
         <section class="tq-ships__panel tq-ships__sprite-panel">
-          <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>Um único atlas para as 16 direções.</small></div><button type="button" data-nav-sprite-pick>▦ Escolher sprite</button></div>
+          <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>${ship.spriteMode==="combined"?"Atlas único: navegação e combate compartilham este arquivo.":"Atlas exclusivo para as 16 direções."}</small></div><button type="button" data-nav-sprite-pick>▦ ${ship.spriteMode==="combined"?"Escolher atlas único":"Escolher sprite"}</button></div>
           <div class="tq-ships__sprite-meta">
             <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
-            <label><span>Colunas</span><input data-nav-columns type="number" min="1" max="32" value="${columns}"></label>
-            <label><span>Linhas</span><input data-nav-rows type="number" min="1" max="32" value="${rows}"></label>
+            <label><span>Colunas</span><input data-nav-columns type="number" min="1" max="32" value="${columns}" ${ship.autoFrame!==false?"readonly":""}></label>
+            <label><span>Linhas</span><input data-nav-rows type="number" min="1" max="32" value="${rows}" ${ship.autoFrame!==false?"readonly":""}></label>
             <label><span>Célula W</span><input value="${Math.round(Number(sprite.cellWidth)||400)}" readonly></label>
             <label><span>Célula H</span><input value="${Math.round(Number(sprite.cellHeight)||400)}" readonly></label>
           </div>
@@ -762,7 +762,7 @@ export class ShipEditor{
             <label><span>Frame do atlas</span><input data-dir-frame type="number" min="1" max="${columns*rows}" value="${selectedFrame+1}"></label>
             <label><span>Posição inicial</span><select data-nav-initial>${keys.map(key=>'<option value="'+key+'" '+(sprite.initialDirection===key?'selected':'')+'>'+info[key][1]+'</option>').join("")}</select></label>
           </div>
-          <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet.</small>
+          <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet. ${ship.autoFrame!==false?"Grade calculada automaticamente em células de "+ship.cellSize+"×"+ship.cellSize+".":"Grade manual ativa."}</small>
         </section>`;
 
       this.bindAtlasControls(content);
@@ -828,7 +828,7 @@ export class ShipEditor{
       </tr>`;
     }).join("");
 
-    content.innerHTML=`
+    content.innerHTML=this.atlasControlsHtml(ship)+`
       <section class="tq-ships__panel">
         <div class="tq-ships__panel-title"><div><strong>Estilo de batalha</strong><small>Resposta visual do navio durante o duelo.</small></div></div>
         <div class="tq-ships__settings tq-ships__settings--v2">
@@ -841,11 +841,11 @@ export class ShipEditor{
       </section>
 
       <section class="tq-ships__panel tq-ships__sprite-panel">
-        <div class="tq-ships__panel-title"><div><strong>Sprite de combate</strong><small>Um atlas; as animações apontam para intervalos de células.</small></div><button type="button" data-combat-sprite-pick>▦ Escolher sprite</button></div>
+        <div class="tq-ships__panel-title"><div><strong>Sprite de combate</strong><small>${ship.spriteMode==="combined"?"Usando o mesmo atlas da navegação; configure apenas os ranges abaixo.":"Atlas de combate separado; as animações apontam para intervalos de células."}</small></div>${ship.spriteMode==="combined"?'<span class="tq-ships__shared-atlas">COMPARTILHADO</span>':'<button type="button" data-combat-sprite-pick>▦ Escolher sprite</button>'}</div>
         <div class="tq-ships__sprite-meta">
           <label class="tq-ships__sprite-path"><span>Asset</span><input value="${this.escape(sprite.src||"")}" readonly placeholder="Nenhum spritesheet selecionado"></label>
-          <label><span>Colunas</span><input data-combat-columns type="number" min="1" max="32" value="${columns}"></label>
-          <label><span>Linhas</span><input data-combat-rows type="number" min="1" max="32" value="${rows}"></label>
+          <label><span>Colunas</span><input data-combat-columns type="number" min="1" max="32" value="${columns}" ${ship.autoFrame!==false?"readonly":""}></label>
+          <label><span>Linhas</span><input data-combat-rows type="number" min="1" max="32" value="${rows}" ${ship.autoFrame!==false?"readonly":""}></label>
           <label><span>Célula W</span><input value="${Math.round(Number(sprite.cellWidth)||400)}" readonly></label>
           <label><span>Célula H</span><input value="${Math.round(Number(sprite.cellHeight)||400)}" readonly></label>
         </div>
@@ -857,6 +857,7 @@ export class ShipEditor{
         <div class="tq-ships__compile"><button type="button" class="is-primary" data-ship-export>⇩ JSON V2</button><small>Ex.: fireRight 5–8 representa frames [4,5,6,7] no runtime.</small></div>
       </section>`;
 
+    this.bindAtlasControls(content);
     const readStyle=()=>({combat:{...ship.combat,
       recoil:Math.max(0,Number(content.querySelector("[data-combat-recoil]")?.value)||0),
       shake:Math.max(0,Number(content.querySelector("[data-combat-shake]")?.value)||0),
