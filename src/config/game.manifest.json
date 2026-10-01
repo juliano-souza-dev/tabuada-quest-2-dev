@@ -27,5 +27,9 @@
   "afterAuth": {
     "kind": "world",
     "id": "ocean-prototype"
+  },
+  "auth": {
+    "required": true,
+    "loginSceneId": "login"
   }
 }
