@@ -175,3 +175,86 @@
 .tq-game-runtime__scene[hidden],.tq-game-runtime__world[hidden]{display:none}
 .tq-stage .tq-node[data-node-id="world-test-island.back"]{display:flex;align-items:center;justify-content:center;padding:10px 18px;border:1px solid rgba(255,255,255,.28);border-radius:16px;background:rgba(6,27,45,.9);color:#fff;font-size:15px;font-weight:900;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 .tq-stage[data-mode="play"] .tq-node[data-node-id="world-test-island.back"]:active{transform:scale(.98)}
+
+
+/* DEV config panel viewport containment fix */
+.tq-dev__panel{
+  display:flex;
+  flex-direction:column;
+  top:72px;
+  bottom:12px;
+  max-height:none;
+  overflow:hidden;
+  min-height:0;
+}
+.tq-dev__panel>header{
+  flex:0 0 auto;
+  position:relative;
+  top:auto;
+  margin:0 0 8px;
+  padding:4px 0 8px;
+}
+.tq-dev__content{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+  padding-right:4px;
+  scrollbar-width:thin;
+}
+.tq-dev__content>*,
+.tq-dev__content .tq-inspector,
+.tq-dev__content .tq-config-area,
+.tq-dev__content .tq-config-area__body{
+  min-width:0;
+  max-width:100%;
+}
+.tq-dev__content img,
+.tq-dev__content canvas{
+  max-width:100%;
+}
+.tq-world-atlas-wizard,
+.tq-world-atlas-canvas,
+.tq-world-atlas-imagebox,
+.tq-world-direction16,
+.tq-world-direction-orbit{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+}
+.tq-world-direction16{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.tq-world-direction16__item,
+.tq-world-direction-orbit__item{
+  min-width:0;
+  overflow:hidden;
+}
+.tq-world-atlas-wizard__actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.tq-world-atlas-wizard__actions button{
+  width:100%;
+  min-width:0;
+  white-space:normal;
+}
+@media(min-width:800px){
+  .tq-dev__panel{
+    width:min(430px,calc(100vw - 36px));
+    right:18px;
+    left:auto;
+    top:72px;
+    bottom:18px;
+  }
+}
+@media(max-width:799px){
+  .tq-dev__panel{
+    left:8px;
+    right:8px;
+    top:64px;
+    bottom:8px;
+    width:auto;
+    border-radius:14px;
+  }
+}
