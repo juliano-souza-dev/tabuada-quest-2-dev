@@ -44,7 +44,7 @@ if(worldTest){
       operation:String(result?.operation||"multiplication"),
       a:Number(result?.a),
       b:Number(result?.b),
-      answer:Number.isFinite(Number(result?.answer))?Number(result.answer):null,
+      answer:result?.answer===null||result?.answer===undefined||result?.answer===""?null:(Number.isFinite(Number(result.answer))?Number(result.answer):null),
       correct:result?.correct===true
     });
     services.playerState.save({
