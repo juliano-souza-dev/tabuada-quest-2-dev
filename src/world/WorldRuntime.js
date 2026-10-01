@@ -2040,8 +2040,19 @@ export class WorldRuntime {
   minimapLogicalType(entity){
     const explicit=String(entity?.type||"").toLowerCase();
     const effectType=String(entity?.effect?.category||"").toLowerCase();
+    const compositionType=String(entity?.compositionType||"").toLowerCase();
+    const src=String(entity?.src||"").toLowerCase();
+
+    if(explicit==="ship"||explicit==="island"||explicit==="background")return explicit;
+    if(explicit==="location"){
+      if(effectType==="island"||src.includes("/islands/")||/ilha|island/.test(src))return "island";
+      if(effectType==="background")return "background";
+      return "location";
+    }
     if(explicit&&explicit!=="object")return explicit;
     if(effectType&&effectType!=="generic"&&effectType!=="sea-item")return effectType;
+    if(compositionType==="ship"||src.includes("/ships/"))return "ship";
+    if(src.includes("/islands/")||/ilha|island/.test(src))return "island";
     return explicit||effectType||"object";
   }
 
