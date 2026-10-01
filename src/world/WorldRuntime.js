@@ -1563,6 +1563,33 @@ export class WorldRuntime {
     const maxPlayer=Math.max(1,Number(active.playerMaxHp)||3);
     if(this.combatEnemyHp)this.combatEnemyHp.textContent=this.combatHearts(active.enemyHp,maxEnemy);
     if(this.combatPlayerHp)this.combatPlayerHp.textContent=this.combatHearts(active.playerHp,maxPlayer);
+    this.updateCombatDamageState();
+  }
+
+  updateCombatDamageState(){
+    const ship=this.combatPlayerShip;
+    const active=this.combatActive;
+    if(!ship)return;
+    ship.classList.remove("is-damaged","is-critical","is-defeated");
+    if(!active)return;
+    const hp=Math.max(0,Number(active.playerHp)||0);
+    const max=Math.max(1,Number(active.playerMaxHp)||3);
+    if(hp<=0){
+      ship.classList.add("is-defeated");
+    }else if(hp<=Math.max(1,Math.floor(max/3))){
+      ship.classList.add("is-critical");
+    }else if(hp<max){
+      ship.classList.add("is-damaged");
+    }
+  }
+
+  playCombatDamageFx(){
+    const ship=this.combatPlayerShip;
+    if(!ship)return;
+    ship.classList.remove("is-taking-hit");
+    void ship.offsetWidth;
+    ship.classList.add("is-taking-hit");
+    setTimeout(()=>ship.classList.remove("is-taking-hit"),720);
   }
 
   clearCombatFx(){
@@ -1707,6 +1734,9 @@ export class WorldRuntime {
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
     if(this.combatSpriteTimer){clearTimeout(this.combatSpriteTimer);this.combatSpriteTimer=0}
     this.combatActive=null;
+    if(this.combatPlayerShip){
+      this.combatPlayerShip.classList.remove("is-taking-hit","is-damaged","is-critical","is-defeated");
+    }
     if(this.combatWrap)this.combatWrap.hidden=true;
     if(this.combatFeedback)this.combatFeedback.textContent="";
     if(this.combatOptions)this.combatOptions.replaceChildren();
@@ -1777,7 +1807,10 @@ export class WorldRuntime {
       if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
       this.playCombatSpriteAnimation("fireRight");
       this.playCombatFx({from:"player",hit:false});
-      setTimeout(()=>this.playCombatFx({from:"enemy",hit:true}),320);
+      setTimeout(()=>{
+        this.playCombatFx({from:"enemy",hit:true});
+        this.playCombatDamageFx();
+      },320);
     }
     this.updateCombatHud();
 
