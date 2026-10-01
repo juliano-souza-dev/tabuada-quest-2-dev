@@ -1999,20 +1999,23 @@ export class WorldRuntime {
       let rows=Math.max(1,Number(sprite.rows)||4);
       let frameWidth=Math.max(1,Number(sprite.cellWidth||sprite.frameWidth)||400);
       let frameHeight=Math.max(1,Number(sprite.cellHeight||sprite.frameHeight)||400);
-      const canonicalGrid=
+      const declaredGridValid=
         imageWidth>0&&imageHeight>0
-        &&imageWidth%400===0&&imageHeight%400===0
-        &&imageWidth/400<=32&&imageHeight/400<=32;
-      const suspiciousGrid=
-        (imageWidth>0&&columns*frameWidth!==imageWidth)
-        ||(imageHeight>0&&rows*frameHeight!==imageHeight)
-        ||(columns===4&&rows===4&&imageHeight>0&&imageHeight!==1600)
-        ||(frameWidth===400&&frameHeight!==400);
-      if(canonicalGrid&&suspiciousGrid){
-        columns=Math.max(1,Math.round(imageWidth/400));
-        rows=Math.max(1,Math.round(imageHeight/400));
-        frameWidth=400;
-        frameHeight=400;
+        &&columns*frameWidth===imageWidth
+        &&rows*frameHeight===imageHeight;
+      if(!declaredGridValid&&imageWidth>0&&imageHeight>0){
+        const supported=[400,600,800].find(size=>
+          imageWidth%size===0
+          &&imageHeight%size===0
+          &&imageWidth/size<=32
+          &&imageHeight/size<=32
+        );
+        if(supported){
+          columns=Math.max(1,Math.round(imageWidth/supported));
+          rows=Math.max(1,Math.round(imageHeight/supported));
+          frameWidth=supported;
+          frameHeight=supported;
+        }
       }
       return {
         src:String(sprite.src),
