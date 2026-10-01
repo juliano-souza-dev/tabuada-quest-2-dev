@@ -50,6 +50,11 @@ export class WorldRuntime {
     this.onEnterScene=options.onEnterScene||null;
     this.onSelectionChange=options.onSelectionChange||null;
     this.onEntityChange=options.onEntityChange||null;
+    this.createPedagogyChallenge=typeof options.createPedagogyChallenge==="function"?options.createPedagogyChallenge:null;
+    this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
+    this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
+    this.challengeActive=null;
+    this.challengeTimer=0;
     this.state=structuredClone(options.state||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
@@ -143,6 +148,22 @@ export class WorldRuntime {
           <button type="button" data-world-action></button>
         </div>
       </div>
+      <div class="tq-world-challenge" data-world-challenge hidden>
+        <section class="tq-world-challenge__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
+          <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
+          <small>BAÚ DO TESOURO</small>
+          <h2 id="tq-world-challenge-title">Resolva para recolher</h2>
+          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
+          <form data-world-challenge-form>
+            <label>
+              <span>Sua resposta</span>
+              <input type="number" inputmode="numeric" autocomplete="off" data-world-challenge-answer>
+            </label>
+            <button type="submit" data-world-challenge-submit>Responder</button>
+          </form>
+          <p class="tq-world-challenge__feedback" data-world-challenge-feedback aria-live="polite"></p>
+        </section>
+      </div>
       <div class="tq-world-controls" aria-label="Controles de navegação">
         <div class="tq-world-joystick" data-world-joystick aria-label="Joystick analógico">
           <div class="tq-world-joystick__base">
@@ -177,6 +198,13 @@ export class WorldRuntime {
     this.actionWrap=this.host.querySelector(".tq-world-action");
     this.actionMessage=this.host.querySelector("[data-world-action-message]");
     this.actionButton=this.host.querySelector("[data-world-action]");
+    this.challengeWrap=this.host.querySelector("[data-world-challenge]");
+    this.challengeForm=this.host.querySelector("[data-world-challenge-form]");
+    this.challengePrompt=this.host.querySelector("[data-world-challenge-prompt]");
+    this.challengeAnswer=this.host.querySelector("[data-world-challenge-answer]");
+    this.challengeFeedback=this.host.querySelector("[data-world-challenge-feedback]");
+    this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
+    this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
     this.oceanEls={
       deep:this.host.querySelector('[data-ocean-layer="deep"]'),
       wave:this.host.querySelector('[data-ocean-layer="wave"]'),
@@ -195,6 +223,7 @@ export class WorldRuntime {
 
     this.renderEntities();
     this.bindControls();
+    this.bindChallengeControls();
     this.bindCameraPan();
     this.resize();
     this.onResize=()=>this.resize();
@@ -752,7 +781,7 @@ export class WorldRuntime {
     };
 
     const keydown=e=>{
-      if(this.mode!=="play")return;
+      if(this.mode!=="play"||this.challengeActive)return;
       const dir=keyMap[e.code];
       if(!dir)return;
       e.preventDefault();
@@ -796,7 +825,7 @@ export class WorldRuntime {
     const touchCapable=("ontouchstart" in globalThis)||(Number(navigator?.maxTouchPoints)||0)>0;
 
     const joystickPointerStart=e=>{
-      if(touchCapable||this.mode!=="play"||!joystick)return;
+      if(touchCapable||this.mode!=="play"||this.challengeActive||!joystick)return;
       e.preventDefault();
       e.stopPropagation();
       this.clearNavigationTarget();
@@ -816,7 +845,7 @@ export class WorldRuntime {
     };
 
     const joystickTouchStart=e=>{
-      if(!touchCapable||this.mode!=="play"||!joystick||!e.changedTouches?.length)return;
+      if(!touchCapable||this.mode!=="play"||this.challengeActive||!joystick||!e.changedTouches?.length)return;
       e.preventDefault();
       e.stopPropagation();
       const touch=e.changedTouches[0];
@@ -852,7 +881,7 @@ export class WorldRuntime {
     globalThis.addEventListener?.("touchcancel",joystickTouchEnd,{passive:false});
 
     const navigateToPointer=e=>{
-      if(this.mode!=="play")return;
+      if(this.mode!=="play"||this.challengeActive)return;
       if(this.suppressNavigationClick){
         this.suppressNavigationClick=false;
         return;
@@ -1437,7 +1466,143 @@ export class WorldRuntime {
     this.syncGizmo();
   }
 
+  bindChallengeControls(){
+    const submit=event=>{
+      event.preventDefault();
+      this.submitTreasureAnswer();
+    };
+    const close=()=>this.closeTreasureChallenge();
+    this.challengeForm?.addEventListener("submit",submit);
+    this.challengeClose?.addEventListener("click",close);
+    this.cleanups.push(()=>{
+      this.challengeForm?.removeEventListener("submit",submit);
+      this.challengeClose?.removeEventListener("click",close);
+    });
+  }
+
+  stopForChallenge(){
+    this.keys.clear();
+    this.pointerDirections.clear();
+    this.resetJoystick();
+    this.clearNavigationTarget({brake:true});
+    this.player.vx=0;
+    this.player.vy=0;
+  }
+
+  closeTreasureChallenge(){
+    if(this.challengeTimer){
+      clearTimeout(this.challengeTimer);
+      this.challengeTimer=0;
+    }
+    this.challengeActive=null;
+    if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeFeedback)this.challengeFeedback.textContent="";
+    if(this.challengeAnswer){
+      this.challengeAnswer.value="";
+      this.challengeAnswer.disabled=false;
+    }
+    if(this.challengeSubmit)this.challengeSubmit.disabled=false;
+  }
+
+  async beginTreasureChallenge(entity){
+    if(!entity||this.challengeActive||this.mode!=="play")return;
+    this.stopForChallenge();
+    this.actionWrap.hidden=true;
+
+    let challenge=null;
+    try{
+      challenge=this.createPedagogyChallenge
+        ?await this.createPedagogyChallenge({
+          entity:this.cleanEntity(entity),
+          worldState:this.getState()
+        })
+        :null;
+    }catch(error){
+      console.warn("Pedagogy challenge creation failed",error);
+    }
+
+    this.challengeActive={entity,challenge};
+    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeFeedback)this.challengeFeedback.textContent="";
+    if(this.challengeAnswer){
+      this.challengeAnswer.value="";
+      this.challengeAnswer.disabled=false;
+    }
+    if(this.challengeSubmit)this.challengeSubmit.disabled=false;
+
+    if(!challenge?.available){
+      if(this.challengePrompt)this.challengePrompt.textContent="Desafio indisponível";
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        String(challenge?.message||"As regras pedagógicas desta conta ainda não estão disponíveis.");
+      if(this.challengeAnswer)this.challengeAnswer.disabled=true;
+      if(this.challengeSubmit)this.challengeSubmit.disabled=true;
+      return;
+    }
+
+    if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
+    queueMicrotask(()=>this.challengeAnswer?.focus?.());
+  }
+
+  completeCollection(entity,{challenge=null}={}){
+    if(!entity||this.collected.has(entity.id))return false;
+    this.collected.add(entity.id);
+    if(entity.el)entity.el.hidden=true;
+    this.contactEntity=null;
+    this.nearby=null;
+    this.actionWrap.hidden=true;
+    this.updateProgress();
+    if(entity.type==="treasure"){
+      this.onTreasureCollected?.({
+        entity:this.cleanEntity(entity),
+        challenge
+      });
+    }
+    return true;
+  }
+
+  submitTreasureAnswer(){
+    const active=this.challengeActive;
+    const entity=active?.entity;
+    const challenge=active?.challenge;
+    if(!entity||!challenge?.available||typeof challenge.evaluate!=="function")return;
+
+    const raw=this.challengeAnswer?.value??"";
+    if(String(raw).trim()===""){
+      if(this.challengeFeedback)this.challengeFeedback.textContent="Digite uma resposta.";
+      return;
+    }
+
+    const result=challenge.evaluate(raw)||{};
+    const detail={
+      entityId:String(entity.id||""),
+      challengeId:String(challenge.id||""),
+      operation:String(challenge.operation||challenge.kind||"multiplication"),
+      a:Number(challenge.a),
+      b:Number(challenge.b),
+      answer:result.answer,
+      correct:result.correct===true
+    };
+    this.onPedagogyResult?.(detail);
+
+    if(this.challengeAnswer)this.challengeAnswer.disabled=true;
+    if(this.challengeSubmit)this.challengeSubmit.disabled=true;
+
+    if(result.correct===true){
+      if(this.challengeFeedback)this.challengeFeedback.textContent="Acertou! Tesouro conquistado.";
+      this.completeCollection(entity,{challenge});
+      this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),650);
+      return;
+    }
+
+    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O baú continua fechado.";
+    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),900);
+  }
+
   updateNearby(){
+    if(this.challengeActive){
+      this.actionWrap.hidden=true;
+      return;
+    }
     if(this.mode!=="play"){
       this.nearby=null;
       this.contactEntity=null;
@@ -1494,12 +1659,11 @@ export class WorldRuntime {
     const action=inferCollisionAction(entity,collision);
 
     if(action==="collect"){
-      this.collected.add(entity.id);
-      if(entity.el)entity.el.hidden=true;
-      this.contactEntity=null;
-      this.nearby=null;
-      this.actionWrap.hidden=true;
-      this.updateProgress();
+      if(entity.type==="treasure"){
+        this.beginTreasureChallenge(entity);
+        return;
+      }
+      this.completeCollection(entity);
       return;
     }
 
@@ -1859,7 +2023,7 @@ export class WorldRuntime {
   tick(time){
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
-    if(this.mode==="play")this.updatePlayer(dt);
+    if(this.mode==="play"&&!this.challengeActive)this.updatePlayer(dt);
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time);
@@ -1885,6 +2049,8 @@ export class WorldRuntime {
   }
 
   destroy(){
+    if(this.challengeTimer)clearTimeout(this.challengeTimer);
+    this.challengeTimer=0;
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
