@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2312";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2232";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2350";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -372,10 +372,10 @@ export class DevOverlay {
       ...(ship.combat&&typeof ship.combat==="object"?structuredClone(ship.combat):{}),
       animations:combatAnimations
     };
-    if(ship.spriteMode==="combined"){
-      combat.useNavigationAtlas=true;
-      delete combat.sprite;
-    }
+    combat.useNavigationAtlas=false;
+    delete combat.sprite;
+    delete combat.compiled;
+    delete combat.legacySprite;
     return {
       shipId:ship.id,
       spriteMode:ship.spriteMode==="combined"?"combined":"split",
@@ -397,8 +397,7 @@ export class DevOverlay {
         idleHeave:Number(navigation.heave??3.2),
         idlePeriod:Number(navigation.periodMs??3600)
       },
-      combatVisual:combat,
-      combatSprite:combat.legacySprite?structuredClone(combat.legacySprite):null
+      combatVisual:combat
     };
   }
 
@@ -406,7 +405,7 @@ export class DevOverlay {
     if(!player||typeof player!=="object")return null;
     const keys=[
       "shipId","shipName","src","sprite","directions","width","height",
-      "speed","acceleration","braking","effects","combatSprite","combatVisual"
+      "speed","acceleration","braking","effects","combatVisual"
     ];
     const profile={};
     for(const key of keys){
