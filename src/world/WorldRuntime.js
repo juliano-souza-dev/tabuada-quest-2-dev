@@ -193,10 +193,7 @@ export class WorldRuntime {
             <span>Inimigo <b data-world-combat-enemy-hp>❤❤❤</b></span>
           </div>
           <strong class="tq-world-combat__prompt" data-world-combat-prompt></strong>
-          <form data-world-combat-form>
-            <input type="number" inputmode="numeric" autocomplete="off" data-world-combat-answer aria-label="Resposta">
-            <button type="submit" data-world-combat-submit>Disparar</button>
-          </form>
+          <div class="tq-world-combat__options" data-world-combat-options aria-label="Escolha a resposta"></div>
           <p class="tq-world-combat__feedback" data-world-combat-feedback aria-live="polite"></p>
         </section>
       </div>
@@ -247,9 +244,7 @@ export class WorldRuntime {
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
     this.combatWrap=this.host.querySelector("[data-world-combat]");
-    this.combatForm=this.host.querySelector("[data-world-combat-form]");
-    this.combatAnswer=this.host.querySelector("[data-world-combat-answer]");
-    this.combatSubmit=this.host.querySelector("[data-world-combat-submit]");
+    this.combatOptions=this.host.querySelector("[data-world-combat-options]");
     this.combatFeedback=this.host.querySelector("[data-world-combat-feedback]");
     this.combatPrompt=this.host.querySelector("[data-world-combat-prompt]");
     this.combatTitle=this.host.querySelector("[data-world-combat-title]");
@@ -1541,12 +1536,16 @@ export class WorldRuntime {
   }
 
   bindCombatControls(){
-    const submit=event=>{event.preventDefault();this.submitCombatAnswer()};
+    const choose=event=>{
+      const button=event.target.closest?.("[data-combat-answer]");
+      if(!button||button.disabled)return;
+      this.submitCombatAnswer(button.dataset.combatAnswer,button);
+    };
     const close=()=>this.closeCombat();
-    this.combatForm?.addEventListener("submit",submit);
+    this.combatOptions?.addEventListener("click",choose);
     this.combatClose?.addEventListener("click",close);
     this.cleanups.push(()=>{
-      this.combatForm?.removeEventListener("submit",submit);
+      this.combatOptions?.removeEventListener("click",choose);
       this.combatClose?.removeEventListener("click",close);
     });
   }
@@ -1587,13 +1586,70 @@ export class WorldRuntime {
     setTimeout(()=>this.clearCombatFx(),620);
   }
 
+  combatChoices(challenge){
+    const a=Math.max(1,Number(challenge?.a)||1);
+    const b=Math.max(1,Number(challenge?.b)||1);
+    const correct=a*b;
+    const candidates=[
+      correct,
+      a*Math.max(1,b-1),
+      a*Math.min(10,b+1),
+      Math.max(1,a-1)*b,
+      Math.min(10,a+1)*b,
+      correct+a,
+      Math.max(1,correct-a),
+      correct+b,
+      Math.max(1,correct-b),
+      Math.max(1,correct-1),
+      Math.min(100,correct+1)
+    ].map(value=>Math.max(1,Math.min(100,Math.round(value))));
+    const unique=[correct,...candidates.filter(value=>value!==correct)];
+    const selected=[correct];
+    for(const value of unique){
+      if(selected.length>=4)break;
+      if(!selected.includes(value))selected.push(value);
+    }
+    for(let delta=2;selected.length<4&&delta<=12;delta++){
+      for(const value of [correct-delta,correct+delta]){
+        const safe=Math.max(1,Math.min(100,value));
+        if(!selected.includes(safe))selected.push(safe);
+        if(selected.length>=4)break;
+      }
+    }
+    return selected.slice(0,4).sort(()=>Math.random()-.5);
+  }
+
+  renderCombatChoices(challenge){
+    if(!this.combatOptions)return;
+    this.combatOptions.replaceChildren();
+    if(!challenge?.available)return;
+    const choices=this.combatChoices(challenge);
+    for(const value of choices){
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="tq-world-combat__option";
+      button.dataset.combatAnswer=String(value);
+      button.textContent=String(value);
+      this.combatOptions.append(button);
+    }
+  }
+
+  syncCombatPlayerShip(){
+    if(!this.combatPlayerShip||!this.playerEl)return;
+    this.updatePlayerVisual(performance.now(),1/60);
+    const source=this.playerEl.style;
+    for(const property of ["backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat"]){
+      this.combatPlayerShip.style[property]=source[property]||"";
+    }
+    this.combatPlayerShip.style.transform="none";
+  }
+
   closeCombat(){
     if(this.combatTimer){clearTimeout(this.combatTimer);this.combatTimer=0}
     this.combatActive=null;
     if(this.combatWrap)this.combatWrap.hidden=true;
     if(this.combatFeedback)this.combatFeedback.textContent="";
-    if(this.combatAnswer){this.combatAnswer.value="";this.combatAnswer.disabled=false}
-    if(this.combatSubmit)this.combatSubmit.disabled=false;
+    if(this.combatOptions)this.combatOptions.replaceChildren();
     this.clearCombatFx();
   }
 
@@ -1611,14 +1667,9 @@ export class WorldRuntime {
     if(!this.combatActive||this.combatActive.entity.id!==active.entity.id)return;
     active.challenge=challenge;
     if(this.combatPrompt)this.combatPrompt.textContent=challenge?.available?String(challenge.prompt||""):"Desafio indisponível";
-    if(this.combatFeedback)this.combatFeedback.textContent=challenge?.available?"":"Não foi possível gerar uma conta para este combate.";
-    if(this.combatAnswer){
-      this.combatAnswer.value="";
-      this.combatAnswer.disabled=!challenge?.available;
-    }
-    if(this.combatSubmit)this.combatSubmit.disabled=!challenge?.available;
+    if(this.combatFeedback)this.combatFeedback.textContent=challenge?.available?"Escolha uma das quatro respostas.":"Não foi possível gerar uma conta para este combate.";
+    this.renderCombatChoices(challenge);
     this.updateCombatHud();
-    if(challenge?.available)queueMicrotask(()=>this.combatAnswer?.focus?.());
   }
 
   async beginCombat(entity){
@@ -1630,24 +1681,19 @@ export class WorldRuntime {
     this.combatActive={entity,enemyMaxHp,enemyHp:enemyMaxHp,playerMaxHp,playerHp:playerMaxHp,challenge:null};
     if(this.combatTitle)this.combatTitle.textContent=String(entity.label||"Navio inimigo");
     if(this.combatWrap)this.combatWrap.hidden=false;
-    const playerSrc=String(this.config.combat?.playerPortrait||this.config.player?.src||this.config.player?.sprite?.src||"").replace(/["\\]/g,"");
+    this.syncCombatPlayerShip();
     const enemySrc=String(entity.src||"").replace(/["\\]/g,"");
-    if(this.combatPlayerShip)this.combatPlayerShip.style.backgroundImage=playerSrc?'url("'+playerSrc+'")':"none";
     if(this.combatEnemyShip)this.combatEnemyShip.style.backgroundImage=enemySrc?'url("'+enemySrc+'")':"none";
     this.updateCombatHud();
     this.clearCombatFx();
     await this.loadCombatRound();
   }
 
-  submitCombatAnswer(){
+  submitCombatAnswer(raw,selectedButton=null){
     const active=this.combatActive;
     const challenge=active?.challenge;
     if(!active||!challenge?.available||typeof challenge.evaluate!=="function")return;
-    const raw=this.combatAnswer?.value??"";
-    if(String(raw).trim()===""){
-      if(this.combatFeedback)this.combatFeedback.textContent="Digite uma resposta.";
-      return;
-    }
+    if(String(raw??"").trim()==="")return;
     const result=challenge.evaluate(raw)||{};
     this.onPedagogyResult?.({
       entityId:String(active.entity.id||""),
@@ -1657,8 +1703,8 @@ export class WorldRuntime {
       correct:result.correct===true,region:Number(challenge.region)||null,
       bonus:false,countsTowardPlanned:challenge.countsTowardPlanned!==false
     });
-    if(this.combatAnswer)this.combatAnswer.disabled=true;
-    if(this.combatSubmit)this.combatSubmit.disabled=true;
+    this.combatOptions?.querySelectorAll("button").forEach(button=>{button.disabled=true});
+    selectedButton?.classList.add(result.correct===true?"is-correct":"is-wrong");
 
     if(result.correct===true){
       active.enemyHp=Math.max(0,active.enemyHp-1);
