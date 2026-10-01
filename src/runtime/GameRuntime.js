@@ -255,6 +255,7 @@ export class GameRuntime {
 
   saveState(){
     try{
+      this.captureCurrentState();
       const state={
         schema:"tq.game-state",
         version:1,
