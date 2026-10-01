@@ -56,6 +56,7 @@ export class WorldRuntime {
     this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.onTreasureCollected=typeof options.onTreasureCollected==="function"?options.onTreasureCollected:null;
     this.onCombatVictory=typeof options.onCombatVictory==="function"?options.onCombatVictory:null;
+    this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.challengeActive=null;
     this.challengeTimer=0;
     this.combatActive=null;
@@ -2087,6 +2088,13 @@ export class WorldRuntime {
       this.onTreasureCollected?.({
         entity:this.cleanEntity(entity),
         challenge
+      });
+    }
+    const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:null;
+    if(rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||rewards.itemId||rewards.shipId)){
+      this.onRewardCollected?.({
+        entity:this.cleanEntity(entity),
+        rewards:structuredClone(rewards)
       });
     }
     return true;
