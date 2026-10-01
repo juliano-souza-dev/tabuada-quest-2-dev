@@ -1,4 +1,5 @@
 import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20260930-1912";
+import { WORLD_ENVIRONMENT_PRESETS, environmentPreset } from "./WorldEnvironmentPresets.mjs?v=20261001-0835";
 import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
 import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1912";
 import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=20260930-1912";
@@ -126,6 +127,7 @@ export class WorldRuntime {
           <div class="tq-world-ocean-layer tq-world-ocean-layer--wave" data-ocean-layer="wave"></div>
           <div class="tq-world-ocean-layer tq-world-ocean-layer--foam" data-ocean-layer="foam"></div>
         </div>
+        <div class="tq-world-weather" data-world-weather aria-hidden="true"></div>
         <div class="tq-world-stage">
           <div class="tq-world-playable-boundary" data-world-playable-boundary aria-hidden="true"></div>
           <div class="tq-world-player-wake-layer" data-world-player-wake aria-hidden="true"></div>
@@ -186,6 +188,7 @@ export class WorldRuntime {
     this.oceanRenderer=null;
     this.oceanRendererInit=null;
     this.stage=this.host.querySelector(".tq-world-stage");
+    this.weatherEl=this.host.querySelector("[data-world-weather]");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
     this.playerWakeLayer=this.host.querySelector("[data-world-player-wake]");
@@ -226,6 +229,7 @@ export class WorldRuntime {
     this.applyPlayableAreaVisual();
     this.applyOceanStatic();
     this.initOceanRenderer();
+    this.applyEnvironmentVisual();
     this.playerEl.style.backgroundRepeat="no-repeat";
     if(this.config.player?.width)this.playerEl.style.width=Math.max(24,Number(this.config.player.width)||108)+"px";
     if(this.config.player?.height)this.playerEl.style.height=Math.max(24,Number(this.config.player.height)||150)+"px";
@@ -1732,6 +1736,41 @@ export class WorldRuntime {
     return this.getPlayerConfig();
   }
 
+  environmentConfig(){
+    const id=String(this.config.environment?.preset||"day");
+    const preset=WORLD_ENVIRONMENT_PRESETS[id]?id:"day";
+    return {preset,weather:String(this.config.environment?.weather||environmentPreset(preset).weather||"none")};
+  }
+
+  applyEnvironmentVisual(){
+    if(!this.weatherEl)return;
+    const env=this.environmentConfig();
+    const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
+    if(this.weatherEl.dataset.weather===weather)return;
+    this.weatherEl.dataset.weather=weather;
+    this.weatherEl.className="tq-world-weather tq-world-weather--"+weather;
+    this.weatherEl.replaceChildren();
+    const count=weather==="rain"?42:weather==="snow"?34:weather==="halloween"?16:0;
+    for(let i=0;i<count;i++){
+      const p=document.createElement("i");
+      p.style.setProperty("--i",String(i));
+      p.style.setProperty("--x",((i*37)%101)+"%");
+      p.style.setProperty("--delay",(-((i*173)%2400))+"ms");
+      p.style.setProperty("--dur",(weather==="rain"?(700+(i%7)*70):weather==="snow"?(3600+(i%9)*260):(4200+(i%8)*340))+"ms");
+      this.weatherEl.append(p);
+    }
+  }
+
+  applyEnvironmentPreset(id="day"){
+    const key=WORLD_ENVIRONMENT_PRESETS[id]?id:"day";
+    const preset=environmentPreset(key);
+    this.config.environment={preset:key,weather:preset.weather};
+    this.updateOcean(preset.ocean);
+    this.updatePlayerConfig({effects:preset.ship});
+    this.applyEnvironmentVisual();
+    return this.getWorld();
+  }
+
   updateWorld(patch={},commit=true){
     if(patch.name!==undefined)this.config.name=String(patch.name||this.config.id||"Mundo");
     if(patch.width!==undefined)this.config.width=clamp(Number(patch.width)||390,390,20000);
@@ -1758,6 +1797,13 @@ export class WorldRuntime {
         ...(this.config.ui||{}),
         ...structuredClone(patch.ui)
       };
+    }
+    if(patch.environment&&typeof patch.environment==="object"){
+      this.config.environment={
+        ...(this.config.environment||{}),
+        ...structuredClone(patch.environment)
+      };
+      this.applyEnvironmentVisual();
     }
     if(patch.minimap&&typeof patch.minimap==="object"){
       this.config.minimap={
