@@ -634,14 +634,24 @@ export class WorldRuntime {
     entity.effect=effect;
     const img=entity.el.querySelector("img");
     const canvas=entity.el.querySelector(".tq-world-entity__webgl");
-    const wantsWebGL=Boolean(effect.active&&effect.renderer==="webgl"&&entity.src&&canvas);
+    const atlasMode=entity.el.dataset.renderMode==="atlas";
+    // Directional atlases are rendered by CSS background cropping. Never
+    // reveal the raw <img>, otherwise the whole spritesheet is compressed
+    // into the entity on top of the selected frame.
+    const wantsWebGL=Boolean(
+      !atlasMode
+      &&effect.active
+      &&effect.renderer==="webgl"
+      &&entity.src
+      &&canvas
+    );
 
     entity.el.dataset.effectRenderer=effect.renderer;
     entity.el.dataset.effectPreset=effect.preset;
 
     if(!wantsWebGL){
       if(canvas)canvas.hidden=true;
-      if(img)img.hidden=false;
+      if(img)img.hidden=atlasMode;
       return;
     }
 
