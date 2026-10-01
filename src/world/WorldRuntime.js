@@ -762,8 +762,9 @@ export class WorldRuntime {
 
           entity.x=clamp(start.x+worldCenterX,0,this.config.width);
           entity.y=clamp(start.y+worldCenterY,0,this.config.height);
-          entity.width=clamp(right-left,min,2400);
-          entity.height=clamp(bottom-top,min,2400);
+          const freeSize=entity.type==="region-exit";
+          entity.width=freeSize?Math.max(min,right-left):clamp(right-left,min,2400);
+          entity.height=freeSize?Math.max(min,bottom-top):clamp(bottom-top,min,2400);
           entity.anchorX=entity.x;
           entity.anchorY=entity.y;
 
@@ -2816,8 +2817,9 @@ export class WorldRuntime {
     if(collisionPatch)entity.collision=normalizeCollision({...entity.collision,...collisionPatch},entity);
     entity.x=clamp(Number(entity.x??0),0,this.config.width);
     entity.y=clamp(Number(entity.y??0),0,this.config.height);
-    entity.width=clamp(Number(entity.width??96),16,2400);
-    entity.height=clamp(Number(entity.height??96),16,2400);
+    const freeSize=entity.type==="region-exit";
+    entity.width=freeSize?Math.max(16,Number(entity.width??96)):clamp(Number(entity.width??96),16,2400);
+    entity.height=freeSize?Math.max(16,Number(entity.height??96)):clamp(Number(entity.height??96),16,2400);
     entity.rotation=Number(entity.rotation||0);
     entity.skewX=clamp(Number(entity.skewX||0),-75,75);
     entity.skewY=clamp(Number(entity.skewY||0),-75,75);
