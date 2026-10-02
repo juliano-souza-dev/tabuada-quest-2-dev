@@ -17,7 +17,7 @@ export class DevOverlay {
     });
     this.ammoEditor=new AmmoEditor();
     this.cannonEditor=new CannonEditor({requestAsset:context=>this.openCannonAssetPicker(context)});
-    this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
+    this.cannonCatalog={defaultCannonId:"",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
     this.worldEditor=new WorldEditor(this.runtime.root,{
@@ -27,7 +27,7 @@ export class DevOverlay {
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
       getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
-      getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||"cannonball-standard",ammo:this.ammoEditor?.all?.()||[]})
+      getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]})
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
@@ -1120,11 +1120,11 @@ export class DevOverlay {
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
       const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
-      const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"cannonball-standard");
+      const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"");
       const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
       const testAmmoOptions=testAmmo.map(item=>'<option value="'+this.escapeHtml(item.id)+'" '+(selectedTestAmmoId===String(item.id)?'selected':'')+'>'+this.escapeHtml(item.name||item.id)+'</option>').join("");
       const testCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
-      const defaultTestCannonId=String(this.cannonCatalog?.defaultCannonId||testCannons[0]?.id||"cannon-basic");
+      const defaultTestCannonId=String(this.cannonEditor?.catalog?.defaultCannonId||testCannons[0]?.id||"");
       const selectedTestCannonIds=(Array.isArray(world.test?.cannonIds)&&world.test.cannonIds.length?world.test.cannonIds:[defaultTestCannonId]).map(String);
       const cannonCounts=new Map();
       selectedTestCannonIds.forEach(id=>cannonCounts.set(id,(cannonCounts.get(id)||0)+1));
