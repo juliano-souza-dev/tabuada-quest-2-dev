@@ -1,8 +1,8 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1238";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1621";
-import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1610";
-import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
-import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1650";
+import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1658";
+import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-1658";
+import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1658";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
 export class DevOverlay {
   constructor(root,runtime,options={}){
