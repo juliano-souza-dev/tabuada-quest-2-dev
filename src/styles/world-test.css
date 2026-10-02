@@ -834,3 +834,16 @@
   .tq-ships__atlas-status{align-items:flex-start;flex-direction:column}
   .tq-ships__atlas-status span{text-align:left}
 }
+
+
+/* Player destruction / multiplication repair state */
+.tq-world-player.is-player-sunk{
+  opacity:.38;
+  filter:grayscale(.72) brightness(.62) saturate(.55);
+  animation:tq-player-sunk-pulse 1.4s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes tq-player-sunk-pulse{
+  from{opacity:.30;filter:grayscale(.82) brightness(.54) saturate(.45)}
+  to{opacity:.48;filter:grayscale(.58) brightness(.72) saturate(.68)}
+}
