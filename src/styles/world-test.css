@@ -847,3 +847,28 @@
   from{opacity:.30;filter:grayscale(.82) brightness(.54) saturate(.45)}
   to{opacity:.48;filter:grayscale(.58) brightness(.72) saturate(.68)}
 }
+
+
+/* Floating naval damage feedback */
+.tq-world-damage-number{
+  position:absolute;
+  z-index:160;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  user-select:none;
+  font:900 24px/1 system-ui,sans-serif;
+  letter-spacing:-.04em;
+  color:#ffe28a;
+  text-shadow:0 2px 2px #321400,0 0 8px rgba(255,126,20,.8);
+  animation:tq-world-damage-float .82s cubic-bezier(.2,.75,.25,1) forwards;
+}
+.tq-world-damage-number.is-received{
+  color:#ff8b82;
+  text-shadow:0 2px 2px #3d0000,0 0 9px rgba(255,48,38,.82);
+}
+@keyframes tq-world-damage-float{
+  0%{opacity:0;transform:translate(-50%,-25%) scale(.65)}
+  18%{opacity:1;transform:translate(-50%,-62%) scale(1.22)}
+  55%{opacity:1;transform:translate(-50%,-105%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-165%) scale(.88)}
+}
