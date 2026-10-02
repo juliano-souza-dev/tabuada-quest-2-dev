@@ -1,7 +1,7 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-1107";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog,getAmmoCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
@@ -9,6 +9,7 @@ export class WorldEditor {
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
     this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
+    this.getAmmoCatalog=typeof getAmmoCatalog==="function"?getAmmoCatalog:()=>({defaultAmmoId:"cannonball-standard",ammo:[]});
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
@@ -70,10 +71,18 @@ export class WorldEditor {
     const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
     const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(world.test?.cannonIds)?world.test.cannonIds.map(String):[];
+    const ammoCatalog=this.getAmmoCatalog()||{};
+    const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
+    const defaultAmmoId=String(ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
+    const testAmmoId=String(world.test?.ammoId||defaultAmmoId);
+    const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
       cannonCatalog:availableCannons,
       testCannonIds:requestedCannonIds.length?requestedCannonIds:[defaultCannonId],
+      ammoCatalog:availableAmmo,
+      testAmmoId,
+      testAmmoQuantity,
       resolveShip:this.resolveShip,
       resolveTreasure:this.resolveTreasure,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
