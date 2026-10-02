@@ -1200,8 +1200,9 @@ export class DevOverlay {
             '<label class="tq-world-field"><span>Largura</span><input data-world-root-prop="width" type="number" min="390" max="20000" value="'+world.width+'"></label>'+
             '<label class="tq-world-field"><span>Altura</span><input data-world-root-prop="height" type="number" min="844" max="20000" value="'+world.height+'"></label>'+
           '</div></section>'+
-          '<section class="tq-config-area tq-config-area--npc-map"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🚢 NPCs do mapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+          '<section class="tq-config-area tq-config-area--npc-map">'+
             '<label class="tq-field tq-field--check"><span>NPCs ativos nesta região</span><input data-npc-enabled type="checkbox" '+(npcPopulation.enabled===true?'checked':'')+'></label>'+
+            '<button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🚢 NPCs do mapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<div class="tq-worlds__create-grid">'+
               '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
               '<label class="tq-world-field"><span>Margem das bordas</span><input data-npc-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(npcPopulation.spread.margin)||0)+'"></label>'+
