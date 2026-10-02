@@ -40,6 +40,8 @@ export class GameRuntime {
     this.rewards={coins:0,xp:0,claims:[]};
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerStateStore=null;
+    this.multiplayer=null;
+    this.multiplayerCleanups=[];
     this.accountState={};
     this.pedagogyRuntime=new PedagogyRuntime({getState:()=>this.accountState});
     this.authenticated=false;
@@ -265,6 +267,29 @@ export class GameRuntime {
   registerAction(id,handler,options={}){
     this.sceneRuntime.registerAction(id,handler,options);
     return this;
+  }
+
+  attachMultiplayer(service){
+    this.multiplayer=service||null;
+    return this;
+  }
+
+  stopMultiplayerWorld(){
+    for(const cleanup of this.multiplayerCleanups.splice(0))cleanup();
+    this.multiplayer?.leaveWorld?.().catch?.(()=>{});
+  }
+
+  startMultiplayerWorld(worldId){
+    if(!this.multiplayer||!this.worldRuntime||!this.authenticated)return false;
+    this.stopMultiplayerWorld();
+    const onPlayers=event=>this.worldRuntime?.syncRemotePlayers?.(event.detail?.players||[]);
+    const onEvent=event=>this.worldRuntime?.handleMultiplayerEvent?.(event.detail||{});
+    this.multiplayer.addEventListener?.("players",onPlayers);
+    this.multiplayer.addEventListener?.("event",onEvent);
+    this.multiplayerCleanups.push(()=>this.multiplayer?.removeEventListener?.("players",onPlayers),()=>this.multiplayer?.removeEventListener?.("event",onEvent));
+    const ship=this.getEquippedShip();
+    this.multiplayer.joinWorld(worldId,{getLocalState:()=>this.worldRuntime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""}).catch(error=>console.warn("Multiplayer join failed",error));
+    return true;
   }
 
   attachPlayerStateStore(store){
@@ -551,6 +576,7 @@ export class GameRuntime {
     if(pushHistory)this.pushCurrentToHistory();
 
     if(this.worldRuntime){
+      this.stopMultiplayerWorld();
       this.worldRuntime.destroy();
       this.worldRuntime=null;
     }
@@ -768,6 +794,7 @@ export class GameRuntime {
     });
     this.worldRuntime.mount();
     this.worldRuntime.setMode("play");
+    this.startMultiplayerWorld(worldId);
 
     this.current={kind:"world",id:worldId||null,path:entry.path};
     this.saveState();
@@ -905,6 +932,7 @@ export class GameRuntime {
   destroy(){
     this.captureCurrentState();
     this.saveState();
+    this.stopMultiplayerWorld();
     this.worldRuntime?.destroy?.();
     this.worldRuntime=null;
     this.sceneRuntime?.resizeObserver?.disconnect?.();
