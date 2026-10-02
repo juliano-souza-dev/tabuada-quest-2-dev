@@ -1,6 +1,6 @@
 export class AmmoEditor{
   constructor(){
-    this.catalog={schema:"tq.ammo-catalog",version:1,defaultAmmoId:"cannonball-standard",ammo:[]};
+    this.catalog={schema:"tq.ammo-catalog",version:1,defaultAmmoId:"",ammo:[]};
     this.drafts=[];this.selectedId=null;this.storageKey="tq.dev.ammo-drafts:v1";this.el=null;
   }
   async mount(parent){
