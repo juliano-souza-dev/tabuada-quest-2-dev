@@ -1,5 +1,5 @@
-import { NavalCombatWebGLRenderer } from "../../world/NavalCombatWebGLRenderer.mjs?v=20261002-2022";
-import { normalizeAmmoFx } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-2012";
+import { NavalCombatWebGLRenderer } from "../../world/NavalCombatWebGLRenderer.mjs?v=20261002-2052";
+import { normalizeAmmoFx } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-2052";
 
 export class AmmoPreviewGL{
   constructor(canvas){
