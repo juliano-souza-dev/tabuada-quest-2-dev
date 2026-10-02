@@ -1021,6 +1021,15 @@ export class DevOverlay {
       const presetOptions=[["calm","Calmo"],["adventure","Aventura"],["storm","Tempestade"]]
         .map(([value,label])=>'<option value="'+value+'" '+(ocean.preset===value?'selected':'')+'>'+label+'</option>').join("");
       const environmentPreset=String(world.environment?.preset||"day");
+      const cloudConfig={
+        active:world.environment?.clouds?.active===true,
+        density:Number(world.environment?.clouds?.density??.5),
+        opacity:Number(world.environment?.clouds?.opacity??.5),
+        scale:Number(world.environment?.clouds?.scale??1),
+        speed:Number(world.environment?.clouds?.speed??18),
+        direction:Number(world.environment?.clouds?.direction??0),
+        parallax:Number(world.environment?.clouds?.parallax??.18)
+      };
       const environmentOptions=[["day","Dia"],["night","Noite"],["storm","Tempestade"],["snow","Nevando"],["halloween","Halloween"]]
         .map(([value,label])=>'<option value="'+value+'" '+(environmentPreset===value?'selected':'')+'>'+label+'</option>').join("");
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
@@ -1234,7 +1243,17 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-environment-preset>'+environmentOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Aplica em conjunto oceano, cor, contraste, brilho, movimento, rastro, sombra e balanço do navio. Depois você pode ajustar qualquer controle manualmente.</small>'+
+            '<div class="tq-world-player-fx">'+
+              '<strong>Nuvens</strong>'+
+              '<label class="tq-field tq-field--check"><span>Nuvens ativas</span><input data-cloud-prop="active" type="checkbox" '+(cloudConfig.active?'checked':'')+'></label>'+
+              '<label class="tq-world-motion-range"><span>Densidade</span><input data-cloud-prop="density" type="range" min="0" max="1" step=".05" value="'+cloudConfig.density+'"><output>'+Math.round(cloudConfig.density*100)+'%</output></label>'+
+              '<label class="tq-world-motion-range"><span>Opacidade</span><input data-cloud-prop="opacity" type="range" min="0" max="1" step=".05" value="'+cloudConfig.opacity+'"><output>'+Math.round(cloudConfig.opacity*100)+'%</output></label>'+
+              '<label class="tq-world-motion-range"><span>Escala</span><input data-cloud-prop="scale" type="range" min=".4" max="2.5" step=".05" value="'+cloudConfig.scale+'"><output>'+cloudConfig.scale.toFixed(2)+'×</output></label>'+
+              '<label class="tq-world-motion-range"><span>Velocidade</span><input data-cloud-prop="speed" type="range" min="0" max="120" step="1" value="'+cloudConfig.speed+'"><output>'+Math.round(cloudConfig.speed)+'</output></label>'+
+              '<label class="tq-world-motion-range"><span>Direção</span><input data-cloud-prop="direction" type="range" min="-180" max="180" step="5" value="'+cloudConfig.direction+'"><output>'+Math.round(cloudConfig.direction)+'°</output></label>'+
+              '<label class="tq-world-motion-range"><span>Parallax</span><input data-cloud-prop="parallax" type="range" min="0" max="1" step=".05" value="'+cloudConfig.parallax+'"><output>'+Math.round(cloudConfig.parallax*100)+'%</output></label>'+
+            '</div>'+
+            '<small class="tq-world-editor-note">As nuvens são independentes de chuva e neve. Elas continuam visíveis em Configuração para ajuste ao vivo e usam a mesma configuração no Play.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>WebGL · textura e cor</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-field tq-field--check"><span>Movimento ativo</span><input data-ocean-prop="active" type="checkbox" '+(ocean.active?'checked':'')+'></label>'+
@@ -1797,6 +1816,27 @@ export class DevOverlay {
             output.value=String(Math.round(Number(value)*100)/100)+suffix;
           }
           this.worldEditor.updatePlayerConfig({effects:{[key]:value}},commit);
+          if(commit)this.syncLocalWorldFromEditor();
+        };
+        if(input.type==="range")input.addEventListener("input",()=>apply(false));
+        input.addEventListener("change",()=>apply(true));
+      });
+
+      content.querySelectorAll("[data-cloud-prop]").forEach(input=>{
+        const apply=commit=>{
+          const key=input.dataset.cloudProp;
+          const current=structuredClone(this.worldEditor?.getWorld()?.environment?.clouds||cloudConfig);
+          const value=input.type==="checkbox"?input.checked:Number(input.value);
+          current[key]=value;
+          this.worldEditor.updateWorld({environment:{clouds:current}},commit);
+          if(input.type==="range"){
+            const output=input.parentElement?.querySelector("output");
+            if(output){
+              output.value=key==="scale"?(Number(value).toFixed(2)+"×")
+                :(["density","opacity","parallax"].includes(key)?(Math.round(Number(value)*100)+"%")
+                :(key==="direction"?(Math.round(Number(value))+"°"):String(Math.round(Number(value)))));
+            }
+          }
           if(commit)this.syncLocalWorldFromEditor();
         };
         if(input.type==="range")input.addEventListener("input",()=>apply(false));
