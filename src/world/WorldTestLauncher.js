@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261002-0927";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261002-0939";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
@@ -13,6 +13,12 @@ export async function launchWorldTest(root,{worldId=""}={}){
   const response=await fetch(entry.path+"?v=20261001-2209",{cache:"no-store"});
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
+
+  const ammoResponse=await fetch("./src/config/ammo-catalog.json?v=20261002-0926",{cache:"no-store"});
+  if(!ammoResponse.ok)throw new Error("Ammo catalog failed: "+ammoResponse.status);
+  const ammoCatalog=await ammoResponse.json();
+  const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
+  const testAmmoId=String(config.test?.ammoId||ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
 
   const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
@@ -29,6 +35,9 @@ export async function launchWorldTest(root,{worldId=""}={}){
     root.innerHTML="";
     world=new WorldRuntime(root,config,{
       state,
+      ammoCatalog:availableAmmo,
+      testAmmoId,
+      testAmmoUnlimited:true,
       createPedagogyChallenge:({entity})=>pedagogyRuntime.createChallenge({
         kind:entity?.type==="treasure"?"treasure":"world-interaction",
         worldId:config.id,
