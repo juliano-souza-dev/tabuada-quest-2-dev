@@ -1,7 +1,7 @@
 {
   "schema": "tq.asset-tree",
   "version": 3,
-  "generatedFrom": "a637c3abf4dead01bba6ee4b83fcdf277b70cd5f",
+  "generatedFrom": "bfb93606738c29541ea56b9b2ad9de16dcfb1488",
   "root": {
     "type": "directory",
     "name": "assets",
@@ -667,6 +667,11 @@
                     "type": "image",
                     "name": "ilha_comercio_redonda.webp",
                     "path": "assets/regions/global/islands/ilha_comercio_redonda.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "ilha_estaleiro_redonda.webp",
+                    "path": "assets/regions/global/islands/ilha_estaleiro_redonda.webp"
                   }
                 ]
               }
@@ -1662,6 +1667,11 @@
       "type": "image",
       "name": "ilha_comercio_redonda.webp",
       "path": "assets/regions/global/islands/ilha_comercio_redonda.webp"
+    },
+    {
+      "type": "image",
+      "name": "ilha_estaleiro_redonda.webp",
+      "path": "assets/regions/global/islands/ilha_estaleiro_redonda.webp"
     },
     {
       "type": "image",
