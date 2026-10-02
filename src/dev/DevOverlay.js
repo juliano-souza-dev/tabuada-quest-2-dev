@@ -21,7 +21,8 @@ export class DevOverlay {
       onPedagogyResult:this.onPedagogyResult,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
-      getCannonCatalog:()=>this.cannonCatalog
+      getCannonCatalog:()=>this.cannonCatalog,
+      getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||"cannonball-standard",ammo:this.ammoEditor?.all?.()||[]})
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
@@ -1096,6 +1097,7 @@ export class DevOverlay {
       const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
       const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"cannonball-standard");
+      const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
       const testAmmoOptions=testAmmo.map(item=>'<option value="'+this.escapeHtml(item.id)+'" '+(selectedTestAmmoId===String(item.id)?'selected':'')+'>'+this.escapeHtml(item.name||item.id)+'</option>').join("");
       const testCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
       const defaultTestCannonId=String(this.cannonCatalog?.defaultCannonId||testCannons[0]?.id||"cannon-basic");
@@ -1267,7 +1269,8 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>💣 Munição de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Munição ativa</span><select data-world-test-ammo>'+testAmmoOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Usada somente neste ambiente de teste. O estoque é ilimitado aqui e não altera o inventário real do jogador.</small>'+
+            '<label class="tq-world-field"><span>Quantidade de bolas</span><input data-world-test-ammo-quantity type="number" min="0" max="9999" step="1" value="'+testAmmoQuantity+'"></label>'+
+            '<small class="tq-world-editor-note">Cada canhão disparado consome 1 bola. Este estoque pertence somente ao ambiente de teste.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
@@ -1476,8 +1479,23 @@ export class DevOverlay {
 
       content.querySelector("[data-world-test-ammo]")?.addEventListener("change",event=>{
         const ammoId=String(event.currentTarget.value||"");
-        this.worldEditor.updateWorld({test:{...(this.worldEditor.getWorld()?.test||{}),ammoId}},true);
-        if(this.worldEditor?.runtime?.state?.ammo)this.worldEditor.runtime.state.ammo.selectedAmmoId=ammoId;
+        const currentTest=this.worldEditor.getWorld()?.test||{};
+        this.worldEditor.updateWorld({test:{...currentTest,ammoId}},true);
+        if(this.worldEditor?.runtime?.state?.ammo){
+          this.worldEditor.runtime.state.ammo.selectedAmmoId=ammoId;
+          if(this.worldEditor.runtime.state.ammo.stock[ammoId]==null)this.worldEditor.runtime.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(currentTest.ammoQuantity??50)||0));
+        }
+        this.syncLocalWorldFromEditor();
+      });
+      content.querySelector("[data-world-test-ammo-quantity]")?.addEventListener("change",event=>{
+        const ammoQuantity=Math.max(0,Math.floor(Number(event.currentTarget.value)||0));
+        const currentTest=this.worldEditor.getWorld()?.test||{};
+        this.worldEditor.updateWorld({test:{...currentTest,ammoQuantity}},true);
+        const runtime=this.worldEditor?.runtime;
+        if(runtime?.state?.ammo){
+          const ammoId=String(runtime.state.ammo.selectedAmmoId||selectedTestAmmoId);
+          runtime.state.ammo.stock[ammoId]=ammoQuantity;
+        }
         this.syncLocalWorldFromEditor();
       });
 
