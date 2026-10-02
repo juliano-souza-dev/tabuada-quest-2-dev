@@ -270,7 +270,10 @@ export class WorldRuntime {
       runtimeGenerated:true,
       npcNavigation:{
         mode:"sailing",
-        speed:Math.max(0,Number(population.movement.speed)||0),
+        minSpeed:Math.max(0,Number(profile.minSpeed)||0),
+        speed:Math.max(0,Number(profile.speed)||0),
+        acceleration:Math.max(100,Number(profile.acceleration)||1100),
+        braking:clamp(Number(profile.braking??.22),.01,.98),
         heading,
         targetHeading:heading,
         vx:0,
@@ -282,7 +285,7 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:Math.max(1,Number(typeConfig.hp)||3),
+        hp:clamp(Math.floor(Number(profile.combat?.hp??profile.combatVisual?.hp)||3),1,99),
         attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
@@ -390,13 +393,21 @@ export class WorldRuntime {
     const targetRad=targetHeading*Math.PI/180;
     const desiredX=Math.sin(targetRad);
     const desiredY=-Math.cos(targetRad);
-    const accel=Math.max(100,Math.min(1100,maxSpeed*3.1));
-    const drag=Math.pow(.22,safeDt);
+    const accel=Math.max(100,Number(nav.acceleration)||1100);
+    const minSpeed=clamp(Number(nav.minSpeed)||0,0,maxSpeed);
+    const braking=clamp(Number(nav.braking??.22),.01,.98);
+    const drag=Math.pow(braking,safeDt);
 
     nav.vx=((Number(nav.vx)||0)+desiredX*accel*safeDt)*drag;
     nav.vy=((Number(nav.vy)||0)+desiredY*accel*safeDt)*drag;
 
     let actualSpeed=Math.hypot(nav.vx,nav.vy);
+    if(actualSpeed>0&&actualSpeed<minSpeed){
+      const scale=minSpeed/actualSpeed;
+      nav.vx*=scale;
+      nav.vy*=scale;
+      actualSpeed=minSpeed;
+    }
     if(actualSpeed>maxSpeed){
       const scale=maxSpeed/actualSpeed;
       nav.vx*=scale;
@@ -467,7 +478,7 @@ export class WorldRuntime {
           {x:desiredX,y:desiredY},
           {
             side:remembered,
-            minSpeed:Math.max(28,maxSpeed*.42),
+            minSpeed:Math.max(28,minSpeed||maxSpeed*.42),
             maxSpeed:Math.max(45,maxSpeed),
             strength:.88
           }
@@ -2057,6 +2068,8 @@ export class WorldRuntime {
         const remembered=this.collisionAvoidance.entityId===entity.id&&this.collisionAvoidance.until>now
           ?this.collisionAvoidance.side
           :0;
+        const playerMaxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
+        const playerMinSpeed=clamp(Number(this.config.player?.minSpeed)||0,0,playerMaxSpeed);
         const contour=contourVelocity(
           {x:vx,y:vy},
           hit.normalX,
@@ -2064,8 +2077,8 @@ export class WorldRuntime {
           desired,
           {
             side:remembered,
-            minSpeed:this.navigationTarget?145:105,
-            maxSpeed:this.navigationTarget?285:230,
+            minSpeed:Math.max(20,playerMinSpeed||playerMaxSpeed*.25),
+            maxSpeed:playerMaxSpeed,
             strength:.72
           }
         );
@@ -2083,6 +2096,7 @@ export class WorldRuntime {
     const input=this.inputVector();
     const accel=Math.max(100,Number(this.config.player?.acceleration)||1100);
     const maxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
+    const minSpeed=clamp(Number(this.config.player?.minSpeed)||0,0,maxSpeed);
     const braking=clamp(Number(this.config.player?.braking??.12),.01,.98);
     const drag=Math.pow(braking,dt);
 
@@ -2090,6 +2104,13 @@ export class WorldRuntime {
     this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
 
     let speed=Math.hypot(this.player.vx,this.player.vy);
+    const steering=Math.hypot(Number(input.x)||0,Number(input.y)||0);
+    if(steering>.001&&speed>0&&speed<minSpeed){
+      const scale=minSpeed/speed;
+      this.player.vx*=scale;
+      this.player.vy*=scale;
+      speed=minSpeed;
+    }
     if(speed>maxSpeed){
       const scale=maxSpeed/speed;
       this.player.vx*=scale;
