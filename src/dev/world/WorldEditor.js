@@ -274,6 +274,16 @@ export class WorldEditor {
     return this.runtime?.getEntityEffect(id)||null;
   }
 
+  setDepthMaskEditing(id,active=true){
+    return this.runtime?.setDepthMaskEditing(id,active)||false;
+  }
+
+  clearDepthMask(id){
+    const changed=this.runtime?.clearDepthMask(id)||false;
+    if(changed){this.persist();this.emitWorldChange()}
+    return changed;
+  }
+
   getEntityCollision(id){
     return this.runtime?.getEntityCollision(id)||null;
   }
