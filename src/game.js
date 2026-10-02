@@ -20,6 +20,7 @@ const services=await installAuthRuntime(game,{
   configUrl:"./src/config/firebase-public.json?v=20260930-1851"
 });
 game.attachPlayerStateStore(services.playerState);
+game.attachMultiplayer?.(services.multiplayer);
 
 await game.start(start);
 
@@ -29,5 +30,6 @@ globalThis.TabuadaQuest={
   runtime:game,
   auth:services.auth,
   playerState:services.playerState,
+  multiplayer:services.multiplayer,
   getAccessStatus:services.getStatus
 };
