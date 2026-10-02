@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0036";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0835";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
 export class DevOverlay {
