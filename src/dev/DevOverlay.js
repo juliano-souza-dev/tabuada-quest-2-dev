@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2255";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0001";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2305";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -139,6 +139,12 @@ export class DevOverlay {
     window.addEventListener("tq:selectionchange",e=>{this.selected=e.detail.node||null;this.renderInspector();});
     window.addEventListener("tq:nodechange",e=>{const node=e.detail?.node;if(node&&this.selected?.id===node.id){this.selected=node;this.syncInspector();}});
     window.addEventListener("tq:sceneload",()=>{if(this.workspace!=="world"){this.selected=null;this.renderScenes()}});
+    window.addEventListener("tq:shipcatalogchange",()=>{
+      if(this.workspace==="world"){
+        if(this.mode==="config")this.renderWorldInspector();
+        this.renderWorlds();
+      }
+    });
     window.addEventListener("tq:worldselectionchange",e=>{
       if(this.workspace!=="world")return;
       this.selected=e.detail?.entity||null;
