@@ -1,3 +1,4 @@
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261002-2023";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20260930-0018";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20260930-0018";
 
@@ -8,6 +9,7 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
 
   const auth=new FirebaseAuthService(config);
   const playerState=new PlayerStateStore(auth,config);
+  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:5,pollMs:250});
 
   const signalReady=async(reason)=>{
     const status=auth.status();
@@ -76,6 +78,7 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
   return Object.freeze({
     auth,
     playerState,
+    multiplayer,
     getStatus:()=>Object.freeze({
       ...playerState.status(),
       auth:auth.status()
