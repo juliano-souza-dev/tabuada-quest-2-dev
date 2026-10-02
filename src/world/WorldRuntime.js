@@ -95,7 +95,7 @@ const normalizeAmmoInventory=input=>{
     if(id)normalizedStock[id]=Math.max(0,Math.floor(Number(quantity)||0));
   }
   return {
-    selectedAmmoId:String(value.selectedAmmoId||"cannonball-standard"),
+    selectedAmmoId:String(value.selectedAmmoId||""),
     stock:normalizedStock
   };
 };
@@ -203,11 +203,11 @@ export class WorldRuntime {
     this.testAmmoUnlimited=options.testAmmoUnlimited===true;
     const initialTestAmmoQuantity=Math.max(0,Math.floor(Number(options.testAmmoQuantity)||0));
     if(Number.isFinite(Number(options.testAmmoQuantity))){
-      const initialAmmoId=String(options.testAmmoId||this.state.ammo.selectedAmmoId||"cannonball-standard");
+      const initialAmmoId=String(options.testAmmoId||this.state.ammo.selectedAmmoId||this.ammoCatalog?.[0]?.id||"");
       this.state.ammo.stock[initialAmmoId]=initialTestAmmoQuantity;
     }
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
-    const defaultCannonId=String(this.cannonCatalog[0]?.id||"cannon-basic");
+    const defaultCannonId=String(this.cannonCatalog[0]?.id||"");
     const requestedCannonIds=Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[];
     const validatedCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
     this.testCannonIds=validatedCannonIds.length
@@ -1099,7 +1099,7 @@ export class WorldRuntime {
   playerCannonsInRange(entity){
     if(!this.isClickableCombatShip(entity))return [];
     const distance=this.navalTargetDistance(entity);
-    const cannons=(this.testCannonIds?.length?this.testCannonIds:["cannon-basic"])
+    const cannons=(this.testCannonIds?.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     if(!cannons.length){
@@ -1109,7 +1109,7 @@ export class WorldRuntime {
   }
 
   playerEffectiveCannonRange(){
-    const cannons=(this.testCannonIds?.length?this.testCannonIds:["cannon-basic"])
+    const cannons=(this.testCannonIds?.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     return cannons.length
@@ -3827,7 +3827,7 @@ export class WorldRuntime {
     const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
       ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
     const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,999);
-    const cannons=(this.testCannonIds.length?this.testCannonIds:["cannon-basic"])
+    const cannons=(this.testCannonIds.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
     if(!cannons.length)return false;
@@ -4329,7 +4329,7 @@ export class WorldRuntime {
       }
       if(Array.isArray(patch.test.cannonIds)){
         const validIds=patch.test.cannonIds.map(String).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-        this.testCannonIds=validIds.length?validIds:[String(this.cannonCatalog[0]?.id||"cannon-basic")];
+        this.testCannonIds=validIds.length?validIds:[String(this.cannonCatalog[0]?.id||"")];
         this.config.test.cannonIds=[...this.testCannonIds];
       }
     }
