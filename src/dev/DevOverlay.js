@@ -156,7 +156,7 @@ export class DevOverlay {
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
     this.cannonCatalogReady=this.cannonEditor.mount(this.el).then(()=>{this.cannonCatalog=this.cannonEditor.getCatalog();return this.cannonCatalog});
     this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
-    this.npcEditorReady=this.npcEditor.mount(this.el);
+    this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el));
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
