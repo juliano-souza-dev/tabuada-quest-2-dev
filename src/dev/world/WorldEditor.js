@@ -1,12 +1,13 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-1007";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,getCannonCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
     this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
+    this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
     this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
     this.runtime=null;
     this.entry=null;
@@ -74,6 +75,7 @@ export class WorldEditor {
       cannonCatalog:availableCannons,
       testCannonIds:requestedCannonIds.length?requestedCannonIds:[defaultCannonId],
       resolveShip:this.resolveShip,
+      resolveTreasure:this.resolveTreasure,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
         kind:context?.entity?.type==="treasure"?"treasure":"world-interaction",
