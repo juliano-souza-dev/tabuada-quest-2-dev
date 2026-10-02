@@ -174,7 +174,11 @@ export class WorldRuntime {
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
     this.state=structuredClone(options.state||{});
-    this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});\n    this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];\n    this.testAmmoUnlimited=options.testAmmoUnlimited===true;\n    const requestedTestAmmoId=String(options.testAmmoId||"").trim();\n    if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
+    this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
+    this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];
+    this.testAmmoUnlimited=options.testAmmoUnlimited===true;
+    const requestedTestAmmoId=String(options.testAmmoId||"").trim();
+    if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
       y:Number(this.state.player?.y??config.player?.y??config.height/2),
