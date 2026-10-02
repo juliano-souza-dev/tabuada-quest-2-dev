@@ -262,6 +262,7 @@ export class ShipEditor{
     this.saveDeletedCatalog();
     this.selectedId=this.allShips()[0]?.id||null;
     this.render();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shipprofilechange",{detail:{shipId:id,deleted:true}}));
     return true;
   }
 
