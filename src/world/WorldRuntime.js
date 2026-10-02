@@ -399,8 +399,75 @@ export class WorldRuntime {
       nav.targetHeading=Math.atan2((top+bottom)/2-nextY,(left+right)/2-nextX)*180/Math.PI+90;
     }
 
-    entity.x=nextX;
-    entity.y=nextY;
+    // NPC ships use the same collision primitives as the player. Islands are
+    // treated as navigation obstacles, and the resulting velocity follows the
+    // island contour instead of allowing the ship to pass through the land.
+    const npcRadius=clamp(
+      Math.min(Number(entity.width)||96,Number(entity.height)||96)*.23,
+      12,
+      180
+    );
+    const now=performance.now();
+    for(let pass=0;pass<4;pass++){
+      let collided=false;
+      for(const obstacle of this.entities){
+        if(!obstacle||obstacle===entity||this.collected.has(obstacle.id))continue;
+        const obstacleType=String(obstacle.type||"");
+        const obstacleCategory=String(obstacle.effect?.category||"");
+        const islandObstacle=obstacleType==="island"
+          ||obstacleCategory==="island"
+          ||(obstacleType==="location"&&Boolean(obstacle.scene));
+        if(!islandObstacle)continue;
+
+        obstacle.collision=normalizeCollision(obstacle.collision||{},obstacle);
+        if(!obstacle.collision.active)continue;
+
+        const hit=resolveCircleVsEntity(
+          {x:nextX,y:nextY},
+          npcRadius,
+          obstacle,
+          obstacle.collision
+        );
+        if(!hit.collided)continue;
+
+        collided=true;
+        nextX=hit.x;
+        nextY=hit.y;
+
+        const cleaned=removeVelocityIntoNormal(
+          {x:nav.vx,y:nav.vy},
+          hit.normalX,
+          hit.normalY
+        );
+        const remembered=nav.avoidEntityId===obstacle.id&&Number(nav.avoidUntil)>now
+          ?Number(nav.avoidSide)||0
+          :0;
+        const contour=contourVelocity(
+          cleaned,
+          hit.normalX,
+          hit.normalY,
+          {x:desiredX,y:desiredY},
+          {
+            side:remembered,
+            minSpeed:Math.max(28,maxSpeed*.42),
+            maxSpeed:Math.max(45,maxSpeed),
+            strength:.88
+          }
+        );
+        nav.vx=contour.x;
+        nav.vy=contour.y;
+        nav.avoidEntityId=obstacle.id;
+        nav.avoidSide=contour.side;
+        nav.avoidUntil=now+1250;
+        nav.targetHeading=Math.atan2(nav.vy,nav.vx)*180/Math.PI+90;
+        nav.nextCourseChange=Math.max(Number(nav.nextCourseChange)||0,nav.elapsed+1.8);
+      }
+      if(!collided)break;
+    }
+
+    entity.x=clamp(nextX,left,right);
+    entity.y=clamp(nextY,top,bottom);
+    actualSpeed=Math.hypot(nav.vx,nav.vy);
     if(actualSpeed>4){
       entity.rotation=Math.atan2(nav.vy,nav.vx)*180/Math.PI+90;
       nav.heading=entity.rotation;
