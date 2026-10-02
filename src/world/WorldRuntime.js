@@ -103,6 +103,26 @@ export class WorldRuntime {
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.onExecuteAction=typeof options.onExecuteAction==="function"?options.onExecuteAction:null;
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
+
+    // Ship behavior is global. A map stores which ship is selected, but the
+    // current catalog profile wins over stale copies of speed/physics/combat.
+    const configuredPlayerShipId=String(this.config.player?.shipId||"");
+    if(configuredPlayerShipId&&this.resolveShip){
+      try{
+        const profile=this.resolveShip(configuredPlayerShipId,"player");
+        if(profile&&typeof profile==="object"){
+          this.config.player={
+            ...(this.config.player||{}),
+            ...structuredClone(profile),
+            shipId:configuredPlayerShipId,
+            combatModifiers:structuredClone(this.config.player?.combatModifiers||{})
+          };
+        }
+      }catch(error){
+        console.warn("[TabuadaQuest] Player ship resolve failed",configuredPlayerShipId,error);
+      }
+    }
+
     this.config.npcPopulation=normalizeNpcPopulation(this.config.npcPopulation||{});
     this.generatedNpcIds=new Set();
     this.challengeActive=null;
@@ -3524,6 +3544,36 @@ export class WorldRuntime {
     return data;
   }
 
+  refreshShipProfile(shipId){
+    const id=String(shipId||"");
+    if(!id||!this.resolveShip)return false;
+    let changed=false;
+
+    if(String(this.config.player?.shipId||"")===id){
+      try{
+        const profile=this.resolveShip(id,"player");
+        if(profile&&typeof profile==="object"){
+          this.updatePlayerConfig({
+            ...structuredClone(profile),
+            shipId:id,
+            combatModifiers:structuredClone(this.config.player?.combatModifiers||{})
+          });
+          changed=true;
+        }
+      }catch(error){
+        console.warn("[TabuadaQuest] Player ship refresh failed",id,error);
+      }
+    }
+
+    const usesNpc=(this.config.npcPopulation?.types||[])
+      .some(type=>String(type?.shipId||"")===id);
+    if(usesNpc){
+      this.rebuildNpcPopulation({render:true});
+      changed=true;
+    }
+    return changed;
+  }
+
   getOcean(){
     return structuredClone(normalizeOceanConfig(this.config.ocean||{}));
   }
@@ -3544,11 +3594,19 @@ export class WorldRuntime {
     if(patch.effects){
       next.effects={...(this.config.player?.effects||{}),...structuredClone(patch.effects)};
     }
+    if(patch.combat){
+      next.combat={...(this.config.player?.combat||{}),...structuredClone(patch.combat)};
+    }
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
     if(patch.direction!==undefined)next.direction=String(patch.direction||"n").toLowerCase();
 
     this.config.player=next;
+    if(patch.combat?.hp!==undefined){
+      this.navalPlayerMaxHp=clamp(Math.floor(Number(next.combat?.hp)||3),1,99);
+      this.navalPlayerHp=this.navalPlayerMaxHp;
+      if(this.actionButton)this.actionButton.disabled=false;
+    }
     if(next.width)this.playerEl.style.width=next.width+"px";
     if(next.height)this.playerEl.style.height=next.height+"px";
     if(next.direction){
