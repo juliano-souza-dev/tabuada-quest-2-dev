@@ -41,6 +41,25 @@
         "purchasable": false,
         "price": 0
       }
+    },
+    {
+      "id": "cannonball-piercing",
+      "name": "Bala Perfurante",
+      "available": true,
+      "damage": 18,
+      "projectileSpeed": 820,
+      "size": 1,
+      "effects": {
+        "projectile": "piercing-webgl",
+        "impact": "piercing-shrapnel-webgl",
+        "waterSplash": "standard",
+        "texture": "./assets/cannons/bala_perfurante_512_q95.webp",
+        "renderer": "webgl2"
+      },
+      "shop": {
+        "purchasable": true,
+        "price": 3
+      }
     }
   ]
 }
