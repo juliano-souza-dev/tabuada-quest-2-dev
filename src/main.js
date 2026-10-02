@@ -4,7 +4,7 @@ import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20260930-1851";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20261001-2231";
-import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261001-2224";
+import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261001-2231";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20260930-1851";
 
 const app=document.querySelector("#app");
