@@ -176,6 +176,10 @@ export class WorldRuntime {
     this.nearby=null;
     this.contactEntity=null;
     this.combatTarget=null;
+    this.navalAutoFire=false;
+    this.navalNextShotAt=0;
+    this.navalAttackRange=clamp(Number(config.combat?.attackRange??1200),200,6000);
+    this.navalAttackCooldown=clamp(Number(config.combat?.attackCooldownMs??900),300,5000);
     this.navalHp=new Map();
     this.navalDestroying=new Set();
     this.navalDestroyTimers=new Map();
