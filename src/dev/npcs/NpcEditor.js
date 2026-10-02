@@ -69,6 +69,6 @@ export class NpcEditor{
     host.querySelector("[data-npc-trash-current]").onclick=()=>this.moveToTrash(npc.id);
     preview();
   }
-  resolve(id){return this.all().find(x=>x.id===String(id||""))||null}
+  worldProfiles(){const ships=new Set((this.getShips()||[]).map(ship=>String(ship?.id||"")).filter(Boolean));return this.all().filter(npc=>{const shipId=String(npc?.shipId||"");return Boolean(shipId&&ships.has(shipId))})}\n  resolve(id){return this.all().find(x=>x.id===String(id||""))||null}\n  resolveForWorld(id){return this.worldProfiles().find(x=>x.id===String(id||""))||null}
   e(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 }
