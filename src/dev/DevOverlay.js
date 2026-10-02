@@ -2,6 +2,7 @@ import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1007";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
+import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -13,6 +14,7 @@ export class DevOverlay {
     this.ammoEditor=new AmmoEditor();
     this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
+    this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
@@ -41,6 +43,7 @@ export class DevOverlay {
         <button data-flow>⌁ <span>Fluxo</span></button>
         <button data-ships>🚢 <span>Navios</span></button>
         <button data-npcs>☠ <span>NPC</span></button>
+        <button data-treasures>💎 <span>Tesouros</span></button>
         <button data-ammo>💣 <span>Munições</span></button>
         <button data-assets>▦ <span>Assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
@@ -131,6 +134,7 @@ export class DevOverlay {
     this.el.querySelector("[data-scene-name]").addEventListener("input",event=>{event.currentTarget.dataset.manual="true"});
     this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(this.shipEditor?.el?.hidden!==false));
     this.el.querySelector("[data-npcs]").addEventListener("click",()=>this.toggleNpcs(this.npcEditor?.el?.hidden!==false));
+    this.el.querySelector("[data-treasures]").addEventListener("click",()=>this.toggleTreasures(this.treasureEditor?.el?.hidden!==false));
     this.el.querySelector("[data-ammo]").addEventListener("click",()=>this.ammoEditor.setVisible(this.ammoEditor?.el?.hidden!==false));
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
@@ -140,6 +144,7 @@ export class DevOverlay {
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
     this.cannonCatalogReady=fetch("./src/config/cannon-catalog.json?v=20261002-0953",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Cannon catalog "+r.status))).then(catalog=>{this.cannonCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Cannon catalog failed",error);return this.cannonCatalog});
     this.npcEditorReady=this.npcEditor.mount(this.el);
+    this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -220,6 +225,7 @@ export class DevOverlay {
     }
     if(except!=="ships")this.shipEditor?.setVisible(false);
     if(except!=="npcs")this.npcEditor?.setVisible(false);
+    if(except!=="treasures")this.treasureEditor?.setVisible(false);
     if(except!=="assets")this.assetPickTarget=null;
   }
 
@@ -956,6 +962,7 @@ export class DevOverlay {
         movement:{mode:"straight",speed:80},
         types:[]
       },
+      treasurePopulation:{enabled:false,seed:1,spread:{mode:"random-spaced",margin:220,minDistance:180},types:[]},
       camera:{playZoom:1},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
       meta:{schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev"}
@@ -1106,6 +1113,12 @@ export class DevOverlay {
       npcPopulation.spread={mode:"random-spaced",margin:320,minDistance:360,...(npcPopulation.spread||{})};
       npcPopulation.movement={mode:"straight",speed:80,...(npcPopulation.movement||{})};
       npcPopulation.types=Array.isArray(npcPopulation.types)?npcPopulation.types:[];
+      const treasurePopulation=world.treasurePopulation&&typeof world.treasurePopulation==="object"?structuredClone(world.treasurePopulation):{enabled:false,seed:1,spread:{mode:"random-spaced",margin:220,minDistance:180},types:[]};
+      treasurePopulation.spread={mode:"random-spaced",margin:220,minDistance:180,...(treasurePopulation.spread||{})};
+      treasurePopulation.types=Array.isArray(treasurePopulation.types)?treasurePopulation.types:[];
+      const treasureProfiles=this.treasureEditor?.all?.()||[];
+      const treasureOptions=selected=>treasureProfiles.map(t=>'<option value="'+this.escapeHtml(t.id)+'" '+(String(selected||"")===t.id?'selected':'')+'>'+this.escapeHtml(t.name||t.id)+'</option>').join("");
+      const treasureRows=treasurePopulation.types.map((item,index)=>'<div class="tq-world-npc-row" data-treasure-row="'+index+'"><label class="tq-world-field"><span>Tesouro</span><select data-treasure-type-id="'+index+'">'+treasureOptions(item.treasureId)+'</select></label><label class="tq-world-field"><span>Quantidade máxima</span><input data-treasure-type-count="'+index+'" type="number" min="0" max="100" value="'+Math.max(0,Number(item.count)||0)+'"></label><label class="tq-world-field"><span>Respawn</span><select data-treasure-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label><label class="tq-world-field"><span>Surgimento (s)</span><input data-treasure-type-spawn="'+index+'" type="number" min="0" max="3600" step="1" value="'+Math.max(0,Number(item.spawnIntervalSec)||0)+'"></label><label class="tq-world-field"><span>Respawn após (s)</span><input data-treasure-type-respawn-delay="'+index+'" type="number" min="1" max="3600" step="1" value="'+Math.max(1,Number(item.respawnDelaySec)||30)+'"></label><button type="button" class="tq-world-npc-remove" data-treasure-type-remove="'+index+' aria-label="Remover tesouro">×</button></div>').join("");
       const availableShips=(this.shipEditor?.repositoryShips?.()||[])
         .map(ship=>this.shipEditor.normalizeShip(ship));
       const npcProfiles=this.npcEditor?.all?.()||[];
@@ -1410,6 +1423,22 @@ export class DevOverlay {
       content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-quantity]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardQuantity),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),quantity:Math.max(1,Number(input.value)||1)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
+
+      const saveTreasurePopulation=next=>{this.worldEditor.updateWorld({treasurePopulation:next},true);this.syncLocalWorldFromEditor();this.renderWorldInspector();};
+      const currentTreasurePopulation=()=>structuredClone(this.worldEditor?.getWorld()?.treasurePopulation||treasurePopulation);
+      content.querySelector("[data-treasure-enabled]")?.addEventListener("change",e=>{const n=currentTreasurePopulation();n.enabled=e.currentTarget.checked;saveTreasurePopulation(n)});
+      content.querySelector("[data-treasure-spread-mode]")?.addEventListener("change",e=>{const n=currentTreasurePopulation();n.spread={...(n.spread||{}),mode:e.currentTarget.value};saveTreasurePopulation(n)});
+      content.querySelector("[data-treasure-spread-margin]")?.addEventListener("change",e=>{const n=currentTreasurePopulation();n.spread={...(n.spread||{}),margin:Math.max(0,Number(e.currentTarget.value)||0)};saveTreasurePopulation(n)});
+      content.querySelector("[data-treasure-spread-distance]")?.addEventListener("change",e=>{const n=currentTreasurePopulation();n.spread={...(n.spread||{}),minDistance:Math.max(0,Number(e.currentTarget.value)||0)};saveTreasurePopulation(n)});
+      content.querySelector("[data-treasure-type-add]")?.addEventListener("click",()=>{const first=this.treasureEditor?.all?.()?.[0];if(!first)return;const n=currentTreasurePopulation();n.types=Array.isArray(n.types)?n.types:[];n.types.push({treasureId:first.id,count:1,respawn:false,spawnIntervalSec:5,respawnDelaySec:30});n.enabled=true;saveTreasurePopulation(n)});
+      content.querySelector("[data-treasure-redistribute]")?.addEventListener("click",()=>{const n=currentTreasurePopulation();n.seed=Math.max(1,Number(n.seed)||1)+1;saveTreasurePopulation(n)});
+      content.querySelectorAll("[data-treasure-type-remove]").forEach(b=>b.addEventListener("click",()=>{const i=Number(b.dataset.treasureTypeRemove),n=currentTreasurePopulation();n.types=(n.types||[]).filter((_,x)=>x!==i);saveTreasurePopulation(n)}));
+      const updateTreasureType=(i,p)=>{const n=currentTreasurePopulation();n.types=Array.isArray(n.types)?n.types:[];n.types[i]={...(n.types[i]||{}),...p};saveTreasurePopulation(n)};
+      content.querySelectorAll("[data-treasure-type-id]").forEach(x=>x.addEventListener("change",()=>updateTreasureType(Number(x.dataset.treasureTypeId),{treasureId:x.value})));
+      content.querySelectorAll("[data-treasure-type-count]").forEach(x=>x.addEventListener("change",()=>updateTreasureType(Number(x.dataset.treasureTypeCount),{count:Math.max(0,Number(x.value)||0)})));
+      content.querySelectorAll("[data-treasure-type-respawn]").forEach(x=>x.addEventListener("change",()=>updateTreasureType(Number(x.dataset.treasureTypeRespawn),{respawn:x.value==="true"})));
+      content.querySelectorAll("[data-treasure-type-spawn]").forEach(x=>x.addEventListener("change",()=>updateTreasureType(Number(x.dataset.treasureTypeSpawn),{spawnIntervalSec:Math.max(0,Number(x.value)||0)})));
+      content.querySelectorAll("[data-treasure-type-respawn-delay]").forEach(x=>x.addEventListener("change",()=>updateTreasureType(Number(x.dataset.treasureTypeRespawnDelay),{respawnDelaySec:Math.max(1,Number(x.value)||1)})));
 
       const saveTestCannons=cannonIds=>{
         const ids=cannonIds.length?cannonIds:[defaultTestCannonId];
@@ -2405,6 +2434,18 @@ export class DevOverlay {
     this.npcEditor.setVisible(show);
   }
 
+  toggleTreasures(show){
+    if(show)this.closeToolPanels("treasures");
+    this.treasureEditor?.setVisible(show);
+  }
+
+  openTreasureAssetPicker(context={}){
+    this.assetPickTarget={kind:"treasure-asset",treasureId:String(context.treasureId||this.treasureEditor?.selectedId||"")};
+    this.assetDirectoryPath="assets";
+    const search=this.el.querySelector("[data-asset-search]");if(search)search.value="";
+    this.toggleAssets(true);
+  }
+
   toggleAssets(show){
     const panel=this.el.querySelector(".tq-dev__assets");
     if(show){
@@ -2453,6 +2494,11 @@ export class DevOverlay {
       this.toggleAssets(false);
       this.toggleShips(true);
       return added;
+    }
+
+    if(target.kind==="treasure-asset"){
+      const applied=this.treasureEditor?.setAsset?.(target.treasureId,"./"+asset.path)===true;
+      this.assetPickTarget=null;this.toggleAssets(false);this.toggleTreasures(true);return applied;
     }
 
     if(target.kind==="world-player-sprite"){
@@ -2523,6 +2569,10 @@ export class DevOverlay {
       if(state.panel==="assets"){
         if(state.assetDirectoryPath)this.assetDirectoryPath=state.assetDirectoryPath;
         this.toggleAssets(true);
+      }else if(state.panel==="treasures"){
+        this.toggleTreasures(true);
+      }else if(state.panel==="npcs"){
+        this.toggleNpcs(true);
       }else if(state.panel==="ships"){
         this.toggleShips(true);
       }else if(state.panel==="scenes"){
