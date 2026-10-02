@@ -493,23 +493,16 @@
     "enabled": true,
     "seed": 2,
     "spread": {
-      "mode": "random",
+      "mode": "random-spaced",
       "margin": 220,
       "minDistance": 180
     },
     "types": [
       {
-        "treasureId": "tesouro-rubis",
-        "count": 100,
+        "treasureId": "tesouro-halloween-abobora",
+        "count": 24,
         "respawn": false,
-        "spawnIntervalSec": 5,
-        "respawnDelaySec": 30
-      },
-      {
-        "treasureId": "tesouro-rubis",
-        "count": 100,
-        "respawn": false,
-        "spawnIntervalSec": 5,
+        "spawnIntervalSec": 0.18,
         "respawnDelaySec": 30
       }
     ]
