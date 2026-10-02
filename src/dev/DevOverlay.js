@@ -161,6 +161,13 @@ export class DevOverlay {
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
       this.renderWorlds();
     });
+    window.addEventListener("tq:shipprofilechange",event=>{
+      const shipId=String(event.detail?.shipId||"");
+      if(!shipId||this.workspace!=="world"||!this.worldEditor?.runtime)return;
+      const changed=this.worldEditor.runtime.refreshShipProfile?.(shipId)===true;
+      if(!changed)return;
+      if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
+    });
     window.addEventListener("tq:worldenterscene",e=>{
       if(this.workspace!=="world")return;
       const entity=e.detail?.entity;
