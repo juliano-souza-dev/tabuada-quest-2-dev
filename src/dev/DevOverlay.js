@@ -682,7 +682,7 @@ export class DevOverlay {
 
   async loadWorldCatalog(){
     try{
-      const response=await fetch("./src/config/world-catalog.json?v=20261001-2209",{cache:"no-store"});
+      const response=await fetch("./src/config/world-catalog.json?v=20261001-2307",{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
       this.worldCatalog=await response.json();
     }catch(error){
