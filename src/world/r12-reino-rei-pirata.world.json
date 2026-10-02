@@ -432,6 +432,29 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r12-reino-rei-pirata.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Águas da Coroa Pirata",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r11-aguas-coroa-pirata",
+      "destinationWorldName": "Águas da Coroa Pirata",
+      "transitionMessage": "Voltar para Águas da Coroa Pirata?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
