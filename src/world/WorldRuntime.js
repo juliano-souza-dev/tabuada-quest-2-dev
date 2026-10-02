@@ -722,7 +722,7 @@ export class WorldRuntime {
     this.challengeFeedback=this.host.querySelector("[data-world-challenge-feedback]");
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
-    this.repairOptions=this.host.querySelector("[data-world-repair-options]");
+    this.repairOptions=this.host.querySelector("[data-world-repair-options]");\n    this.repairHp=this.host.querySelector("[data-world-repair-hp]");\n    this.repairHpFill=this.host.querySelector("[data-world-repair-hp-fill]");\n    this.repairHpLabel=this.host.querySelector("[data-world-repair-hp-label]");
     this.combatWrap=this.host.querySelector("[data-world-combat]");
     this.combatArena=this.host.querySelector("[data-world-combat-arena]");
     this.combatOptions=this.host.querySelector("[data-world-combat-options]");
@@ -3063,7 +3063,7 @@ export class WorldRuntime {
     active.challenge=challenge;
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
     if(this.challengeWrap)this.challengeWrap.hidden=false;
-    if(this.challengeForm)this.challengeForm.hidden=true;
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}\n    if(this.repairHp){this.repairHp.hidden=false;const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;}
     if(this.repairOptions){
       this.repairOptions.hidden=false;
       this.repairOptions.replaceChildren();
