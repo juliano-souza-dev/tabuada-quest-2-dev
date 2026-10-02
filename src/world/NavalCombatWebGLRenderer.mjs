@@ -383,7 +383,7 @@ export class NavalCombatWebGLRenderer{
       gl.uniform1f(this.uniforms.effectType,effectType);
       gl.uniform1f(this.uniforms.progress,clamp(progress,0,1));
       gl.uniform1f(this.uniforms.useTexture,0);
-      applyStyle(style);
+      applyStyle(effectType>=3.5&&effectType<4.5?{color:"#8f14ff",coreColor:"#ef94ff",glow:.9,opacity:1,...style}:style);
       gl.blendFunc(gl.SRC_ALPHA,additive?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.POINTS,0,1);
     };
