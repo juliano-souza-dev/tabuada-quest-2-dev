@@ -170,6 +170,7 @@ export class WorldRuntime {
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
+    this.remotePlayers=new Map();
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -4943,12 +4944,47 @@ export class WorldRuntime {
     if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
   }
 
+  syncRemotePlayers(players=[]){
+    const seen=new Set();
+    for(const remote of Array.isArray(players)?players:[]){
+      const uid=String(remote?.uid||"");if(!uid)continue;seen.add(uid);
+      let entity=this.remotePlayers.get(uid);
+      if(!entity){
+        entity={id:"multiplayer."+uid,type:"ship",role:"multiplayer",label:String(remote.name||"Pirata"),shipId:String(remote.shipId||""),x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,width:108,height:150,z:31,collision:{active:false,action:"none"},motion:{active:false},effect:{category:"ship",preset:"none"},runtimeMultiplayer:true};
+        const profile=this.resolveShip?.(entity.shipId,"player");if(profile)Object.assign(entity,structuredClone(profile),{id:entity.id,type:"ship",role:"multiplayer",runtimeMultiplayer:true,x:entity.x,y:entity.y,rotation:entity.rotation,label:entity.label,collision:{active:false,action:"none"}});
+        entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
+        if(this.entityLayer)this.renderEntities();
+      }
+      entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:performance.now()};
+      entity.netTo={x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,at:performance.now()+Math.max(120,1000/5)};
+      entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");
+    }
+    for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
+    this.entities.forEach((e,i)=>e.index=i);
+  }
+
+  updateRemotePlayers(time=performance.now()){
+    for(const entity of this.remotePlayers.values()){
+      const a=entity.netFrom,b=entity.netTo;if(!a||!b)continue;const t=clamp((time-a.at)/Math.max(1,b.at-a.at),0,1);
+      entity.x=a.x+(b.x-a.x)*t;entity.y=a.y+(b.y-a.y)*t;entity.rotation=a.rotation+(b.rotation-a.rotation)*t;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;this.applyEntityVisual(entity);
+    }
+  }
+
+  handleMultiplayerEvent(event={}){
+    if(event.type==="shot"&&event.from&&event.to){
+      this.navalRenderer?.fire?.({from:event.from,to:event.to,duration:Math.max(120,Number(event.duration)||620),ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined});
+      this.audio?.play("cannon-shot");
+    }
+    if(event.type==="hit"&&String(event.targetUid||"")===String(this.multiplayerUid||""))this.applyDirectPlayerNavalDamage(Number(event.damage)||1,{label:"Jogador"});
+  }
+
   tick(time){
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive)this.updatePlayer(dt);
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     this.updatePlayerVisual(time,dt);
+    this.updateRemotePlayers(time);
     this.updatePlayerWaterEffects(time);
     if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
