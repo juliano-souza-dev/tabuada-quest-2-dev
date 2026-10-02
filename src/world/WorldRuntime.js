@@ -52,12 +52,12 @@ const normalizeNpcPopulation=input=>{
     },
     movement:{
       mode:"straight",
-      speed:clamp(Number(movement.speed??80),0,420)
+      speed:clamp(Number(movement.speed??80),0,1200)
     },
     types:types.slice(0,12).map(item=>({
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,20)
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,99)
     })).filter(item=>item.shipId&&item.count>0)
   };
 };
@@ -292,7 +292,7 @@ export class WorldRuntime {
         mode:"sailing",
         minSpeed:0,
         speed:Math.max(0,Number(population.movement.speed)||0),
-        acceleration:Math.max(100,Math.min(1100,(Math.max(0,Number(population.movement.speed)||0))*3.1)),
+        acceleration:Math.max(100,Math.min(3000,(Math.max(0,Number(population.movement.speed)||0))*3.1)),
         braking:.22,
         heading,
         targetHeading:heading,
