@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r6-aguas-vulcanicas.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Mar dos Navegadores",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r7-mar-navegadores",
+      "destinationWorldName": "Mar dos Navegadores",
+      "transitionMessage": "Navegar para Mar dos Navegadores?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r6-aguas-vulcanicas.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Costa dos Naufrágios",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r5-costa-naufragios",
+      "destinationWorldName": "Costa dos Naufrágios",
+      "transitionMessage": "Voltar para Costa dos Naufrágios?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
