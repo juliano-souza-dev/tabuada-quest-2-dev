@@ -585,14 +585,11 @@ export class WorldRuntime {
       }
 
       if(String(entity.type||"")==="island"){
-        const waterShadow=document.createElement("span");
-        waterShadow.className="tq-world-island-water tq-world-island-water--shadow";
-        waterShadow.setAttribute("aria-hidden","true");
-        el.append(waterShadow);
-        const shoreFoam=document.createElement("span");
-        shoreFoam.className="tq-world-island-water tq-world-island-water--foam";
-        shoreFoam.setAttribute("aria-hidden","true");
-        el.append(shoreFoam);
+        const waterCanvas=document.createElement("canvas");
+        waterCanvas.className="tq-world-island-water-canvas";
+        waterCanvas.hidden=true;
+        waterCanvas.setAttribute("aria-hidden","true");
+        el.append(waterCanvas);
       }
 
       const collider=document.createElement("span");
@@ -626,7 +623,10 @@ export class WorldRuntime {
     el.classList.toggle("is-logical-only",logicalOnly);
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
-    if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+    if(img&&img.getAttribute("src")!==String(entity.src||"")){
+      img.removeAttribute("data-island-water-load-bound");
+      img.src=entity.src||"";
+    }
     if(String(entity.type||"")==="island"){
       const raw=entity.waterIntegration&&typeof entity.waterIntegration==="object"?entity.waterIntegration:{};
       const active=raw.active!==false;
@@ -642,22 +642,121 @@ export class WorldRuntime {
       el.style.setProperty("--island-wetness",String(wetness));
       el.style.setProperty("--island-submerged-shadow",String(shadow));
 
-      // Reuse the island's own alpha channel as the shoreline mask.
-      // The visual layers are tinted/expanded/blurred by CSS, so the effect
-      // follows the asset silhouette instead of drawing a generic ellipse.
-      const src=String(entity.src||"");
-      if(src){
-        const safeSrc=src.replace(/\\/g,"\\\\").replace(/"/g,'\\"');
-        el.style.setProperty("--island-alpha-mask",'url("'+safeSrc+'")');
-      }else{
-        el.style.setProperty("--island-alpha-mask","none");
-      }
+      this.renderIslandWaterIntegration(entity,{active,immersion,foam,foamWidth,wetness,shadow});
     }else{
       el.classList.remove("has-water-integration");
-      el.style.removeProperty("--island-alpha-mask");
     }
     this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
+  }
+
+  renderIslandWaterIntegration(entity,settings=null){
+    const el=entity?.el;
+    if(!el||String(entity.type||"")!=="island")return;
+    const canvas=el.querySelector(".tq-world-island-water-canvas");
+    const img=el.querySelector("img");
+    if(!canvas||!img)return;
+
+    const raw=settings||(()=>{
+      const value=entity.waterIntegration&&typeof entity.waterIntegration==="object"?entity.waterIntegration:{};
+      return {
+        active:value.active!==false,
+        immersion:clamp(Number(value.immersion??.18),0,.55),
+        foam:clamp(Number(value.foam??.65),0,1),
+        foamWidth:clamp(Number(value.foamWidth??.12),.02,.35),
+        wetness:clamp(Number(value.wetness??.5),0,1),
+        shadow:clamp(Number(value.submergedShadow??.42),0,1)
+      };
+    })();
+
+    if(!raw.active){
+      canvas.hidden=true;
+      const ctx=canvas.getContext("2d");
+      ctx?.clearRect(0,0,canvas.width,canvas.height);
+      return;
+    }
+
+    if(!img.complete||!img.naturalWidth||!img.naturalHeight){
+      canvas.hidden=true;
+      if(!img.dataset.islandWaterLoadBound){
+        img.dataset.islandWaterLoadBound="1";
+        img.addEventListener("load",()=>{
+          img.removeAttribute("data-island-water-load-bound");
+          this.renderIslandWaterIntegration(entity);
+        },{once:true});
+      }
+      return;
+    }
+
+    const width=Math.max(1,Number(entity.width)||96);
+    const height=Math.max(1,Number(entity.height)||96);
+    const maxSide=Math.max(width,height);
+    const pad=Math.ceil(maxSide*(.10+raw.immersion*.10+raw.foamWidth*.07));
+    const cssWidth=Math.ceil(width+pad*2);
+    const cssHeight=Math.ceil(height+pad*2);
+    const dpr=Math.min(2,Math.max(1,Number(window.devicePixelRatio)||1));
+    const pixelWidth=Math.max(1,Math.round(cssWidth*dpr));
+    const pixelHeight=Math.max(1,Math.round(cssHeight*dpr));
+
+    if(canvas.width!==pixelWidth)canvas.width=pixelWidth;
+    if(canvas.height!==pixelHeight)canvas.height=pixelHeight;
+    canvas.style.width=cssWidth+"px";
+    canvas.style.height=cssHeight+"px";
+    canvas.style.left=(-pad)+"px";
+    canvas.style.top=(-pad)+"px";
+    canvas.hidden=false;
+
+    const ctx=canvas.getContext("2d");
+    if(!ctx)return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssWidth,cssHeight);
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality="high";
+
+    const makeLayer=(color,blurPx,scaleX,scaleY,offsetY)=>{
+      const layer=document.createElement("canvas");
+      layer.width=pixelWidth;
+      layer.height=pixelHeight;
+      const lctx=layer.getContext("2d");
+      if(!lctx)return null;
+      lctx.setTransform(dpr,0,0,dpr,0,0);
+      lctx.clearRect(0,0,cssWidth,cssHeight);
+      lctx.save();
+      lctx.translate(cssWidth/2,cssHeight/2+offsetY);
+      lctx.scale(scaleX,scaleY);
+      lctx.translate(-width/2,-height/2);
+      lctx.filter=blurPx>0?("blur("+blurPx+"px)"):"none";
+      lctx.drawImage(img,0,0,width,height);
+      lctx.restore();
+      lctx.filter="none";
+      lctx.globalCompositeOperation="source-in";
+      lctx.fillStyle=color;
+      lctx.fillRect(0,0,cssWidth,cssHeight);
+      lctx.globalCompositeOperation="source-over";
+      return layer;
+    };
+
+    const deepScaleX=1.025+raw.immersion*.14+raw.shadow*.045;
+    const deepScaleY=1.018+raw.immersion*.09+raw.shadow*.025;
+    const deepOffsetY=height*raw.immersion*.045;
+    const deepBlur=4+raw.shadow*15;
+    const deepAlpha=.08+raw.shadow*.46;
+    const deep=makeLayer("rgba(5,38,54,"+deepAlpha.toFixed(3)+")",deepBlur,deepScaleX,deepScaleY,deepOffsetY);
+    if(deep)ctx.drawImage(deep,0,0,cssWidth,cssHeight);
+
+    const foamScaleX=1.012+raw.foamWidth*.18;
+    const foamScaleY=1.009+raw.foamWidth*.12;
+    const foamBlur=.7+raw.foamWidth*7;
+    const foamAlpha=raw.foam*.52;
+    const shallow=makeLayer("rgba(215,250,255,"+foamAlpha.toFixed(3)+")",foamBlur,foamScaleX,foamScaleY,0);
+    if(shallow)ctx.drawImage(shallow,0,0,cssWidth,cssHeight);
+
+    // Cut the original island footprint out of both generated layers.
+    // Only the expanded contour remains visible around the transparent asset.
+    ctx.save();
+    ctx.globalCompositeOperation="destination-out";
+    ctx.drawImage(img,pad,pad,width,height);
+    ctx.restore();
   }
 
   syncCollisionVisual(entity){
