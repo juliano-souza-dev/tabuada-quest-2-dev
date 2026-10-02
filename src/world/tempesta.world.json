@@ -30,26 +30,120 @@
       "cellWidth": 400,
       "cellHeight": 400,
       "regions": {
-        "n": {"x":0,"y":0,"width":400,"height":400},
-        "nne": {"x":400,"y":0,"width":400,"height":400},
-        "ne": {"x":800,"y":0,"width":400,"height":400},
-        "ene": {"x":1200,"y":0,"width":400,"height":400},
-        "e": {"x":0,"y":400,"width":400,"height":400},
-        "ese": {"x":400,"y":400,"width":400,"height":400},
-        "se": {"x":800,"y":400,"width":400,"height":400},
-        "sse": {"x":1200,"y":400,"width":400,"height":400},
-        "s": {"x":0,"y":800,"width":400,"height":400},
-        "ssw": {"x":400,"y":800,"width":400,"height":400},
-        "sw": {"x":800,"y":800,"width":400,"height":400},
-        "wsw": {"x":1200,"y":800,"width":400,"height":400},
-        "w": {"x":0,"y":1200,"width":400,"height":400},
-        "wnw": {"x":400,"y":1200,"width":400,"height":400},
-        "nw": {"x":800,"y":1200,"width":400,"height":400},
-        "nnw": {"x":1200,"y":1200,"width":400,"height":400}
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
       },
       "directionFrames": {
-        "n":0,"nne":1,"ne":2,"ene":3,"e":4,"ese":5,"se":6,"sse":7,
-        "s":8,"ssw":9,"sw":10,"wsw":11,"w":12,"wnw":13,"nw":14,"nnw":15
+        "n": 0,
+        "nne": 1,
+        "ne": 2,
+        "ene": 3,
+        "e": 4,
+        "ese": 5,
+        "se": 6,
+        "sse": 7,
+        "s": 8,
+        "ssw": 9,
+        "sw": 10,
+        "wsw": 11,
+        "w": 12,
+        "wnw": 13,
+        "nw": 14,
+        "nnw": 15
       },
       "initialDirection": "n",
       "autoFrameExact": true
@@ -116,9 +210,30 @@
     "sparkleIntensity": 18,
     "sparkleSharpness": 32,
     "layers": {
-      "deep": {"background":"./assets/oceans/ocean-tile-tabuada-region01.webp","parallax":0.22,"driftX":7,"driftY":4,"tileScale":1.18,"opacity":1},
-      "wave": {"background":"./assets/oceans/ocean-tile-tabuada-region01.webp","parallax":0.45,"driftX":18,"driftY":11,"tileScale":0.72,"opacity":0.34},
-      "foam": {"background":"./assets/oceans/ocean-tile-tabuada-region01.webp","parallax":0.68,"driftX":36,"driftY":24,"tileScale":0.48,"opacity":0.2}
+      "deep": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.22,
+        "driftX": 7,
+        "driftY": 4,
+        "tileScale": 1.18,
+        "opacity": 1
+      },
+      "wave": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.45,
+        "driftX": 18,
+        "driftY": 11,
+        "tileScale": 0.72,
+        "opacity": 0.34
+      },
+      "foam": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.68,
+        "driftX": 36,
+        "driftY": 24,
+        "tileScale": 0.48,
+        "opacity": 0.2
+      }
     }
   },
   "minimap": {
@@ -127,7 +242,11 @@
     "showLocations": true,
     "showShips": true,
     "showCamera": true,
-    "types": ["location","island","ship"]
+    "types": [
+      "location",
+      "island",
+      "ship"
+    ]
   },
   "entities": [
     {
@@ -145,9 +264,40 @@
       "renderMode": "sprite",
       "showLabel": false,
       "interactionRadius": 230,
-      "motion": {"active":false,"preset":"none","speed":50,"heave":0,"pitch":0,"roll":0,"sway":0},
-      "effect": {"category":"island","preset":"none","active":false,"renderer":"dom","mode":"none","speed":50,"intensity":0,"range":0,"parallax":1,"opacity":1,"blur":0,"distortion":0,"glow":0,"rotateToPath":false},
-      "collision": {"active":true,"shape":"ellipse","scaleX":0.72,"scaleY":0.52,"padding":10,"action":"auto","message":""},
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      },
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": ""
+      },
       "skewX": 0,
       "skewY": 0
     },
@@ -166,9 +316,40 @@
       "renderMode": "sprite",
       "showLabel": false,
       "interactionRadius": 230,
-      "motion": {"active":false,"preset":"none","speed":50,"heave":0,"pitch":0,"roll":0,"sway":0},
-      "effect": {"category":"island","preset":"none","active":false,"renderer":"dom","mode":"none","speed":50,"intensity":0,"range":0,"parallax":1,"opacity":1,"blur":0,"distortion":0,"glow":0,"rotateToPath":false},
-      "collision": {"active":true,"shape":"ellipse","scaleX":0.72,"scaleY":0.52,"padding":10,"action":"auto","message":""},
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      },
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": ""
+      },
       "skewX": 0,
       "skewY": 0
     },
@@ -186,8 +367,31 @@
       "lockAspect": true,
       "skewX": 0,
       "skewY": 0,
-      "effect": {"category":"island","preset":"none","active":false,"renderer":"dom","mode":"none","speed":50,"intensity":0,"range":0,"parallax":1,"opacity":1,"blur":0,"distortion":0,"glow":0,"rotateToPath":false},
-      "collision": {"active":true,"shape":"ellipse","scaleX":1.27,"scaleY":0.9,"padding":6,"action":"enter-scene","message":""}
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 1.27,
+        "scaleY": 0.9,
+        "padding": 6,
+        "action": "enter-scene",
+        "message": ""
+      }
     },
     {
       "id": "tempesta.ilha-estaleiro-redonda",
@@ -203,38 +407,111 @@
       "lockAspect": true,
       "skewX": 0,
       "skewY": 0,
-      "effect": {"category":"island","preset":"none","active":false,"renderer":"dom","mode":"none","speed":51,"intensity":0,"range":2320,"parallax":1,"opacity":1,"blur":4.8,"distortion":71,"glow":72,"rotateToPath":true},
-      "collision": {"active":true,"shape":"ellipse","scaleX":0.91,"scaleY":1.14,"padding":0,"action":"enter-scene","message":""}
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 51,
+        "intensity": 0,
+        "range": 2320,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 4.8,
+        "distortion": 71,
+        "glow": 72,
+        "rotateToPath": true
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.91,
+        "scaleY": 1.14,
+        "padding": 0,
+        "action": "enter-scene",
+        "message": ""
+      }
     }
   ],
   "npcPopulation": {
     "enabled": true,
     "seed": 31,
-    "spread": {"mode":"random-spaced","margin":320,"minDistance":363},
-    "movement": {"mode":"straight","speed":0},
+    "spread": {
+      "mode": "random-spaced",
+      "margin": 320,
+      "minDistance": 363
+    },
+    "movement": {
+      "mode": "straight",
+      "speed": 0
+    },
     "types": []
   },
-  "camera": {"playZoom":0.55},
-  "editor": {"cameraX":4065.902094123714,"cameraY":7236.58573284943,"zoom":0.55},
-  "meta": {"schema":"tq.world","version":1,"sourceRevision":"local-1790910183930","editorVersion":1,"createdFrom":"tabuada-quest-dev"},
-  "playableArea": {"x":0,"y":0,"width":8000,"height":8000},
+  "camera": {
+    "playZoom": 0.55
+  },
+  "editor": {
+    "cameraX": 4065.902094123714,
+    "cameraY": 7236.58573284943,
+    "zoom": 0.55
+  },
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "sourceRevision": "repo-20261002-1854",
+    "editorVersion": 1,
+    "createdFrom": "tabuada-quest-dev"
+  },
+  "playableArea": {
+    "x": 0,
+    "y": 0,
+    "width": 8000,
+    "height": 8000
+  },
   "environment": {
     "preset": "storm",
     "weather": "rain",
-    "clouds": {"active":true,"density":1,"opacity":0.15,"scale":2.35,"speed":18,"direction":135,"parallax":0.55}
+    "clouds": {
+      "active": true,
+      "density": 1,
+      "opacity": 0.15,
+      "scale": 2.35,
+      "speed": 18,
+      "direction": 135,
+      "parallax": 0.55
+    }
   },
   "test": {
-    "cannonIds": ["novo-canhao-3"],
+    "cannonIds": [
+      "novo-canhao-3"
+    ],
     "ammoId": "cannonball-piercing",
     "ammoQuantity": 10000
   },
   "treasurePopulation": {
     "enabled": true,
     "seed": 2,
-    "spread": {"mode":"random","margin":220,"minDistance":180},
+    "spread": {
+      "mode": "random",
+      "margin": 220,
+      "minDistance": 180
+    },
     "types": [
-      {"treasureId":"tesouro-rubis","count":100,"respawn":false,"spawnIntervalSec":5,"respawnDelaySec":30},
-      {"treasureId":"tesouro-rubis","count":100,"respawn":false,"spawnIntervalSec":5,"respawnDelaySec":30}
+      {
+        "treasureId": "tesouro-rubis",
+        "count": 100,
+        "respawn": false,
+        "spawnIntervalSec": 5,
+        "respawnDelaySec": 30
+      },
+      {
+        "treasureId": "tesouro-rubis",
+        "count": 100,
+        "respawn": false,
+        "spawnIntervalSec": 5,
+        "respawnDelaySec": 30
+      }
     ]
   }
 }
