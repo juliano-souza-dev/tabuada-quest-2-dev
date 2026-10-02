@@ -3724,7 +3724,10 @@ export class WorldRuntime {
       }else{
         const playerStats=this.playerNavalCombatStats();
         const dist=this.navalTargetDistance(target);
-        if(dist>playerStats.attackRange){
+        const equippedCannons=(this.testCannonIds||[]).map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id))).filter(Boolean);
+        const effectiveRange=equippedCannons.length?Math.max(...equippedCannons.map(cannon=>Math.max(1,Number(cannon.range)||900))):playerStats.attackRange;
+        const effectiveCooldown=equippedCannons.length?Math.min(...equippedCannons.map(cannon=>clamp(Number(cannon.attackCooldownMs)||1200,150,10000))):playerStats.attackCooldownMs;
+        if(dist>effectiveRange){
           // Keep the attack armed. Range only pauses the shots. As soon as the
           // target comes back into range, the same target resumes automatically.
           this.navalNextShotAt=0;
@@ -3732,10 +3735,10 @@ export class WorldRuntime {
           if(this.actionMessage)this.actionMessage.textContent=
             String(target.label||target.shipName||"Navio inimigo")
             +" · FORA DE ALCANCE · "+Math.round(dist)
-            +" / "+Math.round(playerStats.attackRange)+" px";
+            +" / "+Math.round(effectiveRange)+" px";
         }else if(Number(time)>=Number(this.navalNextShotAt||0)){
           if(this.fireDirectNavalProjectile(target)){
-            this.navalNextShotAt=Number(time)+playerStats.attackCooldownMs;
+            this.navalNextShotAt=Number(time)+effectiveCooldown;
           }else{
             this.navalNextShotAt=Number(time)+180;
           }
