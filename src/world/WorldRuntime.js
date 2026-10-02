@@ -916,11 +916,19 @@ export class WorldRuntime {
         ?label+" · casco "+hp.current+"/"+hp.max+" · "+targetDistance+" px"
         :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.playerNavalCombatStats().attackRange)+" px";
     }
-    if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
-      ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
-      :"⚔ Atacar";
+    if(this.actionButton){
+      this.actionButton.disabled=this.navalPlayerHp<=0;
+      this.actionButton.textContent=this.navalPlayerHp<=0
+        ?"☠ Navio derrotado"
+        :(this.navalAutoFire
+          ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+          :"⚔ Atacar");
+    }
+    if(this.navalPlayerHp<=0&&this.actionMessage){
+      this.actionMessage.textContent="Seu navio foi derrotado · seu casco 0/"+this.navalPlayerMaxHp;
+    }
     if(this.actionWrap)this.actionWrap.hidden=false;
-    if(this.navalAutoFire&&this.isNavalTargetInRange(entity)){
+    if(this.navalPlayerHp>0&&this.navalAutoFire&&this.isNavalTargetInRange(entity)){
       this.navalNextShotAt=0;
       queueMicrotask(()=>this.updateDirectNavalCombat(performance.now()));
     }
@@ -3136,9 +3144,20 @@ export class WorldRuntime {
         const hp=this.navalHpState(entity);
         const playerStats=this.playerNavalCombatStats();
         const distanceToTarget=Math.round(this.navalTargetDistance(entity));
+        const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+        if(this.navalPlayerHp<=0){
+          if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
+          if(this.actionButton){
+            this.actionButton.textContent="☠ Navio derrotado";
+            this.actionButton.disabled=true;
+          }
+          this.actionWrap.hidden=false;
+          return;
+        }
+        if(this.actionButton)this.actionButton.disabled=false;
         if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
-          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"
-          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(playerStats.attackRange)+" px";
+          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
+          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(playerStats.attackRange)+" px"+playerHull;
         if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
           ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
           :"⚔ Atacar";
@@ -3324,7 +3343,12 @@ export class WorldRuntime {
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
       this.navalHostile.clear();
-      if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+      if(this.actionButton){
+        this.actionButton.textContent="☠ Navio derrotado";
+        this.actionButton.disabled=true;
+      }
+      if(this.actionMessage)this.actionMessage.textContent=
+        "Seu navio foi derrotado · seu casco 0/"+this.navalPlayerMaxHp;
     }
     return true;
   }
@@ -3396,6 +3420,16 @@ export class WorldRuntime {
   }
 
   activateNearby(){
+    if(this.navalPlayerHp<=0){
+      if(this.actionButton){
+        this.actionButton.disabled=true;
+        this.actionButton.textContent="☠ Navio derrotado";
+      }
+      if(this.actionMessage)this.actionMessage.textContent=
+        "Seu navio foi derrotado · seu casco 0/"+this.navalPlayerMaxHp;
+      if(this.actionWrap)this.actionWrap.hidden=false;
+      return;
+    }
     const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
       ?this.combatTarget
       :this.nearby;
