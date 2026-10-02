@@ -160,6 +160,7 @@ export class NavalCombatWebGLRenderer{
     this.position=-1;
     this.uniforms={};
     this.shots=[];
+    this.muzzles=[];
     this.impacts=[];
     this.destructions=[];
     this.ready=false;
@@ -269,20 +270,32 @@ export class NavalCombatWebGLRenderer{
     image.src=src;
   }
 
-  fire({from,to,duration=620,startTime=performance.now(),onImpact=null,ammo=null}={}){
+  fire({from,to,duration=620,startTime=performance.now(),onImpact=null,ammo=null,impactKind="ship"}={}){
     if(!this.init())return false;
     if(!from||!to)return false;
-    this.shots.push({
+    const normalizedAmmo=ammo&&typeof ammo==="object"?ammo:{};
+    const fx=normalizeAmmoFx(normalizedAmmo);
+    const shot={
       from:{x:Number(from.x)||0,y:Number(from.y)||0},
       to:{x:Number(to.x)||0,y:Number(to.y)||0},
-      duration:clamp(Number(duration)||620,220,1600),
+      duration:clamp(Number(duration)||620,120,2400),
       startTime:Number(startTime)||performance.now(),
       impactSpawned:false,
-      ammo:ammo&&typeof ammo==="object"?ammo:null,
+      impactKind:impactKind==="water"?"water":"ship",
+      ammo:normalizedAmmo,
+      fx,
       onImpact:typeof onImpact==="function"?onImpact:null
-    });
-    const textureSrc=ammo?.effects?.texture;
-    if(textureSrc)this.loadProjectileTexture(ammo?.id,textureSrc);
+    };
+    this.shots.push(shot);
+    if(fx.muzzle.enabled){
+      this.muzzles.push({
+        x:shot.from.x,y:shot.from.y,startTime:shot.startTime,
+        duration:fx.muzzle.durationMs,fx
+      });
+      if(this.muzzles.length>24)this.muzzles.splice(0,this.muzzles.length-24);
+    }
+    const textureSrc=fx.projectile.texture;
+    if(textureSrc)this.loadProjectileTexture(normalizedAmmo?.id,textureSrc);
     if(this.shots.length>24)this.shots.splice(0,this.shots.length-24);
     return true;
   }
@@ -312,27 +325,33 @@ export class NavalCombatWebGLRenderer{
       const elapsed=now-shot.startTime;
       if(elapsed>=shot.duration&&!shot.impactSpawned){
         shot.impactSpawned=true;
-        const piercing=String(shot.ammo?.effects?.impact||"")==="piercing-shrapnel-webgl";
-        this.impacts.push({
-          x:shot.to.x,
-          y:shot.to.y,
-          startTime:shot.startTime+shot.duration,
-          duration:piercing?680:460,
-          effect:piercing?"piercing-shrapnel":"standard",
-          seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
-        });
+        const section=shot.impactKind==="water"?shot.fx.impactWater:shot.fx.impactShip;
+        if(section.enabled){
+          const piercing=shot.impactKind!=="water"&&String(shot.fx?.preset||"")==="piercing";
+          this.impacts.push({
+            x:shot.to.x,
+            y:shot.to.y,
+            startTime:shot.startTime+shot.duration,
+            duration:section.durationMs,
+            kind:shot.impactKind,
+            effect:piercing?"piercing-shrapnel":"profile",
+            fx:shot.fx,
+            seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
+          });
+        }
         try{shot.onImpact?.()}catch(error){
           console.warn("[TabuadaQuest] Naval impact callback failed:",error);
         }
       }
     }
     this.shots=this.shots.filter(shot=>now-shot.startTime<=shot.duration);
+    this.muzzles=this.muzzles.filter(effect=>now-effect.startTime<=effect.duration);
     this.impacts=this.impacts.filter(impact=>now-impact.startTime<=impact.duration);
     this.destructions=this.destructions.filter(effect=>now-effect.startTime<=effect.duration);
     const visibleDamage=Array.isArray(damagedShips)
       ?damagedShips.filter(ship=>Number(ship?.damageRatio)>=.5&&Number(ship?.damageRatio)<1)
       :[];
-    if(!this.shots.length&&!this.impacts.length&&!this.destructions.length&&!visibleDamage.length)return true;
+    if(!this.shots.length&&!this.muzzles.length&&!this.impacts.length&&!this.destructions.length&&!visibleDamage.length)return true;
 
     gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
@@ -349,43 +368,81 @@ export class NavalCombatWebGLRenderer{
       ];
     };
 
-    const drawPoint=(x,y,size,effectType,progress=0,additive=true)=>{
+    const applyStyle=(style={})=>{
+      const primary=hexToRgb01(style.color||"#ff5510");
+      const secondary=hexToRgb01(style.coreColor||"#fff1bb");
+      gl.uniform3f(this.uniforms.primaryColor,primary[0],primary[1],primary[2]);
+      gl.uniform3f(this.uniforms.secondaryColor,secondary[0],secondary[1],secondary[2]);
+      gl.uniform1f(this.uniforms.glow,clamp(Number(style.glow??.7),0,2.5));
+      gl.uniform1f(this.uniforms.opacity,clamp(Number(style.opacity??1),0,1));
+    };
+    const drawPoint=(x,y,size,effectType,progress=0,additive=true,style={})=>{
       const point=toClip(x,y);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
       gl.uniform1f(this.uniforms.pointSize,Math.min(this.maxPointSize,Math.max(2,size)*this.pixelRatio));
       gl.uniform1f(this.uniforms.effectType,effectType);
       gl.uniform1f(this.uniforms.progress,clamp(progress,0,1));
       gl.uniform1f(this.uniforms.useTexture,0);
+      applyStyle(style);
       gl.blendFunc(gl.SRC_ALPHA,additive?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.POINTS,0,1);
     };
 
+    for(const muzzle of this.muzzles){
+      const progress=clamp((now-muzzle.startTime)/muzzle.duration,0,1);
+      const m=muzzle.fx.muzzle;
+      drawPoint(
+        muzzle.x,muzzle.y,m.size*(.72+progress*.52),6,progress,true,
+        {color:m.color,coreColor:m.coreColor,glow:m.intensity,opacity:clamp(m.intensity,0,1)}
+      );
+      if(m.smoke>0&&progress>.18){
+        drawPoint(muzzle.x,muzzle.y-m.size*.18*progress,m.size*(.35+m.smoke*.55),3,progress,false,{opacity:clamp(m.smoke,0,1)});
+      }
+    }
+
     if(this.shots.length){
       for(const shot of this.shots){
+        const fx=shot.fx;
         const t=clamp((now-shot.startTime)/shot.duration,0,1);
         const eased=1-Math.pow(1-t,2);
-        const x=shot.from.x+(shot.to.x-shot.from.x)*eased;
-        const y=shot.from.y+(shot.to.y-shot.from.y)*eased;
-        const isPurpleHalloween=String(shot.ammo?.id||"")==="cannonball-halloween-purple"||String(shot.ammo?.effects?.projectile||"")==="halloween-purple-webgl";
-        if(isPurpleHalloween){
-          const trailSteps=9;
+        const dx=shot.to.x-shot.from.x,dy=shot.to.y-shot.from.y;
+        const length=Math.max(1,Math.hypot(dx,dy));
+        const wobble=Math.sin(t*Math.PI*8)*fx.projectile.wobble*18;
+        const x=shot.from.x+dx*eased+(-dy/length)*wobble;
+        const y=shot.from.y+dy*eased+(dx/length)*wobble;
+        if(fx.trail.enabled&&fx.trail.length>0){
+          const trailSteps=Math.min(36,fx.trail.length);
           for(let step=trailSteps;step>=1;step--){
-            const trailT=clamp(t-step*.035,0,1);
+            const ratio=step/trailSteps;
+            const trailT=clamp(t-ratio*.22,0,1);
             if(trailT>=t)continue;
-            const trailEased=1-Math.pow(1-trailT,2);
-            const trailX=shot.from.x+(shot.to.x-shot.from.x)*trailEased;
-            const trailY=shot.from.y+(shot.to.y-shot.from.y)*trailEased;
-            drawPoint(trailX,trailY,clamp(22-step*1.25,7,22),4,step/trailSteps,true);
+            const te=1-Math.pow(1-trailT,2);
+            const tw=Math.sin(trailT*Math.PI*8)*fx.projectile.wobble*18;
+            const tx=shot.from.x+dx*te+(-dy/length)*tw;
+            const ty=shot.from.y+dy*te+(dx/length)*tw;
+            const taper=1-ratio*fx.trail.taper;
+            drawPoint(tx,ty,Math.max(2,fx.trail.width*taper),4,ratio,true,{
+              color:fx.trail.color,
+              coreColor:fx.projectile.coreColor,
+              glow:fx.projectile.glow,
+              opacity:fx.trail.opacity*(1-ratio*.72)
+            });
           }
         }
         const point=toClip(x,y);
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
         gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
-        gl.uniform1f(this.uniforms.pointSize,(textured?clamp(32*Number(shot.ammo?.size||1),18,96):18)*this.pixelRatio);
+        gl.uniform1f(this.uniforms.pointSize,clamp((textured?32:18)*Number(shot.ammo?.size||1)*fx.projectile.scale,6,128)*this.pixelRatio);
         gl.uniform1f(this.uniforms.effectType,0);
         gl.uniform1f(this.uniforms.progress,0);
         gl.uniform1f(this.uniforms.useTexture,textured?1:0);
+        applyStyle({
+          color:fx.projectile.color,
+          coreColor:fx.projectile.coreColor,
+          glow:fx.projectile.glow,
+          opacity:fx.projectile.opacity
+        });
         if(textured){
           gl.activeTexture(gl.TEXTURE0);
           gl.bindTexture(gl.TEXTURE_2D,textureEntry.texture);
@@ -399,42 +456,46 @@ export class NavalCombatWebGLRenderer{
 
     for(const impact of this.impacts){
       const progress=clamp((now-impact.startTime)/impact.duration,0,1);
+      if(impact.kind==="water"){
+        const water=impact.fx.impactWater;
+        const scale=.55+progress*.7;
+        drawPoint(impact.x,impact.y,water.size*scale,7,progress,false,{
+          color:water.color,coreColor:water.coreColor,
+          glow:water.ripple,opacity:clamp(.48+water.splash*.42,0,1)
+        });
+        if(water.mist>0&&progress>.12){
+          drawPoint(impact.x,impact.y-water.size*.16*progress,water.size*(.22+water.mist*.42),3,progress,false,{opacity:clamp(water.mist,0,1)});
+        }
+        continue;
+      }
+      const shipFx=impact.fx.impactShip;
       if(impact.effect==="piercing-shrapnel"){
         const burst=clamp(progress/.42,0,1);
         const fade=1-smoothstep(.34,1,progress);
-        drawPoint(impact.x,impact.y,(34+burst*92)*fade,5,progress,true);
-        const shardCount=14;
+        drawPoint(impact.x,impact.y,shipFx.size*(.42+burst*.92)*fade,5,progress,true,{
+          color:shipFx.color,coreColor:shipFx.coreColor,glow:shipFx.shock,opacity:fade
+        });
+        const shardCount=Math.min(32,Math.max(6,shipFx.sparks));
         for(let i=0;i<shardCount;i++){
           const hash=Math.sin((i+1)*91.733+(impact.seed||0)*731.17)*43758.5453;
           const jitter=hash-Math.floor(hash);
           const angle=(i/shardCount)*Math.PI*2+(jitter-.5)*.42;
-          const speed=.72+jitter*.72;
-          const travel=(18+92*speed)*Math.sin(Math.min(1,progress)*Math.PI*.72)*Math.pow(progress,.68);
-          const sx=impact.x+Math.cos(angle)*travel;
-          const sy=impact.y+Math.sin(angle)*travel+progress*progress*28;
-          const shardFade=clamp(1-progress,0,1);
-          drawPoint(sx,sy,(8+jitter*9)*shardFade,5,clamp(progress+jitter*.12,0,1),true);
-          if(i%3===0){
-            const sparkTravel=travel*1.28;
-            drawPoint(
-              impact.x+Math.cos(angle+.11)*sparkTravel,
-              impact.y+Math.sin(angle+.11)*sparkTravel+progress*progress*20,
-              (4+jitter*5)*shardFade,
-              0,
-              progress,
-              true
-            );
-          }
+          const travel=(18+shipFx.size*.72*(.72+jitter*.72))*Math.sin(Math.min(1,progress)*Math.PI*.72)*Math.pow(progress,.68);
+          drawPoint(
+            impact.x+Math.cos(angle)*travel,
+            impact.y+Math.sin(angle)*travel+progress*progress*28,
+            (5+jitter*7)*clamp(1-progress,0,1),
+            5,clamp(progress+jitter*.12,0,1),true,
+            {color:shipFx.color,coreColor:shipFx.coreColor,glow:shipFx.shock,opacity:clamp(1-progress,0,1)}
+          );
         }
       }else{
-        const point=toClip(impact.x,impact.y);
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
-        gl.uniform1f(this.uniforms.pointSize,(42+progress*54)*this.pixelRatio);
-        gl.uniform1f(this.uniforms.effectType,1);
-        gl.uniform1f(this.uniforms.progress,progress);
-        gl.uniform1f(this.uniforms.useTexture,0);
-        gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-        gl.drawArrays(gl.POINTS,0,1);
+        drawPoint(impact.x,impact.y,shipFx.size*(.55+progress*.68),1,progress,true,{
+          color:shipFx.color,coreColor:shipFx.coreColor,glow:shipFx.shock,opacity:1
+        });
+      }
+      if(shipFx.smoke>0&&progress>.18){
+        drawPoint(impact.x,impact.y-shipFx.size*.12*progress,shipFx.size*(.28+shipFx.smoke*.52),3,progress,false,{opacity:clamp(shipFx.smoke,0,1)});
       }
     }
 
@@ -512,6 +573,7 @@ export class NavalCombatWebGLRenderer{
 
   clear(){
     this.shots.length=0;
+    this.muzzles.length=0;
     this.impacts.length=0;
     this.destructions.length=0;
     if(this.gl)this.gl.clear(this.gl.COLOR_BUFFER_BIT);
@@ -525,6 +587,7 @@ export class NavalCombatWebGLRenderer{
       if(this.program)this.gl.deleteProgram(this.program);
     }
     this.shots.length=0;
+    this.muzzles.length=0;
     this.impacts.length=0;
     this.destructions.length=0;
     this.gl=null;
