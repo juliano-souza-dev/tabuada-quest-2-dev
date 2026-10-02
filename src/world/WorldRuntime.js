@@ -290,10 +290,10 @@ export class WorldRuntime {
       runtimeGenerated:true,
       npcNavigation:{
         mode:"sailing",
-        minSpeed:Math.max(0,Number(profile.minSpeed)||0),
-        speed:Math.max(0,Number(profile.speed)||0),
-        acceleration:Math.max(100,Number(profile.acceleration)||1100),
-        braking:clamp(Number(profile.braking??.22),.01,.98),
+        minSpeed:0,
+        speed:Math.max(0,Number(population.movement.speed)||0),
+        acceleration:Math.max(100,Math.min(1100,(Math.max(0,Number(population.movement.speed)||0))*3.1)),
+        braking:.22,
         heading,
         targetHeading:heading,
         vx:0,
@@ -305,7 +305,7 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:clamp(Math.floor(Number(profile.combat?.hp??profile.combatVisual?.hp)||3),1,99),
+        hp:clamp(Math.floor(Number(typeConfig.hp)||3),1,99),
         attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
