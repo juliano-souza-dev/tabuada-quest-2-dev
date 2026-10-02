@@ -633,7 +633,7 @@ export class WorldRuntime {
           <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
           <small>BAÚ DO TESOURO</small>
           <h2 id="tq-world-challenge-title">Resolva para recolher</h2>
-          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
+          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>\n          <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
           <form data-world-challenge-form>
             <label>
               <span>Sua resposta</span>
