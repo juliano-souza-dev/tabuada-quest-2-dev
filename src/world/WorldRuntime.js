@@ -254,9 +254,15 @@ export class WorldRuntime {
       lockAspect:true,
       runtimeGenerated:true,
       npcNavigation:{
-        mode:"straight",
+        mode:"sailing",
         speed:Math.max(0,Number(population.movement.speed)||0),
-        heading
+        heading,
+        targetHeading:heading,
+        vx:0,
+        vy:0,
+        elapsed:0,
+        courseCycle:0,
+        nextCourseChange:3.5+random()*4.5
       },
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
@@ -331,26 +337,75 @@ export class WorldRuntime {
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
-    if(!nav||nav.mode!=="straight")return;
-    const speed=Math.max(0,Number(nav.speed)||0);
-    if(speed<=0)return;
+    if(!nav)return;
+    const maxSpeed=Math.max(0,Number(nav.speed)||0);
+    if(maxSpeed<=0)return;
 
-    const heading=Number(nav.heading??entity.rotation)||0;
-    const rad=heading*Math.PI/180;
-    entity.x+=Math.sin(rad)*speed*dt;
-    entity.y-=Math.cos(rad)*speed*dt;
+    const safeDt=clamp(Number(dt)||1/60,.001,.08);
+    nav.elapsed=Math.max(0,Number(nav.elapsed)||0)+safeDt;
+    nav.courseCycle=Math.max(0,Math.floor(Number(nav.courseCycle)||0));
 
     const area=this.getPlayableBounds();
     const halfW=Math.max(8,Number(entity.width)||96)/2;
     const halfH=Math.max(8,Number(entity.height)||96)/2;
     const left=area.left+halfW,right=area.right-halfW,top=area.top+halfH,bottom=area.bottom-halfH;
-    if(entity.x<left)entity.x=right;
-    else if(entity.x>right)entity.x=left;
-    if(entity.y<top)entity.y=bottom;
-    else if(entity.y>bottom)entity.y=top;
+    const edgeMargin=Math.max(90,Math.min(320,maxSpeed*2.1));
 
-    entity.rotation=heading;
-    entity.direction=directionForHeading(heading,entity.direction,{hysteresis:0});
+    const nearEdge=
+      entity.x<=left+edgeMargin||entity.x>=right-edgeMargin
+      ||entity.y<=top+edgeMargin||entity.y>=bottom-edgeMargin;
+
+    if(nearEdge){
+      const centerX=(left+right)/2;
+      const centerY=(top+bottom)/2;
+      nav.targetHeading=Math.atan2(centerY-entity.y,centerX-entity.x)*180/Math.PI+90;
+      nav.nextCourseChange=Math.max(Number(nav.nextCourseChange)||0,nav.elapsed+2.5);
+    }else if(nav.elapsed>=(Number(nav.nextCourseChange)||0)){
+      nav.courseCycle+=1;
+      const seeded=createSeededRandom(hashString(entity.id+"."+nav.courseCycle));
+      const current=Number(nav.targetHeading??nav.heading??entity.rotation)||0;
+      nav.targetHeading=current+(seeded()-.5)*110;
+      nav.nextCourseChange=nav.elapsed+3.5+seeded()*5.5;
+    }
+
+    const targetHeading=Number(nav.targetHeading??nav.heading??entity.rotation)||0;
+    const targetRad=targetHeading*Math.PI/180;
+    const desiredX=Math.sin(targetRad);
+    const desiredY=-Math.cos(targetRad);
+    const accel=Math.max(100,Math.min(1100,maxSpeed*3.1));
+    const drag=Math.pow(.22,safeDt);
+
+    nav.vx=((Number(nav.vx)||0)+desiredX*accel*safeDt)*drag;
+    nav.vy=((Number(nav.vy)||0)+desiredY*accel*safeDt)*drag;
+
+    let actualSpeed=Math.hypot(nav.vx,nav.vy);
+    if(actualSpeed>maxSpeed){
+      const scale=maxSpeed/actualSpeed;
+      nav.vx*=scale;
+      nav.vy*=scale;
+      actualSpeed=maxSpeed;
+    }
+
+    let nextX=entity.x+nav.vx*safeDt;
+    let nextY=entity.y+nav.vy*safeDt;
+    if(nextX<left||nextX>right){
+      nextX=clamp(nextX,left,right);
+      nav.vx*=-.28;
+      nav.targetHeading=Math.atan2((top+bottom)/2-nextY,(left+right)/2-nextX)*180/Math.PI+90;
+    }
+    if(nextY<top||nextY>bottom){
+      nextY=clamp(nextY,top,bottom);
+      nav.vy*=-.28;
+      nav.targetHeading=Math.atan2((top+bottom)/2-nextY,(left+right)/2-nextX)*180/Math.PI+90;
+    }
+
+    entity.x=nextX;
+    entity.y=nextY;
+    if(actualSpeed>4){
+      entity.rotation=Math.atan2(nav.vy,nav.vx)*180/Math.PI+90;
+      nav.heading=entity.rotation;
+    }
+    entity.direction=directionForHeading(entity.rotation,entity.direction,{hysteresis:4});
     entity.anchorX=entity.x;
     entity.anchorY=entity.y;
   }
