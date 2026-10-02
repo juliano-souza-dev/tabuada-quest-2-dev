@@ -171,6 +171,8 @@ export class WorldRuntime {
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.remotePlayers=new Map();
+    this.coopTransport=null;
+    this.coopBossStates=new Map();
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -1051,6 +1053,7 @@ export class WorldRuntime {
     return Boolean(
       entity
       &&String(entity.type||"")==="ship"
+      &&entity.runtimeMultiplayer!==true
       &&!this.collected.has(entity.id)
       &&!this.navalDestroying.has(entity.id)
     );
@@ -3962,7 +3965,10 @@ export class WorldRuntime {
           this.audio?.play("cannon-impact-ship");
           const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
           const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
-          this.applyDirectNavalDamage(entity,shotDamage);
+          if(this.isCoopBoss(entity)&&this.coopTransport?.damageBoss){
+            const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+            this.coopTransport.damageBoss(this.coopBossId(entity),shotDamage,{shotId}).catch?.(()=>{});
+          }else this.applyDirectNavalDamage(entity,shotDamage);
         }
       },duration);
     }
@@ -4944,6 +4950,31 @@ export class WorldRuntime {
     if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
   }
 
+  setCoopTransport(transport=null){
+    this.coopTransport=transport||null;
+    for(const entity of this.entities){
+      if(this.isCoopBoss(entity)){
+        const hp=this.navalHpState(entity);
+        this.coopTransport?.ensureBoss?.({bossId:this.coopBossId(entity),entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:hp.max}).catch?.(()=>{});
+      }
+    }
+  }
+
+  isCoopBoss(entity){
+    return Boolean(entity&&String(entity.type||"")==="ship"&&(entity.coopBoss===true||entity.boss===true||entity.combat?.boss===true||entity.npcRole==="boss"));
+  }
+
+  coopBossId(entity){return String(entity?.coopBossId||entity?.npcId||entity?.id||"").replace(/[^a-z0-9._-]+/gi,"-");}
+
+  syncCoopBosses(bosses={}){
+    this.coopBossStates=new Map(Object.entries(bosses&&typeof bosses==="object"?bosses:{}));
+    for(const entity of this.entities){
+      if(!this.isCoopBoss(entity))continue;const state=this.coopBossStates.get(this.coopBossId(entity));if(!state)continue;
+      const hp=Math.max(0,Number(state.hp)||0);this.navalHp.set(String(entity.id),hp);
+      if(state.defeated===true||hp<=0){if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);}
+    }
+  }
+
   syncRemotePlayers(players=[]){
     const seen=new Set();
     for(const remote of Array.isArray(players)?players:[]){
@@ -4975,7 +5006,9 @@ export class WorldRuntime {
       this.navalRenderer?.fire?.({from:event.from,to:event.to,duration:Math.max(120,Number(event.duration)||620),ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined});
       this.audio?.play("cannon-shot");
     }
-    if(event.type==="hit"&&String(event.targetUid||"")===String(this.multiplayerUid||""))this.applyDirectPlayerNavalDamage(Number(event.damage)||1,{label:"Jogador"});
+    if(event.type==="boss-hit"){
+      const bossId=String(event.bossId||"");const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);if(entity){this.navalHp.set(String(entity.id),Math.max(0,Number(event.hp)||0));if(event.defeated===true&&!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);}
+    }
   }
 
   tick(time){
