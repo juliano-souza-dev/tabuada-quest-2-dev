@@ -153,6 +153,7 @@ export class WorldRuntime {
     this.config=structuredClone(config);
     this.config.ocean=normalizeOceanConfig(this.config.ocean||{});
     this.editorEnabled=options.editorEnabled===true;
+    this.depthMaskEditId=null;
     this.mode=this.editorEnabled?"edit":"play";
     this.onEnterScene=options.onEnterScene||null;
     this.onEnterWorld=options.onEnterWorld||null;
@@ -981,6 +982,19 @@ export class WorldRuntime {
       }
 
       if(String(entity.type||"")==="island"){
+        const depthLayer=document.createElement("img");
+        depthLayer.className="tq-world-island-depth-layer";
+        depthLayer.src=entity.src||"";
+        depthLayer.alt="";
+        depthLayer.setAttribute("aria-hidden","true");
+        el.append(depthLayer);
+
+        const depthEditor=document.createElement("div");
+        depthEditor.className="tq-world-depth-mask-editor";
+        depthEditor.hidden=true;
+        depthEditor.innerHTML='<svg viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true"><polygon></polygon><g></g></svg>';
+        el.append(depthEditor);
+
         const waterCanvas=document.createElement("canvas");
         waterCanvas.className="tq-world-island-water-canvas";
         waterCanvas.hidden=true;
@@ -1209,6 +1223,17 @@ export class WorldRuntime {
       img.src=entity.src||"";
     }
     if(String(entity.type||"")==="island"){
+      const depthLayer=el.querySelector(".tq-world-island-depth-layer");
+      const depthPoints=Array.isArray(entity.depthMask?.points)?entity.depthMask.points:[];
+      const depthActive=entity.depthMask?.active!==false&&depthPoints.length>=3;
+      const depthPolygon=depthPoints.map(point=>(clamp(Number(point.x)||0,0,1)*100).toFixed(3)+"% "+(clamp(Number(point.y)||0,0,1)*100).toFixed(3)+"%").join(",");
+      if(depthLayer){
+        if(depthLayer.getAttribute("src")!==String(entity.src||""))depthLayer.src=entity.src||"";
+        depthLayer.hidden=!depthActive;
+        depthLayer.style.clipPath=depthActive?"polygon("+depthPolygon+")":"";
+        depthLayer.style.webkitClipPath=depthActive?"polygon("+depthPolygon+")":"";
+      }
+      this.refreshDepthMaskEditor(entity);
       const raw=entity.waterIntegration&&typeof entity.waterIntegration==="object"?entity.waterIntegration:{};
       const active=raw.active!==false;
       const immersion=clamp(Number(raw.immersion??.18),0,.55);
@@ -1644,12 +1669,52 @@ export class WorldRuntime {
     gizmo.style.setProperty("--gizmo-line-width",Math.max(1,2/Math.max(.25,this.zoom||1))+"px");
   }
 
+  refreshDepthMaskEditor(entity){
+    const editor=entity?.el?.querySelector(".tq-world-depth-mask-editor");
+    if(!editor)return;
+    const editing=this.mode==="edit"&&this.depthMaskEditId===entity.id;
+    editor.hidden=!editing;
+    const points=Array.isArray(entity.depthMask?.points)?entity.depthMask.points:[];
+    const polygon=editor.querySelector("polygon");
+    const group=editor.querySelector("g");
+    if(polygon)polygon.setAttribute("points",points.map(p=>(clamp(Number(p.x)||0,0,1)*1000)+","+(clamp(Number(p.y)||0,0,1)*1000)).join(" "));
+    if(group)group.innerHTML=points.map((p,i)=>'<circle cx="'+(clamp(Number(p.x)||0,0,1)*1000)+'" cy="'+(clamp(Number(p.y)||0,0,1)*1000)+'" r="13" data-depth-point="'+i+'"></circle>').join("");
+  }
+
+  setDepthMaskEditing(id,active=true){
+    const entity=this.entities.find(item=>item.id===id&&String(item.type||"")==="island");
+    this.depthMaskEditId=active&&entity?id:null;
+    for(const item of this.entities)this.refreshDepthMaskEditor(item);
+    return Boolean(this.depthMaskEditId);
+  }
+
+  clearDepthMask(id){
+    const entity=this.entities.find(item=>item.id===id);
+    if(!entity)return false;
+    entity.depthMask={active:true,points:[]};
+    this.applyEntityVisual(entity);
+    this.onEntityChange?.(this.getEntity(id),true);
+    return true;
+  }
+
   bindEntityEditing(entity){
     const el=entity.el;
     if(!el)return;
 
     el.addEventListener("pointerdown",event=>{
       if(this.mode!=="edit")return;
+      if(this.depthMaskEditId===entity.id&&String(entity.type||"")==="island"){
+        event.preventDefault();event.stopPropagation();
+        const rect=el.getBoundingClientRect();
+        if(!rect.width||!rect.height)return;
+        const x=clamp((event.clientX-rect.left)/rect.width,0,1);
+        const y=clamp((event.clientY-rect.top)/rect.height,0,1);
+        const points=Array.isArray(entity.depthMask?.points)?entity.depthMask.points:[];
+        entity.depthMask={active:true,points:[...points,{x,y}]};
+        this.applyEntityVisual(entity);
+        this.onEntityChange?.(this.getEntity(entity.id),true);
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       this.selectEntity(entity.id);
@@ -2702,10 +2767,13 @@ export class WorldRuntime {
       entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
       if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
-      const img=entity.el.querySelector("img");
+      const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
       const canvas=entity.el.querySelector(".tq-world-entity__webgl");
       const blur=effect.active?Number(effectFrame.blur||0):0;
-      if(img)img.style.filter=`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
+      const depthLayer=entity.el.querySelector(".tq-world-island-depth-layer");
+      const maskedDepth=String(entity.type||"")==="island"&&Array.isArray(entity.depthMask?.points)&&entity.depthMask.points.length>=3;
+      if(img)img.style.filter=maskedDepth?"drop-shadow(0 6px 4px #001a2e80)":`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
+      if(depthLayer)depthLayer.style.filter=`blur(${blur}px)`;
 
       const atlasMode=hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
       if(effect.active&&effect.renderer==="webgl"&&!atlasMode){
