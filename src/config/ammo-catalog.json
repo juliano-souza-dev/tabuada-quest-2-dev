@@ -9,7 +9,6 @@
       "available": true,
       "damage": 10,
       "projectileSpeed": 720,
-      "range": 900,
       "size": 1,
       "cooldownMs": 900,
       "effects": {
