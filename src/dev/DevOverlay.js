@@ -16,7 +16,7 @@ export class DevOverlay {
       getNpcProfiles:()=>this.npcEditor?.all?.()||[]
     });
     this.ammoEditor=new AmmoEditor();
-    this.cannonEditor=new CannonEditor();
+    this.cannonEditor=new CannonEditor({requestAsset:context=>this.openCannonAssetPicker(context)});
     this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
@@ -2497,6 +2497,13 @@ export class DevOverlay {
     this.treasureEditor?.setVisible(show);
   }
 
+  openCannonAssetPicker(context={}){
+    this.assetPickTarget={kind:"cannon-asset",cannonId:String(context.cannonId||this.cannonEditor?.selectedId||"")};
+    if(this.assetNodeIndex.has("assets/cannons"))this.assetDirectoryPath="assets/cannons";else this.assetDirectoryPath="assets";
+    const search=this.el.querySelector("[data-asset-search]");if(search)search.value="";
+    this.toggleAssets(true);
+  }
+
   openTreasureAssetPicker(context={}){
     this.assetPickTarget={kind:"treasure-asset",treasureId:String(context.treasureId||this.treasureEditor?.selectedId||"")};
     this.assetDirectoryPath="assets";
@@ -2552,6 +2559,13 @@ export class DevOverlay {
       this.toggleAssets(false);
       this.toggleShips(true);
       return added;
+    }
+
+    if(target.kind==="cannon-asset"){
+      const selectedId=String(target.cannonId||"");
+      if(selectedId&&this.cannonEditor?.selectedId!==selectedId)this.cannonEditor.selectedId=selectedId;
+      this.cannonEditor?.setAsset?.("./"+asset.path);
+      this.assetPickTarget=null;this.toggleAssets(false);this.closeToolPanels("cannons");this.cannonEditor?.setVisible(true);return true;
     }
 
     if(target.kind==="treasure-asset"){
