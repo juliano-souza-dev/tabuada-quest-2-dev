@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r3-arquipelago-perolas.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Mar das Correntes",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r4-mar-correntes",
+      "destinationWorldName": "Mar das Correntes",
+      "transitionMessage": "Navegar para Mar das Correntes?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r3-arquipelago-perolas.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Costa dos Corsários",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r2-costa-corsarios",
+      "destinationWorldName": "Costa dos Corsários",
+      "transitionMessage": "Voltar para Costa dos Corsários?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
