@@ -4085,6 +4085,20 @@ export class WorldRuntime {
       this.minimapLastRender=0;
       this.renderMinimap(true);
     }
+    if(patch.test&&typeof patch.test==="object"){
+      this.config.test={
+        ...(this.config.test||{}),
+        ...structuredClone(patch.test)
+      };
+      if(patch.test.ammoId!==undefined&&this.state?.ammo){
+        this.state.ammo.selectedAmmoId=String(patch.test.ammoId||"");
+      }
+      if(Array.isArray(patch.test.cannonIds)){
+        const validIds=patch.test.cannonIds.map(String).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
+        this.testCannonIds=validIds.length?validIds:[String(this.cannonCatalog[0]?.id||"cannon-basic")];
+        this.config.test.cannonIds=[...this.testCannonIds];
+      }
+    }
 
     const area=this.getPlayableBounds();
     this.config.playableArea={x:area.left,y:area.top,width:area.width,height:area.height};
