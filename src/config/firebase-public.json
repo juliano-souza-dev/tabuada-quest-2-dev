@@ -4,5 +4,13 @@
   "projectId": "tabuadaquest2",
   "apiKey": "AIzaSyA_fhXyVenMAtjyuva4PsxbRezkV2Z_oKo",
   "googleWebClientId": "489461827440-rkapqc45m857of2fm4hb6tm10muhkg6c.apps.googleusercontent.com",
-  "stateDocument": "players/{uid}/state/current"
+  "stateDocument": "players/{uid}/state/current",
+  "databaseURL": "https://tabuadaquest2-default-rtdb.firebaseio.com",
+  "multiplayer": {
+    "enabled": true,
+    "maxPlayersPerRoom": 5,
+    "snapshotHz": 5,
+    "pollMs": 250,
+    "root": "multiplayer/rooms"
+  }
 }
