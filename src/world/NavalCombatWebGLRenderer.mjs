@@ -143,7 +143,7 @@ export class NavalCombatWebGLRenderer{
     this.gl.viewport(0,0,pixelWidth,pixelHeight);
   }
 
-  fire({from,to,duration=620,startTime=performance.now()}={}){
+  fire({from,to,duration=620,startTime=performance.now(),onImpact=null}={}){
     if(!this.init())return false;
     if(!from||!to)return false;
     this.shots.push({
@@ -151,7 +151,8 @@ export class NavalCombatWebGLRenderer{
       to:{x:Number(to.x)||0,y:Number(to.y)||0},
       duration:clamp(Number(duration)||620,220,1600),
       startTime:Number(startTime)||performance.now(),
-      impactSpawned:false
+      impactSpawned:false,
+      onImpact:typeof onImpact==="function"?onImpact:null
     });
     if(this.shots.length>24)this.shots.splice(0,this.shots.length-24);
     return true;
@@ -175,6 +176,9 @@ export class NavalCombatWebGLRenderer{
           startTime:shot.startTime+shot.duration,
           duration:460
         });
+        try{shot.onImpact?.()}catch(error){
+          console.warn("[TabuadaQuest] Naval impact callback failed:",error);
+        }
       }
     }
     this.shots=this.shots.filter(shot=>now-shot.startTime<=shot.duration);
