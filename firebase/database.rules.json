@@ -1,0 +1,24 @@
+{
+  "rules": {
+    "multiplayer": {
+      "rooms": {
+        "$roomId": {
+          ".read": "auth != null",
+          "players": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid",
+              ".validate": "newData.val() == null || (newData.hasChildren(['uid','x','y','rotation','updatedAt','online']) && newData.child('uid').val() === auth.uid)"
+            }
+          },
+          "events": {
+            ".indexOn": ["at"],
+            "$eventId": {
+              ".write": "auth != null && newData.child('uid').val() === auth.uid",
+              ".validate": "newData.hasChildren(['type','uid','at']) && (newData.child('type').val() === 'shot' || newData.child('type').val() === 'hit')"
+            }
+          }
+        }
+      }
+    }
+  }
+}
