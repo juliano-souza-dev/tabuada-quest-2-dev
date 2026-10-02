@@ -1022,7 +1022,7 @@ export class DevOverlay {
         .map(([value,label])=>'<option value="'+value+'" '+(ocean.preset===value?'selected':'')+'>'+label+'</option>').join("");
       const environmentPreset=String(world.environment?.preset||"day");
       const cloudConfig={
-        active:world.environment?.clouds?.active===true,
+        active:world.environment?.clouds?.active!==false,
         density:Number(world.environment?.clouds?.density??.5),
         opacity:Number(world.environment?.clouds?.opacity??.5),
         scale:Number(world.environment?.clouds?.scale??1),
