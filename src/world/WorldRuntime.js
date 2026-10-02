@@ -168,6 +168,7 @@ export class WorldRuntime {
     this.nearby=null;
     this.contactEntity=null;
     this.combatTarget=null;
+    this.navalHp=new Map();
     this.regionTransitionActive=null;
     this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
@@ -670,7 +671,8 @@ export class WorldRuntime {
     this.resetJoystick();
 
     const label=String(entity.label||entity.shipName||"Navio inimigo");
-    if(this.actionMessage)this.actionMessage.textContent=label+" selecionado.";
+    const hp=this.navalHpState(entity);
+    if(this.actionMessage)this.actionMessage.textContent=label+" · casco "+hp.current+"/"+hp.max;
     if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
     if(this.actionWrap)this.actionWrap.hidden=false;
     return true;
@@ -2833,7 +2835,8 @@ export class WorldRuntime {
         const safeAsset=asset.replace(/["\\]/g,"");
         this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
         this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
-        if(this.actionMessage)this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" selecionado.";
+        const hp=this.navalHpState(entity);
+        if(this.actionMessage)this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max;
         if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
         this.actionWrap.hidden=false;
         return;
@@ -2889,15 +2892,41 @@ export class WorldRuntime {
     this.actionWrap.hidden=false;
   }
 
+  navalHpState(entity){
+    if(!entity?.id)return {current:0,max:0};
+    const id=String(entity.id);
+    const max=Math.max(1,Math.min(99,Number(entity.combat?.hp)||3));
+    if(!this.navalHp.has(id))this.navalHp.set(id,max);
+    return {current:Math.max(0,Number(this.navalHp.get(id))||0),max};
+  }
+
+  applyDirectNavalDamage(entity,amount=1){
+    if(!entity||this.collected.has(entity.id))return;
+    const hp=this.navalHpState(entity);
+    const next=Math.max(0,hp.current-Math.max(1,Number(amount)||1));
+    this.navalHp.set(String(entity.id),next);
+
+    if(next<=0){
+      this.completeCollection(entity);
+      return;
+    }
+
+    if(this.actionMessage){
+      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+next+"/"+hp.max;
+    }
+  }
+
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play")return false;
+    const hp=this.navalHpState(entity);
     const fired=this.navalRenderer?.fire?.({
       from:{x:this.player.x,y:this.player.y},
       to:{x:entity.x,y:entity.y},
-      duration:620
+      duration:620,
+      onImpact:()=>this.applyDirectNavalDamage(entity,1)
     })===true;
     if(fired&&this.actionMessage){
-      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · disparo WebGL";
+      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max;
     }
     return fired;
   }
