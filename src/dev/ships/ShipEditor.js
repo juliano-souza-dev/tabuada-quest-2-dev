@@ -242,6 +242,10 @@ export class ShipEditor{
 
   save(){
     try{localStorage.setItem(this.storageKey,JSON.stringify(this.drafts))}catch(error){console.warn("Ship draft save failed",error)}
+    const shipId=String(this.selectedId||"");
+    if(shipId){
+      globalThis.dispatchEvent?.(new CustomEvent("tq:shipprofilechange",{detail:{shipId}}));
+    }
   }
 
   deleteSelectedDraft(){
