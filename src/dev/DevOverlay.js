@@ -1248,6 +1248,19 @@ export class DevOverlay {
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcProfiles.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
             '<small class="tq-world-editor-note">NPCs usam o modelo visual e os atributos de combate do catálogo, mas velocidade e vida são configuradas nesta região. O navio do jogador usa os atributos globais do catálogo.</small>'+
           '</div></section>'+
+          '<section class="tq-config-area tq-config-area--treasure-map">'+
+            '<label class="tq-field tq-field--check"><span>Tesouros ativos nesta região</span><input data-treasure-enabled type="checkbox" '+(treasurePopulation.enabled===true?'checked':'')+'></label>'+
+            '<button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>💎 Tesouros e coleta no mar</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+              '<div class="tq-worlds__create-grid">'+
+                '<label class="tq-world-field"><span>Distribuição</span><select data-treasure-spread-mode><option value="random-spaced" '+(treasurePopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatória espaçada</option><option value="random" '+(treasurePopulation.spread.mode==="random"?'selected':'')+'>Aleatória livre</option></select></label>'+
+                '<label class="tq-world-field"><span>Margem das bordas</span><input data-treasure-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(treasurePopulation.spread.margin)||0)+'"></label>'+
+                '<label class="tq-world-field"><span>Distância mínima</span><input data-treasure-spread-distance type="number" min="0" max="1800" value="'+Math.max(0,Number(treasurePopulation.spread.minDistance)||0)+'"></label>'+
+              '</div>'+
+              '<div class="tq-world-npc-types">'+(treasureRows||'<div class="tq-world-editor-note">Nenhum tesouro colocado neste mar. Clique em Adicionar tesouro.</div>')+'</div>'+
+              '<div class="tq-world-npc-actions"><button type="button" data-treasure-type-add '+(treasureProfiles.length?'':'disabled')+'>＋ Adicionar tesouro</button><button type="button" data-treasure-redistribute>⟳ Redistribuir no mar</button><small>Seed '+Math.max(1,Number(treasurePopulation.seed)||1)+'</small></div>'+
+              '<small class="tq-world-editor-note">Quantidade máxima controla quantos podem existir. Surgimento escalona as aparições. Com respawn ativo, cada tesouro coletado volta ao mar após o tempo definido e recebe uma nova posição aleatória.</small>'+
+            '</div>'+
+          '</section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
             '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao região atual e pode ser diferente em cada região.</small>'+
