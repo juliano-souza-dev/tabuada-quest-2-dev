@@ -1,6 +1,6 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1902";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1805";
-import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1840";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1913";
+import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1913";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-1658";
 import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1726";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
@@ -19,7 +19,7 @@ export class DevOverlay {
     this.cannonEditor=new CannonEditor({requestAsset:context=>this.openCannonAssetPicker(context)});
     this.cannonCatalog={defaultCannonId:"",cannons:[]};
     this.soundCatalog={sounds:[]};
-    this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[],getAmmo:()=>this.ammoEditor?.all?.()||[]});
+    this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[],resolveShip:shipId=>this.shipEditor?.resolve?.(shipId)||null,getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
@@ -156,7 +156,7 @@ export class DevOverlay {
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
     this.cannonCatalogReady=this.cannonEditor.mount(this.el).then(()=>{this.cannonCatalog=this.cannonEditor.getCatalog();return this.cannonCatalog});
     this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
-    this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el));
+    this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el)).then(result=>{if(this.workspace==="world"&&this.mode==="config"&&!this.selected)this.renderWorldInspector();return result});
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
