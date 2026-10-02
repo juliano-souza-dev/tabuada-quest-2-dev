@@ -1419,10 +1419,35 @@ export class WorldRuntime {
       }
       if(e.button!==undefined&&e.button!==0)return;
       if(e.target?.closest?.(".tq-world-controls,.tq-world-action"))return;
+
+      const rect=this.viewport.getBoundingClientRect();
+      const clickedWorldPoint=screenPointToWorld(e.clientX,e.clientY,{
+        viewportLeft:rect.left,
+        viewportTop:rect.top,
+        viewportWidth:rect.width,
+        viewportHeight:rect.height,
+        cameraX:this.camera.x,
+        cameraY:this.camera.y,
+        zoom:this.zoom,
+        worldWidth:this.config.width,
+        worldHeight:this.config.height,
+        marginX:55,
+        marginY:70
+      });
+      const clickableCombatTarget=[...this.entities].reverse().find(entity=>{
+        if(!this.isClickableCombatShip(entity)||entity.el?.hidden)return false;
+        const halfW=Math.max(18,Number(entity.width||96)/2);
+        const halfH=Math.max(18,Number(entity.height||96)/2);
+        return Math.abs(clickedWorldPoint.x-Number(entity.x||0))<=halfW
+          &&Math.abs(clickedWorldPoint.y-Number(entity.y||0))<=halfH;
+      });
+      if(clickableCombatTarget){
+        this.selectCombatTarget(clickableCombatTarget);
+        return;
+      }
       if(e.target?.closest?.('[data-combat-clickable="true"]'))return;
       this.clearCombatTarget({hideAction:true});
 
-      const rect=this.viewport.getBoundingClientRect();
       const target=screenPointToWorld(e.clientX,e.clientY,{
         viewportLeft:rect.left,
         viewportTop:rect.top,
