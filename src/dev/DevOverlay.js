@@ -1,9 +1,4 @@
-import { Wo+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
-            '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
-            '<label class="tq-world-field"><span>Adicionar canhão</span><select data-test-cannon-add><option value="">Selecione...</option>'+testCannonOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Loadout exclusivo do DEV. Cada canhão dispara um projétil próprio e mantém alcance, velocidade e cadência individuais.</small>'+
-          '</div></section>'rldEditor } from "./world/WorldEditor.js?v=20261002-0927";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0927";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
@@ -1240,6 +1235,11 @@ export class DevOverlay {
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>💣 Munição de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Munição ativa</span><select data-world-test-ammo>'+testAmmoOptions+'</select></label>'+
             '<small class="tq-world-editor-note">Usada somente neste ambiente de teste. O estoque é ilimitado aqui e não altera o inventário real do jogador.</small>'+
+          '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+            '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
+            '<label class="tq-world-field"><span>Adicionar canhão</span><select data-test-cannon-add><option value="">Selecione...</option>'+testCannonOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Loadout exclusivo do DEV. Cada canhão dispara um projétil próprio e mantém alcance, velocidade e cadência individuais.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
