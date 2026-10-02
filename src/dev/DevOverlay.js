@@ -1083,6 +1083,9 @@ export class DevOverlay {
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
       const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
+      const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
+      const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"cannonball-standard");
+      const testAmmoOptions=testAmmo.map(item=>'<option value="'+this.escapeHtml(item.id)+'" '+(selectedTestAmmoId===String(item.id)?'selected':'')+'>'+this.escapeHtml(item.name||item.id)+'</option>').join("");
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
       const npcPopulation=world.npcPopulation&&typeof world.npcPopulation==="object"
         ?structuredClone(world.npcPopulation)
@@ -1221,6 +1224,10 @@ export class DevOverlay {
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
             '<small class="tq-world-editor-note">Escolha a textura base deste mar. Esta configuração pertence ao região atual e pode ser diferente em cada região.</small>'+
+          '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>💣 Munição de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+            '<label class="tq-world-field"><span>Munição ativa</span><select data-world-test-ammo>'+testAmmoOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Usada somente neste ambiente de teste. O estoque é ilimitado aqui e não altera o inventário real do jogador.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
@@ -1386,6 +1393,13 @@ export class DevOverlay {
       content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-quantity]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardQuantity),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),quantity:Math.max(1,Number(input.value)||1)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
+
+      content.querySelector("[data-world-test-ammo]")?.addEventListener("change",event=>{
+        const ammoId=String(event.currentTarget.value||"");
+        this.worldEditor.updateWorld({test:{...(this.worldEditor.getWorld()?.test||{}),ammoId}},true);
+        if(this.worldEditor?.runtime?.state?.ammo)this.worldEditor.runtime.state.ammo.selectedAmmoId=ammoId;
+        this.syncLocalWorldFromEditor();
+      });
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
         const apply=commit=>{
