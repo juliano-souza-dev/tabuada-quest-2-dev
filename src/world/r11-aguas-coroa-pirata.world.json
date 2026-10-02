@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r11-aguas-coroa-pirata.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Reino do Rei Pirata",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r12-reino-rei-pirata",
+      "destinationWorldName": "Reino do Rei Pirata",
+      "transitionMessage": "Navegar para Reino do Rei Pirata?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r11-aguas-coroa-pirata.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Domínio dos Piratas",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r10-dominio-piratas",
+      "destinationWorldName": "Domínio dos Piratas",
+      "transitionMessage": "Voltar para Domínio dos Piratas?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
