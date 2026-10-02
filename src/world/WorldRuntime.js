@@ -60,10 +60,28 @@ const normalizeNpcPopulation=input=>{
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
       respawn:item?.respawn===true,
-      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{}
+      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},\n      allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
     })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
   };
 };
+const normalizeAmmoInventory=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  const stock=value.stock&&typeof value.stock==="object"?value.stock:{};
+  const normalizedStock={};
+  for(const [ammoId,quantity] of Object.entries(stock)){
+    const id=String(ammoId||"").trim();
+    if(id)normalizedStock[id]=Math.max(0,Math.floor(Number(quantity)||0));
+  }
+  return {
+    selectedAmmoId:String(value.selectedAmmoId||"cannonball-standard"),
+    stock:normalizedStock
+  };
+};
+const normalizeNpcAmmoIds=input=>{
+  const values=Array.isArray(input)?input:[];
+  return [...new Set(values.map(value=>String(value||"").trim()).filter(Boolean))];
+};
+
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
   const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
   const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
@@ -144,7 +162,7 @@ export class WorldRuntime {
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
-    this.state=structuredClone(options.state||{});
+    this.state=structuredClone(options.state||{});\n    this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
       y:Number(this.state.player?.y??config.player?.y??config.height/2),
