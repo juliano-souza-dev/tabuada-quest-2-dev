@@ -60,7 +60,8 @@ const normalizeNpcPopulation=input=>{
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
       respawn:item?.respawn===true,
-      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},\n      allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
+      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
+      allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
     })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
   };
 };
@@ -162,7 +163,8 @@ export class WorldRuntime {
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
-    this.state=structuredClone(options.state||{});\n    this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
+    this.state=structuredClone(options.state||{});
+    this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.player={
       x:Number(this.state.player?.x??config.player?.x??config.width/2),
       y:Number(this.state.player?.y??config.player?.y??config.height/2),
