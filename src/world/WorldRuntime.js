@@ -2919,16 +2919,27 @@ export class WorldRuntime {
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play")return false;
     const hp=this.navalHpState(entity);
+    const duration=620;
     const fired=this.navalRenderer?.fire?.({
       from:{x:this.player.x,y:this.player.y},
       to:{x:entity.x,y:entity.y},
-      duration:620,
-      onImpact:()=>this.applyDirectNavalDamage(entity,1)
+      duration
     })===true;
-    if(fired&&this.actionMessage){
+    if(!fired)return false;
+
+    // Gameplay damage is owned by the runtime, not by the renderer.
+    // Keep it synchronized with the projectile travel time, but independent
+    // from whether a specific WebGL frame/callback executes.
+    setTimeout(()=>{
+      if(!this.collected.has(entity.id)){
+        this.applyDirectNavalDamage(entity,1);
+      }
+    },duration);
+
+    if(this.actionMessage){
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max;
     }
-    return fired;
+    return true;
   }
 
   activateNearby(){
