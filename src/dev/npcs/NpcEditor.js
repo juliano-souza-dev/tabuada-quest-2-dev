@@ -19,7 +19,7 @@ export class NpcEditor{
     await this.load();
   }
   async load(){
-    try{const r=await fetch("./src/config/npc-catalog.json?v=20261002-0841",{cache:"no-store"});if(r.ok)this.catalog=await r.json()}catch(e){console.warn("NPC catalog load failed",e)}
+    try{const r=await fetch("./src/config/npc-catalog.json?v=20261002-1610",{cache:"no-store"});if(r.ok)this.catalog=await r.json()}catch(e){console.warn("NPC catalog load failed",e)}
     try{const d=JSON.parse(localStorage.getItem(this.storageKey)||"[]");this.drafts=Array.isArray(d)?d:[]}catch{this.drafts=[]}
     this.selectedId=this.all()[0]?.id||null;this.render();
   }
