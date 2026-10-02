@@ -9,7 +9,7 @@ export class DevOverlay {
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
-    this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[]});
+    this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc"))});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
