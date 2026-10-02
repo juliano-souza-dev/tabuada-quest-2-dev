@@ -1257,3 +1257,44 @@
   .tq-ammo-fx-grid{grid-template-columns:1fr}
   .tq-ammo-fx-wide{grid-column:auto}
 }
+
+
+/* Ammo FX scrolling fix */
+.tq-dev__ammo-fx .tq-ships__editor{
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  min-height:0;
+}
+.tq-ammo-builder{
+  height:auto!important;
+  min-height:0!important;
+  align-items:start!important;
+}
+.tq-ammo-builder__controls{
+  overflow:visible!important;
+  max-height:none!important;
+  padding-right:4px;
+}
+.tq-ammo-preview{
+  position:sticky!important;
+  top:0;
+  height:auto!important;
+  max-height:calc(100vh - 190px);
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  align-self:start!important;
+}
+.tq-ammo-preview>.tq-ships__panel{
+  height:auto!important;
+  min-height:0!important;
+  display:block!important;
+  overflow:visible!important;
+}
+.tq-ammo-preview__stage{
+  height:clamp(320px,46vh,470px)!important;
+  min-height:320px!important;
+  margin:10px 0!important;
+}
+.tq-ammo-fx-section[open]>.tq-ammo-fx-grid{
+  overflow:visible;
+}
