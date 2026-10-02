@@ -15,10 +15,19 @@ precision highp float;
 uniform float uPulse;
 uniform float uEffectType;
 uniform float uProgress;
+uniform float uUseTexture;
+uniform sampler2D uProjectileTexture;
 out vec4 outColor;
 void main(){
   vec2 p=gl_PointCoord-vec2(.5);
   float d=length(p);
+  if(uUseTexture>.5){
+    vec4 tex=texture(uProjectileTexture,vec2(gl_PointCoord.x,1.0-gl_PointCoord.y));
+    if(tex.a<.02)discard;
+    float glow=1.0-smoothstep(.18,.5,d);
+    outColor=vec4(tex.rgb*(1.0+glow*(.18+uPulse*.12)),tex.a);
+    return;
+  }
   if(d>.5)discard;
 
   if(uEffectType<.5){
@@ -119,6 +128,7 @@ export class NavalCombatWebGLRenderer{
     this.maxPointSize=256;
     this.cssWidth=0;
     this.cssHeight=0;
+    this.projectileTextures=new Map();
   }
 
   init(){
@@ -153,6 +163,8 @@ export class NavalCombatWebGLRenderer{
       this.uniforms.pulse=gl.getUniformLocation(program,"uPulse");
       this.uniforms.effectType=gl.getUniformLocation(program,"uEffectType");
       this.uniforms.progress=gl.getUniformLocation(program,"uProgress");
+      this.uniforms.useTexture=gl.getUniformLocation(program,"uUseTexture");
+      this.uniforms.projectileTexture=gl.getUniformLocation(program,"uProjectileTexture");
       this.buffer=gl.createBuffer();
       const pointRange=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
       this.maxPointSize=Math.max(16,Number(pointRange?.[1])||256);
@@ -190,7 +202,30 @@ export class NavalCombatWebGLRenderer{
     this.gl.viewport(0,0,pixelWidth,pixelHeight);
   }
 
-  fire({from,to,duration=620,startTime=performance.now(),onImpact=null}={}){
+  loadProjectileTexture(id,src){
+    const key=String(id||src||"");
+    if(!key||!src||this.projectileTextures.has(key))return;
+    const entry={texture:null,ready:false};
+    this.projectileTextures.set(key,entry);
+    const image=new Image();
+    image.decoding="async";
+    image.onload=()=>{
+      if(!this.gl)return;
+      const gl=this.gl,texture=gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D,texture);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
+      entry.texture=texture;entry.ready=true;
+    };
+    image.onerror=()=>console.warn("[TabuadaQuest] Projectile texture failed:",src);
+    image.src=src;
+  }
+
+  fire({from,to,duration=620,startTime=performance.now(),onImpact=null,ammo=null}={}){
     if(!this.init())return false;
     if(!from||!to)return false;
     this.shots.push({
@@ -199,8 +234,11 @@ export class NavalCombatWebGLRenderer{
       duration:clamp(Number(duration)||620,220,1600),
       startTime:Number(startTime)||performance.now(),
       impactSpawned:false,
+      ammo:ammo&&typeof ammo==="object"?ammo:null,
       onImpact:typeof onImpact==="function"?onImpact:null
     });
+    const textureSrc=ammo?.effects?.texture;
+    if(textureSrc)this.loadProjectileTexture(ammo?.id,textureSrc);
     if(this.shots.length>24)this.shots.splice(0,this.shots.length-24);
     return true;
   }
@@ -270,25 +308,34 @@ export class NavalCombatWebGLRenderer{
       gl.uniform1f(this.uniforms.pointSize,Math.min(this.maxPointSize,Math.max(2,size)*this.pixelRatio));
       gl.uniform1f(this.uniforms.effectType,effectType);
       gl.uniform1f(this.uniforms.progress,clamp(progress,0,1));
+      gl.uniform1f(this.uniforms.useTexture,0);
       gl.blendFunc(gl.SRC_ALPHA,additive?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.POINTS,0,1);
     };
 
     if(this.shots.length){
-      const shotPoints=[];
       for(const shot of this.shots){
         const t=clamp((now-shot.startTime)/shot.duration,0,1);
         const eased=1-Math.pow(1-t,2);
         const x=shot.from.x+(shot.to.x-shot.from.x)*eased;
         const y=shot.from.y+(shot.to.y-shot.from.y)*eased;
-        shotPoints.push(...toClip(x,y));
+        const point=toClip(x,y);
+        const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
+        const textured=textureEntry?.ready&&textureEntry.texture;
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
+        gl.uniform1f(this.uniforms.pointSize,(textured?clamp(32*Number(shot.ammo?.size||1),18,96):18)*this.pixelRatio);
+        gl.uniform1f(this.uniforms.effectType,0);
+        gl.uniform1f(this.uniforms.progress,0);
+        gl.uniform1f(this.uniforms.useTexture,textured?1:0);
+        if(textured){
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D,textureEntry.texture);
+          gl.uniform1i(this.uniforms.projectileTexture,0);
+          gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        }else gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+        gl.drawArrays(gl.POINTS,0,1);
       }
-      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(shotPoints),gl.DYNAMIC_DRAW);
-      gl.uniform1f(this.uniforms.pointSize,18*this.pixelRatio);
-      gl.uniform1f(this.uniforms.effectType,0);
-      gl.uniform1f(this.uniforms.progress,0);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-      gl.drawArrays(gl.POINTS,0,shotPoints.length/2);
+      gl.uniform1f(this.uniforms.useTexture,0);
     }
 
     for(const impact of this.impacts){
@@ -298,6 +345,7 @@ export class NavalCombatWebGLRenderer{
       gl.uniform1f(this.uniforms.pointSize,(42+progress*54)*this.pixelRatio);
       gl.uniform1f(this.uniforms.effectType,1);
       gl.uniform1f(this.uniforms.progress,progress);
+      gl.uniform1f(this.uniforms.useTexture,0);
       gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
       gl.drawArrays(gl.POINTS,0,1);
     }
@@ -384,6 +432,8 @@ export class NavalCombatWebGLRenderer{
   destroy(){
     if(this.gl){
       if(this.buffer)this.gl.deleteBuffer(this.buffer);
+      for(const entry of this.projectileTextures.values())if(entry.texture)this.gl.deleteTexture(entry.texture);
+      this.projectileTextures.clear();
       if(this.program)this.gl.deleteProgram(this.program);
     }
     this.shots.length=0;
