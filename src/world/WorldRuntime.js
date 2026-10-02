@@ -155,7 +155,11 @@ export class WorldRuntime {
       normalized.effect=normalizeEntityEffect(normalized.effect||{},normalized);
       if(String(normalized.type||"")==="ship"){
         normalized.combat={
-          hp:clamp(Math.floor(Number(normalized.combat?.hp)||3),1,99)
+          ...(normalized.combat&&typeof normalized.combat==="object"?structuredClone(normalized.combat):{}),
+          hp:clamp(Math.floor(Number(normalized.combat?.hp)||3),1,99),
+          attackRange:clamp(Number(normalized.combat?.attackRange??1200),200,6000),
+          attackCooldownMs:clamp(Number(normalized.combat?.attackCooldownMs??900),300,5000),
+          damage:clamp(Math.floor(Number(normalized.combat?.damage)||1),1,20)
         };
         normalized.collision=normalizeCollision({
           ...(normalized.collision||{}),
@@ -181,6 +185,17 @@ export class WorldRuntime {
     this.navalAttackRange=clamp(Number(config.combat?.attackRange??1200),200,6000);
     this.navalAttackCooldown=clamp(Number(config.combat?.attackCooldownMs??900),300,5000);
     this.navalHp=new Map();
+    this.navalHostile=new Map();
+    this.navalPlayerMaxHp=clamp(
+      Math.floor(Number(config.player?.combat?.hp??config.combat?.playerHp)||3),
+      1,
+      99
+    );
+    this.navalPlayerHp=clamp(
+      Math.floor(Number(this.state.navalPlayerHp??this.navalPlayerMaxHp)||this.navalPlayerMaxHp),
+      0,
+      this.navalPlayerMaxHp
+    );
     this.navalDestroying=new Set();
     this.navalDestroyTimers=new Map();
     this.regionTransitionActive=null;
@@ -267,7 +282,10 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:Math.max(1,Number(typeConfig.hp)||3)
+        hp:Math.max(1,Number(typeConfig.hp)||3),
+        attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
+        attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
+        damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
       },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
       effect:{category:"ship",preset:"none",active:false},
@@ -793,9 +811,62 @@ export class WorldRuntime {
     );
   }
 
+  playerNavalCombatStats(){
+    let profile=null;
+    const shipId=String(this.config.player?.shipId||"");
+    if(shipId&&this.resolveShip){
+      try{profile=this.resolveShip(shipId,"player")||null}catch{}
+    }
+    const base={
+      attackRange:clamp(Number(
+        this.config.player?.combat?.attackRange
+        ??profile?.combat?.attackRange
+        ??profile?.combatVisual?.attackRange
+        ??this.config.combat?.attackRange
+        ??this.navalAttackRange
+        ??1200
+      ),200,6000),
+      attackCooldownMs:clamp(Number(
+        this.config.player?.combat?.attackCooldownMs
+        ??profile?.combat?.attackCooldownMs
+        ??profile?.combatVisual?.attackCooldownMs
+        ??this.config.combat?.attackCooldownMs
+        ??this.navalAttackCooldown
+        ??900
+      ),300,5000),
+      damage:clamp(Math.floor(Number(
+        this.config.player?.combat?.damage
+        ??profile?.combat?.damage
+        ??profile?.combatVisual?.damage
+        ??1
+      )||1),1,20)
+    };
+    const modifiers=this.config.player?.combatModifiers&&typeof this.config.player.combatModifiers==="object"
+      ?this.config.player.combatModifiers
+      :{};
+    const rangePct=clamp(Number(modifiers.attackRangePct)||0,-.8,5);
+    const rangeFlat=clamp(Number(modifiers.attackRangeFlat)||0,-5000,10000);
+    const cooldownPct=clamp(Number(modifiers.attackCooldownPct)||0,-.8,5);
+    const damageFlat=clamp(Math.floor(Number(modifiers.damageFlat)||0),-19,100);
+    return {
+      attackRange:clamp(base.attackRange*(1+rangePct)+rangeFlat,100,12000),
+      attackCooldownMs:clamp(base.attackCooldownMs*(1+cooldownPct),150,10000),
+      damage:clamp(base.damage+damageFlat,1,99)
+    };
+  }
+
+  entityNavalCombatStats(entity){
+    const combat=entity?.combat&&typeof entity.combat==="object"?entity.combat:{};
+    return {
+      attackRange:clamp(Number(combat.attackRange??1200),200,6000),
+      attackCooldownMs:clamp(Number(combat.attackCooldownMs??900),300,5000),
+      damage:clamp(Math.floor(Number(combat.damage)||1),1,20)
+    };
+  }
+
   isNavalTargetInRange(entity){
     return this.isClickableCombatShip(entity)
-      &&this.navalTargetDistance(entity)<=this.navalAttackRange;
+      &&this.navalTargetDistance(entity)<=this.playerNavalCombatStats().attackRange;
   }
 
   stopNavalAutoFire({keepTarget=true,message=""}={}){
@@ -840,7 +911,7 @@ export class WorldRuntime {
     if(this.actionMessage){
       this.actionMessage.textContent=this.isNavalTargetInRange(entity)
         ?label+" · casco "+hp.current+"/"+hp.max+" · "+targetDistance+" px"
-        :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.navalAttackRange)+" px";
+        :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.playerNavalCombatStats().attackRange)+" px";
     }
     if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
     if(this.actionWrap)this.actionWrap.hidden=false;
@@ -3051,8 +3122,12 @@ export class WorldRuntime {
         this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
         this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
         const hp=this.navalHpState(entity);
-        if(this.actionMessage)this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max;
-        if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+        const playerStats=this.playerNavalCombatStats();
+        const distanceToTarget=Math.round(this.navalTargetDistance(entity));
+        if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
+          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"
+          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(playerStats.attackRange)+" px";
+        if(this.actionButton)this.actionButton.textContent=this.navalAutoFire?"🔥 Atacando":"⚔ Atacar";
         this.actionWrap.hidden=false;
         return;
       }
@@ -3141,6 +3216,7 @@ export class WorldRuntime {
     if(this.navalDestroying.has(id))return false;
 
     this.navalDestroying.add(id);
+    this.navalHostile.delete(id);
     if(this.combatTarget?.id===id)this.clearCombatTarget({hideAction:true});
     if(this.contactEntity?.id===id)this.contactEntity=null;
     if(this.nearby?.id===id)this.nearby=null;
@@ -3187,7 +3263,11 @@ export class WorldRuntime {
   }
 
   fireDirectNavalProjectile(entity){
-    if(!this.isClickableCombatShip(entity)||this.mode!=="play")return false;
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    const stats=this.playerNavalCombatStats();
+    const targetDistance=this.navalTargetDistance(entity);
+    if(targetDistance>stats.attackRange)return false;
+
     const hp=this.navalHpState(entity);
     const duration=620;
     const fired=this.navalRenderer?.fire?.({
@@ -3197,19 +3277,104 @@ export class WorldRuntime {
     })===true;
     if(!fired)return false;
 
-    // Gameplay damage is owned by the runtime, not by the renderer.
-    // Keep it synchronized with the projectile travel time, but independent
-    // from whether a specific WebGL frame/callback executes.
+    // Being fired upon makes an NPC hostile. It keeps that hostility even
+    // outside range, but only shoots while the player is inside its own range.
+    const id=String(entity.id);
+    const hostile=this.navalHostile.get(id)||{nextShotAt:0};
+    this.navalHostile.set(id,hostile);
+
     setTimeout(()=>{
       if(!this.collected.has(entity.id)){
-        this.applyDirectNavalDamage(entity,1);
+        this.applyDirectNavalDamage(entity,stats.damage);
       }
     },duration);
 
     if(this.actionMessage){
-      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max;
+      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
+        +" · casco "+hp.current+"/"+hp.max
+        +" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
     }
     return true;
+  }
+
+  applyDirectPlayerNavalDamage(amount=1,source=null){
+    if(this.navalPlayerHp<=0)return false;
+    this.navalPlayerHp=Math.max(0,this.navalPlayerHp-Math.max(1,Number(amount)||1));
+    if(this.actionMessage){
+      const sourceLabel=String(source?.label||source?.shipName||"Navio inimigo");
+      this.actionMessage.textContent=this.navalPlayerHp>0
+        ?sourceLabel+" revidou · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+        :"Seu navio foi derrotado.";
+    }
+    if(this.navalPlayerHp<=0){
+      this.navalAutoFire=false;
+      this.navalNextShotAt=0;
+      this.navalHostile.clear();
+      if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+    }
+    return true;
+  }
+
+  fireNpcNavalProjectile(entity){
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    const stats=this.entityNavalCombatStats(entity);
+    if(this.navalTargetDistance(entity)>stats.attackRange)return false;
+    const duration=620;
+    const fired=this.navalRenderer?.fire?.({
+      from:{x:entity.x,y:entity.y},
+      to:{x:this.player.x,y:this.player.y},
+      duration
+    })===true;
+    if(!fired)return false;
+    setTimeout(()=>{
+      if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
+        this.applyDirectPlayerNavalDamage(stats.damage,entity);
+      }
+    },duration);
+    return true;
+  }
+
+  updateDirectNavalCombat(time=performance.now()){
+    if(this.mode!=="play"||this.challengeActive||this.combatActive||this.navalPlayerHp<=0)return;
+
+    const target=this.combatTarget;
+    if(this.navalAutoFire){
+      if(!target||!this.isClickableCombatShip(target)){
+        this.stopNavalAutoFire({keepTarget:false});
+      }else{
+        const playerStats=this.playerNavalCombatStats();
+        const dist=this.navalTargetDistance(target);
+        if(dist>playerStats.attackRange){
+          this.stopNavalAutoFire({
+            keepTarget:true,
+            message:String(target.label||target.shipName||"Navio inimigo")+" · FORA DE ALCANCE"
+          });
+        }else if(Number(time)>=Number(this.navalNextShotAt||0)){
+          if(this.fireDirectNavalProjectile(target)){
+            this.navalNextShotAt=Number(time)+playerStats.attackCooldownMs;
+          }else{
+            this.navalNextShotAt=Number(time)+180;
+          }
+        }
+      }
+    }
+
+    for(const [id,state] of [...this.navalHostile.entries()]){
+      const entity=this.entities.find(item=>String(item.id)===String(id));
+      if(!entity||!this.isClickableCombatShip(entity)||this.collected.has(entity.id)||this.navalDestroying.has(entity.id)){
+        this.navalHostile.delete(id);
+        continue;
+      }
+      const stats=this.entityNavalCombatStats(entity);
+      if(this.navalTargetDistance(entity)>stats.attackRange)continue;
+      if(Number(time)<Number(state.nextShotAt||0))continue;
+      if(this.fireNpcNavalProjectile(entity)){
+        state.nextShotAt=Number(time)+stats.attackCooldownMs;
+        this.navalHostile.set(id,state);
+      }else{
+        state.nextShotAt=Number(time)+180;
+      }
+    }
   }
 
   activateNearby(){
@@ -3222,13 +3387,29 @@ export class WorldRuntime {
     const action=inferCollisionAction(entity,collision);
 
     if(this.combatTarget?.id===entity.id&&this.isClickableCombatShip(entity)){
-      this.fireDirectNavalProjectile(entity);
+      if(!this.isNavalTargetInRange(entity)){
+        const stats=this.playerNavalCombatStats();
+        if(this.actionMessage)this.actionMessage.textContent=
+          String(entity.label||entity.shipName||"Navio inimigo")
+          +" · FORA DE ALCANCE · "+Math.round(this.navalTargetDistance(entity))
+          +" / "+Math.round(stats.attackRange)+" px";
+        return;
+      }
+      this.navalAutoFire=true;
+      this.navalNextShotAt=0;
+      if(this.actionButton)this.actionButton.textContent="🔥 Atacando";
+      this.updateDirectNavalCombat(performance.now());
       return;
     }
 
     if(action==="combat"&&String(entity.type||"")==="ship"){
       this.selectCombatTarget(entity);
-      this.fireDirectNavalProjectile(entity);
+      if(this.isNavalTargetInRange(entity)){
+        this.navalAutoFire=true;
+        this.navalNextShotAt=0;
+        if(this.actionButton)this.actionButton.textContent="🔥 Atacando";
+        this.updateDirectNavalCombat(performance.now());
+      }
       return;
     }
 
@@ -3967,6 +4148,7 @@ export class WorldRuntime {
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time,dt);
+    this.updateDirectNavalCombat(time);
     this.updateCamera(false,dt);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
@@ -3999,6 +4181,7 @@ export class WorldRuntime {
     return {
       player:{x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction},
       collected:[...this.collected],
+      navalPlayerHp:this.navalPlayerHp,
       combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
     };
   }
