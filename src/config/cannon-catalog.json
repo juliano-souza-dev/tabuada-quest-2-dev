@@ -1,6 +1,6 @@
 {
   "schema": "tq.cannon-catalog",
-  "version": 1,
+  "version": 2,
   "defaultCannonId": "cannon-basic",
   "cannons": [
     {
@@ -10,7 +10,15 @@
       "range": 900,
       "projectileSpeed": 620,
       "attackCooldownMs": 1200,
-      "shop": { "purchasable": true, "price": 0 }
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
     },
     {
       "id": "cannon-bronze",
@@ -19,7 +27,15 @@
       "range": 1200,
       "projectileSpeed": 760,
       "attackCooldownMs": 1000,
-      "shop": { "purchasable": true, "price": 0 }
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
     },
     {
       "id": "cannon-long-range",
@@ -28,7 +44,15 @@
       "range": 1600,
       "projectileSpeed": 880,
       "attackCooldownMs": 1350,
-      "shop": { "purchasable": true, "price": 0 }
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
     }
   ]
 }
