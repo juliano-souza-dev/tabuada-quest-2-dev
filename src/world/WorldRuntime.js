@@ -1,3 +1,4 @@
+import { GameAudio } from "./GameAudio.js?v=20261002-1740";
 import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20261001-1512";
 import { WORLD_ENVIRONMENT_PRESETS, environmentPreset } from "./WorldEnvironmentPresets.mjs?v=20261001-0850";
 import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
@@ -153,6 +154,7 @@ export class WorldRuntime {
     this.config=structuredClone(config);
     this.config.ocean=normalizeOceanConfig(this.config.ocean||{});
     this.editorEnabled=options.editorEnabled===true;
+    this.audio=new GameAudio(options.soundCatalog||{sounds:[]});
     this.depthMaskEditId=null;
     this.mode=this.editorEnabled?"edit":"play";
     this.onEnterScene=options.onEnterScene||null;
@@ -936,6 +938,10 @@ export class WorldRuntime {
 
     this.renderEntities();
     this.bindControls();
+    const unlockAudio=()=>this.audio?.unlock();
+    this.host.addEventListener("pointerdown",unlockAudio,{once:true});
+    this.host.addEventListener("keydown",unlockAudio,{once:true});
+    this.cleanups.push(()=>{this.host?.removeEventListener("pointerdown",unlockAudio);this.host?.removeEventListener("keydown",unlockAudio)});
     this.bindChallengeControls();
     this.bindCombatControls();
     this.bindRegionTransitionControls();
@@ -3921,6 +3927,7 @@ export class WorldRuntime {
         ammo
       })===true;
       if(!fired)continue;
+      this.audio?.play("cannon-shot");
       firedCount+=1;
       if(!ammoUnlimited){
         ammoRemaining=Math.max(0,ammoRemaining-1);
@@ -3933,6 +3940,7 @@ export class WorldRuntime {
           Number(entity.y||0)-Number(this.player?.y||0)
         );
         if(remainingDistance<=Math.max(1,Number(cannon.range)||900)){
+          this.audio?.play("cannon-impact-ship");
           this.applyDirectNavalDamage(entity,ammoDamage);
         }
       },duration);
@@ -4005,8 +4013,10 @@ export class WorldRuntime {
       duration
     })===true;
     if(!fired)return false;
+    this.audio?.play("cannon-shot");
     setTimeout(()=>{
       if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
+        this.audio?.play("cannon-impact-ship");
         this.applyDirectPlayerNavalDamage(stats.damage,entity);
       }
     },duration);
@@ -4977,6 +4987,8 @@ export class WorldRuntime {
     for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
     this.navalDestroyTimers.clear();
     this.navalDestroying.clear();
+    this.audio?.destroy?.();
+    this.audio=null;
     this.navalRenderer?.destroy?.();
     this.navalRenderer=null;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
