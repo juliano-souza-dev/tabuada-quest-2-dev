@@ -18,7 +18,8 @@
       "acquisition": {
         "shop": true,
         "shipBossReward": false
-      }
+      },
+      "asset": ""
     },
     {
       "id": "cannon-bronze",
@@ -35,7 +36,8 @@
       "acquisition": {
         "shop": true,
         "shipBossReward": false
-      }
+      },
+      "asset": ""
     },
     {
       "id": "cannon-long-range",
@@ -52,7 +54,8 @@
       "acquisition": {
         "shop": true,
         "shipBossReward": false
-      }
+      },
+      "asset": ""
     }
   ]
 }
