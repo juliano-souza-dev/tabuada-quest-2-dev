@@ -461,7 +461,7 @@ export class NavalCombatWebGLRenderer{
         const scale=.55+progress*.7;
         drawPoint(impact.x,impact.y,water.size*scale,7,progress,false,{
           color:water.color,coreColor:water.coreColor,
-          glow:water.ripple,opacity:clamp(.48+water.splash*.42,0,1)
+          glow:water.ripple,opacity:clamp(.34+water.splash*.3+water.foam*.26,0,1)
         });
         if(water.mist>0&&progress>.12){
           drawPoint(impact.x,impact.y-water.size*.16*progress,water.size*(.22+water.mist*.42),3,progress,false,{opacity:clamp(water.mist,0,1)});
@@ -493,6 +493,21 @@ export class NavalCombatWebGLRenderer{
         drawPoint(impact.x,impact.y,shipFx.size*(.55+progress*.68),1,progress,true,{
           color:shipFx.color,coreColor:shipFx.coreColor,glow:shipFx.shock,opacity:1
         });
+        const sparkCount=Math.min(24,Math.max(0,shipFx.sparks));
+        const sparkFade=clamp(1-progress,0,1);
+        for(let i=0;i<sparkCount;i++){
+          const hash=Math.sin((i+1)*73.17+(impact.seed||0)*517.3)*43758.5453;
+          const jitter=hash-Math.floor(hash);
+          const angle=(i/Math.max(1,sparkCount))*Math.PI*2+(jitter-.5)*.5;
+          const travel=shipFx.size*(.12+.48*progress)*(.55+jitter*.55);
+          drawPoint(
+            impact.x+Math.cos(angle)*travel,
+            impact.y+Math.sin(angle)*travel,
+            (3+jitter*5)*sparkFade,
+            0,progress,true,
+            {color:shipFx.color,coreColor:shipFx.coreColor,glow:shipFx.shock,opacity:sparkFade}
+          );
+        }
       }
       if(shipFx.smoke>0&&progress>.18){
         drawPoint(impact.x,impact.y-shipFx.size*.12*progress,shipFx.size*(.28+shipFx.smoke*.52),3,progress,false,{opacity:clamp(shipFx.smoke,0,1)});
