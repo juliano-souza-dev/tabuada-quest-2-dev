@@ -7,6 +7,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261001-2221";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -391,6 +392,7 @@ export class WorldRuntime {
           <div class="tq-world-nav-target" hidden aria-hidden="true"></div>
           <div class="tq-world-player" role="img" aria-label="Navio do jogador"></div>
         </div>
+        <canvas class="tq-world-naval-webgl" data-world-naval-webgl aria-hidden="true"></canvas>
       </div>
       <section class="tq-world-hud">
         <strong data-world-mode></strong>
@@ -476,6 +478,9 @@ export class WorldRuntime {
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
     this.oceanRenderer=null;
     this.oceanRendererInit=null;
+    this.navalCanvas=this.host.querySelector("[data-world-naval-webgl]");
+    this.navalRenderer=new NavalCombatWebGLRenderer(this.navalCanvas);
+    this.navalRenderer.init();
     this.stage=this.host.querySelector(".tq-world-stage");
     this.cloudsEl=this.host.querySelector("[data-world-clouds]");
     this.weatherEl=this.host.querySelector("[data-world-weather]");
@@ -2580,23 +2585,6 @@ export class WorldRuntime {
     this.syncCombatEnemyShip(entity);
     this.updateCombatHud();
     this.clearCombatFx();
-
-    // Opening volley: clicking "Atacar" must immediately feel like an attack,
-    // instead of waiting for the first pedagogy answer before showing cannon FX.
-    if(this.combatFeedback)this.combatFeedback.textContent="Combate iniciado! Abrindo fogo...";
-    this.playCombatSpriteAnimation("player","fireRight");
-    this.playCombatFx({from:"player",hit:true});
-    setTimeout(()=>{
-      if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
-      this.playCombatDamageFx("enemy");
-    },820);
-    setTimeout(()=>{
-      if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
-      this.playCombatSpriteAnimation("enemy","fireLeft",entity);
-      this.playCombatFx({from:"enemy",hit:false});
-    },1120);
-    await new Promise(resolve=>setTimeout(resolve,1700));
-    if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
     await this.loadCombatRound();
   }
 
@@ -2901,6 +2889,19 @@ export class WorldRuntime {
     this.actionWrap.hidden=false;
   }
 
+  fireDirectNavalProjectile(entity){
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play")return false;
+    const fired=this.navalRenderer?.fire?.({
+      from:{x:this.player.x,y:this.player.y},
+      to:{x:entity.x,y:entity.y},
+      duration:620
+    })===true;
+    if(fired&&this.actionMessage){
+      this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · disparo WebGL";
+    }
+    return fired;
+  }
+
   activateNearby(){
     const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
       ?this.combatTarget
@@ -2909,6 +2910,11 @@ export class WorldRuntime {
 
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
+
+    if(this.combatTarget?.id===entity.id&&this.isClickableCombatShip(entity)){
+      this.fireDirectNavalProjectile(entity);
+      return;
+    }
 
     if(action==="combat"){
       this.beginCombat(entity);
@@ -3657,6 +3663,13 @@ export class WorldRuntime {
       this.cloudsEl.style.setProperty("--cloud-camera-y",(-this.camera.y*parallax)+"px");
     }
     this.updateOceanFrame(time);
+    this.navalRenderer?.render?.({
+      time,
+      camera:this.camera,
+      zoom:this.mode==="play"?this.playZoom:this.zoom,
+      width:this.viewportSize?.width||this.viewport?.clientWidth||1,
+      height:this.viewportSize?.height||this.viewport?.clientHeight||1
+    });
     this.updateNearby();
     this.renderMinimap(false,time);
 
@@ -3691,6 +3704,8 @@ export class WorldRuntime {
     this.combatFxTimer=0;
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
+    this.navalRenderer?.destroy?.();
+    this.navalRenderer=null;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
     this.entityEffectRenderers.clear();
     this.clearPlayerWake();
