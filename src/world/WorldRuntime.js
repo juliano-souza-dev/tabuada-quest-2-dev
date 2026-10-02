@@ -168,6 +168,7 @@ export class WorldRuntime {
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.onExecuteAction=typeof options.onExecuteAction==="function"?options.onExecuteAction:null;
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
+    this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
 
     // Ship behavior is global. A map stores which ship is selected, but the
@@ -438,13 +439,29 @@ export class WorldRuntime {
 
   createGeneratedNpc({shipId,index,typeConfig,population,random,occupied}){
     const npcId=String(typeConfig?.npcId||"");
-    const backingShipId=String(typeConfig?.shipId||shipId||"");
-    let profile=npcId?this.npcShipProfile(npcId):null;
-    if(!profile&&backingShipId)profile=this.npcShipProfile(backingShipId);
-    if(!profile){
-      console.warn("[TabuadaQuest] NPC generation skipped: unresolved profile",{npcId,shipId:backingShipId});
+    const npcProfile=npcId&&this.resolveNpc?this.resolveNpc(npcId):null;
+    const backingShipId=String(npcProfile?.shipId||typeConfig?.shipId||shipId||"");
+    const shipProfile=backingShipId?this.npcShipProfile(backingShipId):null;
+    if(!shipProfile){
+      console.warn("[TabuadaQuest] NPC generation skipped: unresolved ship profile",{npcId,shipId:backingShipId});
       return null;
     }
+    const profile={
+      ...shipProfile,
+      ...(npcProfile&&typeof npcProfile==="object"?structuredClone(npcProfile):{}),
+      sprite:shipProfile.sprite?structuredClone(shipProfile.sprite):null,
+      src:String(shipProfile.src||shipProfile.sprite?.src||""),
+      width:Number(shipProfile.width)||180,
+      height:Number(shipProfile.height)||180,
+      combat:{
+        ...(shipProfile.combat&&typeof shipProfile.combat==="object"?structuredClone(shipProfile.combat):{}),
+        ...(npcProfile?.combat&&typeof npcProfile.combat==="object"?structuredClone(npcProfile.combat):{})
+      },
+      navigation:{
+        ...(shipProfile.navigation&&typeof shipProfile.navigation==="object"?structuredClone(shipProfile.navigation):{}),
+        ...(npcProfile?.navigation&&typeof npcProfile.navigation==="object"?structuredClone(npcProfile.navigation):{})
+      }
+    };
     const point=this.npcSpawnPoint(random,occupied,population);
     occupied.push(point);
     const heading=random()*360-180;
