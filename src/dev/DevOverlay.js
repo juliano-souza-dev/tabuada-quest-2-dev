@@ -1209,7 +1209,7 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Velocidade dos NPCs</span><input data-npc-movement-speed type="number" min="0" max="1200" value="'+Math.max(0,Number(npcPopulation.movement.speed)||0)+'"></label>'+
             '</div>'+
             '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
-            '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
+            '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcProfiles.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
             '<small class="tq-world-editor-note">NPCs usam o modelo visual e os atributos de combate do catálogo, mas velocidade e vida são configuradas nesta região. O navio do jogador usa os atributos globais do catálogo.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
