@@ -940,6 +940,10 @@ export class WorldRuntime {
     this.combatTarget=entity;
     this.navalAutoFire=keepAutoFire;
     this.nearby=entity;
+    // Combat selection always takes priority over the optional repair action.
+    // Otherwise a stale data-world-action="repair" makes the shared action
+    // button reopen repair instead of attacking the newly selected enemy.
+    if(this.actionButton)delete this.actionButton.dataset.worldAction;
     entity.el?.classList.add("is-combat-target");
     this.clearNavigationTarget({brake:true});
     this.keys.clear();
