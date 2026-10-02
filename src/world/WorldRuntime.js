@@ -3959,7 +3959,9 @@ export class WorldRuntime {
         );
         if(remainingDistance<=Math.max(1,Number(cannon.range)||900)){
           this.audio?.play("cannon-impact-ship");
-          this.applyDirectNavalDamage(entity,ammoDamage);
+          const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+          const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
+          this.applyDirectNavalDamage(entity,shotDamage);
         }
       },duration);
     }
