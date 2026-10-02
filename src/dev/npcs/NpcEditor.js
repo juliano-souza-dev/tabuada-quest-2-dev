@@ -1,7 +1,8 @@
 export class NpcEditor{
-  constructor({getShips,getAmmo}={}){
+  constructor({getShips,getAmmo,resolveShip}={}){
     this.getShips=typeof getShips==="function"?getShips:()=>[];
     this.getAmmo=typeof getAmmo==="function"?getAmmo:()=>[];
+    this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.catalog={schema:"tq.npc-catalog",version:1,npcs:[]};
     this.drafts=[];this.trash=[];this.permanentlyDeletedIds=new Set();this.selectedId=null;
     this.storageKey="tq.dev.npc-drafts:v1";
@@ -23,7 +24,7 @@ export class NpcEditor{
     try{const d=JSON.parse(localStorage.getItem(this.storageKey)||"[]");this.drafts=Array.isArray(d)?d:[]}catch{this.drafts=[]}
     try{const d=JSON.parse(localStorage.getItem(this.trashStorageKey)||"[]");this.trash=Array.isArray(d)?d:[]}catch{this.trash=[]}
     try{const d=JSON.parse(localStorage.getItem(this.permanentDeleteStorageKey)||"[]");this.permanentlyDeletedIds=new Set(Array.isArray(d)?d.map(String):[])}catch{this.permanentlyDeletedIds=new Set()}
-    this.selectedId=this.all()[0]?.id||null;this.render();
+    this.selectedId=this.all()[0]?.id||null;this.render();globalThis.dispatchEvent?.(new CustomEvent("tq:npccatalogready"));
   }
   trashedIds(){return new Set(this.trash.map(x=>String(x.id)))}
   all(){const removed=this.trashedIds(),deleted=this.permanentlyDeletedIds,m=new Map((this.catalog.npcs||[]).filter(x=>!removed.has(String(x.id))&&!deleted.has(String(x.id))).map(x=>[x.id,structuredClone(x)]));for(const x of this.drafts)if(!removed.has(String(x.id))&&!deleted.has(String(x.id)))m.set(x.id,structuredClone(x));return [...m.values()]}
@@ -69,7 +70,7 @@ export class NpcEditor{
     host.querySelector("[data-npc-trash-current]").onclick=()=>this.moveToTrash(npc.id);
     preview();
   }
-  worldProfiles(){const ships=new Set((this.getShips()||[]).map(ship=>String(ship?.id||"")).filter(Boolean));return this.all().filter(npc=>{const shipId=String(npc?.shipId||"");return Boolean(shipId&&ships.has(shipId))})}
+  worldProfiles(){return this.all().filter(npc=>{const shipId=String(npc?.shipId||"");if(!shipId)return false;if(this.resolveShip)return Boolean(this.resolveShip(shipId));const ships=new Set((this.getShips()||[]).map(ship=>String(ship?.id||"")).filter(Boolean));return ships.has(shipId)})}
   resolve(id){return this.all().find(x=>x.id===String(id||""))||null}
   resolveForWorld(id){return this.worldProfiles().find(x=>x.id===String(id||""))||null}
   e(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
