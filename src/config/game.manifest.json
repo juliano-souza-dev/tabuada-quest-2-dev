@@ -38,7 +38,7 @@
   },
   "afterAuth": {
     "kind": "world",
-    "id": "tempesta"
+    "id": "r1-enseada-aprendizes"
   },
   "auth": {
     "required": true,
