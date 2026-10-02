@@ -398,6 +398,7 @@ export class DevOverlay {
       sprite:navigation.sprite?structuredClone(navigation.sprite):null,
       width:Number(navigation.width)||230,
       height:Number(navigation.height)||230,
+      minSpeed:Math.max(0,Number(navigation.minSpeed)||0),
       speed:Number(navigation.speed)||420,
       acceleration:Number(navigation.acceleration)||1100,
       braking:Number(navigation.braking??.12),
@@ -410,6 +411,7 @@ export class DevOverlay {
         idlePeriod:Number(navigation.periodMs??3600)
       },
       combat:{
+        hp:Math.max(1,Math.min(99,Math.floor(Number(combat.hp)||3))),
         attackRange:Math.max(200,Math.min(6000,Number(combat.attackRange)||1200)),
         attackCooldownMs:Math.max(300,Math.min(5000,Number(combat.attackCooldownMs)||900)),
         damage:Math.max(1,Math.min(20,Math.floor(Number(combat.damage)||1)))
@@ -422,7 +424,7 @@ export class DevOverlay {
     if(!player||typeof player!=="object")return null;
     const keys=[
       "shipId","shipName","src","sprite","directions","width","height",
-      "speed","acceleration","braking","effects","combat","combatModifiers","combatVisual"
+      "minSpeed","speed","acceleration","braking","effects","combat","combatModifiers","combatVisual"
     ];
     const profile={};
     for(const key of keys){
@@ -1059,7 +1061,6 @@ export class DevOverlay {
         '<div class="tq-world-npc-row" data-npc-row="'+index+'">'+
           '<label class="tq-world-field"><span>Tipo de NPC</span><select data-npc-type-ship="'+index+'">'+npcShipOptions(item.shipId)+'</select></label>'+
           '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
-          '<label class="tq-world-field"><span>HP</span><input data-npc-type-hp="'+index+'" type="number" min="1" max="20" value="'+Math.max(1,Number(item.hp)||3)+'"></label>'+
           '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover tipo de NPC">×</button>'+
         '</div>'
       ).join("");
@@ -1166,11 +1167,10 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
               '<label class="tq-world-field"><span>Margem das bordas</span><input data-npc-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(npcPopulation.spread.margin)||0)+'"></label>'+
               '<label class="tq-world-field"><span>Distância mínima</span><input data-npc-spread-distance type="number" min="0" max="1800" value="'+Math.max(0,Number(npcPopulation.spread.minDistance)||0)+'"></label>'+
-              '<label class="tq-world-field"><span>Velocidade provisória</span><input data-npc-movement-speed type="number" min="0" max="420" value="'+Math.max(0,Number(npcPopulation.movement.speed)||0)+'"></label>'+
             '</div>'+
             '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
-            '<small class="tq-world-editor-note">Todo navio NPC desta região é automaticamente clicável e atacável no oceano. O HP define quantos impactos ele suporta. Desafios pedagógicos ficam nos tesouros/coletáveis.</small>'+
+            '<small class="tq-world-editor-note">Todo navio NPC desta região usa velocidade, aceleração, vida e atributos de combate definidos no catálogo de Navios. Desafios pedagógicos ficam nos tesouros/coletáveis.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
@@ -1312,7 +1312,7 @@ export class DevOverlay {
         if(!first)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({shipId:first.id,count:1,hp:3});
+        next.types.push({shipId:first.id,count:1});
         next.enabled=true;
         saveNpcPopulation(next);
       });
@@ -1335,7 +1335,6 @@ export class DevOverlay {
       };
       content.querySelectorAll("[data-npc-type-ship]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeShip),{shipId:input.value})));
       content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
-      content.querySelectorAll("[data-npc-type-hp]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeHp),{hp:Math.max(1,Number(input.value)||3)})));
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
         const apply=commit=>{
