@@ -57,8 +57,6 @@ const normalizeNpcPopulation=input=>{
     types:types.slice(0,12).map(item=>({
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
-      combat:item?.combat===true,
-      clickable:item?.combat===true&&item?.clickable===true,
       hp:clamp(Math.floor(Number(item?.hp)||3),1,20)
     })).filter(item=>item.shipId&&item.count>0)
   };
@@ -155,7 +153,17 @@ export class WorldRuntime {
         el:null
       };
       normalized.effect=normalizeEntityEffect(normalized.effect||{},normalized);
-      normalized.collision=normalizeCollision(normalized.collision||{},normalized);
+      if(String(normalized.type||"")==="ship"){
+        normalized.combat={
+          hp:clamp(Math.floor(Number(normalized.combat?.hp)||3),1,99)
+        };
+        normalized.collision=normalizeCollision({
+          ...(normalized.collision||{}),
+          action:"none"
+        },normalized);
+      }else{
+        normalized.collision=normalizeCollision(normalized.collision||{},normalized);
+      }
       normalized.visualX=Number(normalized.x||0);
       normalized.visualY=Number(normalized.y||0);
       normalized.visualRotation=Number(normalized.rotation||0);
@@ -221,8 +229,6 @@ export class WorldRuntime {
     const heading=random()*360-180;
     const sprite=profile.sprite&&typeof profile.sprite==="object"?structuredClone(profile.sprite):null;
     const src=String(profile.src||sprite?.src||"");
-    const combatEnabled=typeConfig.combat===true;
-
     const entity={
       id:"npc.auto."+String(shipId).replace(/[^a-z0-9._-]+/gi,"-")+"."+(index+1),
       type:"ship",
@@ -249,8 +255,6 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        enabled:combatEnabled,
-        clickable:combatEnabled&&typeConfig.clickable===true,
         hp:Math.max(1,Number(typeConfig.hp)||3)
       },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
@@ -261,7 +265,7 @@ export class WorldRuntime {
         scaleX:.46,
         scaleY:.60,
         padding:8,
-        action:combatEnabled?"combat":"none",
+        action:"none",
         message:""
       }
     };
@@ -628,8 +632,6 @@ export class WorldRuntime {
     return Boolean(
       entity
       &&String(entity.type||"")==="ship"
-      &&entity.combat?.enabled===true
-      &&entity.combat?.clickable===true
       &&!this.collected.has(entity.id)
     );
   }
@@ -2956,8 +2958,9 @@ export class WorldRuntime {
       return;
     }
 
-    if(action==="combat"){
-      this.beginCombat(entity);
+    if(action==="combat"&&String(entity.type||"")==="ship"){
+      this.selectCombatTarget(entity);
+      this.fireDirectNavalProjectile(entity);
       return;
     }
 

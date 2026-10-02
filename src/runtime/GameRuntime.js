@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261001-2312";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261001-2247";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0854";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
@@ -728,7 +728,7 @@ export class GameRuntime {
         };
       },
       createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
-        kind:entity?.type==="treasure"?"treasure":(entity?.type==="ship"&&entity?.combat?.enabled===true?"combat":"world-interaction"),
+        kind:entity?.type==="treasure"?"treasure":"world-interaction",
         worldId,
         entityId:entity?.id,
         entityType:entity?.type

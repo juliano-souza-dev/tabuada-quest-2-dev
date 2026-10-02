@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261001-2235";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261001-2247";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
@@ -30,7 +30,7 @@ export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
     world=new WorldRuntime(root,config,{
       state,
       createPedagogyChallenge:({entity})=>pedagogyRuntime.createChallenge({
-        kind:entity?.type==="treasure"?"treasure":(entity?.type==="ship"&&entity?.combat?.enabled===true?"combat":"world-interaction"),
+        kind:entity?.type==="treasure"?"treasure":"world-interaction",
         worldId:config.id,
         entityId:entity?.id,
         entityType:entity?.type

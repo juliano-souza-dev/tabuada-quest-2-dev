@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-2235";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-2247";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip}={}){
@@ -69,7 +69,7 @@ export class WorldEditor {
       resolveShip:this.resolveShip,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
-        kind:context?.entity?.type==="treasure"?"treasure":(context?.entity?.type==="ship"&&context?.entity?.combat?.enabled===true?"combat":"world-interaction"),
+        kind:context?.entity?.type==="treasure"?"treasure":"world-interaction",
         worldId:world.id,
         entityId:context?.entity?.id,
         entityType:context?.entity?.type
@@ -164,6 +164,7 @@ export class WorldEditor {
       type="ship";width=110;height=150;extra={
         motion:{active:true,preset:"navigation",speed:55,heave:46,pitch:42,roll:24,sway:14},
         effect:{category:"ship",preset:"none"},
+        combat:{hp:3},
         collision:{active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"none",message:""}
       };
     }else if(path.includes("/backgrounds/")||path.includes("/regions/islands/")){

@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2235";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2247";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0001";
 export class DevOverlay {
   constructor(root,runtime,options={}){
@@ -1050,8 +1050,6 @@ export class DevOverlay {
         '<div class="tq-world-npc-row" data-npc-row="'+index+'">'+
           '<label class="tq-world-field"><span>Tipo de NPC</span><select data-npc-type-ship="'+index+'">'+npcShipOptions(item.shipId)+'</select></label>'+
           '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
-          '<label class="tq-field tq-field--check"><span>Combate</span><input data-npc-type-combat="'+index+'" type="checkbox" '+(item.combat===true?'checked':'')+'></label>'+
-          '<label class="tq-field tq-field--check"><span>Clicável</span><input data-npc-type-clickable="'+index+'" type="checkbox" '+(item.clickable===true?'checked':'')+' '+(item.combat===true?'':'disabled')+'></label>'+
           '<label class="tq-world-field"><span>HP</span><input data-npc-type-hp="'+index+'" type="number" min="1" max="20" value="'+Math.max(1,Number(item.hp)||3)+'"></label>'+
           '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover tipo de NPC">×</button>'+
         '</div>'
@@ -1153,7 +1151,7 @@ export class DevOverlay {
             '</div>'+
             '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcShips.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
-            '<small class="tq-world-editor-note">Os NPCs são exclusivos desta região. Eles surgem em pontos pseudoaleatórios e, nesta primeira versão, navegam em linha reta. IA, rotas, desvio de ilhas e perseguição ficam para a próxima etapa.</small>'+
+            '<small class="tq-world-editor-note">Todo navio NPC desta região é automaticamente clicável e atacável no oceano. O HP define quantos impactos ele suporta. Desafios pedagógicos ficam nos tesouros/coletáveis.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--ocean-background"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Fundo do oceano</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Textura / background</span><select data-ocean-prop="background">'+backgroundOptions+'</select></label>'+
@@ -1339,7 +1337,7 @@ export class DevOverlay {
         if(!first)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({shipId:first.id,count:1,combat:false,clickable:false,hp:3});
+        next.types.push({shipId:first.id,count:1,hp:3});
         next.enabled=true;
         saveNpcPopulation(next);
       });
@@ -1362,14 +1360,6 @@ export class DevOverlay {
       };
       content.querySelectorAll("[data-npc-type-ship]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeShip),{shipId:input.value})));
       content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
-      content.querySelectorAll("[data-npc-type-combat]").forEach(input=>input.addEventListener("change",()=>{
-        const index=Number(input.dataset.npcTypeCombat);
-        updateNpcType(index,input.checked?{combat:true}:{combat:false,clickable:false});
-      }));
-      content.querySelectorAll("[data-npc-type-clickable]").forEach(input=>input.addEventListener("change",()=>{
-        const index=Number(input.dataset.npcTypeClickable);
-        updateNpcType(index,{combat:true,clickable:input.checked});
-      }));
       content.querySelectorAll("[data-npc-type-hp]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeHp),{hp:Math.max(1,Number(input.value)||3)})));
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
@@ -1892,7 +1882,7 @@ export class DevOverlay {
       wetness:Number(entity.waterIntegration?.wetness??.5),
       submergedShadow:Number(entity.waterIntegration?.submergedShadow??.42)
     };
-    const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{enabled:false,hp:3};
+    const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{hp:3};
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
     const shipOptions=(this.shipEditor?.allShips?.()||[]).map(ship=>
       '<option value="'+this.escapeHtml(ship.id)+'" '+(entity.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+' · '+(ship.type==="npc"?"NPC":"PLAYER")+'</option>'
@@ -2010,10 +2000,8 @@ export class DevOverlay {
         (entity.type==="ship"
           ? '<section class="tq-config-area tq-config-area--combat"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>⚔ Combate naval</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
               '<label class="tq-world-field"><span>Navio do catálogo</span><select data-world-prop="shipId"><option value="">Asset local / sem catálogo</option>'+shipOptions+'</select></label>'+
-              '<label class="tq-field tq-field--check"><span>Combate ativo</span><input data-entity-combat-prop="enabled" type="checkbox" '+(combat.enabled===true?'checked':'')+'></label>'+
-              '<label class="tq-field tq-field--check"><span>Clicável no mapa</span><input data-entity-combat-prop="clickable" type="checkbox" '+(combat.clickable===true?'checked':'')+'></label>'+
               '<label class="tq-world-field"><span>HP do inimigo</span><input data-entity-combat-prop="hp" type="number" min="1" max="20" value="'+Math.max(1,Number(combat.hp)||3)+'"></label>'+
-              '<small class="tq-world-editor-note">Navios clicáveis podem ser selecionados durante o Play. Ao clicar, aparece o botão ⚔ Atacar. O combate continua usando os desafios de tabuada e os efeitos de disparo.</small>'+
+              '<small class="tq-world-editor-note">Todo navio colocado no oceano participa automaticamente do combate naval livre: é clicável, atacável e não abre desafio de tabuada.</small>'+
             '</div></section>'
           : '')+
         (!["background","region-exit"].includes(String(entity.type||""))
@@ -2155,20 +2143,17 @@ export class DevOverlay {
 
     content.querySelectorAll("[data-entity-combat-prop]").forEach(input=>input.addEventListener("change",()=>{
       const key=input.dataset.entityCombatProp;
-      const value=input.type==="checkbox"?input.checked:Number(input.value);
+      const value=Math.max(1,Number(input.value)||3);
       const next={...(this.worldEditor.getSelected()?.combat||combat),[key]:value};
-      if(key==="clickable"&&value===true)next.enabled=true;
-      if(key==="enabled"&&value!==true)next.clickable=false;
+      delete next.enabled;
+      delete next.clickable;
       this.selected=this.worldEditor.updateEntity(entity.id,{combat:next},true)||this.selected;
-      if(key==="enabled"||key==="clickable"){
-        this.worldEditor.updateEntityCollision(entity.id,{
-          active:true,
-          shape:"ellipse",
-          action:next.enabled===true?"combat":"none"
-        },true);
-        this.selected=this.worldEditor.getSelected()||this.selected;
-        this.renderWorldInspector();
-      }
+      this.worldEditor.updateEntityCollision(entity.id,{
+        active:true,
+        shape:"ellipse",
+        action:"none"
+      },true);
+      this.selected=this.worldEditor.getSelected()||this.selected;
     }));
 
     const rewardNumeric=new Set(["coins","xp","quantity"]);
