@@ -1,7 +1,7 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0912";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0927";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
-import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0908";
+import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
