@@ -69,6 +69,158 @@
       "fx": {
         "preset": "piercing"
       }
+    },
+    {
+      "id": "cannonball-rusted-iron",
+      "name": "Bola de Canhão de Ferro Enferrujado",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/Bola de Canhão de Ferro Enferrujado.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "fx": {
+        "preset": "rusted-iron"
+      }
+    },
+    {
+      "id": "orb-violet-crystal",
+      "name": "Orbe Mágico de Cristal Violeta",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/Orbe Mágico de Cristal Violeta.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "fx": {
+        "preset": "violet-crystal"
+      }
+    },
+    {
+      "id": "orb-ocean-pearl",
+      "name": "Orbe Mágico de Pérola Oceânica",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/Orbe Mágico de Pérola Oceânica.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "fx": {
+        "preset": "ocean-pearl"
+      }
+    },
+    {
+      "id": "orb-halloween-pumpkin",
+      "name": "Orbe Místico de Abóbora Roxa",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/Orbe Místico de Abóbora Roxa.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "event": "halloween",
+      "fx": {
+        "preset": "halloween-pumpkin"
+      }
+    },
+    {
+      "id": "orb-volcanic-lava",
+      "name": "Orbe Vulcânico de Lava Incandescente",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/Orbe Vulcânico de Lava Incandescente.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "fx": {
+        "preset": "volcanic-lava"
+      }
+    },
+    {
+      "id": "terror-rose",
+      "name": "Rosa do Terror",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "profile-webgl",
+        "impact": "profile-webgl",
+        "waterSplash": "profile-webgl",
+        "texture": "./assets/cannons/rosa do terror.png",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
+      },
+      "event": "halloween",
+      "fx": {
+        "preset": "terror-rose"
+      }
     }
   ]
 }
