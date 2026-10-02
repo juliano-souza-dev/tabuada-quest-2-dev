@@ -77,12 +77,65 @@
 .tq-world-entity__webgl{display:block;width:100%;height:100%;pointer-events:none;background:transparent}
 .tq-world-entity__webgl[hidden]{display:none}
 
-.tq-world-entity--island .tq-world-island-water{position:absolute;left:50%;bottom:calc(var(--island-immersion,.18)*-100%);transform:translateX(-50%);pointer-events:none;opacity:0}
+.tq-world-entity--island{isolation:isolate;overflow:visible}
+.tq-world-entity--island .tq-world-island-water{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:currentColor;
+  transform-origin:50% 64%;
+  -webkit-mask-image:var(--island-alpha-mask,none);
+  mask-image:var(--island-alpha-mask,none);
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  -webkit-mask-position:center;
+  mask-position:center;
+  -webkit-mask-size:100% 100%;
+  mask-size:100% 100%;
+  will-change:transform,filter,opacity;
+}
 .tq-world-entity--island.has-water-integration .tq-world-island-water{opacity:1}
-.tq-world-entity--island .tq-world-island-water--shadow{z-index:-1;width:88%;height:calc(22% + var(--island-immersion,.18)*36%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(0,24,42,calc(var(--island-submerged-shadow,.42)*.9)) 0 28%,rgba(0,44,72,calc(var(--island-submerged-shadow,.42)*.42)) 48%,transparent 76%);filter:blur(calc(5px + var(--island-immersion,.18)*18px))}
-.tq-world-entity--island .tq-world-island-water--foam{z-index:2;width:calc(78% + var(--island-foam-width,.12)*70%);height:calc(12% + var(--island-foam-width,.12)*34%);border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,255,255,calc(var(--island-foam,.65)*.18)) 0 30%,rgba(206,245,255,calc(var(--island-foam,.65)*.58)) 48%,rgba(255,255,255,0) 72%);box-shadow:inset 0 0 10px rgba(255,255,255,calc(var(--island-wetness,.5)*.28));filter:blur(calc(1px + var(--island-foam-width,.12)*6px));animation:tq-island-shore 2.8s ease-in-out infinite}
-.tq-world-entity--island.has-water-integration img{filter:drop-shadow(0 6px 4px #001a2e80) saturate(calc(1 - var(--island-wetness,.5)*.08))}
-@keyframes tq-island-shore{0%,100%{transform:translateX(-50%) scaleX(.96);opacity:calc(var(--island-foam,.65)*.72)}50%{transform:translateX(-50%) scaleX(1.06);opacity:var(--island-foam,.65)}}
+
+/* Deep local water: expanded alpha silhouette, kept directly under the island. */
+.tq-world-entity--island .tq-world-island-water--shadow{
+  z-index:0;
+  color:rgba(5,38,54,calc(.10 + var(--island-submerged-shadow,.42)*.52));
+  transform:
+    translateY(calc(var(--island-immersion,.18)*3%))
+    scale(
+      calc(1.018 + var(--island-immersion,.18)*.12 + var(--island-submerged-shadow,.42)*.035),
+      calc(1.012 + var(--island-immersion,.18)*.075)
+    );
+  filter:blur(calc(4px + var(--island-submerged-shadow,.42)*16px));
+}
+
+/* Shallow-water / foam rim: a tighter, brighter copy of the same alpha mask. */
+.tq-world-entity--island .tq-world-island-water--foam{
+  z-index:1;
+  color:rgba(205,249,255,calc(var(--island-foam,.65)*.58));
+  transform:
+    scale(
+      calc(1.008 + var(--island-foam-width,.12)*.13),
+      calc(1.006 + var(--island-foam-width,.12)*.09)
+    );
+  filter:
+    blur(calc(.6px + var(--island-foam-width,.12)*7px))
+    drop-shadow(0 0 calc(2px + var(--island-foam-width,.12)*10px) rgba(238,255,255,calc(var(--island-foam,.65)*.32)));
+  animation:tq-island-shore 3.2s ease-in-out infinite;
+}
+
+/* Keep the original asset crisp and above the generated shoreline layers. */
+.tq-world-entity--island.has-water-integration>img{
+  position:relative;
+  z-index:3;
+  filter:saturate(calc(1 - var(--island-wetness,.5)*.05));
+}
+.tq-world-entity--island>.tq-world-entity__webgl{position:relative;z-index:3}
+@keyframes tq-island-shore{
+  0%,100%{opacity:calc(var(--island-foam,.65)*.68)}
+  50%{opacity:var(--island-foam,.65)}
+}
 
 .tq-world-entity__collider{
   position:absolute;
