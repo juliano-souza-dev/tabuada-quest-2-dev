@@ -22,7 +22,7 @@ export const AMMO_FX_PRESETS={
   piercing:{
     id:"piercing",label:"Perfurante",
     muzzle:{enabled:true,size:38,durationMs:110,intensity:.9,sparks:10,smoke:.18,color:"#ffbd62",coreColor:"#ffffff"},
-    projectile:{scale:.82,color:"#dbe9ff",coreColor:"#ffffff",glow:.42,opacity:1,wobble:0,auraEnabled:true,auraScale:1.55,auraOpacity:.32},
+    projectile:{scale:.82,color:"#dbe9ff",coreColor:"#ffffff",glow:.42,opacity:1,wobble:0,auraEnabled:true,auraScale:1.55,auraOpacity:.32,texture:"./assets/cannons/bala_perfurante_512_q95.webp"},
     trail:{enabled:true,length:13,width:7,opacity:.58,taper:.9,color:"#8fd4ff"},
     impactShip:{enabled:true,size:88,durationMs:620,sparks:30,smoke:.24,shock:.36,color:"#ffac55",coreColor:"#ffffff"},
     impactWater:{enabled:true,size:86,durationMs:560,splash:.54,ripple:.64,foam:.48,mist:.18,color:"#aeeeff",coreColor:"#ffffff"}
@@ -30,7 +30,7 @@ export const AMMO_FX_PRESETS={
   halloween:{
     id:"halloween",label:"Halloween roxa",
     muzzle:{enabled:true,size:56,durationMs:190,intensity:1.2,sparks:14,smoke:.32,color:"#8c2cff",coreColor:"#f3a8ff"},
-    projectile:{scale:1.12,color:"#781cff",coreColor:"#f0a5ff",glow:1.35,opacity:1,wobble:.16,auraEnabled:true,auraScale:2.25,auraOpacity:.78},
+    projectile:{scale:1.12,color:"#781cff",coreColor:"#f0a5ff",glow:1.35,opacity:1,wobble:.16,auraEnabled:true,auraScale:2.25,auraOpacity:.78,texture:"./assets/cannons/bola_canhao_halloween_roxa.webp"},
     trail:{enabled:true,length:20,width:20,opacity:.72,taper:.8,color:"#8b2cff"},
     impactShip:{enabled:true,size:128,durationMs:720,sparks:22,smoke:.44,shock:.84,color:"#7c16ff",coreColor:"#f1a4ff"},
     impactWater:{enabled:true,size:136,durationMs:860,splash:.9,ripple:1,foam:.72,mist:.38,color:"#9d6cff",coreColor:"#f5c8ff"}
@@ -56,7 +56,7 @@ export function normalizeAmmoFx(ammo={}){
   const trail=mergeSection(preset.trail,source.trail);
   const impactShip=mergeSection(preset.impactShip,source.impactShip);
   const impactWater=mergeSection(preset.impactWater,source.impactWater);
-  const texture=String(source.projectile?.texture||ammo?.effects?.texture||"");
+  const texture=String(source.projectile?.texture||projectile.texture||ammo?.effects?.texture||"");
   return {
     preset:presetId,
     muzzle:{
