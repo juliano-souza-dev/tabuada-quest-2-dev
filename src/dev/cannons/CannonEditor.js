@@ -5,9 +5,10 @@ const slug=value=>String(value||"cannon").toLowerCase().normalize("NFD").replace
 export class CannonEditor{
   constructor({requestAsset}={}){
     this.requestAsset=typeof requestAsset==="function"?requestAsset:null;
-    this.catalog={schema:"tq.cannon-catalog",version:2,defaultCannonId:"",cannons:[]};
+    this.catalog={schema:"tq.cannon-catalog",version:3,defaultCannonId:"",cannons:[]};
     this.selectedId=null;this.el=null;
-    this.storageKey="tq.dev.cannon-catalog-live:v1";
+    this.storageKey="tq.dev.cannon-catalog-live:v2";
+    this.legacyStorageKey="tq.dev.cannon-catalog-live:v1";
     this.trashKey="tq.dev.cannon-trash:v1";
     this.trash=[];
     this.preview=new CannonPreview();
@@ -22,18 +23,64 @@ export class CannonEditor{
     await this.load();
   }
   async load(){
-    try{const r=await fetch("./src/config/cannon-catalog.json?v=20261002-1642",{cache:"no-store"});if(r.ok)this.catalog=await r.json()}catch(e){console.warn("Cannon catalog load failed",e)}
-    try{const local=JSON.parse(localStorage.getItem(this.storageKey)||"null");if(Array.isArray(local)&&local.length)this.catalog.cannons=local}catch{}
+    let repoCannons=[];
+    try{
+      const r=await fetch("./src/config/cannon-catalog.json?v=20261002-2136",{cache:"no-store"});
+      if(r.ok){
+        this.catalog=await r.json();
+        repoCannons=Array.isArray(this.catalog.cannons)?this.catalog.cannons:[];
+      }
+    }catch(e){console.warn("Cannon catalog load failed",e)}
     try{const trash=JSON.parse(localStorage.getItem(this.trashKey)||"[]");this.trash=Array.isArray(trash)?trash:[]}catch{this.trash=[]}
-    this.catalog.cannons=(this.catalog.cannons||[]).map(x=>this.normalize(x));
+    const trashedIds=new Set(this.trash.map(item=>String(item?.id||"")));
+    let local=null;
+    try{local=JSON.parse(localStorage.getItem(this.storageKey)||"null")}catch{}
+    const repoIds=new Set(repoCannons.map(item=>String(item?.id||"")));
+    const byId=new Map(repoCannons.map(item=>[String(item.id),this.normalize(item)]));
+    if(Array.isArray(local)){
+      for(const item of local){
+        const id=String(item?.id||"");if(!id)continue;
+        const base=byId.get(id);
+        byId.set(id,this.normalize(base?{...base,...item}:{...item}));
+      }
+    }else{
+      let legacy=null;
+      try{legacy=JSON.parse(localStorage.getItem(this.legacyStorageKey)||"null")}catch{}
+      if(Array.isArray(legacy)){
+        for(const item of legacy){
+          const id=String(item?.id||"");
+          if(id&&!repoIds.has(id))byId.set(id,this.normalize(item));
+        }
+      }
+    }
+    this.catalog.version=3;
+    this.catalog.cannons=[...byId.values()].filter(item=>!trashedIds.has(String(item.id)));
+    try{localStorage.setItem(this.storageKey,JSON.stringify(this.catalog.cannons))}catch(error){console.warn("Cannon catalog migration save failed",error)}
     this.selectedId=this.catalog.cannons[0]?.id||null;this.render();this.emit();
   }
   normalize(raw={}){
-    return {id:String(raw.id||"cannon"),name:String(raw.name||"Novo canhão"),asset:String(raw.asset||""),available:raw.available!==false,
+    const legacyCurrency=String(raw.shop?.currency||"gold");
+    const legacyPrice=Math.max(0,Number(raw.shop?.price)||0);
+    const gold=Math.max(0,Number(raw.shop?.gold??(legacyCurrency==="gold"?legacyPrice:0))||0);
+    const rubies=Math.max(0,Number(raw.shop?.rubies??(legacyCurrency==="rubies"?legacyPrice:0))||0);
+    const unlockRegion=raw.progression?.unlockRegion==null?null:Math.max(1,Math.floor(Number(raw.progression.unlockRegion)||1));
+    return {
+      id:String(raw.id||"cannon"),code:String(raw.code||""),name:String(raw.name||"Novo canhão"),asset:String(raw.asset||""),available:raw.available!==false,
+      function:String(raw.function||""),event:String(raw.event||""),variantOf:String(raw.variantOf||""),
+      progression:{unlock:String(raw.progression?.unlock||""),unlockRegion},
+      damageMultiplier:Math.max(.1,Math.min(5,Number(raw.damageMultiplier)||1)),
       range:Math.max(100,Number(raw.range)||900),projectileSpeed:Math.max(100,Number(raw.projectileSpeed)||620),
       attackCooldownMs:Math.max(100,Number(raw.attackCooldownMs)||1200),
-      shop:{purchasable:raw.shop?.purchasable===true,currency:String(raw.shop?.currency||"gold"),price:Math.max(0,Number(raw.shop?.price)||0)},
-      acquisition:{shop:raw.acquisition?.shop??raw.shop?.purchasable===true,shipBossReward:raw.acquisition?.shipBossReward===true}};
+      shop:{
+        purchasable:raw.shop?.purchasable===true,currency:legacyCurrency,price:legacyPrice,
+        gold,rubies,label:String(raw.shop?.label||"")
+      },
+      acquisition:{
+        shop:raw.acquisition?.shop??raw.shop?.purchasable===true,
+        shipBossReward:raw.acquisition?.shipBossReward===true,
+        event:raw.acquisition?.event===true
+      }
+    };
   }
   all(){return (this.catalog.cannons||[]).filter(x=>x.available!==false).map(clone)}
   allIncludingInactive(){return (this.catalog.cannons||[]).map(clone)}
@@ -47,7 +94,7 @@ export class CannonEditor{
   create(){
     let base="novo-canhao",id=base,n=2;const used=new Set([...(this.catalog.cannons||[]),...this.trash].map(x=>x.id));
     while(used.has(id))id=base+"-"+n++;
-    const cannon=this.normalize({id,name:"Novo canhão",asset:"",available:true,range:900,projectileSpeed:620,attackCooldownMs:1200,shop:{purchasable:true,currency:"gold",price:100},acquisition:{shop:true,shipBossReward:false}});
+    const cannon=this.normalize({id,code:"DEV",name:"Novo canhão",asset:"",available:true,progression:{unlock:"DEV"},damageMultiplier:1,range:900,projectileSpeed:620,attackCooldownMs:1200,shop:{purchasable:true,currency:"gold",price:100,gold:100,rubies:0},acquisition:{shop:true,shipBossReward:false,event:false}});
     this.catalog.cannons.push(cannon);this.selectedId=id;this.persist();this.render();
   }
   update(patch){
@@ -71,7 +118,7 @@ export class CannonEditor{
   render(){if(!this.el)return;this.renderList();this.renderTrash();this.renderEditor()}
   renderList(){
     const list=this.el?.querySelector("[data-cannon-list]");if(!list)return;
-    list.innerHTML=(this.catalog.cannons||[]).map(x=>'<button type="button" class="'+(x.id===this.selectedId?'active':'')+'" data-cannon-id="'+this.e(x.id)+'"><strong>'+this.e(x.name)+'</strong><small>'+Math.round(x.range)+' px · '+this.e(x.id)+'</small></button>').join("");
+    list.innerHTML=(this.catalog.cannons||[]).map(x=>'<button type="button" class="'+(x.id===this.selectedId?'active':'')+'" data-cannon-id="'+this.e(x.id)+'"><strong>'+this.e(x.name)+'</strong><small>'+this.e(x.code||x.id)+' · '+this.e(x.progression?.unlock||"DEV")+' · ×'+Number(x.damageMultiplier||1).toFixed(2)+'</small></button>').join("");
     list.querySelectorAll("[data-cannon-id]").forEach(b=>b.onclick=()=>{this.selectedId=b.dataset.cannonId;this.render()});
   }
   renderTrash(){
@@ -89,29 +136,46 @@ export class CannonEditor{
       '<div class="tq-cannon-grid">'+
         '<section class="tq-cannon-group tq-cannon-group--identity"><h4>Identidade</h4><div class="tq-cannon-identity">'+
           '<label class="tq-cannon-field"><span>Nome</span><input data-c-name value="'+this.e(c.name)+'"></label>'+
+          '<label class="tq-cannon-field"><span>ID de progressão</span><input data-c-code value="'+this.e(c.code)+'"></label>'+
+          '<label class="tq-cannon-field"><span>Desbloqueio</span><input data-c-unlock value="'+this.e(c.progression?.unlock||"")+'" placeholder="R1 / Evento"></label>'+
+          '<label class="tq-cannon-field"><span>Função</span><input data-c-function value="'+this.e(c.function||"")+'"></label>'+
           '<div class="tq-cannon-asset"><span>Asset do canhão</span><div class="tq-cannon-asset-row">'+(c.asset?'<img src="'+this.e(c.asset)+'" alt="">':'<span class="tq-cannon-asset-empty">∅</span>')+'<div><button type="button" class="tq-ships__new" data-c-asset>▦ Escolher asset</button><small>'+this.e(c.asset||"Nenhum asset selecionado")+'</small></div></div></div>'+
         '</div></section>'+
         '<section class="tq-cannon-group tq-cannon-group--combat"><h4>Combate</h4>'+
+          '<label class="tq-cannon-slider"><span><b>Multiplicador de dano</b><output data-c-damage-out>×'+Number(c.damageMultiplier||1).toFixed(2)+'</output></span><input data-c-damage type="range" min="0.5" max="3" step="0.05" value="'+Number(c.damageMultiplier||1)+'"></label>'+
           '<label class="tq-cannon-slider"><span><b>Alcance</b><output data-c-range-out>'+Math.round(c.range)+' px</output></span><input data-c-range type="range" min="100" max="6000" step="25" value="'+c.range+'"></label>'+
           '<label class="tq-cannon-slider"><span><b>Velocidade de disparo</b><output data-c-rate-out>'+cadence+' tiro/s</output></span><input data-c-rate type="range" min="0.2" max="10" step="0.1" value="'+cadence+'"></label>'+
           '<label class="tq-cannon-slider"><span><b>Velocidade do projétil</b><output data-c-projectile-out>'+Math.round(c.projectileSpeed)+' px/s</output></span><input data-c-projectile type="range" min="100" max="3000" step="20" value="'+c.projectileSpeed+'"></label>'+
         '</section>'+
         '<section class="tq-cannon-group tq-cannon-group--purchase"><h4>Compra e obtenção</h4><div class="tq-cannon-purchase-grid">'+
-          '<label class="tq-cannon-field"><span>Moeda</span><select data-c-currency><option value="gold" '+(c.shop.currency==="gold"?"selected":"")+'>Ouro</option><option value="rubies" '+(c.shop.currency==="rubies"?"selected":"")+'>Rubis</option></select></label>'+
-          '<label class="tq-cannon-field"><span>Valor de compra</span><input data-c-price type="number" min="0" max="999999" step="1" value="'+c.shop.price+'"></label>'+
+          '<label class="tq-cannon-field"><span>Ouro</span><input data-c-gold type="number" min="0" max="999999" step="1" value="'+Number(c.shop.gold||0)+'"></label>'+
+          '<label class="tq-cannon-field"><span>Rubis</span><input data-c-rubies type="number" min="0" max="999999" step="1" value="'+Number(c.shop.rubies||0)+'"></label>'+
         '</div><div class="tq-cannon-acquisition">'+
           '<label><input data-c-shop type="checkbox" '+(c.acquisition.shop?"checked":"")+'><span><b>Loja</b><small>Disponível para compra no estaleiro.</small></span></label>'+
           '<label><input data-c-boss type="checkbox" '+(c.acquisition.shipBossReward?"checked":"")+'><span><b>Navio / Boss</b><small>Pode ser concedido como recompensa.</small></span></label>'+
+          '<label><input data-c-event type="checkbox" '+(c.acquisition.event?"checked":"")+'><span><b>Evento</b><small>Obtido por evento especial.</small></span></label>'+
         '</div></section>'+
       '</div></section></div><aside class="tq-cannon-simulator-column"><div data-cannon-preview-host></div></aside></div>';
     const sync=()=>{
       c.name=h.querySelector("[data-c-name]").value.trim()||"Canhão";
+      c.code=h.querySelector("[data-c-code]").value.trim();
+      c.progression={...(c.progression||{}),unlock:h.querySelector("[data-c-unlock]").value.trim()};
+      const regionMatch=c.progression.unlock.match(/^R(\d+)$/i);
+      c.progression.unlockRegion=regionMatch?Math.max(1,Number(regionMatch[1])||1):null;
+      c.function=h.querySelector("[data-c-function]").value.trim();
+      c.damageMultiplier=Math.max(.5,Math.min(3,Number(h.querySelector("[data-c-damage]").value)||1));
       c.range=Math.max(100,Number(h.querySelector("[data-c-range]").value)||900);
       const rate=Math.max(.1,Number(h.querySelector("[data-c-rate]").value)||1);
       c.attackCooldownMs=Math.round(1000/rate);
       c.projectileSpeed=Math.max(100,Number(h.querySelector("[data-c-projectile]").value)||620);
-      c.shop={purchasable:h.querySelector("[data-c-shop]").checked,currency:h.querySelector("[data-c-currency]").value,price:Math.max(0,Number(h.querySelector("[data-c-price]").value)||0)};
-      c.acquisition={shop:h.querySelector("[data-c-shop]").checked,shipBossReward:h.querySelector("[data-c-boss]").checked};
+      const gold=Math.max(0,Number(h.querySelector("[data-c-gold]").value)||0);
+      const rubies=Math.max(0,Number(h.querySelector("[data-c-rubies]").value)||0);
+      const shopEnabled=h.querySelector("[data-c-shop]").checked;
+      const eventEnabled=h.querySelector("[data-c-event]").checked;
+      c.shop={...(c.shop||{}),purchasable:shopEnabled,gold,rubies,currency:gold>0?"gold":(rubies>0?"rubies":"gold"),price:gold>0?gold:rubies,label:eventEnabled?"Evento":""};
+      c.acquisition={shop:shopEnabled,shipBossReward:h.querySelector("[data-c-boss]").checked,event:eventEnabled};
+      c.event=eventEnabled?(c.event||"event"):"";
+      h.querySelector("[data-c-damage-out]").textContent="×"+c.damageMultiplier.toFixed(2);
       h.querySelector("[data-c-range-out]").textContent=Math.round(c.range)+" px";
       h.querySelector("[data-c-rate-out]").textContent=rate.toFixed(2)+" tiro/s";
       h.querySelector("[data-c-projectile-out]").textContent=Math.round(c.projectileSpeed)+" px/s";
