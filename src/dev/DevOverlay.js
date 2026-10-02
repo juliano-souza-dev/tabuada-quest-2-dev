@@ -422,11 +422,7 @@ export class DevOverlay {
   }
 
   resolveWorldShipProfile(shipId,role="npc"){
-    let npcProfile=null;
-    if(role==="npc"){
-      npcProfile=this.npcEditor?.resolve?.(shipId)||null;
-      if(npcProfile)shipId=npcProfile.shipId;
-    }
+    const npcProfile=null;
     const catalogShips=(this.shipEditor?.repositoryShips?.()||[])
       .map(ship=>this.shipEditor.normalizeShip(ship));
     const ship=catalogShips.find(item=>item.id===String(shipId||""));
