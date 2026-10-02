@@ -172,8 +172,12 @@ export class ShipEditor{
     }
     value.navigation.src=value.navigation.sprite.src||value.navigation.src||"";
     value.combat=value.combat&&typeof value.combat==="object"?value.combat:{};
+    const playerHull=value.type!=="npc";
+    const defaultHullHp=playerHull?50:3;
+    const minHullHp=playerHull?50:1;
+    const maxHullHp=playerHull?1000:99;
     value.combat={
-      hp:Math.max(1,Math.min(99,Math.floor(Number(value.combat.hp??profile.combat?.hp)||3))),
+      hp:Math.max(minHullHp,Math.min(maxHullHp,Math.floor(Number(value.combat.hp??profile.combat?.hp)||defaultHullHp))),
       attackRange:Math.max(200,Math.min(6000,Number(value.combat.attackRange??profile.combat?.attackRange??1200)||1200)),
       attackCooldownMs:Math.max(300,Math.min(5000,Number(value.combat.attackCooldownMs??profile.combat?.attackCooldownMs??900)||900)),
       damage:Math.max(1,Math.min(20,Math.floor(Number(value.combat.damage??profile.combat?.damage)||1))),
@@ -696,6 +700,10 @@ export class ShipEditor{
   }
 
   combinedActionCombatHtml(ship){
+    const playerHull=ship.type!=="npc";
+    const hpMin=playerHull?50:1;
+    const hpMax=playerHull?1000:99;
+    const hpLabel=playerHull?"Vida base / casco":"Vida máxima / casco";
     return `
       <section class="tq-ships__panel tq-ships__action-combat">
         <div class="tq-ships__panel-title">
@@ -703,7 +711,7 @@ export class ShipEditor{
           <span>WEBGL FX</span>
         </div>
         <div class="tq-ships__settings tq-ships__settings--v2">
-          <label><span>Vida máxima / casco</span><input data-action-hp type="number" min="1" max="99" value="${Math.round(ship.combat.hp)}"></label>
+          <label><span>${hpLabel}</span><input data-action-hp type="number" min="${hpMin}" max="${hpMax}" value="${Math.round(ship.combat.hp)}"></label>
           <label><span>Alcance base px</span><input data-action-range type="number" min="200" max="6000" step="25" value="${Math.round(ship.combat.attackRange)}"></label>
           <label><span>Intervalo de tiro ms</span><input data-action-cooldown type="number" min="300" max="5000" step="50" value="${Math.round(ship.combat.attackCooldownMs)}"></label>
           <label><span>Dano por impacto</span><input data-action-damage type="number" min="1" max="20" value="${Math.round(ship.combat.damage)}"></label>
@@ -713,7 +721,7 @@ export class ShipEditor{
           <label class="tq-ships__check"><input data-action-smoke type="checkbox" ${ship.combat.smoke!==false?"checked":""}><span>Fumaça</span></label>
           <label class="tq-ships__check"><input data-action-impact type="checkbox" ${ship.combat.impact!==false?"checked":""}><span>Impacto</span></label>
         </div>
-        <small class="tq-world-editor-note">Nenhum frame 17+ é reservado para combate. O atlas inteiro contém apenas as 16 orientações.</small>
+        <small class="tq-world-editor-note">${playerHull?"Para jogador, este valor é o casco base. Itens comprados e tripulação contratada podem ampliar a vida por modificadores, até o teto absoluto de 1000 HP. ":""}Nenhum frame 17+ é reservado para combate. O atlas inteiro contém apenas as 16 orientações.</small>
       </section>`;
   }
 
@@ -721,9 +729,13 @@ export class ShipEditor{
     const saveStyle=()=>{
       const draft=this.editableCurrent();
       if(!draft)return;
+      const playerHull=draft.type!=="npc";
+      const hpMin=playerHull?50:1;
+      const hpMax=playerHull?1000:99;
+      const hpDefault=playerHull?50:3;
       draft.combat={
         ...(draft.combat||{}),
-        hp:Math.max(1,Math.min(99,Math.floor(Number(content.querySelector("[data-action-hp]")?.value)||3))),
+        hp:Math.max(hpMin,Math.min(hpMax,Math.floor(Number(content.querySelector("[data-action-hp]")?.value)||hpDefault))),
         attackRange:Math.max(200,Math.min(6000,Number(content.querySelector("[data-action-range]")?.value)||1200)),
         attackCooldownMs:Math.max(300,Math.min(5000,Number(content.querySelector("[data-action-cooldown]")?.value)||900)),
         damage:Math.max(1,Math.min(20,Math.floor(Number(content.querySelector("[data-action-damage]")?.value)||1))),
@@ -782,7 +794,13 @@ export class ShipEditor{
         </section>`;
       this.bindAtlasControls(content);
       content.querySelector("[data-ship-name]")?.addEventListener("change",e=>this.updateShip({name:e.currentTarget.value.trim()||ship.name}));
-      content.querySelector("[data-ship-type]")?.addEventListener("change",e=>this.updateShip({type:e.currentTarget.value==="npc"?"npc":"player"}));
+      content.querySelector("[data-ship-type]")?.addEventListener("change",e=>{
+        const type=e.currentTarget.value==="npc"?"npc":"player";
+        const combat={...(ship.combat||{})};
+        if(type==="player")combat.hp=Math.max(50,Math.min(1000,Math.floor(Number(combat.hp)||50)));
+        else combat.hp=Math.max(1,Math.min(99,Math.floor(Number(combat.hp)||3)));
+        this.updateShip({type,combat});
+      });
       content.querySelector("[data-ship-export]")?.addEventListener("click",()=>this.exportShipJson());
       return;
     }
