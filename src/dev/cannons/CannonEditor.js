@@ -1,4 +1,4 @@
-import { CannonPreview } from "./CannonPreview.js?v=20261002-1653";
+import { CannonPreview } from "./CannonPreview.js?v=20261002-1700";
 const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
 const slug=value=>String(value||"cannon").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"cannon";
 
