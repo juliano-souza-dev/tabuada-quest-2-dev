@@ -24,6 +24,7 @@ export class GameRuntime {
     this.sceneCatalog=null;
     this.worldCatalog=null;
     this.shipCatalog=null;
+    this.treasureCatalog=null;
     this.pedagogyCurriculum=null;
     this.actionCatalog=null;
     this.actionRuntime=null;
@@ -63,16 +64,18 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,treasureCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
+      this.loadJson(catalogs.treasures||"./src/config/treasure-catalog.json"),
       this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       this.loadJson(catalogs.actions||"./src/config/action-catalog.json")
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
     this.shipCatalog=shipCatalog;
+    this.treasureCatalog=treasureCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
@@ -331,6 +334,11 @@ export class GameRuntime {
 
   shipEntry(id){
     return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[]).find(ship=>ship.id===id)||null;
+  }
+
+  treasureEntry(id){
+    return (Array.isArray(this.treasureCatalog?.treasures)?this.treasureCatalog.treasures:[])
+      .find(treasure=>treasure.id===id)||null;
   }
 
   listAvailableShips(){
@@ -726,6 +734,10 @@ export class GameRuntime {
           shipName:ship.name||ship.id,
           name:ship.name||ship.id
         };
+      },
+      resolveTreasure:treasureId=>{
+        const treasure=this.treasureEntry(String(treasureId||""));
+        return treasure?clone(treasure):null;
       },
       createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
         kind:entity?.type==="treasure"?"treasure":"world-interaction",
