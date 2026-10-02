@@ -886,3 +886,43 @@
 .tq-world-depth-mask-controls>div{display:flex;gap:8px;flex-wrap:wrap}
 .tq-world-depth-mask-controls button{min-height:34px;padding:7px 10px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:#0b4059;color:#fff;font:800 11px/1 system-ui}
 .tq-world-depth-mask-controls button:disabled{opacity:.4}
+
+
+/* Cannon catalog editor layout */
+.tq-dev__cannons .tq-ships__editor{padding:16px;overflow:auto}
+.tq-cannon-editor-card{max-width:1180px;margin:0 auto}
+.tq-cannon-editor-head{align-items:center;gap:20px}
+.tq-cannon-trash-action{margin-left:auto;min-width:180px}
+.tq-cannon-grid{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(420px,1.4fr);gap:16px;padding-top:14px}
+.tq-cannon-group{min-width:0;padding:16px;border:1px solid rgba(91,157,184,.28);border-radius:14px;background:rgba(5,22,34,.44)}
+.tq-cannon-group h4{margin:0 0 14px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#a9c8d8}
+.tq-cannon-group--identity{grid-column:1}
+.tq-cannon-group--combat{grid-column:2;grid-row:1 / span 2}
+.tq-cannon-group--purchase{grid-column:1}
+.tq-cannon-identity,.tq-cannon-group--combat{display:grid;gap:14px}
+.tq-cannon-field{display:grid;gap:7px;min-width:0}
+.tq-cannon-field>span,.tq-cannon-asset>span{font-size:11px;font-weight:800;text-transform:uppercase;color:#9db2bf}
+.tq-cannon-field input,.tq-cannon-field select{width:100%;min-width:0}
+.tq-cannon-asset{display:grid;gap:8px}
+.tq-cannon-asset-row{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;align-items:center}
+.tq-cannon-asset-row img,.tq-cannon-asset-empty{width:82px;height:82px;object-fit:contain;border:1px solid rgba(117,168,190,.3);border-radius:12px;background:#071521}
+.tq-cannon-asset-empty{display:grid;place-items:center;font-size:22px}
+.tq-cannon-asset-row>div{display:grid;gap:7px;min-width:0}
+.tq-cannon-asset-row small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8ea6b3}
+.tq-cannon-slider{display:grid;gap:8px;padding:12px 0;border-bottom:1px solid rgba(111,157,176,.14)}
+.tq-cannon-slider:last-child{border-bottom:0}
+.tq-cannon-slider>span{display:flex;justify-content:space-between;gap:16px;align-items:center}
+.tq-cannon-slider output{padding:5px 9px;border:1px solid rgba(91,157,184,.3);border-radius:8px;background:#0b2535;font-weight:800;white-space:nowrap}
+.tq-cannon-slider input[type=range]{width:100%;margin:0}
+.tq-cannon-purchase-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tq-cannon-acquisition{display:grid;gap:9px;margin-top:12px}
+.tq-cannon-acquisition label{display:flex;align-items:flex-start;gap:10px;padding:10px;border:1px solid rgba(91,157,184,.22);border-radius:10px;background:rgba(8,31,45,.55)}
+.tq-cannon-acquisition label>span{display:grid;gap:2px}
+.tq-cannon-acquisition small{color:#8ea6b3}
+@media(max-width:900px){
+ .tq-cannon-grid{grid-template-columns:1fr}
+ .tq-cannon-group--identity,.tq-cannon-group--combat,.tq-cannon-group--purchase{grid-column:1;grid-row:auto}
+ .tq-cannon-purchase-grid{grid-template-columns:1fr}
+ .tq-cannon-editor-head{align-items:flex-start;flex-direction:column}
+ .tq-cannon-trash-action{margin-left:0;width:100%}
+}
