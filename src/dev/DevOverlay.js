@@ -2061,6 +2061,7 @@ export class DevOverlay {
       wetness:Number(entity.waterIntegration?.wetness??.5),
       submergedShadow:Number(entity.waterIntegration?.submergedShadow??.42)
     };
+    const depthMaskPoints=Array.isArray(entity.depthMask?.points)?entity.depthMask.points:[];
     const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{hp:3};
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
     const shipOptions=(this.shipEditor?.allShips?.()||[]).map(ship=>
@@ -2133,6 +2134,9 @@ export class DevOverlay {
           effectRange("parallax","Parallax",0,1,.01)+
           effectRange("opacity","Opacidade",.08,1,.01)+
           effectRange("blur","Desfoque de profundidade",0,8,.1," px")+
+          (entity.type==="island"
+            ? '<div class="tq-world-depth-mask-controls"><strong>Máscara de profundidade</strong><small>'+depthMaskPoints.length+' ponto(s) marcados. Com 3 ou mais pontos, o desfoque atua somente dentro do polígono.</small><div><button type="button" data-depth-mask-edit>✦ Marcar pontos na ilha</button><button type="button" data-depth-mask-clear '+(depthMaskPoints.length?'':'disabled')+'>Limpar pontos</button></div></div>'
+            : '')+
           effectRange("distortion","Distorção WebGL",0,100,1)+
           effectRange("glow","Brilho WebGL",0,100,1)+
           '<label class="tq-field tq-field--check"><span>Orientar no percurso</span><input data-effect-prop="rotateToPath" type="checkbox" '+(effect.rotateToPath?'checked':'')+'></label>'+
@@ -2378,6 +2382,18 @@ export class DevOverlay {
     });
 
     const effectNumeric=new Set(["speed","intensity","range","parallax","opacity","blur","distortion","glow"]);
+    content.querySelector("[data-depth-mask-edit]")?.addEventListener("click",button=>{
+      const active=button.dataset.active!=="true";
+      this.worldEditor.setDepthMaskEditing(entity.id,active);
+      button.dataset.active=active?"true":"false";
+      button.textContent=active?"✓ Marcando pontos · clique na ilha":"✦ Marcar pontos na ilha";
+    });
+    content.querySelector("[data-depth-mask-clear]")?.addEventListener("click",()=>{
+      this.worldEditor.clearDepthMask(entity.id);
+      this.worldEditor.setDepthMaskEditing(entity.id,true);
+      this.renderWorldInspector();
+    });
+
     content.querySelectorAll("[data-effect-prop]").forEach(input=>{
       const read=()=>input.type==="checkbox"
         ?input.checked
