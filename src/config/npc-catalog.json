@@ -4,65 +4,20 @@
   "npcs": [
     {
       "id": "corsario-colombo",
-      "name": "Corsário Colombo",
-      "shipId": "corsario-colombo",
+      "name": "Terror do Halloween",
+      "shipId": "",
       "navigation": {
-        "minSpeed": 30,
-        "speed": 90,
-        "acceleration": 280,
-        "behavior": "roam"
+        "minSpeed": 0,
+        "speed": 141,
+        "acceleration": 760,
+        "behavior": "patrol"
       },
       "combat": {
-        "hp": 12,
-        "attitude": "retaliate",
+        "hp": 949901,
+        "attitude": "peaceful",
         "attackRange": 1200,
         "attackCooldownMs": 900,
-        "damage": 1,
-        "allowedAmmoIds": [
-          "cannonball-standard"
-        ]
-      }
-    },
-    {
-      "id": "pirata-enseada",
-      "name": "Pirata da Enseada",
-      "shipId": "pirata-enseada",
-      "navigation": {
-        "minSpeed": 28,
-        "speed": 82,
-        "acceleration": 260,
-        "behavior": "roam"
-      },
-      "combat": {
-        "hp": 10,
-        "attitude": "retaliate",
-        "attackRange": 1200,
-        "attackCooldownMs": 900,
-        "damage": 1,
-        "allowedAmmoIds": [
-          "cannonball-standard"
-        ]
-      }
-    },
-    {
-      "id": "pirata-halloween",
-      "name": "Pirata Halloween",
-      "shipId": "pirata-halloween-npc",
-      "navigation": {
-        "minSpeed": 34,
-        "speed": 96,
-        "acceleration": 300,
-        "behavior": "roam"
-      },
-      "combat": {
-        "hp": 14,
-        "attitude": "hostile",
-        "attackRange": 1250,
-        "attackCooldownMs": 850,
-        "damage": 1,
-        "allowedAmmoIds": [
-          "cannonball-standard"
-        ]
+        "damage": 1
       }
     }
   ]
