@@ -238,7 +238,9 @@ export class ShipEditor{
   }
 
   save(){
-    try{localStorage.setItem(this.storageKey,JSON.stringify(this.catalog?.ships||[]))}catch(error){console.warn("Ship catalog live save failed",error)}
+    const ships=(this.catalog?.ships||[]).map(ship=>this.normalizeShip(ship));
+    if(this.catalog)this.catalog.ships=ships;
+    try{localStorage.setItem(this.storageKey,JSON.stringify(ships))}catch(error){console.warn("Ship catalog live save failed",error)}
     const shipId=String(this.selectedId||"");
     if(shipId){
       globalThis.dispatchEvent?.(new CustomEvent("tq:shipprofilechange",{detail:{shipId}}));
