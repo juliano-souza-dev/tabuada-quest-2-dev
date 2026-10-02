@@ -72,7 +72,7 @@ export class GameRuntime {
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
-    this.shipCatalog=this.mergeLocalShipCatalog(shipCatalog);
+    this.shipCatalog=shipCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
@@ -329,25 +329,6 @@ export class GameRuntime {
     };
   }
 
-  mergeLocalShipCatalog(catalog){
-    const base=catalog&&typeof catalog==="object"?clone(catalog):{schema:"tq.ship-catalog",version:2,ships:[]};
-    const byId=new Map((Array.isArray(base.ships)?base.ships:[])
-      .filter(ship=>ship?.id)
-      .map(ship=>[String(ship.id),clone(ship)]));
-    try{
-      const local=JSON.parse(localStorage.getItem("tq.dev.ship-catalog-local:v1")||"[]");
-      if(Array.isArray(local)){
-        for(const ship of local){
-          if(ship?.id)byId.set(String(ship.id),clone(ship));
-        }
-      }
-    }catch(error){
-      console.warn("Local ship catalog merge failed",error);
-    }
-    base.ships=[...byId.values()];
-    return base;
-  }
-
   shipEntry(id){
     return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[]).find(ship=>ship.id===id)||null;
   }
@@ -425,7 +406,7 @@ export class GameRuntime {
     const legacy=world?.player&&typeof world.player==="object"?clone(world.player):{};
     const spawn=world?.playerSpawn&&typeof world.playerSpawn==="object"?clone(world.playerSpawn):{};
     const ship=this.getEquippedShip();
-    const shipPlayer=ship?this.shipRuntimeProfile(ship,"player"):{};
+    const shipPlayer=ship?.player&&typeof ship.player==="object"?clone(ship.player):{};
 
     const navigation={
       x:Number(spawn.x??legacy.x??world.width/2),
