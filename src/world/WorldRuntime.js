@@ -3936,7 +3936,7 @@ export class WorldRuntime {
     let firedCount=0;
     for(const cannon of eligible){
       if(ammoRemaining<=0)break;
-      const projectileSpeed=Math.max(120,Number(cannon.projectileSpeed)||620);
+      const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
       const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
       const fired=this.navalRenderer?.fire?.({
         from:{x:this.player.x,y:this.player.y},
