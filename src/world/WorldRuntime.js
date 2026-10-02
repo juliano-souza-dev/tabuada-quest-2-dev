@@ -339,8 +339,6 @@ export class WorldRuntime {
       width:Math.max(24,Number(profile.width)||88),height:Math.max(24,Number(profile.height)||88),
       x:point.x,y:point.y,z:18,rotation:0,lockAspect:true,runtimeGenerated:true,runtimeTreasure:true,
       treasureId:String(typeConfig.treasureId),treasureRewards:structuredClone(profile.rewards||{}),
-      treasureAnimation:profile.animation&&typeof profile.animation==="object"?structuredClone(profile.animation):null,
-      treasureVisual:profile.visual&&typeof profile.visual==="object"?structuredClone(profile.visual):null,
       treasureRespawn:typeConfig.respawn===true,treasureRespawnDelayMs:Math.max(1000,Number(typeConfig.respawnDelaySec||30)*1000),
       treasureSpawnAt:performance.now()+Math.max(0,Number(typeConfig.spawnIntervalSec)||0)*1000*(index+1),
       treasurePending:true,treasureRespawnAt:0,
@@ -382,38 +380,6 @@ export class WorldRuntime {
       return min+Math.floor(Math.random()*(max-min+1));
     };
     result.gold=roll("gold");result.rubies=roll("rubies");return result;
-  }
-
-  updateTreasureAnimation(time=performance.now()){
-    for(const entity of this.entities){
-      if(!entity?.runtimeTreasure||entity.treasurePending||this.collected.has(entity.id)||!entity.el)continue;
-      const animation=entity.treasureAnimation;
-      if(!animation||String(animation.type||"")!=="atlas")continue;
-      const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
-      if(!img)continue;
-      const columns=Math.max(1,Math.floor(Number(animation.columns)||1));
-      const rows=Math.max(1,Math.floor(Number(animation.rows)||1));
-      const frames=(Array.isArray(animation.frames)?animation.frames:[])
-        .map(value=>Math.max(0,Math.floor(Number(value)||0)))
-        .filter(value=>value<columns*rows);
-      if(!frames.length)continue;
-      const fps=clamp(Number(animation.fps)||6,1,30);
-      const phase=(entity.index||0)*137;
-      const frame=frames[Math.floor((time+phase)/(1000/fps))%frames.length];
-      const col=frame%columns,row=Math.floor(frame/columns);
-      img.style.objectFit="none";
-      img.style.width=(columns*100)+"%";
-      img.style.height=(rows*100)+"%";
-      img.style.maxWidth="none";
-      img.style.maxHeight="none";
-      img.style.transformOrigin="top left";
-      img.style.transform="translate("+(-col*100/columns)+"%,"+(-row*100/rows)+"%)";
-      entity.el.style.overflow="hidden";
-      if(entity.treasureVisual?.glow===true){
-        const pulse=.82+.18*Math.sin(time*.004+(entity.index||0));
-        img.style.filter="drop-shadow(0 0 "+(8+8*pulse).toFixed(1)+"px rgba(255,126,24,"+(.55+.3*pulse).toFixed(2)+"))";
-      }
-    }
   }
 
   updateTreasurePopulation(time=performance.now()){
@@ -5002,7 +4968,6 @@ export class WorldRuntime {
     if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
-    this.updateTreasureAnimation(time);
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
