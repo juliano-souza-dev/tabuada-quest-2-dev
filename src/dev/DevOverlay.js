@@ -18,6 +18,7 @@ export class DevOverlay {
     this.ammoEditor=new AmmoEditor();
     this.cannonEditor=new CannonEditor({requestAsset:context=>this.openCannonAssetPicker(context)});
     this.cannonCatalog={defaultCannonId:"",cannons:[]};
+    this.soundCatalog={sounds:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
     this.worldEditor=new WorldEditor(this.runtime.root,{
@@ -27,7 +28,8 @@ export class DevOverlay {
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
       getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
-      getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]})
+      getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]}),
+      getSoundCatalog:()=>this.soundCatalog
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
@@ -152,6 +154,7 @@ export class DevOverlay {
     this.shipEditorReady=this.shipEditor.mount(this.el);
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
     this.cannonCatalogReady=this.cannonEditor.mount(this.el).then(()=>{this.cannonCatalog=this.cannonEditor.getCatalog();return this.cannonCatalog});
+    this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
     this.npcEditorReady=this.npcEditor.mount(this.el);
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
@@ -1015,6 +1018,7 @@ export class DevOverlay {
         this.shipEditorReady,
         this.ammoEditorReady,
         this.cannonCatalogReady,
+        this.soundCatalogReady,
         this.treasureEditorReady,
         this.npcEditorReady
       ]);
