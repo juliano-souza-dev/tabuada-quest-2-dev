@@ -10,7 +10,10 @@ export class DevOverlay {
     this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];this.actionCatalog=null;
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
-    this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
+    this.shipEditor=new ShipEditor({
+      requestFrameAsset:context=>this.openShipFramePicker(context),
+      getNpcProfiles:()=>this.npcEditor?.all?.()||[]
+    });
     this.ammoEditor=new AmmoEditor();
     this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
