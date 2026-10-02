@@ -641,6 +641,7 @@ export class WorldRuntime {
             </label>
             <button type="submit" data-world-challenge-submit>Responder</button>
           </form>
+          <div class="tq-world-combat__options" data-world-repair-options aria-label="Escolha a resposta" hidden></div>
           <p class="tq-world-challenge__feedback" data-world-challenge-feedback aria-live="polite"></p>
         </section>
       </div>
@@ -721,6 +722,7 @@ export class WorldRuntime {
     this.challengeFeedback=this.host.querySelector("[data-world-challenge-feedback]");
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
+    this.repairOptions=this.host.querySelector("[data-world-repair-options]");
     this.combatWrap=this.host.querySelector("[data-world-combat]");
     this.combatArena=this.host.querySelector("[data-world-combat-arena]");
     this.combatOptions=this.host.querySelector("[data-world-combat-options]");
@@ -2590,10 +2592,17 @@ export class WorldRuntime {
     };
     const close=()=>this.closeTreasureChallenge();
     this.challengeForm?.addEventListener("submit",submit);
+    const chooseRepair=event=>{
+      const button=event.target.closest?.("[data-repair-answer]");
+      if(!button||button.disabled)return;
+      this.submitTreasureAnswer(button.dataset.repairAnswer,button);
+    };
     this.challengeClose?.addEventListener("click",close);
+    this.repairOptions?.addEventListener("click",chooseRepair);
     this.cleanups.push(()=>{
       this.challengeForm?.removeEventListener("submit",submit);
       this.challengeClose?.removeEventListener("click",close);
+      this.repairOptions?.removeEventListener("click",chooseRepair);
     });
   }
 
@@ -3054,6 +3063,21 @@ export class WorldRuntime {
     active.challenge=challenge;
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
     if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeForm)this.challengeForm.hidden=true;
+    if(this.repairOptions){
+      this.repairOptions.hidden=false;
+      this.repairOptions.replaceChildren();
+      if(challenge?.available){
+        for(const value of this.combatChoices(challenge)){
+          const button=document.createElement("button");
+          button.type="button";
+          button.className="tq-world-combat__option";
+          button.dataset.repairAnswer=String(value);
+          button.textContent=String(value);
+          this.repairOptions.append(button);
+        }
+      }
+    }
     if(this.challengePrompt)this.challengePrompt.textContent=challenge?.available
       ?String(challenge.prompt||"")
       :"Desafio indisponível";
@@ -3092,6 +3116,8 @@ export class WorldRuntime {
     this.challengeActive=null;
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
     if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeForm)this.challengeForm.hidden=false;
+    if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeAnswer){
       this.challengeAnswer.value="";
@@ -3166,6 +3192,8 @@ export class WorldRuntime {
         String(challenge?.message||"As regras pedagógicas desta conta ainda não estão disponíveis.");
       if(this.challengeAnswer)this.challengeAnswer.disabled=true;
       if(this.challengeSubmit)this.challengeSubmit.disabled=true;
+      this.repairOptions?.querySelectorAll("button").forEach(button=>{button.disabled=true});
+      selectedButton?.classList.add(result.correct===true?"is-correct":"is-wrong");
       return;
     }
 
@@ -3198,13 +3226,13 @@ export class WorldRuntime {
     return true;
   }
 
-  submitTreasureAnswer(){
+  submitTreasureAnswer(selectedRaw=null,selectedButton=null){
     const active=this.challengeActive;
     const entity=active?.entity;
     const challenge=active?.challenge;
     if(!entity||!challenge?.available||typeof challenge.evaluate!=="function")return;
 
-    const raw=this.challengeAnswer?.value??"";
+    const raw=selectedRaw??this.challengeAnswer?.value??"";
     if(String(raw).trim()===""){
       if(this.challengeFeedback)this.challengeFeedback.textContent="Digite uma resposta.";
       return;
