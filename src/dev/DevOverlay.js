@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0012";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0012";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0036";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -418,7 +418,9 @@ export class DevOverlay {
         idlePeriod:Number(navigation.periodMs??3600)
       },
       combat:{
-        hp:Math.max(1,Math.min(99,Math.floor(Number(combat.hp)||3))),
+        hp:role==="player"
+          ?Math.max(50,Math.min(1000,Math.floor(Number(combat.hp)||50)))
+          :Math.max(1,Math.min(99,Math.floor(Number(combat.hp)||3))),
         attackRange:Math.max(200,Math.min(6000,Number(combat.attackRange)||1200)),
         attackCooldownMs:Math.max(300,Math.min(5000,Number(combat.attackCooldownMs)||900)),
         damage:Math.max(1,Math.min(20,Math.floor(Number(combat.damage)||1)))
@@ -1220,9 +1222,9 @@ export class DevOverlay {
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Navio do jogador</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Navio do catálogo</span><select data-player-ship-id>'+playerShipOptions+'</select></label>'+
             (selectedPlayerShip
-              ?'<div class="tq-world-editor-note"><strong>'+this.escapeHtml(selectedPlayerShip.name||selectedPlayerShip.id)+'</strong> · '+Math.round(Number(selectedPlayerShip.navigation?.width)||230)+'×'+Math.round(Number(selectedPlayerShip.navigation?.height)||230)+' px · '+Math.round(Number(selectedPlayerShip.navigation?.speed)||420)+' px/s · alcance '+Math.round(Number(selectedPlayerShip.combat?.attackRange)||1200)+' px</div>'
+              ?'<div class="tq-world-editor-note"><strong>'+this.escapeHtml(selectedPlayerShip.name||selectedPlayerShip.id)+'</strong> · '+Math.round(Number(selectedPlayerShip.navigation?.width)||230)+'×'+Math.round(Number(selectedPlayerShip.navigation?.height)||230)+' px · '+Math.round(Number(selectedPlayerShip.navigation?.speed)||420)+' px/s · casco '+Math.max(50,Math.min(1000,Math.round(Number(selectedPlayerShip.combat?.hp)||50)))+' HP · alcance '+Math.round(Number(selectedPlayerShip.combat?.attackRange)||1200)+' px</div>'
               :'<small class="tq-world-editor-note">Selecione um navio já pronto no catálogo. Criação, spritesheet, física e combate são configurados no editor de Navios.</small>')+
-            '<small class="tq-world-editor-note">Esta região salva apenas qual navio será usado pelo jogador. O perfil completo continua pertencendo ao catálogo.</small>'+
+            '<small class="tq-world-editor-note">Esta região salva apenas qual navio será usado pelo jogador. O perfil completo continua pertencendo ao catálogo. A vida base vem do navio; itens e tripulação podem ampliar o casco até 1000 HP.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-environment-preset>'+environmentOptions+'</select></label>'+
