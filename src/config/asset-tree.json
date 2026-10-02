@@ -1,7 +1,7 @@
 {
   "schema": "tq.asset-tree",
   "version": 3,
-  "generatedFrom": "a6ae9def722585af2c2c9d79113d1bea10bda27a",
+  "generatedFrom": "a637c3abf4dead01bba6ee4b83fcdf277b70cd5f",
   "root": {
     "type": "directory",
     "name": "assets",
@@ -653,6 +653,25 @@
         "name": "regions",
         "path": "assets/regions",
         "children": [
+          {
+            "type": "directory",
+            "name": "global",
+            "path": "assets/regions/global",
+            "children": [
+              {
+                "type": "directory",
+                "name": "islands",
+                "path": "assets/regions/global/islands",
+                "children": [
+                  {
+                    "type": "image",
+                    "name": "ilha_comercio_redonda.webp",
+                    "path": "assets/regions/global/islands/ilha_comercio_redonda.webp"
+                  }
+                ]
+              }
+            ]
+          },
           {
             "type": "directory",
             "name": "islands",
@@ -1638,6 +1657,11 @@
       "type": "image",
       "name": "icon-512.svg",
       "path": "assets/pwa/icon-512.svg"
+    },
+    {
+      "type": "image",
+      "name": "ilha_comercio_redonda.webp",
+      "path": "assets/regions/global/islands/ilha_comercio_redonda.webp"
     },
     {
       "type": "image",
