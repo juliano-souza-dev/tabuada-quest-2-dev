@@ -12,7 +12,15 @@
     "worlds": "./src/config/world-catalog.json",
     "ships": "./src/config/ship-catalog.json",
     "pedagogy": "./src/config/pedagogy-curriculum.json",
-    "actions": "./src/config/action-catalog.json"
+    "actions": "./src/config/action-catalog.json",
+    "assets": "./src/config/asset-tree.json",
+    "assetCatalog": "./src/config/asset-catalog.json",
+    "compositionTypes": "./src/config/composition-types.json",
+    "npcs": "./src/config/npc-catalog.json",
+    "treasures": "./src/config/treasure-catalog.json",
+    "ammo": "./src/config/ammo-catalog.json",
+    "cannons": "./src/config/cannon-catalog.json",
+    "runtimePolicy": "./src/config/runtime-policy.json"
   },
   "start": {
     "kind": "scene",
