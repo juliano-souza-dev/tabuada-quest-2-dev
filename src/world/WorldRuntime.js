@@ -347,7 +347,7 @@ export class WorldRuntime {
       for(const typeConfig of population.types){
         for(let i=0;i<typeConfig.count&&total<160;i++,total++){
           const entity=this.createGeneratedTreasure({typeConfig,index:total,population,random,occupied});
-          if(entity){this.entities.push(entity);this.generatedTreasureIds.add(entity.id)}
+          if(entity){this.collected.delete(entity.id);this.entities.push(entity);this.generatedTreasureIds.add(entity.id)}
         }
       }
     }
@@ -3357,7 +3357,6 @@ export class WorldRuntime {
       if(this.challengeAnswer)this.challengeAnswer.disabled=true;
       if(this.challengeSubmit)this.challengeSubmit.disabled=true;
       this.repairOptions?.querySelectorAll("button").forEach(button=>{button.disabled=true});
-      selectedButton?.classList.add(result.correct===true?"is-correct":"is-wrong");
       return;
     }
 
