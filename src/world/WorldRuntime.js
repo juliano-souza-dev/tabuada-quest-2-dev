@@ -136,6 +136,7 @@ export class WorldRuntime {
     this.generatedNpcIds=new Set();
     this.challengeActive=null;
     this.challengeTimer=0;
+    this.repairActive=null;
     this.combatActive=null;
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
@@ -1827,7 +1828,13 @@ export class WorldRuntime {
 
     this.viewport.addEventListener("click",navigateToPointer);
 
-    const action=()=>this.activateNearby();
+    const action=()=>{
+      if(this.actionButton?.dataset?.worldAction==="repair"){
+        this.beginPlayerRepair({forced:false});
+        return;
+      }
+      this.activateNearby();
+    };
     const recenter=event=>{
       event?.preventDefault?.();
       event?.stopPropagation?.();
@@ -3014,6 +3021,74 @@ export class WorldRuntime {
     },2850);
   }
 
+  async loadPlayerRepairRound(){
+    const active=this.repairActive;
+    if(!active)return;
+    let challenge=null;
+    const repairEntity={id:"player-repair",type:"repair",label:"Reparo do navio"};
+    try{
+      challenge=this.createPedagogyChallenge
+        ?await this.createPedagogyChallenge({entity:repairEntity,worldState:this.getState()})
+        :null;
+    }catch(error){
+      console.warn("Repair pedagogy challenge creation failed",error);
+    }
+    if(!this.repairActive||this.repairActive!==active)return;
+    active.challenge=challenge;
+    this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
+    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengePrompt)this.challengePrompt.textContent=challenge?.available
+      ?String(challenge.prompt||"")
+      :"Desafio indisponível";
+    if(this.challengeFeedback)this.challengeFeedback.textContent=challenge?.available
+      ?"Cada acerto recupera 20 pontos de vida. Casco: "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+      :"Não foi possível gerar uma conta de multiplicação.";
+    if(this.challengeAnswer){
+      this.challengeAnswer.value="";
+      this.challengeAnswer.disabled=!challenge?.available;
+    }
+    if(this.challengeSubmit)this.challengeSubmit.disabled=!challenge?.available;
+    if(this.challengeClose){
+      this.challengeClose.hidden=active.forced===true;
+      this.challengeClose.disabled=active.forced===true;
+    }
+    queueMicrotask(()=>this.challengeAnswer?.focus?.());
+  }
+
+  async beginPlayerRepair({forced=false}={}){
+    if(this.mode!=="play"||this.repairActive||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
+    if(!forced&&(this.navalPlayerHp<=0||this.navalHostile.size>0||this.combatTarget||this.navalAutoFire))return false;
+    this.stopForChallenge();
+    this.clearCombatTarget({hideAction:true});
+    this.navalAutoFire=false;
+    this.navalNextShotAt=0;
+    this.repairActive={forced:forced===true,challenge:null};
+    await this.loadPlayerRepairRound();
+    return true;
+  }
+
+  closePlayerRepair({completed=false}={}){
+    const active=this.repairActive;
+    if(!active)return false;
+    if(active.forced&&!completed&&this.navalPlayerHp<this.navalPlayerMaxHp)return false;
+    this.repairActive=null;
+    this.challengeActive=null;
+    if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
+    if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeFeedback)this.challengeFeedback.textContent="";
+    if(this.challengeAnswer){
+      this.challengeAnswer.value="";
+      this.challengeAnswer.disabled=false;
+    }
+    if(this.challengeSubmit)this.challengeSubmit.disabled=false;
+    if(this.challengeClose){
+      this.challengeClose.hidden=false;
+      this.challengeClose.disabled=false;
+    }
+    if(completed)this.playerEl?.classList.remove("is-player-sunk");
+    return true;
+  }
+
   stopForChallenge(){
     this.keys.clear();
     this.pointerDirections.clear();
@@ -3024,6 +3099,10 @@ export class WorldRuntime {
   }
 
   closeTreasureChallenge(){
+    if(this.repairActive){
+      this.closePlayerRepair({completed:false});
+      return;
+    }
     if(this.challengeTimer){
       clearTimeout(this.challengeTimer);
       this.challengeTimer=0;
@@ -3115,6 +3194,42 @@ export class WorldRuntime {
     }
 
     const result=challenge.evaluate(raw)||{};
+
+    if(this.repairActive){
+      const detail={
+        entityId:"player-repair",
+        challengeId:String(challenge.id||""),
+        operation:String(challenge.operation||challenge.kind||"multiplication"),
+        a:Number(challenge.a),
+        b:Number(challenge.b),
+        answer:result.answer,
+        correct:result.correct===true,
+        region:Number(challenge.region)||null,
+        bonus:false,
+        countsTowardPlanned:challenge.countsTowardPlanned!==false
+      };
+      this.onPedagogyResult?.(detail);
+      if(result.correct===true){
+        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);
+        if(this.challengeFeedback)this.challengeFeedback.textContent=
+          "Acertou! +20 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+        if(this.navalPlayerHp>=this.navalPlayerMaxHp){
+          this.challengeTimer=setTimeout(()=>this.closePlayerRepair({completed:true}),650);
+          return;
+        }
+      }else if(this.challengeFeedback){
+        this.challengeFeedback.textContent=
+          "Resposta incorreta. Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+      }
+      if(this.challengeAnswer)this.challengeAnswer.disabled=true;
+      if(this.challengeSubmit)this.challengeSubmit.disabled=true;
+      this.challengeTimer=setTimeout(async()=>{
+        this.challengeTimer=0;
+        await this.loadPlayerRepairRound();
+      },result.correct===true?650:900);
+      return;
+    }
+
     const detail={
       entityId:String(entity.id||""),
       challengeId:String(challenge.id||""),
@@ -3236,9 +3351,27 @@ export class WorldRuntime {
 
     if(!entity){
       this.regionExitDismissedId=null;
-      this.actionWrap.hidden=true;
+      const canRepair=this.navalPlayerHp>0
+        &&this.navalPlayerHp<this.navalPlayerMaxHp
+        &&this.navalHostile.size===0
+        &&!this.combatTarget
+        &&!this.navalAutoFire;
+      if(canRepair){
+        if(this.actionMessage)this.actionMessage.textContent=
+          "Casco danificado · "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp+" · resolva multiplicações para reparar";
+        if(this.actionButton){
+          this.actionButton.disabled=false;
+          this.actionButton.textContent="🔧 Reparar navio";
+          this.actionButton.dataset.worldAction="repair";
+        }
+        this.actionWrap.hidden=false;
+      }else{
+        if(this.actionButton)delete this.actionButton.dataset.worldAction;
+        this.actionWrap.hidden=true;
+      }
       return;
     }
+    if(this.actionButton)delete this.actionButton.dataset.worldAction;
 
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
@@ -3390,6 +3523,14 @@ export class WorldRuntime {
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
       this.navalHostile.clear();
+      this.stopForChallenge();
+      this.navalRenderer?.destroyShip?.({
+        at:{x:this.player.x,y:this.player.y},
+        size:Math.max(48,Number(this.config.player?.width)||108,Number(this.config.player?.height)||150),
+        duration:1500
+      });
+      this.playerEl?.classList.add("is-player-sunk");
+      queueMicrotask(()=>this.beginPlayerRepair({forced:true}));
       if(this.actionButton){
         this.actionButton.textContent="☠ Navio derrotado";
         this.actionButton.disabled=true;
@@ -4295,7 +4436,7 @@ export class WorldRuntime {
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
-    this.updateEntityMotionFrame(time,dt);
+    if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
     this.updateCamera(false,dt);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
