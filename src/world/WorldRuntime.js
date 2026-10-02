@@ -913,7 +913,9 @@ export class WorldRuntime {
         ?label+" · casco "+hp.current+"/"+hp.max+" · "+targetDistance+" px"
         :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.playerNavalCombatStats().attackRange)+" px";
     }
-    if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+    if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
+      ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+      :"⚔ Atacar";
     if(this.actionWrap)this.actionWrap.hidden=false;
     return true;
   }
@@ -1738,7 +1740,10 @@ export class WorldRuntime {
         return;
       }
       if(e.target?.closest?.('[data-combat-clickable="true"]'))return;
-      this.clearCombatTarget({hideAction:true});
+      // While auto-fire is armed, clicking the ocean is a navigation command,
+      // not a combat cancellation. Keep the target locked so the player can
+      // maneuver and continue firing while it remains in range.
+      if(!this.navalAutoFire)this.clearCombatTarget({hideAction:true});
 
       const target=screenPointToWorld(e.clientX,e.clientY,{
         viewportLeft:rect.left,
@@ -3127,7 +3132,9 @@ export class WorldRuntime {
         if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
           ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"
           :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(playerStats.attackRange)+" px";
-        if(this.actionButton)this.actionButton.textContent=this.navalAutoFire?"🔥 Atacando":"⚔ Atacar";
+        if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
+          ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+          :"⚔ Atacar";
         this.actionWrap.hidden=false;
         return;
       }
@@ -3345,10 +3352,14 @@ export class WorldRuntime {
         const playerStats=this.playerNavalCombatStats();
         const dist=this.navalTargetDistance(target);
         if(dist>playerStats.attackRange){
-          this.stopNavalAutoFire({
-            keepTarget:true,
-            message:String(target.label||target.shipName||"Navio inimigo")+" · FORA DE ALCANCE"
-          });
+          // Keep the attack armed. Range only pauses the shots. As soon as the
+          // target comes back into range, the same target resumes automatically.
+          this.navalNextShotAt=0;
+          if(this.actionButton)this.actionButton.textContent="⏸ Fora de alcance";
+          if(this.actionMessage)this.actionMessage.textContent=
+            String(target.label||target.shipName||"Navio inimigo")
+            +" · FORA DE ALCANCE · "+Math.round(dist)
+            +" / "+Math.round(playerStats.attackRange)+" px";
         }else if(Number(time)>=Number(this.navalNextShotAt||0)){
           if(this.fireDirectNavalProjectile(target)){
             this.navalNextShotAt=Number(time)+playerStats.attackCooldownMs;
