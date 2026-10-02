@@ -663,7 +663,35 @@ export class WorldRuntime {
     });
   }
 
+  navalTargetDistance(entity){
+    if(!entity)return Infinity;
+    return Math.hypot(
+      Number(entity.x||0)-Number(this.player?.x||0),
+      Number(entity.y||0)-Number(this.player?.y||0)
+    );
+  }
+
+  isNavalTargetInRange(entity){
+    return this.isClickableCombatShip(entity)
+      &&this.navalTargetDistance(entity)<=this.navalAttackRange;
+  }
+
+  stopNavalAutoFire({keepTarget=true,message=""}={}){
+    this.navalAutoFire=false;
+    this.navalNextShotAt=0;
+    if(!keepTarget){
+      this.clearCombatTarget({hideAction:true});
+      return;
+    }
+    const entity=this.combatTarget;
+    if(!entity)return;
+    if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+    if(message&&this.actionMessage)this.actionMessage.textContent=message;
+  }
+
   clearCombatTarget({hideAction=true}={}){
+    this.navalAutoFire=false;
+    this.navalNextShotAt=0;
     if(this.combatTarget?.el)this.combatTarget.el.classList.remove("is-combat-target");
     this.combatTarget=null;
     if(hideAction&&this.actionWrap)this.actionWrap.hidden=true;
@@ -673,6 +701,8 @@ export class WorldRuntime {
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.challengeActive||this.combatActive)return false;
     if(this.combatTarget&&this.combatTarget!==entity&&this.combatTarget.el){
       this.combatTarget.el.classList.remove("is-combat-target");
+      this.navalAutoFire=false;
+      this.navalNextShotAt=0;
     }
     this.combatTarget=entity;
     this.nearby=entity;
@@ -684,7 +714,12 @@ export class WorldRuntime {
 
     const label=String(entity.label||entity.shipName||"Navio inimigo");
     const hp=this.navalHpState(entity);
-    if(this.actionMessage)this.actionMessage.textContent=label+" · casco "+hp.current+"/"+hp.max;
+    const targetDistance=Math.round(this.navalTargetDistance(entity));
+    if(this.actionMessage){
+      this.actionMessage.textContent=this.isNavalTargetInRange(entity)
+        ?label+" · casco "+hp.current+"/"+hp.max+" · "+targetDistance+" px"
+        :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.navalAttackRange)+" px";
+    }
     if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
     if(this.actionWrap)this.actionWrap.hidden=false;
     return true;
