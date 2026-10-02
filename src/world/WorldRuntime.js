@@ -3470,7 +3470,7 @@ export class WorldRuntime {
           .filter(other=>other!==entity&&!this.collected.has(other.id)&&!this.navalDestroying.has(other.id))
           .map(other=>({x:Number(other.x)||0,y:Number(other.y)||0}));
         occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
-        const random=createSeededRandom(hashString(id+\".respawn.\"+Date.now()));
+        const random=createSeededRandom(hashString(id+".respawn."+Date.now()));
         const point=this.npcSpawnPoint(random,occupied,population);
         const heading=random()*360-180;
         entity.x=point.x;
@@ -3492,7 +3492,7 @@ export class WorldRuntime {
           entity.npcNavigation.nextCourseChange=3.5+random()*4.5;
         }
         entity.collision=normalizeCollision({
-          ...(entity.collision||{}),active:true,action:\"none\"
+          ...(entity.collision||{}),active:true,action:"none"
         },entity);
         this.navalHp.set(id,Math.max(1,Math.min(99,Number(entity.combat?.hp)||3)));
         if(entity.el)entity.el.hidden=false;
