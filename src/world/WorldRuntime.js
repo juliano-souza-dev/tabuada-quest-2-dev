@@ -3580,6 +3580,8 @@ export class WorldRuntime {
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
       this.navalHostile.clear();
+      this.closeCombat();
+      this.challengeActive=null;
       this.stopForChallenge();
       this.navalRenderer?.destroyShip?.({
         at:{x:this.player.x,y:this.player.y},
@@ -3587,7 +3589,7 @@ export class WorldRuntime {
         duration:1500
       });
       this.playerEl?.classList.add("is-player-sunk");
-      queueMicrotask(()=>this.beginPlayerRepair({forced:true}));
+      setTimeout(()=>this.beginPlayerRepair({forced:true}),0);
       if(this.actionButton){
         this.actionButton.textContent="☠ Navio derrotado";
         this.actionButton.disabled=true;
