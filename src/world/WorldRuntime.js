@@ -131,6 +131,9 @@ export class WorldRuntime {
     this.suppressNavigationClick=false;
     this.playerIdleBalanceMix=0;
     this.playerIdleVisual={roll:0,heave:0};
+    this.editorPreviewActive=false;
+    this.editorPreviewAnchor=null;
+    this.editorPreviewStartedAt=0;
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
     this.pointerDirections=new Set();
@@ -1275,6 +1278,65 @@ export class WorldRuntime {
     });
   }
 
+  setEditorPreviewActive(active=false){
+    if(!this.editorEnabled)return;
+    const next=Boolean(active);
+    if(next===this.editorPreviewActive)return;
+    if(next){
+      this.editorPreviewAnchor={
+        x:this.player.x,
+        y:this.player.y,
+        rotation:this.player.rotation,
+        direction:this.player.direction
+      };
+      this.editorPreviewStartedAt=performance.now();
+      this.player.vx=0;
+      this.player.vy=0;
+      this.clearPlayerWake();
+    }else{
+      const anchor=this.editorPreviewAnchor;
+      if(anchor){
+        this.player.x=anchor.x;
+        this.player.y=anchor.y;
+        this.player.rotation=anchor.rotation;
+        this.player.direction=anchor.direction;
+      }
+      this.player.vx=0;
+      this.player.vy=0;
+      this.editorPreviewAnchor=null;
+      this.editorPreviewStartedAt=0;
+      this.clearPlayerWake();
+      this.updatePlayerVisual(performance.now(),1/60);
+    }
+    this.editorPreviewActive=next;
+  }
+
+  updateEditorPreviewPlayer(time,dt){
+    if(!this.editorPreviewActive||this.mode!=="edit")return;
+    if(!this.editorPreviewAnchor){
+      this.editorPreviewAnchor={x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction};
+      this.editorPreviewStartedAt=Number(time)||performance.now();
+    }
+    const anchor=this.editorPreviewAnchor;
+    const elapsed=Math.max(0,((Number(time)||0)-this.editorPreviewStartedAt)/1000);
+    const travel=this.getPlayerTravelBounds();
+    const radiusX=clamp((this.viewportSize?.width||900)*.13,80,170);
+    const radiusY=clamp((this.viewportSize?.height||620)*.10,55,105);
+    const omega=.72;
+    const targetX=clamp(anchor.x+Math.sin(elapsed*omega)*radiusX,travel.left,travel.right);
+    const targetY=clamp(anchor.y+Math.sin(elapsed*omega*2)*radiusY,travel.top,travel.bottom);
+    const safeDt=Math.max(.001,Number(dt)||1/60);
+    const vx=(targetX-this.player.x)/safeDt;
+    const vy=(targetY-this.player.y)/safeDt;
+    this.player.x=targetX;
+    this.player.y=targetY;
+    this.player.vx=vx;
+    this.player.vy=vy;
+    if(Math.hypot(vx,vy)>4){
+      this.player.rotation=Math.atan2(vy,vx)*180/Math.PI+90;
+    }
+  }
+
   setMode(mode){
     if(!this.editorEnabled&&mode!=="play")return;
     this.mode=mode==="play"?"play":"edit";
@@ -1557,7 +1619,7 @@ export class WorldRuntime {
     );
 
     if(
-      this.mode==="play"
+      (this.mode==="play"||this.editorPreviewActive)
       &&effects.wakeActive
       &&speed>=effects.wakeMinSpeed
       &&Number(time)-this.lastWakeSample>=effects.wakeRate
@@ -1606,7 +1668,7 @@ export class WorldRuntime {
     }
 
     if(
-      this.mode!=="play"
+      !(this.mode==="play"||this.editorPreviewActive)
       ||!effects.wakeActive
       ||speed<effects.wakeMinSpeed
       ||!this.playerWakeLayer
@@ -2915,7 +2977,7 @@ export class WorldRuntime {
         wake:(()=>{
           const fx=this.playerWaterEffects();
           return {
-            active:this.mode==="play"&&fx.wakeActive,
+            active:(this.mode==="play"||this.editorPreviewActive)&&fx.wakeActive,
             samples:this.wakeSamples||[],
             width:fx.wakeWidth*fx.wakeScale,
             opacity:fx.wakeOpacity,
@@ -3272,6 +3334,7 @@ export class WorldRuntime {
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive)this.updatePlayer(dt);
+    else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     this.updatePlayerVisual(time,dt);
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time,dt);
