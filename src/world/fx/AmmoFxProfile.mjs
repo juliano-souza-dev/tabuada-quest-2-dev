@@ -6,7 +6,7 @@ export const AMMO_FX_PRESETS={
   standard:{
     id:"standard",label:"Padrão",
     muzzle:{enabled:true,size:44,durationMs:150,intensity:1,sparks:8,smoke:.28,color:"#ff9a32",coreColor:"#fff1b0"},
-    projectile:{scale:1,color:"#ff6b1a",coreColor:"#fff0b0",glow:.72,opacity:1,wobble:0},
+    projectile:{scale:1,color:"#ff6b1a",coreColor:"#fff0b0",glow:.72,opacity:1,wobble:0,auraEnabled:true,auraScale:1.9,auraOpacity:.5},
     trail:{enabled:true,length:8,width:14,opacity:.46,taper:.72,color:"#ff7a1a"},
     impactShip:{enabled:true,size:92,durationMs:480,sparks:16,smoke:.35,shock:.58,color:"#ff4a10",coreColor:"#fff1bd"},
     impactWater:{enabled:true,size:112,durationMs:720,splash:.78,ripple:.82,foam:.65,mist:.28,color:"#aeeeff",coreColor:"#ffffff"}
@@ -14,7 +14,7 @@ export const AMMO_FX_PRESETS={
   incendiary:{
     id:"incendiary",label:"Incendiária",
     muzzle:{enabled:true,size:54,durationMs:180,intensity:1.25,sparks:14,smoke:.42,color:"#ff5b0a",coreColor:"#fff07a"},
-    projectile:{scale:1.18,color:"#ff2700",coreColor:"#fff166",glow:1.25,opacity:1,wobble:.12},
+    projectile:{scale:1.18,color:"#ff2700",coreColor:"#fff166",glow:1.25,opacity:1,wobble:.12,auraEnabled:true,auraScale:2.15,auraOpacity:.7},
     trail:{enabled:true,length:18,width:21,opacity:.78,taper:.82,color:"#ff3a06"},
     impactShip:{enabled:true,size:132,durationMs:760,sparks:26,smoke:.72,shock:.72,color:"#ff2600",coreColor:"#fff394"},
     impactWater:{enabled:true,size:124,durationMs:820,splash:.95,ripple:.86,foam:.7,mist:.45,color:"#ff8450",coreColor:"#fff8d6"}
@@ -22,7 +22,7 @@ export const AMMO_FX_PRESETS={
   piercing:{
     id:"piercing",label:"Perfurante",
     muzzle:{enabled:true,size:38,durationMs:110,intensity:.9,sparks:10,smoke:.18,color:"#ffbd62",coreColor:"#ffffff"},
-    projectile:{scale:.82,color:"#dbe9ff",coreColor:"#ffffff",glow:.42,opacity:1,wobble:0},
+    projectile:{scale:.82,color:"#dbe9ff",coreColor:"#ffffff",glow:.42,opacity:1,wobble:0,auraEnabled:true,auraScale:1.55,auraOpacity:.32},
     trail:{enabled:true,length:13,width:7,opacity:.58,taper:.9,color:"#8fd4ff"},
     impactShip:{enabled:true,size:88,durationMs:620,sparks:30,smoke:.24,shock:.36,color:"#ffac55",coreColor:"#ffffff"},
     impactWater:{enabled:true,size:86,durationMs:560,splash:.54,ripple:.64,foam:.48,mist:.18,color:"#aeeeff",coreColor:"#ffffff"}
@@ -30,7 +30,7 @@ export const AMMO_FX_PRESETS={
   halloween:{
     id:"halloween",label:"Halloween roxa",
     muzzle:{enabled:true,size:56,durationMs:190,intensity:1.2,sparks:14,smoke:.32,color:"#8c2cff",coreColor:"#f3a8ff"},
-    projectile:{scale:1.12,color:"#781cff",coreColor:"#f0a5ff",glow:1.35,opacity:1,wobble:.16},
+    projectile:{scale:1.12,color:"#781cff",coreColor:"#f0a5ff",glow:1.35,opacity:1,wobble:.16,auraEnabled:true,auraScale:2.25,auraOpacity:.78},
     trail:{enabled:true,length:20,width:20,opacity:.72,taper:.8,color:"#8b2cff"},
     impactShip:{enabled:true,size:128,durationMs:720,sparks:22,smoke:.44,shock:.84,color:"#7c16ff",coreColor:"#f1a4ff"},
     impactWater:{enabled:true,size:136,durationMs:860,splash:.9,ripple:1,foam:.72,mist:.38,color:"#9d6cff",coreColor:"#f5c8ff"}
@@ -67,7 +67,8 @@ export function normalizeAmmoFx(ammo={}){
     projectile:{
       scale:clamp(projectile.scale,.2,4),color:color(projectile.color,preset.projectile.color),
       coreColor:color(projectile.coreColor,preset.projectile.coreColor),glow:clamp(projectile.glow,0,2.5),
-      opacity:clamp(projectile.opacity,.05,1),wobble:clamp(projectile.wobble,0,1),texture
+      opacity:clamp(projectile.opacity,.05,1),wobble:clamp(projectile.wobble,0,1),texture,
+      auraEnabled:bool(projectile.auraEnabled,true),auraScale:clamp(projectile.auraScale,1,3.5),auraOpacity:clamp(projectile.auraOpacity,0,1)
     },
     trail:{
       enabled:bool(trail.enabled,true),length:Math.round(clamp(trail.length,0,36)),width:clamp(trail.width,1,64),
