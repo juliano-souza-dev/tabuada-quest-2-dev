@@ -56,6 +56,96 @@
         "shipBossReward": false
       },
       "asset": ""
+    },
+    {
+      "id": "cannon-necromantic-spectral",
+      "name": "Canhão Espectral Necromântico",
+      "asset": "./assets/cannons/Canhão Espectral Necromântico.png",
+      "available": true,
+      "range": 1800,
+      "projectileSpeed": 1040,
+      "attackCooldownMs": 1300,
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
+    },
+    {
+      "id": "cannon-pirate-blue-gold",
+      "name": "Canhão Pirata Ornamentado em Azul e Ouro",
+      "asset": "./assets/cannons/Canhão Pirata Ornamentado em Azul e Ouro.png",
+      "available": true,
+      "range": 1450,
+      "projectileSpeed": 920,
+      "attackCooldownMs": 850,
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
+    },
+    {
+      "id": "cannon-royal-golden-lion",
+      "name": "Canhão Real Dourado com Leão",
+      "asset": "./assets/cannons/Canhão Real Dourado com Leão.png",
+      "available": true,
+      "range": 2100,
+      "projectileSpeed": 1180,
+      "attackCooldownMs": 1600,
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
+    },
+    {
+      "id": "cannon-spiked-war",
+      "name": "Canhão de Guerra Espinhoso Fantástico",
+      "asset": "./assets/cannons/Canhão de Guerra Espinhoso Fantástico.png",
+      "available": true,
+      "range": 1250,
+      "projectileSpeed": 860,
+      "attackCooldownMs": 650,
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
+    },
+    {
+      "id": "cannon-halloween-pumpkin-terror",
+      "name": "Canhão Terror da Abóbora",
+      "asset": "./assets/cannons/canhao terror da abóbora.png",
+      "available": true,
+      "range": 1700,
+      "projectileSpeed": 980,
+      "attackCooldownMs": 1050,
+      "shop": {
+        "purchasable": true,
+        "currency": "gold",
+        "price": 0
+      },
+      "acquisition": {
+        "shop": true,
+        "shipBossReward": false
+      }
     }
   ]
 }
