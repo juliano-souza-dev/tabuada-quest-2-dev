@@ -1,23 +1,298 @@
+import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-1944";
+import { AMMO_FX_PRESETS, normalizeAmmoFx, applyAmmoFxPreset } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-1942";
+
 export class AmmoEditor{
   constructor(){
     this.catalog={schema:"tq.ammo-catalog",version:1,defaultAmmoId:"",ammo:[]};
-    this.drafts=[];this.selectedId=null;this.storageKey="tq.dev.ammo-drafts:v1";this.el=null;
+    this.drafts=[];
+    this.selectedId=null;
+    this.storageKey="tq.dev.ammo-drafts:v1";
+    this.el=null;
+    this.preview=null;
   }
+
   async mount(parent){
-    this.el=document.createElement("section");this.el.className="tq-dev__ships tq-dev__ammo";this.el.hidden=true;
-    this.el.innerHTML='<header><div><strong>Munições</strong><small>Tipos de munição naval, efeitos e valores de loja</small></div><button type="button" data-ammo-close aria-label="Fechar">×</button></header><div class="tq-ships__body"><aside class="tq-ships__sidebar"><button type="button" class="tq-ships__new" data-ammo-new>＋ Nova munição</button><div class="tq-ships__list" data-ammo-list></div></aside><main class="tq-ships__editor" data-ammo-editor></main></div>';
-    parent.append(this.el);this.el.querySelector("[data-ammo-close]").onclick=()=>this.setVisible(false);this.el.querySelector("[data-ammo-new]").onclick=()=>this.create();await this.load();
+    this.el=document.createElement("section");
+    this.el.className="tq-dev__ships tq-dev__ammo tq-dev__ammo-fx";
+    this.el.hidden=true;
+    this.el.innerHTML='<header><div><strong>Munições</strong><small>Construtor WebGL de projétil, rastro, disparo e impacto</small></div><button type="button" data-ammo-close aria-label="Fechar">×</button></header><div class="tq-ships__body"><aside class="tq-ships__sidebar"><button type="button" class="tq-ships__new" data-ammo-new>＋ Nova munição</button><button type="button" class="tq-ships__new tq-ammo-duplicate" data-ammo-duplicate>⧉ Duplicar</button><div class="tq-ships__list" data-ammo-list></div></aside><main class="tq-ships__editor" data-ammo-editor></main></div>';
+    parent.append(this.el);
+    this.el.querySelector("[data-ammo-close]").onclick=()=>this.setVisible(false);
+    this.el.querySelector("[data-ammo-new]").onclick=()=>this.create();
+    this.el.querySelector("[data-ammo-duplicate]").onclick=()=>this.duplicateCurrent();
+    await this.load();
   }
-  async load(){try{const r=await fetch("./src/config/ammo-catalog.json?v=20261002-0926",{cache:"no-store"});if(r.ok)this.catalog=await r.json()}catch(e){console.warn("Ammo catalog load failed",e)}try{const d=JSON.parse(localStorage.getItem(this.storageKey)||"[]");this.drafts=Array.isArray(d)?d:[]}catch{this.drafts=[]}this.selectedId=this.all()[0]?.id||null;this.render()}
-  all(){const m=new Map((this.catalog.ammo||[]).map(x=>[x.id,structuredClone(x)]));for(const x of this.drafts)m.set(x.id,structuredClone(x));return [...m.values()]}
+
+  async load(){
+    try{
+      const r=await fetch("./src/config/ammo-catalog.json?v=20261002-1944",{cache:"no-store"});
+      if(r.ok)this.catalog=await r.json();
+    }catch(e){console.warn("Ammo catalog load failed",e)}
+    try{
+      const d=JSON.parse(localStorage.getItem(this.storageKey)||"[]");
+      this.drafts=Array.isArray(d)?d:[];
+    }catch{this.drafts=[]}
+    this.selectedId=this.all()[0]?.id||null;
+    this.render();
+  }
+
+  normalize(value={}){
+    const v=structuredClone(value);
+    v.id=String(v.id||"ammo-"+Date.now());
+    v.name=String(v.name||v.id||"Munição");
+    v.available=v.available!==false;
+    v.damage=Math.max(0,Math.min(10000,Number(v.damage)||0));
+    v.projectileSpeed=Math.max(80,Math.min(5000,Number(v.projectileSpeed)||720));
+    v.size=Math.max(.2,Math.min(4,Number(v.size)||1));
+    v.shop={
+      purchasable:v.shop?.purchasable!==false,
+      price:Math.max(0,Number(v.shop?.price)||0)
+    };
+    v.fx=normalizeAmmoFx(v);
+    v.effects={
+      ...(v.effects&&typeof v.effects==="object"?v.effects:{}),
+      projectile:"profile-webgl",
+      impact:"profile-webgl",
+      waterSplash:"profile-webgl",
+      renderer:"webgl2"
+    };
+    if(v.fx.projectile.texture)v.effects.texture=v.fx.projectile.texture;
+    else delete v.effects.texture;
+    return v;
+  }
+
+  all(){
+    const m=new Map((this.catalog.ammo||[]).map(x=>[x.id,this.normalize(x)]));
+    for(const x of this.drafts)m.set(x.id,this.normalize(x));
+    return [...m.values()];
+  }
+
   current(){return this.all().find(x=>x.id===this.selectedId)||null}
-  save(v){const i=this.drafts.findIndex(x=>x.id===v.id);if(i>=0)this.drafts[i]=v;else this.drafts.push(v);localStorage.setItem(this.storageKey,JSON.stringify(this.drafts));globalThis.dispatchEvent(new CustomEvent("tq:ammoprofilechange",{detail:{ammoId:v.id}}))}
-  create(){let n=1,id="ammo-"+n;while(this.all().some(x=>x.id===id))id="ammo-"+(++n);this.save({id,name:"Nova munição",available:true,damage:10,projectileSpeed:720,size:1,effects:{projectile:"standard",impact:"standard",waterSplash:"standard"},shop:{purchasable:true,price:1}});this.selectedId=id;this.render()}
-  setVisible(show){if(this.el)this.el.hidden=!show;if(show)this.render()}
-  render(){if(!this.el)return;const list=this.el.querySelector("[data-ammo-list]");list.innerHTML=this.all().map(x=>'<button type="button" class="'+(x.id===this.selectedId?'active':'')+'" data-ammo-id="'+this.e(x.id)+'"><strong>'+this.e(x.name)+'</strong><small>'+this.e(x.id)+'</small></button>').join("");list.querySelectorAll("[data-ammo-id]").forEach(b=>b.onclick=()=>{this.selectedId=b.dataset.ammoId;this.render()});this.renderEditor()}
-  renderEditor(){const h=this.el.querySelector("[data-ammo-editor]"),a=this.current();if(!a){h.innerHTML='<div class="tq-ships__empty">Crie ou selecione uma munição.</div>';return}h.innerHTML='<section class="tq-ships__panel"><div class="tq-ships__panel-title"><div><strong>Tipo de munição</strong><small>Jogadores precisam possuir unidades. NPCs recebem permissão por perfil.</small></div></div><div class="tq-ships__settings tq-ships__settings--v2"><label><span>Nome</span><input data-a-name value="'+this.e(a.name)+'"></label><label><span>Dano</span><input data-a-damage type="number" min="0" max="10000" value="'+Number(a.damage||0)+'"></label><label><span>Velocidade do projétil</span><input data-a-speed type="number" min="1" max="10000" value="'+Number(a.projectileSpeed||720)+'"></label><label><span>Tamanho</span><input data-a-size type="number" min=".1" max="10" step=".1" value="'+Number(a.size||1)+'"></label><label><span>Efeito do projétil</span><input data-a-projectile value="'+this.e(a.effects?.projectile||"standard")+'"></label><label><span>Efeito de impacto</span><input data-a-impact value="'+this.e(a.effects?.impact||"standard")+'"></label><label><span>Splash na água</span><input data-a-splash value="'+this.e(a.effects?.waterSplash||"standard")+'"></label><label><span>Preço na loja</span><input data-a-price type="number" min="0" value="'+Number(a.shop?.price||0)+'"></label><label><span>Disponível</span><input data-a-available type="checkbox" '+(a.available!==false?"checked":"")+'></label><label><span>Vendável na loja</span><input data-a-buy type="checkbox" '+(a.shop?.purchasable!==false?"checked":"")+'></label></div></section>';
-    const save=()=>{const v=structuredClone(a);v.name=h.querySelector("[data-a-name]").value;v.damage=Math.max(0,Number(h.querySelector("[data-a-damage]").value)||0);v.projectileSpeed=Math.max(1,Number(h.querySelector("[data-a-speed]").value)||1);v.size=Math.max(.1,Number(h.querySelector("[data-a-size]").value)||1);v.available=h.querySelector("[data-a-available]").checked;v.effects={projectile:h.querySelector("[data-a-projectile]").value,impact:h.querySelector("[data-a-impact]").value,waterSplash:h.querySelector("[data-a-splash]").value};v.shop={purchasable:h.querySelector("[data-a-buy]").checked,price:Math.max(0,Number(h.querySelector("[data-a-price]").value)||0)};this.save(v);this.render()};h.querySelectorAll("input").forEach(x=>x.addEventListener("change",save))
+
+  save(value,{notify=true}={}){
+    const v=this.normalize(value);
+    const i=this.drafts.findIndex(x=>x.id===v.id);
+    if(i>=0)this.drafts[i]=v;else this.drafts.push(v);
+    try{localStorage.setItem(this.storageKey,JSON.stringify(this.drafts))}catch(error){console.warn("Ammo draft save failed",error)}
+    if(notify)globalThis.dispatchEvent(new CustomEvent("tq:ammoprofilechange",{detail:{ammoId:v.id}}));
+    return v;
   }
+
+  create(){
+    let n=1,id="ammo-"+n;
+    while(this.all().some(x=>x.id===id))id="ammo-"+(++n);
+    const value=applyAmmoFxPreset({
+      id,name:"Nova munição",available:true,damage:10,projectileSpeed:720,size:1,
+      effects:{renderer:"webgl2"},shop:{purchasable:true,price:1}
+    },"standard");
+    this.save(value);
+    this.selectedId=id;
+    this.render();
+  }
+
+  duplicateCurrent(){
+    const source=this.current();
+    if(!source)return;
+    let n=1,id=source.id+"-copy";
+    while(this.all().some(x=>x.id===id))id=source.id+"-copy-"+(++n);
+    const copy=structuredClone(source);
+    copy.id=id;
+    copy.name=source.name+" cópia";
+    this.save(copy);
+    this.selectedId=id;
+    this.render();
+  }
+
+  setVisible(show){
+    if(!this.el)return;
+    this.el.hidden=!show;
+    if(show)this.render();
+    else this.destroyPreview();
+  }
+
+  destroyPreview(){
+    this.preview?.destroy?.();
+    this.preview=null;
+  }
+
+  render(){
+    if(!this.el)return;
+    const list=this.el.querySelector("[data-ammo-list]");
+    list.innerHTML=this.all().map(x=>'<button type="button" class="tq-ship-item '+(x.id===this.selectedId?'is-current':'')+'" data-ammo-id="'+this.e(x.id)+'"><span><b>'+this.e(x.name)+'</b><small>'+this.e(x.id)+'</small></span><em>WebGL</em></button>').join("");
+    list.querySelectorAll("[data-ammo-id]").forEach(b=>b.onclick=()=>{this.selectedId=b.dataset.ammoId;this.render()});
+    this.el.querySelector("[data-ammo-duplicate]").disabled=!this.current();
+    this.renderEditor();
+  }
+
+  range(path,label,min,max,step,value,unit=""){
+    return '<label class="tq-ammo-fx-range"><span>'+label+' <output data-fx-output="'+path+'">'+this.format(value)+unit+'</output></span><input type="range" data-fx="'+path+'" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(value)+'" data-unit="'+this.e(unit)+'"></label>';
+  }
+
+  color(path,label,value){
+    return '<label class="tq-ammo-fx-color"><span>'+label+'</span><div><input type="color" data-fx="'+path+'" value="'+this.e(value)+'"><code>'+this.e(value)+'</code></div></label>';
+  }
+
+  toggle(path,label,value){
+    return '<label class="tq-ammo-fx-toggle"><span>'+label+'</span><input type="checkbox" data-fx="'+path+'" '+(value!==false?'checked':'')+'></label>';
+  }
+
+  renderEditor(){
+    this.destroyPreview();
+    const host=this.el.querySelector("[data-ammo-editor]");
+    const ammo=this.current();
+    if(!ammo){
+      host.innerHTML='<div class="tq-ships__empty">Crie ou selecione uma munição.</div>';
+      return;
+    }
+    const fx=normalizeAmmoFx(ammo);
+    const presetOptions=Object.values(AMMO_FX_PRESETS).map(p=>'<option value="'+this.e(p.id)+'" '+(p.id===fx.preset?'selected':'')+'>'+this.e(p.label)+'</option>').join("");
+
+    host.innerHTML=
+      '<div class="tq-ammo-builder">'+
+        '<div class="tq-ammo-builder__controls">'+
+          '<section class="tq-ships__panel tq-ammo-basic"><div class="tq-ships__panel-title"><div><strong>Identidade e gameplay</strong><small>Stats da munição e preset visual inicial.</small></div><span class="tq-ammo-webgl-badge">WEBGL 2</span></div>'+
+            '<div class="tq-ammo-basic__grid">'+
+              '<label><span>Nome</span><input data-a-name value="'+this.e(ammo.name)+'"></label>'+
+              '<label><span>Preset FX</span><select data-a-preset>'+presetOptions+'</select></label>'+
+              '<label><span>Dano</span><input data-a-damage type="number" min="0" max="10000" value="'+Number(ammo.damage)+'"></label>'+
+              '<label><span>Velocidade</span><input data-a-speed type="number" min="80" max="5000" value="'+Number(ammo.projectileSpeed)+'"></label>'+
+              '<label><span>Tamanho</span><input data-a-size type="number" min=".2" max="4" step=".05" value="'+Number(ammo.size)+'"></label>'+
+              '<label><span>Preço</span><input data-a-price type="number" min="0" value="'+Number(ammo.shop?.price||0)+'"></label>'+
+              '<label class="tq-ammo-check"><span>Disponível</span><input data-a-available type="checkbox" '+(ammo.available!==false?'checked':'')+'></label>'+
+              '<label class="tq-ammo-check"><span>Vendável</span><input data-a-buy type="checkbox" '+(ammo.shop?.purchasable!==false?'checked':'')+'></label>'+
+            '</div>'+
+          '</section>'+
+
+          '<details class="tq-ammo-fx-section" open><summary><strong>💥 Disparo / Muzzle</strong><small>Flash e fumaça no nascimento do projétil.</small></summary><div class="tq-ammo-fx-grid">'+
+            this.toggle("muzzle.enabled","Ativo",fx.muzzle.enabled)+
+            this.range("muzzle.size","Escala",8,220,1,fx.muzzle.size," px")+
+            this.range("muzzle.durationMs","Duração",40,1600,10,fx.muzzle.durationMs," ms")+
+            this.range("muzzle.intensity","Intensidade",.05,3,.05,fx.muzzle.intensity,"")+
+            this.range("muzzle.smoke","Fumaça",0,1.5,.05,fx.muzzle.smoke,"")+
+            this.color("muzzle.color","Cor",fx.muzzle.color)+
+            this.color("muzzle.coreColor","Núcleo",fx.muzzle.coreColor)+
+          '</div></details>'+
+
+          '<details class="tq-ammo-fx-section" open><summary><strong>🔥 Projétil em movimento</strong><small>Cor, glow, escala e oscilação durante o voo.</small></summary><div class="tq-ammo-fx-grid">'+
+            this.range("projectile.scale","Escala",.2,4,.05,fx.projectile.scale,"×")+
+            this.range("projectile.glow","Glow",0,2.5,.05,fx.projectile.glow,"")+
+            this.range("projectile.opacity","Opacidade",.05,1,.05,fx.projectile.opacity,"")+
+            this.range("projectile.wobble","Oscilação",0,1,.02,fx.projectile.wobble,"")+
+            this.color("projectile.color","Cor",fx.projectile.color)+
+            this.color("projectile.coreColor","Núcleo",fx.projectile.coreColor)+
+            '<label class="tq-ammo-fx-text tq-ammo-fx-wide"><span>Textura opcional</span><input data-fx="projectile.texture" value="'+this.e(fx.projectile.texture)+'" placeholder="./assets/cannons/...webp"></label>'+
+          '</div></details>'+
+
+          '<details class="tq-ammo-fx-section" open><summary><strong>☄️ Rastro</strong><small>Comprimento, largura, fade e cor da trilha.</small></summary><div class="tq-ammo-fx-grid">'+
+            this.toggle("trail.enabled","Ativo",fx.trail.enabled)+
+            this.range("trail.length","Comprimento",0,36,1,fx.trail.length,"")+
+            this.range("trail.width","Largura",1,64,1,fx.trail.width," px")+
+            this.range("trail.opacity","Opacidade",0,1,.05,fx.trail.opacity,"")+
+            this.range("trail.taper","Afinamento",0,1,.05,fx.trail.taper,"")+
+            this.color("trail.color","Cor",fx.trail.color)+
+          '</div></details>'+
+
+          '<details class="tq-ammo-fx-section" open><summary><strong>💣 Impacto no casco</strong><small>Explosão, choque, fagulhas e fumaça.</small></summary><div class="tq-ammo-fx-grid">'+
+            this.toggle("impactShip.enabled","Ativo",fx.impactShip.enabled)+
+            this.range("impactShip.size","Escala",12,360,2,fx.impactShip.size," px")+
+            this.range("impactShip.durationMs","Duração",80,2200,10,fx.impactShip.durationMs," ms")+
+            this.range("impactShip.sparks","Fagulhas",0,64,1,fx.impactShip.sparks,"")+
+            this.range("impactShip.smoke","Fumaça",0,1.5,.05,fx.impactShip.smoke,"")+
+            this.range("impactShip.shock","Onda de choque",0,1.5,.05,fx.impactShip.shock,"")+
+            this.color("impactShip.color","Cor",fx.impactShip.color)+
+            this.color("impactShip.coreColor","Núcleo",fx.impactShip.coreColor)+
+          '</div></details>'+
+
+          '<details class="tq-ammo-fx-section" open><summary><strong>🌊 Impacto na água</strong><small>Splash, ripple, espuma e névoa.</small></summary><div class="tq-ammo-fx-grid">'+
+            this.toggle("impactWater.enabled","Ativo",fx.impactWater.enabled)+
+            this.range("impactWater.size","Escala",12,420,2,fx.impactWater.size," px")+
+            this.range("impactWater.durationMs","Duração",80,2600,10,fx.impactWater.durationMs," ms")+
+            this.range("impactWater.splash","Splash",0,1.5,.05,fx.impactWater.splash,"")+
+            this.range("impactWater.ripple","Ripple",0,1.5,.05,fx.impactWater.ripple,"")+
+            this.range("impactWater.foam","Espuma",0,1.5,.05,fx.impactWater.foam,"")+
+            this.range("impactWater.mist","Névoa",0,1.5,.05,fx.impactWater.mist,"")+
+            this.color("impactWater.color","Cor",fx.impactWater.color)+
+            this.color("impactWater.coreColor","Núcleo",fx.impactWater.coreColor)+
+          '</div></details>'+
+        '</div>'+
+
+        '<aside class="tq-ammo-preview"><section class="tq-ships__panel"><div class="tq-ships__panel-title"><div><strong>Simulador WebGL</strong><small>O mesmo renderer usado no combate naval.</small></div><span class="tq-ammo-live">● AO VIVO</span></div>'+
+          '<div class="tq-ammo-preview__toolbar">'+
+            '<label><span>Destino</span><select data-preview-mode><option value="ship">Casco</option><option value="water">Água</option><option value="alternate">Alternar</option></select></label>'+
+            '<label><span>Velocidade</span><input type="range" data-preview-speed min=".25" max="2" step=".25" value="1"></label>'+
+            '<label class="tq-ammo-preview__loop"><input type="checkbox" data-preview-loop checked><span>Replay</span></label>'+
+          '</div>'+
+          '<div class="tq-ammo-preview__stage" data-preview-stage><div class="tq-ammo-preview__sea"></div><div class="tq-ammo-preview__cannon">☠</div><div class="tq-ammo-preview__ship">⛵</div><div class="tq-ammo-preview__water-target">◎</div><canvas data-ammo-preview></canvas></div>'+
+          '<div class="tq-ammo-preview__actions"><button type="button" data-fire-ship>💥 Testar casco</button><button type="button" data-fire-water>🌊 Testar água</button><button type="button" data-preview-clear>Limpar</button></div>'+
+          '<div class="tq-ammo-preview__stats"><span>Dano <b data-preview-damage>'+Number(ammo.damage)+'</b></span><span>Velocidade <b data-preview-projectile-speed>'+Number(ammo.projectileSpeed)+'</b></span><span>Preset <b data-preview-preset>'+this.e(fx.preset)+'</b></span></div>'+
+        '</section></aside>'+
+      '</div>';
+
+    const canvas=host.querySelector("[data-ammo-preview]");
+    this.preview=new AmmoPreviewGL(canvas);
+    this.preview.setAmmo(ammo);
+    this.preview.mount();
+
+    const setPath=(object,path,value)=>{
+      const parts=path.split(".");
+      let target=object;
+      for(let i=0;i<parts.length-1;i++)target=target[parts[i]]??=( {});
+      target[parts.at(-1)]=value;
+    };
+
+    const read=()=>{
+      let value=structuredClone(ammo);
+      value.name=host.querySelector("[data-a-name]").value;
+      value.damage=Math.max(0,Number(host.querySelector("[data-a-damage]").value)||0);
+      value.projectileSpeed=Math.max(80,Number(host.querySelector("[data-a-speed]").value)||80);
+      value.size=Math.max(.2,Number(host.querySelector("[data-a-size]").value)||1);
+      value.available=host.querySelector("[data-a-available]").checked;
+      value.shop={purchasable:host.querySelector("[data-a-buy]").checked,price:Math.max(0,Number(host.querySelector("[data-a-price]").value)||0)};
+      value.fx=structuredClone(fx);
+      host.querySelectorAll("[data-fx]").forEach(input=>{
+        let raw=input.type==="checkbox"?input.checked:input.value;
+        if(input.type==="range"||input.type==="number")raw=Number(raw);
+        setPath(value.fx,input.dataset.fx,raw);
+      });
+      return this.normalize(value);
+    };
+
+    const refreshPreview=()=>{
+      const value=read();
+      this.preview?.setAmmo(value);
+      host.querySelector("[data-preview-damage]").textContent=String(value.damage);
+      host.querySelector("[data-preview-projectile-speed]").textContent=String(value.projectileSpeed);
+      host.querySelector("[data-preview-preset]").textContent=String(value.fx.preset||"custom");
+      host.querySelectorAll("[data-fx-output]").forEach(output=>{
+        const input=host.querySelector('[data-fx="'+output.dataset.fxOutput+'"]');
+        if(input)output.textContent=this.format(input.value)+(input.dataset.unit||"");
+      });
+      host.querySelectorAll(".tq-ammo-fx-color input[type=color]").forEach(input=>{
+        const code=input.parentElement?.querySelector("code");if(code)code.textContent=input.value;
+      });
+      return value;
+    };
+
+    const persist=()=>this.save(refreshPreview());
+
+    host.querySelector("[data-a-preset]").addEventListener("change",event=>{
+      const current=read();
+      this.save(applyAmmoFxPreset(current,event.currentTarget.value));
+      this.renderEditor();
+    });
+    host.querySelectorAll("[data-fx], [data-a-damage], [data-a-speed], [data-a-size]").forEach(input=>input.addEventListener("input",refreshPreview));
+    host.querySelectorAll("[data-fx], [data-a-name], [data-a-damage], [data-a-speed], [data-a-size], [data-a-price], [data-a-available], [data-a-buy]").forEach(input=>input.addEventListener("change",persist));
+
+    host.querySelector("[data-preview-mode]").addEventListener("change",e=>this.preview?.setMode(e.currentTarget.value));
+    host.querySelector("[data-preview-speed]").addEventListener("input",e=>this.preview?.setSpeed(e.currentTarget.value));
+    host.querySelector("[data-preview-loop]").addEventListener("change",e=>this.preview?.setLoop(e.currentTarget.checked));
+    host.querySelector("[data-fire-ship]").onclick=()=>this.preview?.fire("ship");
+    host.querySelector("[data-fire-water]").onclick=()=>this.preview?.fire("water");
+    host.querySelector("[data-preview-clear]").onclick=()=>this.preview?.clear();
+    refreshPreview();
+  }
+
   resolve(id){return this.all().find(x=>x.id===String(id||""))||null}
+  format(value){const n=Number(value);return Number.isFinite(n)?String(Math.round(n*100)/100):String(value??"")}
   e(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 }
