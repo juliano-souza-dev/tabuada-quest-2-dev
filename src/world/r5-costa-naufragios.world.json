@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r5-costa-naufragios.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Águas Vulcânicas",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r6-aguas-vulcanicas",
+      "destinationWorldName": "Águas Vulcânicas",
+      "transitionMessage": "Navegar para Águas Vulcânicas?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r5-costa-naufragios.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Mar das Correntes",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r4-mar-correntes",
+      "destinationWorldName": "Mar das Correntes",
+      "transitionMessage": "Voltar para Mar das Correntes?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
