@@ -272,7 +272,7 @@ export class WorldRuntime {
   }
 
   createGeneratedNpc({shipId,index,typeConfig,population,random,occupied}){
-    const profile=this.npcShipProfile(shipId);
+    const profile=this.npcShipProfile(typeConfig?.npcId||shipId);
     if(!profile)return null;
     const point=this.npcSpawnPoint(random,occupied,population);
     occupied.push(point);
@@ -300,11 +300,12 @@ export class WorldRuntime {
       respawn:typeConfig?.respawn===true,
       rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
       npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
+      npcBehavior:String(profile.npcBehavior||"roam"),
       npcNavigation:{
         mode:"sailing",
-        minSpeed:0,
-        speed:Math.max(0,Number(population.movement.speed)||0),
-        acceleration:Math.max(100,Math.min(3000,(Math.max(0,Number(population.movement.speed)||0))*3.1)),
+        minSpeed:Math.max(0,Number(profile.minSpeed)||0),
+        speed:Math.max(0,Number(profile.speed??population.movement.speed)||0),
+        acceleration:Math.max(0,Math.min(3000,Number(profile.acceleration??((Math.max(0,Number(profile.speed??population.movement.speed)||0))*3.1))||0)),
         braking:.22,
         heading,
         targetHeading:heading,
@@ -368,7 +369,7 @@ export class WorldRuntime {
       for(const typeConfig of population.types){
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
           const entity=this.createGeneratedNpc({
-            shipId:typeConfig.shipId,
+            shipId:typeConfig.shipId||typeConfig.npcId,
             index:total,
             typeConfig,
             population,
@@ -392,7 +393,7 @@ export class WorldRuntime {
     const nav=entity.npcNavigation;
     if(!nav)return;
     const maxSpeed=Math.max(0,Number(nav.speed)||0);
-    if(maxSpeed<=0)return;
+    if(entity.npcBehavior==="stationary"||maxSpeed<=0)return;
 
     const safeDt=clamp(Number(dt)||1/60,.001,.08);
     nav.elapsed=Math.max(0,Number(nav.elapsed)||0)+safeDt;
