@@ -1,4 +1,4 @@
-import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-2012";
+import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-2022";
 import { AMMO_FX_PRESETS, normalizeAmmoFx, applyAmmoFxPreset } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-2012";
 
 export class AmmoEditor{
