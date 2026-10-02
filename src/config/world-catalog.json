@@ -1,30 +1,5 @@
 {
   "schema": "tq.world-catalog",
-  "version": 2,
-  "worlds": [
-    {
-      "id": "ocean-prototype",
-      "name": "Oceano Teste Completo",
-      "type": "ocean",
-      "path": "./src/world/world-test.world.json"
-    },
-    {
-      "id": "directional-ship-test",
-      "name": "Teste Navio 16 Direções",
-      "type": "ocean",
-      "path": "./src/world/directional-ship-test.world.json"
-    },
-    {
-      "id": "combat-test",
-      "name": "Teste de Combate Naval",
-      "type": "ocean",
-      "path": "./src/world/combat-test.world.json"
-    },
-    {
-      "id": "clickable-combat-test",
-      "name": "Teste NPCs de Combate Clicáveis",
-      "type": "ocean",
-      "path": "./src/world/clickable-combat-test.world.json"
-    }
-  ]
+  "version": 3,
+  "worlds": []
 }
