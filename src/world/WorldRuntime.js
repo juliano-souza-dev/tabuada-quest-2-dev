@@ -7,7 +7,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261001-2255";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-0927";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -78,6 +78,16 @@ const normalizeAmmoInventory=input=>{
     stock:normalizedStock
   };
 };
+const HALLOWEEN_TEST_AMMO={
+  id:"cannonball-halloween-purple",
+  name:"Bola de Canhão Halloween Roxa",
+  damage:10,
+  projectileSpeed:720,
+  size:1,
+  effects:{texture:"./assets/cannons/bola_canhao_halloween_roxa.webp",projectile:"halloween-purple-webgl",impact:"halloween-purple-webgl",renderer:"webgl2"},
+  test:{unlimited:true}
+};
+
 const normalizeNpcAmmoIds=input=>{
   const values=Array.isArray(input)?input:[];
   return [...new Set(values.map(value=>String(value||"").trim()).filter(Boolean))];
@@ -3592,10 +3602,13 @@ export class WorldRuntime {
 
     const hp=this.navalHpState(entity);
     const duration=620;
+    const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
+    const ammo=selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null;
     const fired=this.navalRenderer?.fire?.({
       from:{x:this.player.x,y:this.player.y},
       to:{x:entity.x,y:entity.y},
-      duration
+      duration,
+      ammo
     })===true;
     if(!fired)return false;
 
