@@ -57,6 +57,7 @@ const normalizeNpcPopulation=input=>{
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       combat:item?.combat===true,
+      clickable:item?.combat===true&&item?.clickable===true,
       hp:clamp(Math.floor(Number(item?.hp)||3),1,20)
     })).filter(item=>item.shipId&&item.count>0)
   };
@@ -165,6 +166,7 @@ export class WorldRuntime {
     this.raf=0;
     this.nearby=null;
     this.contactEntity=null;
+    this.combatTarget=null;
     this.regionTransitionActive=null;
     this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
@@ -244,7 +246,11 @@ export class WorldRuntime {
       },
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
-      combat:{enabled:combatEnabled,hp:Math.max(1,Number(typeConfig.hp)||3)},
+      combat:{
+        enabled:combatEnabled,
+        clickable:combatEnabled&&typeConfig.clickable===true,
+        hp:Math.max(1,Number(typeConfig.hp)||3)
+      },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
       effect:{category:"ship",preset:"none",active:false},
       collision:{
@@ -598,6 +604,7 @@ export class WorldRuntime {
       el.append(collider);
 
       entity.el=el;
+      this.syncCombatClickableEntity(entity);
       this.applyEntityVisual(entity);
       if(this.collected.has(entity.id))el.hidden=true;
       if(this.editorEnabled&&!entity.runtimeGenerated)this.bindEntityEditing(entity);
@@ -609,6 +616,59 @@ export class WorldRuntime {
     this.applySelectionVisual();
     this.syncGizmo();
     this.updateProgress();
+  }
+
+  isClickableCombatShip(entity){
+    return Boolean(
+      entity
+      &&String(entity.type||"")==="ship"
+      &&entity.combat?.enabled===true
+      &&entity.combat?.clickable===true
+      &&!this.collected.has(entity.id)
+    );
+  }
+
+  syncCombatClickableEntity(entity){
+    const el=entity?.el;
+    if(!el)return;
+    const clickable=this.isClickableCombatShip(entity);
+    el.dataset.combatClickable=clickable?"true":"false";
+    el.classList.toggle("is-combat-clickable",clickable);
+    if(el.dataset.combatClickBound==="1")return;
+    el.dataset.combatClickBound="1";
+    el.addEventListener("click",event=>{
+      if(this.mode!=="play"||this.challengeActive||this.combatActive)return;
+      if(!this.isClickableCombatShip(entity))return;
+      event.preventDefault();
+      event.stopPropagation();
+      this.selectCombatTarget(entity);
+    });
+  }
+
+  clearCombatTarget({hideAction=true}={}){
+    if(this.combatTarget?.el)this.combatTarget.el.classList.remove("is-combat-target");
+    this.combatTarget=null;
+    if(hideAction&&this.actionWrap)this.actionWrap.hidden=true;
+  }
+
+  selectCombatTarget(entity){
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.challengeActive||this.combatActive)return false;
+    if(this.combatTarget&&this.combatTarget!==entity&&this.combatTarget.el){
+      this.combatTarget.el.classList.remove("is-combat-target");
+    }
+    this.combatTarget=entity;
+    this.nearby=entity;
+    entity.el?.classList.add("is-combat-target");
+    this.clearNavigationTarget({brake:true});
+    this.keys.clear();
+    this.pointerDirections.clear();
+    this.resetJoystick();
+
+    const label=String(entity.label||entity.shipName||"Navio inimigo");
+    if(this.actionMessage)this.actionMessage.textContent=label+" selecionado.";
+    if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+    if(this.actionWrap)this.actionWrap.hidden=false;
+    return true;
   }
 
   applyEntityVisual(entity){
@@ -646,6 +706,7 @@ export class WorldRuntime {
     }else{
       el.classList.remove("has-water-integration");
     }
+    this.syncCombatClickableEntity(entity);
     this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
   }
@@ -1358,6 +1419,8 @@ export class WorldRuntime {
       }
       if(e.button!==undefined&&e.button!==0)return;
       if(e.target?.closest?.(".tq-world-controls,.tq-world-action"))return;
+      if(e.target?.closest?.('[data-combat-clickable="true"]'))return;
+      this.clearCombatTarget({hideAction:true});
 
       const rect=this.viewport.getBoundingClientRect();
       const target=screenPointToWorld(e.clientX,e.clientY,{
@@ -1503,6 +1566,7 @@ export class WorldRuntime {
       this.clearNavigationTarget();
       this.clearPlayerWake();
       this.nearby=null;
+      this.clearCombatTarget({hideAction:true});
       this.closeRegionTransition();
       if(this.actionWrap)this.actionWrap.hidden=true;
       if(this.recenterButton)this.recenterButton.hidden=true;
@@ -2479,6 +2543,7 @@ export class WorldRuntime {
   async beginCombat(entity){
     if(!entity||this.combatActive||this.challengeActive||this.mode!=="play")return;
     this.stopForChallenge();
+    this.clearCombatTarget({hideAction:false});
     this.actionWrap.hidden=true;
     const enemyMaxHp=Math.max(1,Math.min(20,Number(entity.combat?.hp)||3));
     const playerMaxHp=Math.max(1,Math.min(9,Number(this.config.combat?.playerHp)||3));
@@ -2633,6 +2698,7 @@ export class WorldRuntime {
     if(entity.el)entity.el.hidden=true;
     this.contactEntity=null;
     this.nearby=null;
+    if(this.combatTarget?.id===entity.id)this.clearCombatTarget({hideAction:false});
     this.actionWrap.hidden=true;
     this.updateProgress();
     if(entity.type==="treasure"){
@@ -2725,8 +2791,24 @@ export class WorldRuntime {
     if(this.mode!=="play"){
       this.nearby=null;
       this.contactEntity=null;
-      this.actionWrap.hidden=true;
+      this.clearCombatTarget({hideAction:true});
       return;
+    }
+
+    if(this.combatTarget){
+      if(this.isClickableCombatShip(this.combatTarget)){
+        const entity=this.combatTarget;
+        this.nearby=entity;
+        const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
+        const safeAsset=asset.replace(/["\\]/g,"");
+        this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
+        this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
+        if(this.actionMessage)this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" selecionado.";
+        if(this.actionButton)this.actionButton.textContent="⚔ Atacar";
+        this.actionWrap.hidden=false;
+        return;
+      }
+      this.clearCombatTarget({hideAction:true});
     }
 
     let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
@@ -2778,7 +2860,9 @@ export class WorldRuntime {
   }
 
   activateNearby(){
-    const entity=this.nearby;
+    const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
+      ?this.combatTarget
+      :this.nearby;
     if(!entity||this.mode!=="play")return;
 
     const collision=normalizeCollision(entity.collision||{},entity);
