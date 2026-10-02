@@ -2111,14 +2111,15 @@ export class WorldRuntime {
       const blur=effect.active?Number(effectFrame.blur||0):0;
       if(img)img.style.filter=`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
 
-      if(effect.active&&effect.renderer==="webgl"){
+      const atlasMode=hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
+      if(effect.active&&effect.renderer==="webgl"&&!atlasMode){
         const renderer=this.entityEffectRenderers.get(entity.id);
         const rendered=renderer?.render?.(time,effect,entity.width||96,entity.height||96)===true;
         if(canvas)canvas.hidden=!rendered;
         if(img)img.hidden=rendered;
       }else{
         if(canvas)canvas.hidden=true;
-        if(img)img.hidden=Boolean(entity.sprite?.src&&entity.sprite?.regions);
+        if(img)img.hidden=atlasMode;
       }
     }
   }
