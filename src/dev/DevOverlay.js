@@ -1876,6 +1876,14 @@ export class DevOverlay {
     const motion=this.worldEditor.getEntityMotion(entity.id)||{active:false,preset:"none",speed:50,heave:0,pitch:0,roll:0,sway:0};
     const effect=this.worldEditor.getEntityEffect(entity.id)||{category:"generic",preset:"none",active:false,renderer:"dom",mode:"none",speed:50,intensity:0,range:0,parallax:1,opacity:1,blur:0,distortion:0,glow:0,rotateToPath:false};
     const collision=this.worldEditor.getEntityCollision(entity.id)||{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0,action:"auto",message:""};
+    const waterIntegration={
+      active:entity.waterIntegration?.active!==false,
+      immersion:Number(entity.waterIntegration?.immersion??.18),
+      foam:Number(entity.waterIntegration?.foam??.65),
+      foamWidth:Number(entity.waterIntegration?.foamWidth??.12),
+      wetness:Number(entity.waterIntegration?.wetness??.5),
+      submergedShadow:Number(entity.waterIntegration?.submergedShadow??.42)
+    };
     const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{enabled:false,hp:3};
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
     const shipOptions=(this.shipEditor?.allShips?.()||[]).map(ship=>
@@ -1963,6 +1971,17 @@ export class DevOverlay {
           motionRange("sway","Deriva lateral")+
           '<small class="tq-world-editor-note">Usa a mesma linguagem do motor de composição de navios: heave, pitch, roll e sway. O preview roda no próprio mundo.</small>'+
         '</div></section>'+
+        (entity.type==="island"
+          ? '<section class="tq-config-area tq-config-area--island-water"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🌊 Imersão na água</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+              '<label class="tq-field tq-field--check"><span>Integração com oceano</span><input data-island-water-prop="active" type="checkbox" '+(waterIntegration.active?'checked':'')+'></label>'+
+              '<label class="tq-world-motion-range"><span><b>Profundidade visual</b><output data-island-water-output="immersion">'+Math.round(waterIntegration.immersion*100)+'%</output></span><input data-island-water-prop="immersion" type="range" min="0" max=".55" step=".01" value="'+waterIntegration.immersion+'"></label>'+
+              '<label class="tq-world-motion-range"><span><b>Intensidade da espuma</b><output data-island-water-output="foam">'+Math.round(waterIntegration.foam*100)+'%</output></span><input data-island-water-prop="foam" type="range" min="0" max="1" step=".01" value="'+waterIntegration.foam+'"></label>'+
+              '<label class="tq-world-motion-range"><span><b>Largura da espuma</b><output data-island-water-output="foamWidth">'+Math.round(waterIntegration.foamWidth*100)+'%</output></span><input data-island-water-prop="foamWidth" type="range" min=".02" max=".35" step=".01" value="'+waterIntegration.foamWidth+'"></label>'+
+              '<label class="tq-world-motion-range"><span><b>Faixa molhada</b><output data-island-water-output="wetness">'+Math.round(waterIntegration.wetness*100)+'%</output></span><input data-island-water-prop="wetness" type="range" min="0" max="1" step=".01" value="'+waterIntegration.wetness+'"></label>'+
+              '<label class="tq-world-motion-range"><span><b>Sombra submersa</b><output data-island-water-output="submergedShadow">'+Math.round(waterIntegration.submergedShadow*100)+'%</output></span><input data-island-water-prop="submergedShadow" type="range" min="0" max="1" step=".01" value="'+waterIntegration.submergedShadow+'"></label>'+
+              '<small class="tq-world-editor-note">Integra visualmente a base da ilha ao oceano com espuma costeira e profundidade local, sem alterar o asset original.</small>'+
+            '</div></section>'
+          : '')+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Colisão</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           '<label class="tq-field tq-field--check"><span>Colisão ativa</span><input data-collision-prop="active" type="checkbox" '+(collision.active?'checked':'')+'></label>'+
           '<label class="tq-world-field"><span>Forma</span><select data-collision-prop="shape"><option value="ellipse" '+(collision.shape==="ellipse"?'selected':'')+'>Elipse</option><option value="box" '+(collision.shape==="box"?'selected':'')+'>Caixa</option></select></label>'+
@@ -2148,6 +2167,20 @@ export class DevOverlay {
       const current=this.worldEditor.getSelected()?.rewards||rewards;
       this.selected=this.worldEditor.updateEntity(entity.id,{rewards:{...current,[key]:value}},true)||this.selected;
     }));
+
+    const islandWaterNumeric=new Set(["immersion","foam","foamWidth","wetness","submergedShadow"]);
+    content.querySelectorAll("[data-island-water-prop]").forEach(input=>{
+      const apply=commit=>{
+        const key=input.dataset.islandWaterProp;
+        const value=input.type==="checkbox"?input.checked:Number(input.value);
+        const current=this.worldEditor.getSelected()?.waterIntegration||waterIntegration;
+        this.selected=this.worldEditor.updateEntity(entity.id,{waterIntegration:{...current,[key]:value}},commit)||this.selected;
+        const output=content.querySelector('[data-island-water-output="'+key+'"]');
+        if(output&&islandWaterNumeric.has(key))output.value=Math.round(Number(value)*100)+"%";
+      };
+      if(input.type==="range")input.addEventListener("input",()=>apply(false));
+      input.addEventListener("change",()=>apply(true));
+    });
 
     const collisionNumeric=new Set(["scaleX","scaleY","padding"]);
     content.querySelectorAll("[data-collision-prop]").forEach(input=>{
