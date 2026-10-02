@@ -1068,17 +1068,20 @@ export class DevOverlay {
       npcPopulation.types=Array.isArray(npcPopulation.types)?npcPopulation.types:[];
       const availableShips=(this.shipEditor?.repositoryShips?.()||[])
         .map(ship=>this.shipEditor.normalizeShip(ship));
-      const npcShips=availableShips;
-      const npcShipOptions=selected=>npcShips.map(ship=>
-        '<option value="'+this.escapeHtml(ship.id)+'" '+(String(selected||"")===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
+      const npcProfiles=this.npcEditor?.all?.()||[];
+      const npcOptions=selected=>npcProfiles.map(npc=>
+        '<option value="'+this.escapeHtml(npc.id)+'" '+(String(selected||"")===npc.id?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
       ).join("");
       const npcRows=npcPopulation.types.map((item,index)=>
         '<div class="tq-world-npc-row" data-npc-row="'+index+'">'+
-          '<label class="tq-world-field"><span>Tipo de NPC</span><select data-npc-type-ship="'+index+'">'+npcShipOptions(item.shipId)+'</select></label>'+
+          '<label class="tq-world-field"><span>NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(item.npcId||item.shipId)+'</select></label>'+
           '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
-          '<label class="tq-world-field"><span>Vida / casco</span><input data-npc-type-hp="'+index+'" type="number" min="1" max="99" value="'+Math.max(1,Number(item.hp)||3)+'"></label>'+
           '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
-          '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover tipo de NPC">×</button>'+
+          '<label class="tq-world-field"><span>Moedas</span><input data-npc-reward-coins="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.coins)||0)+'"></label>'+
+          '<label class="tq-world-field"><span>XP</span><input data-npc-reward-xp="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.xp)||0)+'"></label>'+
+          '<label class="tq-world-field"><span>Item recompensa</span><input data-npc-reward-item="'+index+'" value="'+this.escapeHtml(item.rewards?.itemId||'')+'"></label>'+
+          '<label class="tq-world-field"><span>Quantidade item</span><input data-npc-reward-quantity="'+index+'" type="number" min="1" value="'+Math.max(1,Number(item.rewards?.quantity)||1)+'"></label>'+
+          '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover NPC">×</button>'+
         '</div>'
       ).join("");
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
@@ -1326,11 +1329,13 @@ export class DevOverlay {
         saveNpcPopulation(next);
       });
       content.querySelector("[data-npc-type-add]")?.addEventListener("click",()=>{
-        const first=npcShips[0];
-        if(!first)return;
+        const firstNpc=this.npcEditor?.all?.()?.[0];
+        if(!firstNpc)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({shipId:first.id,count:1,hp:3,respawn:false});
+        const firstNpc=this.npcEditor?.all?.()?.[0];
+        if(!firstNpc)return;
+        next.types.push({npcId:firstNpc.id,count:1,respawn:false,rewards:{coins:0,xp:0,itemId:"",quantity:1}});
         next.enabled=true;
         saveNpcPopulation(next);
       });
@@ -1351,9 +1356,12 @@ export class DevOverlay {
         next.types[index]={...(next.types[index]||{}),...patch};
         saveNpcPopulation(next);
       };
-      content.querySelectorAll("[data-npc-type-ship]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeShip),{shipId:input.value})));
+      content.querySelectorAll("[data-npc-type-id]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeId),{npcId:input.value,shipId:""})));
       content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
-      content.querySelectorAll("[data-npc-type-hp]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeHp),{hp:Math.max(1,Math.min(99,Number(input.value)||3))})));
+      content.querySelectorAll("[data-npc-reward-coins]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardCoins),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),coins:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
+      content.querySelectorAll("[data-npc-reward-xp]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardXp),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),xp:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
+      content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
+      content.querySelectorAll("[data-npc-reward-quantity]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardQuantity),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),quantity:Math.max(1,Number(input.value)||1)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
