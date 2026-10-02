@@ -3,14 +3,14 @@ import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
 export async function launchWorldTest(root,{worldId="ocean-prototype"}={}){
-  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20260930-1851",{cache:"no-store"});
+  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261001-2209",{cache:"no-store"});
   if(!catalogResponse.ok)throw new Error("World catalog failed: "+catalogResponse.status);
   const catalog=await catalogResponse.json();
   const entry=(catalog.worlds||[]).find(item=>item.id===worldId)
     ||(catalog.worlds||[]).find(item=>item.id==="ocean-prototype");
   if(!entry?.path)throw new Error("World test not found: "+worldId);
 
-  const response=await fetch(entry.path+"?v=20260930-1851",{cache:"no-store"});
+  const response=await fetch(entry.path+"?v=20261001-2209",{cache:"no-store"});
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
 
