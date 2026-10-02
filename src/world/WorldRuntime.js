@@ -892,12 +892,15 @@ export class WorldRuntime {
 
   selectCombatTarget(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.challengeActive||this.combatActive)return false;
+    const keepAutoFire=this.navalAutoFire===true;
     if(this.combatTarget&&this.combatTarget!==entity&&this.combatTarget.el){
       this.combatTarget.el.classList.remove("is-combat-target");
-      this.navalAutoFire=false;
+      // Switching targets must not disarm an already active attack order.
+      // Transfer the armed state to the newly selected ship instead.
       this.navalNextShotAt=0;
     }
     this.combatTarget=entity;
+    this.navalAutoFire=keepAutoFire;
     this.nearby=entity;
     entity.el?.classList.add("is-combat-target");
     this.clearNavigationTarget({brake:true});
@@ -917,6 +920,10 @@ export class WorldRuntime {
       ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
       :"⚔ Atacar";
     if(this.actionWrap)this.actionWrap.hidden=false;
+    if(this.navalAutoFire&&this.isNavalTargetInRange(entity)){
+      this.navalNextShotAt=0;
+      queueMicrotask(()=>this.updateDirectNavalCombat(performance.now()));
+    }
     return true;
   }
 
