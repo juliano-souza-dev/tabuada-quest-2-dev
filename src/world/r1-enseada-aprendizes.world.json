@@ -432,6 +432,29 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r1-enseada-aprendizes.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Costa dos Corsários",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r2-costa-corsarios",
+      "destinationWorldName": "Costa dos Corsários",
+      "transitionMessage": "Navegar para Costa dos Corsários?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
     }
   ],
   "npcPopulation": {
