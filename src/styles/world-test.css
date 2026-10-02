@@ -183,6 +183,16 @@
 .tq-world-clouds i{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:calc(var(--size)*.34);opacity:calc(var(--cloud-opacity,.5)*var(--depth,1));transform:scale(calc(var(--cloud-scale,1)*var(--depth,1)));transform-origin:center;background:radial-gradient(ellipse at 28% 60%,rgba(255,255,255,.74) 0 22%,transparent 23%),radial-gradient(ellipse at 48% 46%,rgba(255,255,255,.84) 0 27%,transparent 28%),radial-gradient(ellipse at 70% 62%,rgba(255,255,255,.66) 0 23%,transparent 24%);filter:blur(calc((1 - var(--depth,1))*2px));animation:tq-cloud-drift var(--dur,24s) linear infinite;animation-delay:var(--delay,0s);will-change:transform}
 @keyframes tq-cloud-drift{from{translate:var(--from-x,-28vw) var(--from-y,0)}to{translate:var(--to-x,128vw) var(--to-y,0)}}
 
+.tq-world-fog{position:fixed;inset:-18%;z-index:512;pointer-events:none;overflow:hidden;opacity:var(--fog-opacity,.35);filter:blur(var(--fog-blur,28px));background:
+radial-gradient(ellipse at 15% 35%,rgba(210,224,220,.72) 0 8%,rgba(137,154,157,.38) 20%,transparent 43%),
+radial-gradient(ellipse at 72% 28%,rgba(205,216,215,.58) 0 10%,rgba(113,129,137,.32) 24%,transparent 48%),
+radial-gradient(ellipse at 45% 78%,rgba(188,203,201,.52) 0 9%,rgba(104,121,128,.28) 26%,transparent 52%);
+background-size:72% 64%,84% 72%,92% 78%;mix-blend-mode:screen;animation:tq-world-fog-drift var(--fog-speed,28s) ease-in-out infinite alternate;will-change:transform,background-position}
+.tq-world-fog[hidden]{display:none}
+.tq-world-fog::after{content:"";position:absolute;inset:12%;background:radial-gradient(ellipse at center,transparent 0 22%,rgba(215,225,221,.16) 58%,rgba(162,176,177,.3) 100%);opacity:calc(.25 + var(--fog-intensity,.2));animation:tq-world-fog-breathe 8s ease-in-out infinite alternate}
+@keyframes tq-world-fog-drift{0%{transform:translate3d(-5%,-2%,0) scale(1.03);background-position:0 20%,70% 10%,35% 75%}100%{transform:translate3d(6%,3%,0) scale(1.1);background-position:18% 28%,52% 18%,50% 64%}}
+@keyframes tq-world-fog-breathe{from{transform:scale(1);opacity:.18}to{transform:scale(1.08);opacity:.42}}
+
 .tq-world-weather{position:fixed;inset:0;z-index:515;overflow:hidden;pointer-events:none}
 .tq-world-weather--none{display:none}
 .tq-world-weather i{position:absolute;left:var(--x);top:-12vh;display:block;pointer-events:none;animation-delay:var(--delay);animation-duration:var(--dur);animation-iteration-count:infinite;animation-timing-function:linear}
