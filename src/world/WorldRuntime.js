@@ -818,6 +818,7 @@ export class WorldRuntime {
         </div>
         <div class="tq-world-clouds" data-world-clouds aria-hidden="true"></div>
         <div class="tq-world-weather" data-world-weather aria-hidden="true"></div>
+        <div class="tq-world-fog" data-world-fog aria-hidden="true"></div>
         <div class="tq-world-stage">
           <div class="tq-world-playable-boundary" data-world-playable-boundary aria-hidden="true"></div>
           <div class="tq-world-player-wake-layer" data-world-player-wake aria-hidden="true"></div>
@@ -920,6 +921,7 @@ export class WorldRuntime {
     this.stage=this.host.querySelector(".tq-world-stage");
     this.cloudsEl=this.host.querySelector("[data-world-clouds]");
     this.weatherEl=this.host.querySelector("[data-world-weather]");
+    this.fogEl=this.host.querySelector("[data-world-fog]");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
     this.playerWakeLayer=this.host.querySelector("[data-world-player-wake]");
@@ -4316,6 +4318,10 @@ export class WorldRuntime {
     return {
       preset,
       weather:String(env.weather||environmentPreset(preset).weather||"none"),
+      halloween:{
+        active:env.halloween?.active===true,
+        fog:{active:env.halloween?.fog?.active===true,intensity:clamp(Number(env.halloween?.fog?.intensity??0),0,.65)}
+      },
       clouds:{
         active:clouds.active!==false,
         density:clamp(Number(clouds.density??.5),0,1),
@@ -4378,6 +4384,15 @@ export class WorldRuntime {
           this.cloudsEl.append(cloud);
         }
       }
+    }
+    if(this.fogEl){
+      const fog=env.halloween?.fog||{};
+      const active=env.halloween?.active===true&&fog.active===true&&fog.intensity>0;
+      this.fogEl.hidden=!active;
+      this.fogEl.style.setProperty("--fog-intensity",String(fog.intensity||0));
+      this.fogEl.style.setProperty("--fog-opacity",String(Math.min(.72,(fog.intensity||0)*1.35)));
+      this.fogEl.style.setProperty("--fog-blur",(18+Number(fog.intensity||0)*42).toFixed(1)+"px");
+      this.fogEl.style.setProperty("--fog-speed",(34-Math.min(.65,Number(fog.intensity||0))*20).toFixed(1)+"s");
     }
     if(!this.weatherEl)return;
     const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
