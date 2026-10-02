@@ -1163,3 +1163,97 @@
   min-height:34px;border:1px solid rgba(255,255,255,.09);border-radius:8px;
   background:#081f2d;color:#bfefff;padding:6px 8px;font-size:9px
 }
+
+
+/* Ammo FX workspace stability */
+.tq-dev__ammo-fx .tq-ships__editor{
+  overflow:hidden;
+  padding:14px;
+  min-width:0;
+}
+.tq-dev__ammo-fx .tq-ships__body,
+.tq-dev__ammo-fx .tq-ships__editor,
+.tq-ammo-builder,
+.tq-ammo-builder>*,
+.tq-ammo-basic__grid>*,
+.tq-ammo-fx-grid>*{
+  min-width:0;
+}
+.tq-ammo-builder{
+  width:100%;
+  max-width:none;
+  height:calc(100vh - 190px);
+  min-height:560px;
+  grid-template-columns:minmax(0,1fr) minmax(380px,460px);
+  gap:14px;
+  align-items:stretch;
+}
+.tq-ammo-builder__controls{
+  overflow:auto;
+  padding-right:4px;
+  align-content:start;
+}
+.tq-ammo-preview{
+  position:sticky;
+  top:0;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+}
+.tq-ammo-preview>.tq-ships__panel{
+  height:100%;
+  margin:0;
+  display:grid;
+  grid-template-rows:auto auto minmax(300px,1fr) auto auto;
+  gap:10px;
+  overflow:hidden;
+}
+.tq-ammo-preview .tq-ships__panel-title,
+.tq-ammo-preview__toolbar,
+.tq-ammo-preview__actions,
+.tq-ammo-preview__stats{
+  margin:0;
+}
+.tq-ammo-preview__stage{
+  min-height:300px;
+  height:auto;
+  max-height:none;
+}
+.tq-ammo-basic__grid{
+  grid-template-columns:minmax(180px,1.4fr) minmax(140px,1fr) repeat(2,minmax(100px,.7fr));
+}
+.tq-ammo-basic__grid input,
+.tq-ammo-basic__grid select,
+.tq-ammo-fx-text input,
+.tq-ammo-preview__toolbar select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.tq-ammo-fx-grid{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+}
+.tq-ammo-fx-range input[type=range]{
+  min-width:0;
+}
+.tq-ammo-preview__actions button{
+  flex:1 1 110px;
+  min-width:0;
+}
+@media(max-width:1180px){
+  .tq-dev__ammo-fx .tq-ships__editor{overflow:auto}
+  .tq-ammo-builder{
+    height:auto;
+    min-height:0;
+    grid-template-columns:1fr;
+  }
+  .tq-ammo-builder__controls{overflow:visible;padding-right:0}
+  .tq-ammo-preview{position:static;height:auto;overflow:visible}
+  .tq-ammo-preview>.tq-ships__panel{height:auto;display:block;overflow:visible}
+  .tq-ammo-preview__stage{height:420px;margin:10px 0}
+}
+@media(max-width:820px){
+  .tq-ammo-basic__grid{grid-template-columns:1fr 1fr}
+  .tq-ammo-fx-grid{grid-template-columns:1fr}
+  .tq-ammo-fx-wide{grid-column:auto}
+}
