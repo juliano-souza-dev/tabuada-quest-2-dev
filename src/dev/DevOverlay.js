@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2351";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261001-2354";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261001-2341";
 export class DevOverlay {
   constructor(root,runtime,options={}){
