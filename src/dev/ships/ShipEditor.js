@@ -215,6 +215,11 @@ export class ShipEditor{
     return this.repositoryShips().sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
   }
 
+  resolve(id){
+    const key=String(id||"");
+    return this.allShips().find(ship=>String(ship?.id||"")===key)||null;
+  }
+
   current(){
     return this.allShips().find(ship=>ship.id===this.selectedId)||null;
   }
