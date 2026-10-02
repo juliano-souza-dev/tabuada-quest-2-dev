@@ -60,6 +60,7 @@ const normalizeNpcPopulation=input=>{
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
       respawn:item?.respawn===true,
+      devFrozen:item?.devFrozen===true,
       rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
       allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
     })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
@@ -465,6 +466,7 @@ export class WorldRuntime {
       lockAspect:true,
       runtimeGenerated:true,
       respawn:typeConfig?.respawn===true,
+      devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
       rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
       npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
       npcBehavior:String(profile.navigation?.behavior||profile.npcBehavior||"roam"),
@@ -558,6 +560,12 @@ export class WorldRuntime {
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
+    if(entity.devFrozen){
+      if(nav){nav.vx=0;nav.vy=0}
+      entity.anchorX=entity.x;
+      entity.anchorY=entity.y;
+      return;
+    }
     if(!nav)return;
     const maxSpeed=Math.max(0,Number(nav.speed)||0);
     if(entity.npcBehavior==="stationary"||nav.mode==="stationary"||maxSpeed<=0){
@@ -3844,7 +3852,7 @@ export class WorldRuntime {
     if(!firedCount)return false;
 
     const id=String(entity.id);
-    if(entity.npcAttitude!=="peaceful"){
+    if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
       const hostile=this.navalHostile.get(id)||{nextShotAt:0};
       this.navalHostile.set(id,hostile);
     }
@@ -3899,7 +3907,7 @@ export class WorldRuntime {
   }
 
   fireNpcNavalProjectile(entity){
-    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0||entity.devFrozen)return false;
     const stats=this.entityNavalCombatStats(entity);
     if(this.navalTargetDistance(entity)>stats.attackRange)return false;
     const duration=620;
@@ -3950,14 +3958,14 @@ export class WorldRuntime {
     }
 
     for(const entity of this.entities){
-      if(!entity?.runtimeGenerated||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
+      if(!entity?.runtimeGenerated||entity.devFrozen||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
       const id=String(entity.id);
       if(!this.navalHostile.has(id))this.navalHostile.set(id,{nextShotAt:0});
     }
 
     for(const [id,state] of [...this.navalHostile.entries()]){
       const entity=this.entities.find(item=>String(item.id)===String(id));
-      if(!entity||!this.isClickableCombatShip(entity)||this.collected.has(entity.id)||this.navalDestroying.has(entity.id)){
+      if(!entity||entity.devFrozen||!this.isClickableCombatShip(entity)||this.collected.has(entity.id)||this.navalDestroying.has(entity.id)){
         this.navalHostile.delete(id);
         continue;
       }
