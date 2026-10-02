@@ -1,5 +1,12 @@
 {
   "schema": "tq.world-catalog",
   "version": 3,
-  "worlds": []
+  "worlds": [
+    {
+      "id": "tempesta",
+      "name": "Tempesta",
+      "type": "ocean",
+      "path": "./src/world/tempesta.world.json"
+    }
+  ]
 }
