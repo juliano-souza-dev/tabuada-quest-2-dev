@@ -169,9 +169,12 @@ export class AmmoEditor{
             this.range("muzzle.size","Escala",8,220,1,fx.muzzle.size," px")+
             this.range("muzzle.durationMs","Duração",40,1600,10,fx.muzzle.durationMs," ms")+
             this.range("muzzle.intensity","Intensidade",.05,3,.05,fx.muzzle.intensity,"")+
+            this.range("muzzle.sparks","Fagulhas",0,64,1,fx.muzzle.sparks,"")+
+            this.range("muzzle.starburst","Starburst",0,1.5,.05,fx.muzzle.starburst,"")+
             this.range("muzzle.smoke","Fumaça",0,1.5,.05,fx.muzzle.smoke,"")+
             this.color("muzzle.color","Cor",fx.muzzle.color)+
             this.color("muzzle.coreColor","Núcleo",fx.muzzle.coreColor)+
+            this.color("muzzle.accentColor","Acento",fx.muzzle.accentColor)+
           '</div></details>'+
 
           '<details class="tq-ammo-fx-section" open><summary><strong>🔥 Projétil em movimento</strong><small>Cor, glow, escala e oscilação durante o voo.</small></summary><div class="tq-ammo-fx-grid">'+
@@ -182,8 +185,13 @@ export class AmmoEditor{
             this.toggle("projectile.auraEnabled","Aura do asset",fx.projectile.auraEnabled)+
             this.range("projectile.auraScale","Escala da aura",1,3.5,.05,fx.projectile.auraScale,"×")+
             this.range("projectile.auraOpacity","Opacidade da aura",0,1,.05,fx.projectile.auraOpacity,"")+
+            this.range("projectile.orbitCount","Partículas orbitais",0,12,1,fx.projectile.orbitCount,"")+
+            this.range("projectile.orbitRadius","Raio orbital",.25,2.2,.05,fx.projectile.orbitRadius,"×")+
+            this.range("projectile.sparkle","Sparkle",0,1.5,.05,fx.projectile.sparkle,"")+
+            this.range("projectile.pulseSpeed","Pulso",.2,4,.05,fx.projectile.pulseSpeed,"×")+
             this.color("projectile.color","Cor",fx.projectile.color)+
             this.color("projectile.coreColor","Núcleo",fx.projectile.coreColor)+
+            this.color("projectile.accentColor","Acento",fx.projectile.accentColor)+
             '<div class="tq-ammo-asset tq-ammo-fx-wide"><span>Asset central do projétil</span><div class="tq-ammo-asset__row">'+(fx.projectile.texture?'<img src="'+this.e(fx.projectile.texture)+'" alt="">':'<span class="tq-ammo-asset__empty">∅</span>')+'<div><button type="button" class="tq-ships__new" data-ammo-asset>▦ Escolher asset</button><small>'+this.e(fx.projectile.texture||"Sem asset: usando somente fallback WebGL")+'</small></div></div><input data-fx="projectile.texture" value="'+this.e(fx.projectile.texture)+'" placeholder="./assets/cannons/...webp"></div>'+
           '</div></details>'+
 
@@ -193,7 +201,10 @@ export class AmmoEditor{
             this.range("trail.width","Largura",1,64,1,fx.trail.width," px")+
             this.range("trail.opacity","Opacidade",0,1,.05,fx.trail.opacity,"")+
             this.range("trail.taper","Afinamento",0,1,.05,fx.trail.taper,"")+
-            this.color("trail.color","Cor",fx.trail.color)+
+            this.range("trail.sparkle","Sparkles",0,1.5,.05,fx.trail.sparkle,"")+
+            this.range("trail.ribbon","Ribbon duplo",0,1.5,.05,fx.trail.ribbon,"")+
+            this.color("trail.color","Cor principal",fx.trail.color)+
+            this.color("trail.secondaryColor","Cor secundária",fx.trail.secondaryColor)+
           '</div></details>'+
 
           '<details class="tq-ammo-fx-section" open><summary><strong>💣 Impacto no casco</strong><small>Explosão, choque, fagulhas e fumaça.</small></summary><div class="tq-ammo-fx-grid">'+
@@ -203,8 +214,11 @@ export class AmmoEditor{
             this.range("impactShip.sparks","Fagulhas",0,64,1,fx.impactShip.sparks,"")+
             this.range("impactShip.smoke","Fumaça",0,1.5,.05,fx.impactShip.smoke,"")+
             this.range("impactShip.shock","Onda de choque",0,1.5,.05,fx.impactShip.shock,"")+
+            this.range("impactShip.fireworks","Fogos",0,1.5,.05,fx.impactShip.fireworks,"")+
+            this.range("impactShip.ringCount","Anéis",1,4,1,fx.impactShip.ringCount,"")+
             this.color("impactShip.color","Cor",fx.impactShip.color)+
             this.color("impactShip.coreColor","Núcleo",fx.impactShip.coreColor)+
+            this.color("impactShip.accentColor","Acento",fx.impactShip.accentColor)+
           '</div></details>'+
 
           '<details class="tq-ammo-fx-section" open><summary><strong>🌊 Impacto na água</strong><small>Splash, ripple, espuma e névoa.</small></summary><div class="tq-ammo-fx-grid">'+
@@ -215,8 +229,11 @@ export class AmmoEditor{
             this.range("impactWater.ripple","Ripple",0,1.5,.05,fx.impactWater.ripple,"")+
             this.range("impactWater.foam","Espuma",0,1.5,.05,fx.impactWater.foam,"")+
             this.range("impactWater.mist","Névoa",0,1.5,.05,fx.impactWater.mist,"")+
+            this.range("impactWater.magic","Partículas mágicas",0,1.5,.05,fx.impactWater.magic,"")+
+            this.range("impactWater.ringCount","Anéis",1,4,1,fx.impactWater.ringCount,"")+
             this.color("impactWater.color","Cor",fx.impactWater.color)+
             this.color("impactWater.coreColor","Núcleo",fx.impactWater.coreColor)+
+            this.color("impactWater.accentColor","Acento",fx.impactWater.accentColor)+
           '</div></details>'+
         '</div>'+
 
