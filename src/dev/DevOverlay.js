@@ -1,6 +1,6 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1902";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1915";
-import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1915";
+import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1923";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-1658";
 import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1726";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
@@ -203,6 +203,7 @@ export class DevOverlay {
     });
     window.addEventListener("tq:shipprofilechange",event=>{
       const shipId=String(event.detail?.shipId||"");
+      this.npcEditor?.repairShipLinks?.({autoAssignSingle:true});
       if(!shipId||this.workspace!=="world"||!this.worldEditor?.runtime)return;
       this.worldEditor.runtime.refreshShipProfile?.(shipId);
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
