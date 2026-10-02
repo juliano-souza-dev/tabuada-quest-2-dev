@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r2-costa-corsarios.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Arquipélago das Pérolas",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r3-arquipelago-perolas",
+      "destinationWorldName": "Arquipélago das Pérolas",
+      "transitionMessage": "Navegar para Arquipélago das Pérolas?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r2-costa-corsarios.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Enseada dos Aprendizes",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r1-enseada-aprendizes",
+      "destinationWorldName": "Enseada dos Aprendizes",
+      "transitionMessage": "Voltar para Enseada dos Aprendizes?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
