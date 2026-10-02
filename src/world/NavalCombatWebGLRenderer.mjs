@@ -432,8 +432,36 @@ export class NavalCombatWebGLRenderer{
         const point=toClip(x,y);
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
+        const assetSize=clamp((textured?32:18)*Number(shot.ammo?.size||1)*fx.projectile.scale,6,128);
+
+        if(textured&&fx.projectile.auraEnabled){
+          const pulse=.9+.1*Math.sin(now*.021+shot.startTime*.003);
+          drawPoint(
+            x,y,
+            assetSize*fx.projectile.auraScale*pulse,
+            0,0,true,
+            {
+              color:fx.projectile.color,
+              coreColor:fx.projectile.coreColor,
+              glow:Math.max(.35,fx.projectile.glow),
+              opacity:fx.projectile.auraOpacity
+            }
+          );
+          drawPoint(
+            x,y,
+            assetSize*Math.max(1.05,fx.projectile.auraScale*.68),
+            2,(now*.0015)%1,true,
+            {
+              color:fx.projectile.color,
+              coreColor:fx.projectile.coreColor,
+              glow:fx.projectile.glow,
+              opacity:fx.projectile.auraOpacity*.46
+            }
+          );
+        }
+
         gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
-        gl.uniform1f(this.uniforms.pointSize,clamp((textured?32:18)*Number(shot.ammo?.size||1)*fx.projectile.scale,6,128)*this.pixelRatio);
+        gl.uniform1f(this.uniforms.pointSize,assetSize*this.pixelRatio);
         gl.uniform1f(this.uniforms.effectType,0);
         gl.uniform1f(this.uniforms.progress,0);
         gl.uniform1f(this.uniforms.useTexture,textured?1:0);
