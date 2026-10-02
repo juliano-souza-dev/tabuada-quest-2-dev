@@ -26,6 +26,7 @@ export class DevOverlay {
       pedagogyRuntime:this.pedagogyRuntime,
       onPedagogyResult:this.onPedagogyResult,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
+      resolveNpc:npcId=>this.npcEditor?.resolve?.(npcId)||null,
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
       getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
       getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]}),
