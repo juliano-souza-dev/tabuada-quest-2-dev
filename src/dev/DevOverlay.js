@@ -1207,7 +1207,7 @@ export class DevOverlay {
       }).join("");
       const npcEmptyState=npcProfiles.length
         ?'<div class="tq-world-npc-empty"><strong>Nenhum NPC neste mapa.</strong><small>Use “Adicionar NPC ao mapa”. O navio e os atributos vêm do perfil NPC.</small></div>'
-        :'<div class="tq-world-npc-empty is-warning"><strong>Nenhum NPC está pronto para o mapa.</strong><small>Abra o editor NPC e associe um navio a pelo menos um perfil. Qualquer navio disponível pode ser usado por um NPC.</small></div>';
+        :'<div class="tq-world-npc-empty is-warning"><strong>Nenhum NPC está pronto para o mapa.</strong><small>Associe um navio a pelo menos um perfil NPC. Qualquer navio disponível pode ser usado.</small><button type="button" data-open-npc-editor>☠ Abrir editor NPC</button></div>';
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
       const spriteSrc=String(sprite.src||"");
@@ -1312,7 +1312,7 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Espalhamento</span><select data-npc-spread-mode><option value="random-spaced" '+(npcPopulation.spread.mode==="random-spaced"?'selected':'')+'>Aleatório espaçado</option><option value="random" '+(npcPopulation.spread.mode==="random"?'selected':'')+'>Aleatório livre</option></select></label>'+
               '<label class="tq-world-field"><span>Margem das bordas</span><input data-npc-spread-margin type="number" min="0" max="2000" value="'+Math.max(0,Number(npcPopulation.spread.margin)||0)+'"></label>'+
               '<label class="tq-world-field"><span>Distância mínima</span><input data-npc-spread-distance type="number" min="0" max="1800" value="'+Math.max(0,Number(npcPopulation.spread.minDistance)||0)+'"></label>'+
-              '<label class="tq-world-field"><span>Velocidade dos NPCs</span><input data-npc-movement-speed type="number" min="0" max="1200" value="'+Math.max(0,Number(npcPopulation.movement.speed)||0)+'"></label>'+
+
             '</div>'+
             '<div class="tq-world-npc-types">'+(npcRows||npcEmptyState)+'</div>'+
             '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(addableNpcProfiles.length?'':'disabled')+'>＋ Adicionar NPC ao mapa</button><button type="button" data-npc-redistribute '+(npcPopulation.types.length?'':'disabled')+'>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
@@ -1470,11 +1470,7 @@ export class DevOverlay {
         next.spread={...(next.spread||{}),minDistance:Math.max(0,Number(event.currentTarget.value)||0)};
         saveNpcPopulation(next);
       });
-      content.querySelector("[data-npc-movement-speed]")?.addEventListener("change",event=>{
-        const next=currentNpcPopulation();
-        next.movement={mode:"straight",speed:Math.max(0,Number(event.currentTarget.value)||0)};
-        saveNpcPopulation(next);
-      });
+      content.querySelector("[data-open-npc-editor]")?.addEventListener("click",()=>this.toggleNpcs(true));
       content.querySelector("[data-npc-type-add]")?.addEventListener("click",()=>{
         const current=currentNpcPopulation();
         current.types=Array.isArray(current.types)?current.types:[];
