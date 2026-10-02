@@ -253,14 +253,16 @@ export class NavalCombatWebGLRenderer{
     const source=String(src||"");
     if(!key||!source)return null;
     const current=this.projectileTextures.get(key);
-    if(current?.src===source)return current;
+    if(current?.src===source&&current.ready)return current;
+    if(current?.src===source&&!current.failed)return current;
     if(current?.texture&&this.gl){
       try{this.gl.deleteTexture(current.texture)}catch{}
     }
-    const entry={texture:null,ready:false,failed:false,src:source};
+    const entry={texture:null,ready:false,failed:false,src:source,url:""};
     this.projectileTextures.set(key,entry);
     const image=new Image();
     image.decoding="async";
+    image.crossOrigin="anonymous";
     image.onload=()=>{
       if(!this.gl||this.projectileTextures.get(key)!==entry)return;
       const gl=this.gl,texture=gl.createTexture();
@@ -278,7 +280,8 @@ export class NavalCombatWebGLRenderer{
       entry.failed=true;
       console.warn("[TabuadaQuest] Projectile texture failed:",source);
     };
-    image.src=source;
+    try{entry.url=new URL(source,globalThis.document?.baseURI||globalThis.location?.href||source).href}catch{entry.url=source}
+    image.src=entry.url;
     return entry;
   }
 
