@@ -1,3 +1,4 @@
+import { normalizeAmmoFx, hexToRgb01 } from "./fx/AmmoFxProfile.mjs";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const smoothstep=(edge0,edge1,value)=>{
   const t=clamp((value-edge0)/Math.max(.000001,edge1-edge0),0,1);
@@ -21,6 +22,10 @@ uniform float uEffectType;
 uniform float uProgress;
 uniform float uUseTexture;
 uniform sampler2D uProjectileTexture;
+uniform vec3 uPrimaryColor;
+uniform vec3 uSecondaryColor;
+uniform float uGlow;
+uniform float uOpacity;
 out vec4 outColor;
 void main(){
   vec2 p=gl_PointCoord-vec2(.5);
@@ -29,7 +34,7 @@ void main(){
     vec4 tex=texture(uProjectileTexture,vec2(gl_PointCoord.x,1.0-gl_PointCoord.y));
     if(tex.a<.02)discard;
     float glow=1.0-smoothstep(.18,.5,d);
-    outColor=vec4(tex.rgb*(1.0+glow*(.18+uPulse*.12)),tex.a);
+    outColor=vec4(tex.rgb*(1.0+glow*(.12+uGlow*.28+uPulse*.08)),tex.a*uOpacity);
     return;
   }
   if(d>.5)discard;
@@ -37,10 +42,8 @@ void main(){
   if(uEffectType<.5){
     float core=1.0-smoothstep(.08,.22,d);
     float halo=1.0-smoothstep(.16,.50,d);
-    vec3 hot=vec3(1.0,.95,.72);
-    vec3 fire=vec3(1.0,.33,.06);
-    vec3 color=mix(fire,hot,core);
-    float alpha=clamp(core+halo*.72,0.0,1.0)*(0.88+uPulse*.12);
+    vec3 color=mix(uPrimaryColor,uSecondaryColor,core);
+    float alpha=clamp(core+halo*(.38+uGlow*.46),0.0,1.0)*(0.88+uPulse*.12)*uOpacity;
     outColor=vec4(color,alpha);
     return;
   }
@@ -53,10 +56,8 @@ void main(){
     float core=(1.0-smoothstep(.02,.24,d))*(1.0-progress);
     float sparks=pow(max(0.0,sin((atan(p.y,p.x)*11.0)+(progress*24.0))),10.0);
     sparks*=1.0-smoothstep(.12,.48,d);
-    vec3 hot=vec3(1.0,.96,.72);
-    vec3 orange=vec3(1.0,.28,.035);
-    vec3 color=mix(orange,hot,clamp(core+ring*.55,0.0,1.0));
-    float alpha=(ring*.92+core+sparks*.32)*(1.0-progress);
+    vec3 color=mix(uPrimaryColor,uSecondaryColor,clamp(core+ring*.55,0.0,1.0));
+    float alpha=(ring*(.62+uGlow*.3)+core+sparks*.32)*(1.0-progress)*uOpacity;
     if(alpha<.01)discard;
     outColor=vec4(color,clamp(alpha,0.0,1.0));
     return;
@@ -92,27 +93,49 @@ void main(){
     float core=1.0-smoothstep(.04,.18,d);
     float halo=1.0-smoothstep(.10,.50,d);
     float fade=1.0-smoothstep(.0,1.0,progress);
-    vec3 violet=vec3(.56,.08,1.0);
-    vec3 hot=vec3(.94,.58,1.0);
-    vec3 color=mix(violet,hot,core);
-    float alpha=(core*.82+halo*.42)*fade;
+    vec3 color=mix(uPrimaryColor,uSecondaryColor,core);
+    float alpha=(core*.82+halo*(.22+uGlow*.32))*fade*uOpacity;
     if(alpha<.01)discard;
     outColor=vec4(color,alpha);
     return;
   }
 
-  float flash=(1.0-smoothstep(.0,.18,progress))*(1.0-smoothstep(.02,.34,d));
-  float radius=mix(.05,.47,smoothstep(.04,.86,progress));
-  float ring=1.0-smoothstep(.016,.07,abs(d-radius));
-  float rays=pow(max(0.0,sin(atan(p.y,p.x)*13.0+progress*31.0)),12.0);
-  rays*=1.0-smoothstep(.08,.49,d);
-  float fade=1.0-smoothstep(.48,1.0,progress);
-  vec3 orange=vec3(1.0,.16,.01);
-  vec3 hot=vec3(1.0,.98,.76);
-  vec3 color=mix(orange,hot,clamp(flash+ring*.62,0.0,1.0));
-  float alpha=clamp(flash+ring*.92*fade+rays*.46*fade,0.0,1.0);
+  if(uEffectType<5.5){
+    float flash=(1.0-smoothstep(.0,.18,progress))*(1.0-smoothstep(.02,.34,d));
+    float radius=mix(.05,.47,smoothstep(.04,.86,progress));
+    float ring=1.0-smoothstep(.016,.07,abs(d-radius));
+    float rays=pow(max(0.0,sin(atan(p.y,p.x)*13.0+progress*31.0)),12.0);
+    rays*=1.0-smoothstep(.08,.49,d);
+    float fade=1.0-smoothstep(.48,1.0,progress);
+    vec3 color=mix(uPrimaryColor,uSecondaryColor,clamp(flash+ring*.62,0.0,1.0));
+    float alpha=clamp(flash+ring*(.62+uGlow*.34)*fade+rays*.46*fade,0.0,1.0)*uOpacity;
+    if(alpha<.01)discard;
+    outColor=vec4(color,alpha);
+    return;
+  }
+
+  if(uEffectType<6.5){
+    float fade=1.0-smoothstep(.18,1.0,progress);
+    float core=1.0-smoothstep(.02,.22,d);
+    float halo=1.0-smoothstep(.08,.5,d);
+    float rays=pow(max(0.0,sin(atan(p.y,p.x)*10.0+uPulse*6.2831)),10.0);
+    rays*=1.0-smoothstep(.08,.5,d);
+    vec3 color=mix(uPrimaryColor,uSecondaryColor,core);
+    float alpha=(core+halo*(.22+uGlow*.34)+rays*.38)*fade*uOpacity;
+    if(alpha<.01)discard;
+    outColor=vec4(color,clamp(alpha,0.0,1.0));
+    return;
+  }
+
+  float ringRadius=mix(.08,.46,progress);
+  float ring=1.0-smoothstep(.018,.065,abs(d-ringRadius));
+  float splash=1.0-smoothstep(.04,.30,length(vec2(p.x*1.55,p.y+.16)));
+  splash*=1.0-smoothstep(.0,.82,progress);
+  float foam=(1.0-smoothstep(.12,.46,d))*(1.0-progress);
+  vec3 color=mix(uPrimaryColor,uSecondaryColor,clamp(splash+foam*.35,0.0,1.0));
+  float alpha=(ring*(.45+uGlow*.3)+splash*.72+foam*.34)*(1.0-smoothstep(.55,1.0,progress))*uOpacity;
   if(alpha<.01)discard;
-  outColor=vec4(color,alpha);
+  outColor=vec4(color,clamp(alpha,0.0,1.0));
 }
 `;
 
@@ -182,6 +205,10 @@ export class NavalCombatWebGLRenderer{
       this.uniforms.progress=gl.getUniformLocation(program,"uProgress");
       this.uniforms.useTexture=gl.getUniformLocation(program,"uUseTexture");
       this.uniforms.projectileTexture=gl.getUniformLocation(program,"uProjectileTexture");
+      this.uniforms.primaryColor=gl.getUniformLocation(program,"uPrimaryColor");
+      this.uniforms.secondaryColor=gl.getUniformLocation(program,"uSecondaryColor");
+      this.uniforms.glow=gl.getUniformLocation(program,"uGlow");
+      this.uniforms.opacity=gl.getUniformLocation(program,"uOpacity");
       this.buffer=gl.createBuffer();
       const pointRange=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
       this.maxPointSize=Math.max(16,Number(pointRange?.[1])||256);
