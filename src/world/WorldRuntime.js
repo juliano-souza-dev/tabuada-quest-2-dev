@@ -65,6 +65,26 @@ const normalizeNpcPopulation=input=>{
     })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
   };
 };
+const normalizeTreasurePopulation=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  const spread=value.spread&&typeof value.spread==="object"?value.spread:{};
+  return {
+    enabled:value.enabled===true,
+    seed:Math.max(1,Math.floor(Number(value.seed)||1)),
+    spread:{
+      mode:["random","random-spaced"].includes(String(spread.mode))?String(spread.mode):"random-spaced",
+      margin:clamp(Number(spread.margin??220),0,2000),
+      minDistance:clamp(Number(spread.minDistance??180),0,1800)
+    },
+    types:(Array.isArray(value.types)?value.types:[]).slice(0,16).map(item=>({
+      treasureId:String(item?.treasureId||""),
+      count:clamp(Math.floor(Number(item?.count)||0),0,100),
+      respawn:item?.respawn===true,
+      spawnIntervalSec:clamp(Number(item?.spawnIntervalSec??5),0,3600),
+      respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,3600)
+    })).filter(item=>item.treasureId&&item.count>0)
+  };
+};
 const normalizeAmmoInventory=input=>{
   const value=input&&typeof input==="object"?input:{};
   const stock=value.stock&&typeof value.stock==="object"?value.stock:{};
@@ -144,6 +164,7 @@ export class WorldRuntime {
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.onExecuteAction=typeof options.onExecuteAction==="function"?options.onExecuteAction:null;
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
+    this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -165,6 +186,8 @@ export class WorldRuntime {
     }
 
     this.config.npcPopulation=normalizeNpcPopulation(this.config.npcPopulation||{});
+    this.config.treasurePopulation=normalizeTreasurePopulation(this.config.treasurePopulation||{});
+    this.generatedTreasureIds=new Set();
     this.generatedNpcIds=new Set();
     this.challengeActive=null;
     this.challengeTimer=0;
@@ -245,6 +268,7 @@ export class WorldRuntime {
       return normalized;
     });
     this.rebuildNpcPopulation({render:false});
+    this.rebuildTreasurePopulation({render:false});
     this.selectedId=null;
     this.lastTime=0;
     this.raf=0;
@@ -274,6 +298,96 @@ export class WorldRuntime {
     this.wakeSamples=[];
     this.minimapLastRender=0;
     this.cleanups=[];
+  }
+
+
+  treasureSpawnPoint(random,occupied,population){
+    const area=this.getPlayableBounds();
+    const margin=Math.max(0,Number(population.spread.margin)||0);
+    const left=Math.min(area.right,area.left+margin),right=Math.max(left,area.right-margin);
+    const top=Math.min(area.bottom,area.top+margin),bottom=Math.max(top,area.bottom-margin);
+    const minDistance=Math.max(0,Number(population.spread.minDistance)||0);
+    let fallback={x:(left+right)/2,y:(top+bottom)/2};
+    for(let attempt=0;attempt<80;attempt++){
+      const point={x:left+(right-left)*random(),y:top+(bottom-top)*random()};fallback=point;
+      if(population.spread.mode!=="random-spaced"||!occupied.some(other=>distance(point,other)<minDistance))return point;
+    }
+    return fallback;
+  }
+
+  createGeneratedTreasure({typeConfig,index,population,random,occupied}){
+    const profile=this.resolveTreasure?.(typeConfig.treasureId);
+    if(!profile)return null;
+    const point=this.treasureSpawnPoint(random,occupied,population);occupied.push(point);
+    const entity={
+      id:"treasure.auto."+String(typeConfig.treasureId).replace(/[^a-z0-9._-]+/gi,"-")+"."+(index+1),
+      type:"treasure",label:String(profile.name||typeConfig.treasureId),src:String(profile.asset||""),
+      width:Math.max(24,Number(profile.width)||88),height:Math.max(24,Number(profile.height)||88),
+      x:point.x,y:point.y,z:18,rotation:0,lockAspect:true,runtimeGenerated:true,runtimeTreasure:true,
+      treasureId:String(typeConfig.treasureId),treasureRewards:structuredClone(profile.rewards||{}),
+      treasureRespawn:typeConfig.respawn===true,treasureRespawnDelayMs:Math.max(1000,Number(typeConfig.respawnDelaySec||30)*1000),
+      treasureSpawnAt:performance.now()+Math.max(0,Number(typeConfig.spawnIntervalSec)||0)*1000*(index+1),
+      treasurePending:true,treasureRespawnAt:0,
+      motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
+      effect:{category:"treasure",preset:"none"},
+      collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"collect",message:"Coletar tesouro"}
+    };
+    entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=0;entity.skewX=0;entity.skewY=0;
+    entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);return entity;
+  }
+
+  rebuildTreasurePopulation({render=true}={}){
+    if(!this.entities)return;
+    this.entities=this.entities.filter(entity=>!entity.runtimeTreasure);this.generatedTreasureIds.clear();
+    const population=normalizeTreasurePopulation(this.config.treasurePopulation||{});this.config.treasurePopulation=population;
+    if(population.enabled&&population.types.length&&this.resolveTreasure){
+      const random=createSeededRandom(hashString((this.config.id||"world")+".treasure")^population.seed);
+      const occupied=[{x:Number(this.player?.x??this.config.player?.x??this.config.width/2),y:Number(this.player?.y??this.config.player?.y??this.config.height/2)},...this.entities.map(e=>({x:Number(e.x)||0,y:Number(e.y)||0}))];
+      let total=0;
+      for(const typeConfig of population.types){
+        for(let i=0;i<typeConfig.count&&total<160;i++,total++){
+          const entity=this.createGeneratedTreasure({typeConfig,index:total,population,random,occupied});
+          if(entity){this.entities.push(entity);this.generatedTreasureIds.add(entity.id)}
+        }
+      }
+    }
+    this.entities.forEach((e,i)=>e.index=i);
+    if(render&&this.entityLayer)this.renderEntities();
+  }
+
+  rollTreasureRewards(entity){
+    const source=entity?.treasureRewards||{};
+    const result={gold:0,rubies:0};
+    const roll=(key)=>{
+      const rule=source[key]&&typeof source[key]==="object"?source[key]:{};
+      const chance=clamp(Number(rule.chance)||0,0,100);
+      if(Math.random()*100>=chance)return 0;
+      const min=Math.max(0,Math.floor(Number(rule.min)||0)),max=Math.max(min,Math.floor(Number(rule.max)||min));
+      return min+Math.floor(Math.random()*(max-min+1));
+    };
+    result.gold=roll("gold");result.rubies=roll("rubies");return result;
+  }
+
+  updateTreasurePopulation(time=performance.now()){
+    const population=this.config.treasurePopulation;
+    if(!population?.enabled)return;
+    for(const entity of this.entities){
+      if(!entity?.runtimeTreasure)continue;
+      if(entity.treasurePending&&Number(time)>=Number(entity.treasureSpawnAt||0)){
+        entity.treasurePending=false;entity.collision=normalizeCollision({...entity.collision,active:true,action:"collect"},entity);
+        if(entity.el)entity.el.hidden=false;this.applyEntityVisual(entity);
+      }
+      if(entity.treasureRespawnAt>0&&Number(time)>=Number(entity.treasureRespawnAt)){
+        const occupied=this.entities.filter(e=>e!==entity&&!this.collected.has(e.id)&&!e.treasurePending).map(e=>({x:Number(e.x)||0,y:Number(e.y)||0}));
+        occupied.push({x:Number(this.player.x)||0,y:Number(this.player.y)||0});
+        const random=createSeededRandom(hashString(entity.id+".treasure."+Math.floor(time)));
+        const point=this.treasureSpawnPoint(random,occupied,population);
+        entity.x=point.x;entity.y=point.y;entity.anchorX=point.x;entity.anchorY=point.y;entity.visualX=point.x;entity.visualY=point.y;
+        entity.treasureRespawnAt=0;this.collected.delete(entity.id);entity.collision=normalizeCollision({...entity.collision,active:true,action:"collect"},entity);
+        if(entity.el)entity.el.hidden=false;this.applyEntityVisual(entity);
+      }
+      if(entity.treasurePending&&entity.el)entity.el.hidden=true;
+    }
   }
 
   npcShipProfile(shipId){
@@ -3261,13 +3375,13 @@ export class WorldRuntime {
     this.actionWrap.hidden=true;
     this.updateProgress();
     if(entity.type==="treasure"){
-      this.onTreasureCollected?.({
-        entity:this.cleanEntity(entity),
-        challenge
-      });
+      const rolled=entity.runtimeTreasure?this.rollTreasureRewards(entity):null;
+      if(rolled)entity.rewards=rolled;
+      this.onTreasureCollected?.({entity:this.cleanEntity(entity),challenge,rewards:rolled?structuredClone(rolled):undefined});
+      if(entity.runtimeTreasure&&entity.treasureRespawn===true)entity.treasureRespawnAt=performance.now()+Math.max(1000,Number(entity.treasureRespawnDelayMs)||30000);
     }
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:null;
-    if(rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||rewards.itemId||rewards.shipId)){
+    if(rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||Number(rewards.gold)>0||Number(rewards.rubies)>0||rewards.itemId||rewards.shipId)){
       this.onRewardCollected?.({
         entity:this.cleanEntity(entity),
         rewards:structuredClone(rewards)
@@ -4113,6 +4227,11 @@ export class WorldRuntime {
     this.player.x=clamp(this.player.x,travel.left,travel.right);
     this.player.y=clamp(this.player.y,travel.top,travel.bottom);
 
+    if(patch.treasurePopulation&&typeof patch.treasurePopulation==="object"){
+      this.config.treasurePopulation=normalizeTreasurePopulation({...this.config.treasurePopulation,...structuredClone(patch.treasurePopulation),spread:{...(this.config.treasurePopulation?.spread||{}),...(patch.treasurePopulation.spread||{})},types:Array.isArray(patch.treasurePopulation.types)?structuredClone(patch.treasurePopulation.types):structuredClone(this.config.treasurePopulation?.types||[])});
+      this.rebuildTreasurePopulation({render:false});
+    }
+
     if(patch.npcPopulation&&typeof patch.npcPopulation==="object"){
       this.config.npcPopulation=normalizeNpcPopulation({
         ...(this.config.npcPopulation||{}),
@@ -4139,7 +4258,7 @@ export class WorldRuntime {
       entity.anchorY=entity.y;
       this.applyEntityVisual(entity);
     }
-    if(patch.npcPopulation&&this.entityLayer)this.renderEntities();
+    if((patch.npcPopulation||patch.treasurePopulation)&&this.entityLayer)this.renderEntities();
     this.clampEditorCamera();
     this.updateCamera(true);
     if(this.nameEl)this.nameEl.textContent=this.config.name||this.config.id||"Mundo";
@@ -4615,6 +4734,7 @@ export class WorldRuntime {
     this.updatePlayerWaterEffects(time);
     if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
+    this.updateTreasurePopulation(time);
     this.updateCamera(false,dt);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
