@@ -1,4 +1,4 @@
-import { NavalCombatWebGLRenderer } from "../../world/NavalCombatWebGLRenderer.mjs?v=20261002-2003";
+import { NavalCombatWebGLRenderer } from "../../world/NavalCombatWebGLRenderer.mjs?v=20261002-2010";
 import { normalizeAmmoFx } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-2003";
 
 export class AmmoPreviewGL{
@@ -47,6 +47,11 @@ export class AmmoPreviewGL{
 
   setAmmo(ammo){
     this.ammo=ammo?{...structuredClone(ammo),fx:normalizeAmmoFx(ammo)}:null;
+    if(this.ammo)this.renderer.prepareAmmo?.(this.ammo);
+  }
+
+  textureState(){
+    return this.renderer.projectileTextureState?.(this.ammo)||{src:"",ready:false,failed:false};
   }
 
   setMode(mode){
@@ -72,7 +77,8 @@ export class AmmoPreviewGL{
     impactKind=impactKind==="water"?"water":"ship";
     const distance=Math.max(180,width*.68);
     const projectileSpeed=Math.max(80,Number(this.ammo.projectileSpeed)||720);
-    const duration=Math.max(180,Math.min(1800,(distance/projectileSpeed*1000)/this.speed));
+    const physicalDuration=(distance/projectileSpeed*1000)/this.speed;
+    const duration=Math.max(720,Math.min(2200,physicalDuration));
     const from={x:width*.17,y:height*.54};
     const to={x:width*.83,y:impactKind==="water"?height*.67:height*.48};
     const fired=this.renderer.fire({
