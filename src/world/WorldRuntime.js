@@ -878,9 +878,39 @@ export class WorldRuntime {
       el.style.setProperty("--island-wetness",String(wetness));
       el.style.setProperty("--island-submerged-shadow",String(shadow));
 
+      if(img){
+        if(active&&immersion>0){
+          const fadeDepth=clamp(.035+immersion*.285,.035,.20);
+          const solidStop=(1-fadeDepth)*100;
+          const softStop=(1-fadeDepth*.42)*100;
+          const islandMask="linear-gradient(to bottom,#000 0%,#000 "+solidStop.toFixed(2)+"%,rgba(0,0,0,.72) "+softStop.toFixed(2)+"%,transparent 100%)";
+          img.style.maskImage=islandMask;
+          img.style.webkitMaskImage=islandMask;
+          img.style.maskRepeat="no-repeat";
+          img.style.webkitMaskRepeat="no-repeat";
+          img.style.maskSize="100% 100%";
+          img.style.webkitMaskSize="100% 100%";
+        }else{
+          img.style.maskImage="";
+          img.style.webkitMaskImage="";
+          img.style.maskRepeat="";
+          img.style.webkitMaskRepeat="";
+          img.style.maskSize="";
+          img.style.webkitMaskSize="";
+        }
+      }
+
       this.renderIslandWaterIntegration(entity,{active,immersion,foam,foamWidth,wetness,shadow});
     }else{
       el.classList.remove("has-water-integration");
+      if(img){
+        img.style.maskImage="";
+        img.style.webkitMaskImage="";
+        img.style.maskRepeat="";
+        img.style.webkitMaskRepeat="";
+        img.style.maskSize="";
+        img.style.webkitMaskSize="";
+      }
     }
     this.syncCombatClickableEntity(entity);
     this.applyEntityDirectionalVisual(entity);
@@ -969,23 +999,38 @@ export class WorldRuntime {
       lctx.globalCompositeOperation="source-in";
       lctx.fillStyle=color;
       lctx.fillRect(0,0,cssWidth,cssHeight);
+
+      // Water integration belongs to the shoreline, not around the full
+      // silhouette. Fade the generated layer in only across the lower coast.
+      const coastTop=pad+height*clamp(.54-raw.immersion*.22,.38,.58);
+      const coastBottom=pad+height*1.06;
+      const coastGradient=lctx.createLinearGradient(0,coastTop,0,coastBottom);
+      coastGradient.addColorStop(0,"rgba(0,0,0,0)");
+      coastGradient.addColorStop(.36,"rgba(0,0,0,.10)");
+      coastGradient.addColorStop(.68,"rgba(0,0,0,.72)");
+      coastGradient.addColorStop(1,"rgba(0,0,0,1)");
+      lctx.globalCompositeOperation="destination-in";
+      lctx.fillStyle=coastGradient;
+      lctx.fillRect(0,0,cssWidth,cssHeight);
       lctx.globalCompositeOperation="source-over";
       return layer;
     };
 
-    const deepScaleX=1.025+raw.immersion*.14+raw.shadow*.045;
-    const deepScaleY=1.018+raw.immersion*.09+raw.shadow*.025;
-    const deepOffsetY=height*raw.immersion*.045;
-    const deepBlur=4+raw.shadow*15;
-    const deepAlpha=.08+raw.shadow*.46;
+    // Keep the contour tight to the beach. Large silhouette expansion creates
+    // a visible oval halo around transparent island assets.
+    const deepScaleX=1.006+raw.immersion*.045+raw.shadow*.012;
+    const deepScaleY=1.008+raw.immersion*.055+raw.shadow*.014;
+    const deepOffsetY=height*raw.immersion*.035;
+    const deepBlur=2+raw.shadow*7;
+    const deepAlpha=.06+raw.shadow*.34;
     const deep=makeLayer("rgba(5,38,54,"+deepAlpha.toFixed(3)+")",deepBlur,deepScaleX,deepScaleY,deepOffsetY);
     if(deep)ctx.drawImage(deep,0,0,cssWidth,cssHeight);
 
-    const foamScaleX=1.012+raw.foamWidth*.18;
-    const foamScaleY=1.009+raw.foamWidth*.12;
-    const foamBlur=.7+raw.foamWidth*7;
-    const foamAlpha=raw.foam*.52;
-    const shallow=makeLayer("rgba(215,250,255,"+foamAlpha.toFixed(3)+")",foamBlur,foamScaleX,foamScaleY,0);
+    const foamScaleX=1.003+raw.foamWidth*.055;
+    const foamScaleY=1.004+raw.foamWidth*.075;
+    const foamBlur=.45+raw.foamWidth*3.4;
+    const foamAlpha=raw.foam*.46;
+    const shallow=makeLayer("rgba(215,250,255,"+foamAlpha.toFixed(3)+")",foamBlur,foamScaleX,foamScaleY,height*raw.immersion*.012);
     if(shallow)ctx.drawImage(shallow,0,0,cssWidth,cssHeight);
 
     // Cut the original island footprint out of both generated layers.
