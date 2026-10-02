@@ -1,150 +1,180 @@
 {
   "schema": "tq.cannon-catalog",
-  "version": 2,
+  "version": 3,
   "defaultCannonId": "cannon-basic",
   "cannons": [
     {
       "id": "cannon-basic",
-      "name": "Canhão Básico",
+      "code": "C01",
+      "name": "Canhão do Marujo",
+      "asset": "",
       "available": true,
+      "progression": {
+        "unlock": "R1",
+        "unlockRegion": 1
+      },
+      "damageMultiplier": 1,
+      "function": "Canhão inicial",
       "range": 900,
       "projectileSpeed": 620,
       "attackCooldownMs": 1200,
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 0
+        "price": 0,
+        "gold": 0,
+        "rubies": 0,
+        "label": "Inicial"
       },
       "acquisition": {
         "shop": true,
-        "shipBossReward": false
-      },
-      "asset": ""
+        "shipBossReward": false,
+        "event": false
+      }
     },
     {
       "id": "cannon-bronze",
-      "name": "Canhão de Bronze",
+      "code": "C02",
+      "name": "Canhão Corsário",
+      "asset": "./assets/cannons/Canhão Pirata Ornamentado em Azul e Ouro.png",
       "available": true,
+      "progression": {
+        "unlock": "R2",
+        "unlockRegion": 2
+      },
+      "damageMultiplier": 1.1,
+      "function": "Primeiro upgrade",
       "range": 1200,
       "projectileSpeed": 760,
       "attackCooldownMs": 1000,
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 0
+        "price": 400,
+        "gold": 400,
+        "rubies": 0
       },
       "acquisition": {
         "shop": true,
-        "shipBossReward": false
-      },
-      "asset": ""
+        "shipBossReward": false,
+        "event": false
+      }
     },
     {
       "id": "cannon-long-range",
-      "name": "Canhão Longo Alcance",
+      "code": "C03",
+      "name": "Quebra-Casco",
+      "asset": "./assets/cannons/Canhão de Guerra Espinhoso Fantástico.png",
       "available": true,
-      "range": 1600,
-      "projectileSpeed": 880,
+      "progression": {
+        "unlock": "R4",
+        "unlockRegion": 4
+      },
+      "damageMultiplier": 1.2,
+      "function": "Combate pesado",
+      "range": 1250,
+      "projectileSpeed": 820,
       "attackCooldownMs": 1350,
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 0
+        "price": 650,
+        "gold": 650,
+        "rubies": 3
       },
       "acquisition": {
         "shop": true,
-        "shipBossReward": false
-      },
-      "asset": ""
-    },
-    {
-      "id": "cannon-necromantic-spectral",
-      "name": "Canhão Espectral Necromântico",
-      "asset": "./assets/cannons/Canhão Espectral Necromântico.png",
-      "available": true,
-      "range": 1800,
-      "projectileSpeed": 1040,
-      "attackCooldownMs": 1300,
-      "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 0
-      },
-      "acquisition": {
-        "shop": true,
-        "shipBossReward": false
-      }
-    },
-    {
-      "id": "cannon-pirate-blue-gold",
-      "name": "Canhão Pirata Ornamentado em Azul e Ouro",
-      "asset": "./assets/cannons/Canhão Pirata Ornamentado em Azul e Ouro.png",
-      "available": true,
-      "range": 1450,
-      "projectileSpeed": 920,
-      "attackCooldownMs": 850,
-      "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 0
-      },
-      "acquisition": {
-        "shop": true,
-        "shipBossReward": false
+        "shipBossReward": false,
+        "event": false
       }
     },
     {
       "id": "cannon-royal-golden-lion",
-      "name": "Canhão Real Dourado com Leão",
+      "code": "C04",
+      "name": "Fúria do Rei Pirata",
       "asset": "./assets/cannons/Canhão Real Dourado com Leão.png",
       "available": true,
-      "range": 2100,
-      "projectileSpeed": 1180,
-      "attackCooldownMs": 1600,
+      "progression": {
+        "unlock": "R8",
+        "unlockRegion": 8
+      },
+      "damageMultiplier": 1.35,
+      "function": "Canhão de alto nível",
+      "range": 1600,
+      "projectileSpeed": 980,
+      "attackCooldownMs": 1100,
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 0
+        "price": 1800,
+        "gold": 1800,
+        "rubies": 10
       },
       "acquisition": {
         "shop": true,
-        "shipBossReward": false
+        "shipBossReward": false,
+        "event": false
       }
     },
     {
-      "id": "cannon-spiked-war",
-      "name": "Canhão de Guerra Espinhoso Fantástico",
-      "asset": "./assets/cannons/Canhão de Guerra Espinhoso Fantástico.png",
+      "id": "cannon-necromantic-spectral",
+      "code": "C05",
+      "name": "Canhão Espectral",
+      "asset": "./assets/cannons/Canhão Espectral Necromântico.png",
       "available": true,
-      "range": 1250,
-      "projectileSpeed": 860,
-      "attackCooldownMs": 650,
+      "progression": {
+        "unlock": "Evento",
+        "unlockRegion": null
+      },
+      "damageMultiplier": 1.25,
+      "function": "Halloween",
+      "range": 1500,
+      "projectileSpeed": 920,
+      "attackCooldownMs": 1150,
+      "event": "halloween",
       "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 0
+        "purchasable": false,
+        "currency": "event",
+        "price": 0,
+        "gold": 0,
+        "rubies": 0,
+        "label": "Evento"
       },
       "acquisition": {
-        "shop": true,
-        "shipBossReward": false
+        "shop": false,
+        "shipBossReward": false,
+        "event": true
       }
     },
     {
       "id": "cannon-halloween-pumpkin-terror",
-      "name": "Canhão Terror da Abóbora",
+      "code": "C05-HW",
+      "name": "Terror da Abóbora",
       "asset": "./assets/cannons/canhao terror da abóbora.png",
       "available": true,
-      "range": 1700,
-      "projectileSpeed": 980,
-      "attackCooldownMs": 1050,
+      "progression": {
+        "unlock": "Evento",
+        "unlockRegion": null
+      },
+      "damageMultiplier": 1.25,
+      "function": "Variante visual Halloween",
+      "range": 1500,
+      "projectileSpeed": 920,
+      "attackCooldownMs": 1150,
+      "event": "halloween",
+      "variantOf": "cannon-necromantic-spectral",
       "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 0
+        "purchasable": false,
+        "currency": "event",
+        "price": 0,
+        "gold": 0,
+        "rubies": 0,
+        "label": "Evento"
       },
       "acquisition": {
-        "shop": true,
-        "shipBossReward": false
+        "shop": false,
+        "shipBossReward": false,
+        "event": true
       }
     }
   ]
