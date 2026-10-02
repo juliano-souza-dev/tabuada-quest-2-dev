@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-2312";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-0004";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip}={}){
@@ -130,6 +130,7 @@ export class WorldEditor {
   setMode(mode){
     if(!this.runtime)return;
     this.runtime.setMode(mode==="play"?"play":"edit");
+    this.runtime.setEditorPreviewActive?.(mode==="config");
   }
 
   addAsset(asset){
