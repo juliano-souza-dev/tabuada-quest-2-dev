@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r9-mar-tempestades.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Domínio dos Piratas",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r10-dominio-piratas",
+      "destinationWorldName": "Domínio dos Piratas",
+      "transitionMessage": "Navegar para Domínio dos Piratas?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r9-mar-tempestades.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Costa das Joias",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r8-costa-joias",
+      "destinationWorldName": "Costa das Joias",
+      "transitionMessage": "Voltar para Costa das Joias?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
