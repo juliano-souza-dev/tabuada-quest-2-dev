@@ -10,6 +10,7 @@ export class WorldEditor {
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
     this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
     this.getAmmoCatalog=typeof getAmmoCatalog==="function"?getAmmoCatalog:()=>({defaultAmmoId:"cannonball-standard",ammo:[]});
+    this.getSoundCatalog=typeof getSoundCatalog==="function"?getSoundCatalog:()=>({sounds:[]});
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
