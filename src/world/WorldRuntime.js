@@ -3116,7 +3116,7 @@ export class WorldRuntime {
     this.challengeActive=null;
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
     if(this.challengeWrap)this.challengeWrap.hidden=true;
-    if(this.challengeForm)this.challengeForm.hidden=false;
+    if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}\n    if(this.repairHp)this.repairHp.hidden=true;
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeAnswer){
@@ -3255,7 +3255,7 @@ export class WorldRuntime {
       };
       this.onPedagogyResult?.(detail);
       if(result.correct===true){
-        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);
+        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);\n        if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
         if(this.challengeFeedback)this.challengeFeedback.textContent=
           "Acertou! +20 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
         if(this.navalPlayerHp>=this.navalPlayerMaxHp){
