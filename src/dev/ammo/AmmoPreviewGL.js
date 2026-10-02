@@ -14,6 +14,8 @@ export class AmmoPreviewGL{
     this.sequence=0;
     this.running=false;
     this.resizeObserver=null;
+    this.textureStateListener=null;
+    this.lastTextureStateKey="";
   }
 
   mount(){
@@ -29,7 +31,11 @@ export class AmmoPreviewGL{
       const rect=this.canvas.getBoundingClientRect();
       const width=Math.max(320,rect.width||this.canvas.clientWidth||640);
       const height=Math.max(220,rect.height||this.canvas.clientHeight||360);
-      if(this.ammo&&this.loop&&(!this.lastShotAt||now-this.lastShotAt>Math.max(650,1800/Math.max(.25,this.speed)))){
+      const texture=this.textureState();
+      const textureKey=[texture.src,texture.ready,texture.failed].join("|");
+      if(textureKey!==this.lastTextureStateKey){this.lastTextureStateKey=textureKey;this.textureStateListener?.(texture)}
+      const waitingForAsset=Boolean(texture.src&&!texture.ready);
+      if(this.ammo&&this.loop&&!waitingForAsset&&(!this.lastShotAt||now-this.lastShotAt>Math.max(650,1800/Math.max(.25,this.speed)))){
         this.fire();
       }
       this.renderer.render({
@@ -47,7 +53,15 @@ export class AmmoPreviewGL{
 
   setAmmo(ammo){
     this.ammo=ammo?{...structuredClone(ammo),fx:normalizeAmmoFx(ammo)}:null;
+    this.lastShotAt=0;
     if(this.ammo)this.renderer.prepareAmmo?.(this.ammo);
+    this.lastTextureStateKey="";
+    this.textureStateListener?.(this.textureState());
+  }
+
+  setTextureStateListener(listener){
+    this.textureStateListener=typeof listener==="function"?listener:null;
+    this.textureStateListener?.(this.textureState());
   }
 
   textureState(){
@@ -65,6 +79,12 @@ export class AmmoPreviewGL{
 
   fire(kind){
     if(!this.ammo)return false;
+    const texture=this.textureState();
+    if(texture.src&&!texture.ready){
+      this.renderer.prepareAmmo?.(this.ammo);
+      this.textureStateListener?.(texture);
+      return false;
+    }
     const rect=this.canvas.getBoundingClientRect();
     const width=Math.max(320,rect.width||this.canvas.clientWidth||640);
     const height=Math.max(220,rect.height||this.canvas.clientHeight||360);
