@@ -64,6 +64,30 @@ export class WorldEditor {
       console.warn("World draft restore failed",error);
     }
 
+    const npcPopulation=world?.npcPopulation&&typeof world.npcPopulation==="object"?world.npcPopulation:null;
+    if(npcPopulation&&Array.isArray(npcPopulation.types)){
+      let changed=false;
+      const validTypes=[];
+      for(const typeConfig of npcPopulation.types){
+        const npcId=String(typeConfig?.npcId||"");
+        const npcProfile=npcId&&this.resolveNpc?this.resolveNpc(npcId):null;
+        const shipId=String(npcProfile?.shipId||"");
+        const shipProfile=shipId&&this.resolveShip?this.resolveShip(shipId,"npc"):null;
+        if(!npcProfile||!shipProfile){
+          changed=true;
+          console.warn("[TabuadaQuest] Removed orphan NPC population reference",{npcId,shipId:String(typeConfig?.shipId||shipId||"")});
+          continue;
+        }
+        const normalized={...typeConfig,npcId,shipId};
+        if(String(typeConfig?.shipId||"")!==shipId)changed=true;
+        validTypes.push(normalized);
+      }
+      if(changed){
+        world.npcPopulation={...npcPopulation,types:validTypes};
+        try{localStorage.setItem(this.storageKey,JSON.stringify(world))}catch(error){console.warn("World draft NPC sanitation save failed",error)}
+      }
+    }
+
     this.host=document.createElement("div");
     this.host.className="tq-world-editor-root";
     this.root.append(this.host);
