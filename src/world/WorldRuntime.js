@@ -61,6 +61,15 @@ const normalizeNpcPopulation=input=>{
     })).filter(item=>item.shipId&&item.count>0)
   };
 };
+const resolvePlayerHullHp=(player,fallbackCombat={})=>{
+  const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
+  const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
+  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,1000);
+  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-950,950);
+  const pct=clamp(Number(modifiers.maxHpPct??modifiers.hpPct)||0,-.9,10);
+  return clamp(Math.round(base*(1+pct)+flat),50,1000);
+};
+
 const normalizePlayerWaterEffects=player=>{
   const fx=player?.effects||{};
   return {
@@ -206,11 +215,7 @@ export class WorldRuntime {
     this.navalAttackCooldown=clamp(Number(config.combat?.attackCooldownMs??900),300,5000);
     this.navalHp=new Map();
     this.navalHostile=new Map();
-    this.navalPlayerMaxHp=clamp(
-      Math.floor(Number(config.player?.combat?.hp??config.combat?.playerHp)||3),
-      1,
-      99
-    );
+    this.navalPlayerMaxHp=resolvePlayerHullHp(this.config.player,this.config.combat||{});
     this.navalPlayerHp=clamp(
       Math.floor(Number(this.state.navalPlayerHp??this.navalPlayerMaxHp)||this.navalPlayerMaxHp),
       0,
@@ -880,6 +885,7 @@ export class WorldRuntime {
     const cooldownPct=clamp(Number(modifiers.attackCooldownPct)||0,-.8,5);
     const damageFlat=clamp(Math.floor(Number(modifiers.damageFlat)||0),-19,100);
     return {
+      maxHp:resolvePlayerHullHp(this.config.player,this.config.combat||{}),
       attackRange:clamp(base.attackRange*(1+rangePct)+rangeFlat,100,12000),
       attackCooldownMs:clamp(base.attackCooldownMs*(1+cooldownPct),150,10000),
       damage:clamp(base.damage+damageFlat,1,99)
@@ -3597,15 +3603,26 @@ export class WorldRuntime {
     if(patch.combat){
       next.combat={...(this.config.player?.combat||{}),...structuredClone(patch.combat)};
     }
+    if(patch.combatModifiers){
+      next.combatModifiers={
+        ...(this.config.player?.combatModifiers||{}),
+        ...structuredClone(patch.combatModifiers)
+      };
+    }
     if(patch.width!==undefined)next.width=clamp(Number(patch.width)||108,24,1200);
     if(patch.height!==undefined)next.height=clamp(Number(patch.height)||150,24,1200);
     if(patch.direction!==undefined)next.direction=String(patch.direction||"n").toLowerCase();
 
+    const previousMaxHp=Math.max(50,Number(this.navalPlayerMaxHp)||resolvePlayerHullHp(this.config.player,this.config.combat||{}));
     this.config.player=next;
-    if(patch.combat?.hp!==undefined){
-      this.navalPlayerMaxHp=clamp(Math.floor(Number(next.combat?.hp)||3),1,99);
-      this.navalPlayerHp=this.navalPlayerMaxHp;
-      if(this.actionButton)this.actionButton.disabled=false;
+    if(patch.combat?.hp!==undefined||patch.combatModifiers){
+      const nextMaxHp=resolvePlayerHullHp(next,this.config.combat||{});
+      const delta=nextMaxHp-previousMaxHp;
+      this.navalPlayerMaxHp=nextMaxHp;
+      this.navalPlayerHp=delta>0
+        ?clamp((Number(this.navalPlayerHp)||previousMaxHp)+delta,0,nextMaxHp)
+        :clamp(Number(this.navalPlayerHp??nextMaxHp),0,nextMaxHp);
+      if(this.actionButton)this.actionButton.disabled=this.navalPlayerHp<=0;
     }
     if(next.width)this.playerEl.style.width=next.width+"px";
     if(next.height)this.playerEl.style.height=next.height+"px";
