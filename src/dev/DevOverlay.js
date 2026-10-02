@@ -371,7 +371,9 @@ export class DevOverlay {
   }
 
   resolveWorldShipProfile(shipId,role="npc"){
-    const ship=this.shipEditor?.allShips?.().find(item=>item.id===String(shipId||""));
+    const catalogShips=(this.shipEditor?.repositoryShips?.()||[])
+      .map(ship=>this.shipEditor.normalizeShip(ship));
+    const ship=catalogShips.find(item=>item.id===String(shipId||""));
     if(!ship)return null;
     const navigation=ship.navigation&&typeof ship.navigation==="object"?structuredClone(ship.navigation):{};
     const combatAnimations={};
@@ -1047,7 +1049,8 @@ export class DevOverlay {
       npcPopulation.spread={mode:"random-spaced",margin:320,minDistance:360,...(npcPopulation.spread||{})};
       npcPopulation.movement={mode:"straight",speed:80,...(npcPopulation.movement||{})};
       npcPopulation.types=Array.isArray(npcPopulation.types)?npcPopulation.types:[];
-      const availableShips=this.shipEditor?.allShips?.()||[];
+      const availableShips=(this.shipEditor?.repositoryShips?.()||[])
+        .map(ship=>this.shipEditor.normalizeShip(ship));
       const npcShips=availableShips;
       const npcShipOptions=selected=>npcShips.map(ship=>
         '<option value="'+this.escapeHtml(ship.id)+'" '+(String(selected||"")===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
@@ -1067,9 +1070,12 @@ export class DevOverlay {
         String(ship.navigation?.src||ship.navigation?.sprite?.src||"")===spriteSrc
       )?.id||"";
       const selectedPlayerShipId=String(player.shipId||inferredPlayerShip||"");
-      const playerShipOptions='<option value="">Personalizado atual</option>'+availableShips.map(ship=>
-        '<option value="'+this.escapeHtml(ship.id)+'" '+(selectedPlayerShipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
-      ).join("");
+      const selectedPlayerShip=availableShips.find(ship=>ship.id===selectedPlayerShipId)||null;
+      const playerShipOptions=
+        (!selectedPlayerShipId?'<option value="" selected disabled>Selecione um navio do catálogo</option>':'')+
+        availableShips.map(ship=>
+          '<option value="'+this.escapeHtml(ship.id)+'" '+(selectedPlayerShipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
+        ).join("");
       const playerEffects={
         wakeActive:player.effects?.wakeActive!==false,
         wakeScale:Number(player.effects?.wakeScale??1),
@@ -1203,57 +1209,11 @@ export class DevOverlay {
             '</div>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Navio do jogador</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
-            '<label class="tq-world-field"><span>Modelo do navio</span><select data-player-ship-id>'+playerShipOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Qualquer navio do catálogo pode ser usado pelo jogador ou como NPC. O papel é definido nesta região.</small>'+
-            '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Trocar spritesheet do navio">'+
-              (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
-              '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
-            '</button>'+
-            '<div class="tq-world-atlas-wizard '+(preferPointMode?'is-point-mode':'')+'" data-atlas-wizard>'+
-              '<div class="tq-world-atlas-wizard__prompt"><span data-atlas-direction-icon>'+directionVisual[firstMissing].icon+'</span><div><strong data-atlas-direction-label>'+this.escapeHtml(directionVisual[firstMissing].label)+'</strong><small data-atlas-help>'+(preferPointMode?'Toque ponto a ponto ao redor do navio. Arraste qualquer ponto para ajustar com precisão.':'Arraste uma caixa somente em volta desse navio.')+'</small></div></div>'+
-              '<div class="tq-world-atlas-mode-switch" data-atlas-mode-switch>'+
-                '<button type="button" data-atlas-mode="rectangle">Retângulo</button>'+
-                '<button type="button" data-atlas-mode="points">Pontos</button>'+
-                '<button type="button" data-atlas-mode="grid4">Quadro 4×4</button>'+
-              '</div>'+
-              '<button type="button" class="tq-world-atlas-grid-fill" data-atlas-grid-fill>⚡ Preencher 16 posições</button>'+
-              '<div class="tq-world-atlas-canvas" data-atlas-canvas>'+
-                (spriteSrc?'<div class="tq-world-atlas-imagebox" data-atlas-imagebox><img src="'+this.escapeHtml(spriteSrc)+'" alt="Spritesheet do navio" draggable="false"><div class="tq-world-atlas-selection" data-atlas-selection hidden></div><div class="tq-world-atlas-grid4" data-atlas-grid4>'+grid4Cells+'</div><svg class="tq-world-atlas-polygon" data-atlas-polygon viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polygon data-atlas-polygon-fill points=""></polygon><polyline data-atlas-polygon-line points=""></polyline></svg><div class="tq-world-atlas-points" data-atlas-points></div><div class="tq-world-atlas-magnifier" data-atlas-magnifier hidden></div></div>':'<span>Selecione um spritesheet primeiro</span>')+
-              '</div>'+
-              '<div class="tq-world-atlas-point-actions" data-atlas-point-actions>'+
-                '<button type="button" data-atlas-undo>↶ Desfazer</button>'+
-                '<button type="button" data-atlas-clear>Limpar</button>'+
-                '<button type="button" data-atlas-close>Fechar contorno</button>'+
-                '<button type="button" class="is-primary" data-atlas-confirm>Confirmar</button>'+
-                '<small data-atlas-point-status>0 pontos</small>'+
-              '</div>'+
-              '<div class="tq-world-atlas-wizard__actions">'+
-                '<button type="button" data-atlas-prev>← Anterior</button>'+
-                '<button type="button" data-atlas-copy-size>Copiar tamanho anterior</button>'+
-                '<button type="button" data-atlas-next>Próxima →</button>'+
-              '</div>'+
-            '</div>'+
-            '<div class="tq-world-direction16__progress"><strong data-atlas-progress>'+Object.keys(regions).filter(key=>directionVisual[key]).length+'/16</strong><small>posições prontas</small></div>'+
-            '<div class="tq-world-direction16">'+directionRegionCards+'</div>'+
-            '<div class="tq-worlds__create-grid">'+
-              '<label class="tq-world-field"><span>Largura</span><input data-player-prop="width" type="number" min="24" max="1200" value="'+this.escapeHtml(player.width??108)+'"></label>'+
-              '<label class="tq-world-field"><span>Altura</span><input data-player-prop="height" type="number" min="24" max="1200" value="'+this.escapeHtml(player.height??150)+'"></label>'+
-            '</div>'+
-            '<label class="tq-world-field"><span>Posição inicial do navio</span><select data-player-prop="direction">'+Object.entries(directionVisual).map(([key,info])=>'<option value="'+key+'" '+(String(player.direction||"n")===key?'selected':'')+'>'+info.icon+' '+this.escapeHtml(info.label)+'</option>').join("")+'</select></label>'+
-            '<small class="tq-world-editor-note">Você só precisa reconhecer visualmente para onde o navio aponta. O editor percorre 16 posições em volta dos 360° e cuida das direções internas sozinho.</small>'+
-            '<div class="tq-world-player-fx">'+
-              '<strong>Rastro e sombra</strong>'+
-              '<label class="tq-field tq-field--check"><span>Rastro na água</span><input data-player-effect-prop="wakeActive" type="checkbox" '+(playerEffects.wakeActive?'checked':'')+'></label>'+
-              playerEffectRange("wakeScale","Tamanho geral do rastro",.35,2.5,.05,"×")+
-              playerEffectRange("wakeOpacity","Intensidade do rastro",0,1,.01)+
-              playerEffectRange("wakeWidth","Largura base",18,220,1," px")+
-              playerEffectRange("wakeLength","Comprimento base",50,520,5," px")+
-              '<label class="tq-field tq-field--check"><span>Sombra do navio</span><input data-player-effect-prop="shadowActive" type="checkbox" '+(playerEffects.shadowActive?'checked':'')+'></label>'+
-              playerEffectRange("shadowOpacity","Intensidade da sombra",0,.9,.01)+
-              playerEffectRange("shadowBlur","Desfoque da sombra",0,30,1," px")+
-              playerEffectRange("shadowOffset","Deslocamento da sombra",-40,80,1," px")+
-              '<small class="tq-world-editor-note">Tamanho geral multiplica largura e comprimento sem apagar os ajustes finos. Em WebGL2, o rastro usa histórico real da trajetória: duas faixas laterais de espuma + turbulência central.</small>'+
-            '</div>'+
+            '<label class="tq-world-field"><span>Navio do catálogo</span><select data-player-ship-id>'+playerShipOptions+'</select></label>'+
+            (selectedPlayerShip
+              ?'<div class="tq-world-editor-note"><strong>'+this.escapeHtml(selectedPlayerShip.name||selectedPlayerShip.id)+'</strong> · '+Math.round(Number(selectedPlayerShip.navigation?.width)||230)+'×'+Math.round(Number(selectedPlayerShip.navigation?.height)||230)+' px · '+Math.round(Number(selectedPlayerShip.navigation?.speed)||420)+' px/s · alcance '+Math.round(Number(selectedPlayerShip.combat?.attackRange)||1200)+' px</div>'
+              :'<small class="tq-world-editor-note">Selecione um navio já pronto no catálogo. Criação, spritesheet, física e combate são configurados no editor de Navios.</small>')+
+            '<small class="tq-world-editor-note">Esta região salva apenas qual navio será usado pelo jogador. O perfil completo continua pertencendo ao catálogo.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Ambiente</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Predefinição</span><select data-environment-preset>'+environmentOptions+'</select></label>'+
