@@ -17,7 +17,8 @@ export class DevOverlay {
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
       onPedagogyResult:this.onPedagogyResult,
-      resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role)
+      resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
+      getCannonCatalog:()=>this.cannonCatalog
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
@@ -1091,8 +1092,13 @@ export class DevOverlay {
       const testCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
       const defaultTestCannonId=String(this.cannonCatalog?.defaultCannonId||testCannons[0]?.id||"cannon-basic");
       const selectedTestCannonIds=(Array.isArray(world.test?.cannonIds)&&world.test.cannonIds.length?world.test.cannonIds:[defaultTestCannonId]).map(String);
-      const testCannonOptions=testCannons.map(item=>'<option value="'+this.escapeHtml(item.id)+'">'+this.escapeHtml(item.name||item.id)+' · alcance '+Math.round(Number(item.range)||0)+' · '+Math.round(Number(item.projectileSpeed)||0)+' px/s</option>').join("");
-      const testCannonRows=selectedTestCannonIds.map((id,index)=>{const cannon=testCannons.find(item=>String(item.id)===id);return '<div class="tq-world-npc-row"><strong>'+this.escapeHtml(cannon?.name||id)+'</strong><small>alcance '+Math.round(Number(cannon?.range)||0)+' · velocidade '+Math.round(Number(cannon?.projectileSpeed)||0)+' px/s</small><button type="button" data-test-cannon-remove="'+index+'" '+(selectedTestCannonIds.length<=1?'disabled':'')+'>Remover</button></div>'}).join("");
+      const cannonCounts=new Map();
+      selectedTestCannonIds.forEach(id=>cannonCounts.set(id,(cannonCounts.get(id)||0)+1));
+      const testCannonRows=testCannons.map(cannon=>{
+        const id=String(cannon.id);
+        const quantity=cannonCounts.get(id)||0;
+        return '<div class="tq-world-npc-row" data-test-cannon-id="'+this.escapeHtml(id)+'"><strong>'+this.escapeHtml(cannon.name||id)+'</strong><small>alcance '+Math.round(Number(cannon.range)||0)+' · velocidade '+Math.round(Number(cannon.projectileSpeed)||0)+' px/s</small><div class="tq-world-npc-actions"><button type="button" data-test-cannon-dec="'+this.escapeHtml(id)+'" '+(quantity<=0?'disabled':'')+'>−</button><b>'+quantity+'</b><button type="button" data-test-cannon-inc="'+this.escapeHtml(id)+'">＋</button></div></div>';
+      }).join("");
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
       const npcPopulation=world.npcPopulation&&typeof world.npcPopulation==="object"
         ?structuredClone(world.npcPopulation)
@@ -1238,8 +1244,7 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
-            '<label class="tq-world-field"><span>Adicionar canhão</span><select data-test-cannon-add><option value="">Selecione...</option>'+testCannonOptions+'</select></label>'+
-            '<small class="tq-world-editor-note">Loadout exclusivo do DEV. Cada canhão dispara um projétil próprio e mantém alcance, velocidade e cadência individuais.</small>'+
+            '<small class="tq-world-editor-note">Use − e ＋ para definir quantos canhões de cada modelo ficam equipados. Loadout exclusivo do DEV.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
@@ -1413,13 +1418,17 @@ export class DevOverlay {
         this.syncLocalWorldFromEditor();
         this.renderWorldInspector();
       };
-      content.querySelector("[data-test-cannon-add]")?.addEventListener("change",event=>{
-        const id=String(event.currentTarget.value||"");
+      content.querySelectorAll("[data-test-cannon-inc]").forEach(button=>button.addEventListener("click",()=>{
+        const id=String(button.dataset.testCannonInc||"");
         if(id)saveTestCannons([...selectedTestCannonIds,id]);
-      });
-      content.querySelectorAll("[data-test-cannon-remove]").forEach(button=>button.addEventListener("click",()=>{
-        const index=Number(button.dataset.testCannonRemove);
-        saveTestCannons(selectedTestCannonIds.filter((_,i)=>i!==index));
+      }));
+      content.querySelectorAll("[data-test-cannon-dec]").forEach(button=>button.addEventListener("click",()=>{
+        const id=String(button.dataset.testCannonDec||"");
+        const index=selectedTestCannonIds.lastIndexOf(id);
+        if(index<0)return;
+        const next=[...selectedTestCannonIds];
+        next.splice(index,1);
+        saveTestCannons(next);
       }));
 
       content.querySelector("[data-world-test-ammo]")?.addEventListener("change",event=>{
