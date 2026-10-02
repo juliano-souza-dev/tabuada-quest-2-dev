@@ -189,6 +189,9 @@ export class AmmoEditor{
             this.range("projectile.orbitRadius","Raio orbital",.25,2.2,.05,fx.projectile.orbitRadius,"×")+
             this.range("projectile.sparkle","Sparkle",0,1.5,.05,fx.projectile.sparkle,"")+
             this.range("projectile.pulseSpeed","Pulso",.2,4,.05,fx.projectile.pulseSpeed,"×")+
+            this.range("projectile.echoCount","Ecos luminosos",0,4,1,fx.projectile.echoCount,"")+
+            this.range("projectile.echoSpacing","Espaçamento dos ecos",.01,.08,.005,fx.projectile.echoSpacing,"")+
+            this.range("projectile.echoScale","Escala dos ecos",.25,1,.05,fx.projectile.echoScale,"×")+
             this.color("projectile.color","Cor",fx.projectile.color)+
             this.color("projectile.coreColor","Núcleo",fx.projectile.coreColor)+
             this.color("projectile.accentColor","Acento",fx.projectile.accentColor)+
@@ -203,6 +206,7 @@ export class AmmoEditor{
             this.range("trail.taper","Afinamento",0,1,.05,fx.trail.taper,"")+
             this.range("trail.sparkle","Sparkles",0,1.5,.05,fx.trail.sparkle,"")+
             this.range("trail.ribbon","Ribbon duplo",0,1.5,.05,fx.trail.ribbon,"")+
+            this.range("trail.beads","Contas luminosas",0,1,.05,fx.trail.beads,"")+
             this.color("trail.color","Cor principal",fx.trail.color)+
             this.color("trail.secondaryColor","Cor secundária",fx.trail.secondaryColor)+
           '</div></details>'+
@@ -215,6 +219,7 @@ export class AmmoEditor{
             this.range("impactShip.smoke","Fumaça",0,1.5,.05,fx.impactShip.smoke,"")+
             this.range("impactShip.shock","Onda de choque",0,1.5,.05,fx.impactShip.shock,"")+
             this.range("impactShip.fireworks","Fogos",0,1.5,.05,fx.impactShip.fireworks,"")+
+            this.range("impactShip.flash","Flash inicial",0,1.5,.05,fx.impactShip.flash,"")+
             this.range("impactShip.ringCount","Anéis",1,4,1,fx.impactShip.ringCount,"")+
             this.color("impactShip.color","Cor",fx.impactShip.color)+
             this.color("impactShip.coreColor","Núcleo",fx.impactShip.coreColor)+
@@ -230,6 +235,7 @@ export class AmmoEditor{
             this.range("impactWater.foam","Espuma",0,1.5,.05,fx.impactWater.foam,"")+
             this.range("impactWater.mist","Névoa",0,1.5,.05,fx.impactWater.mist,"")+
             this.range("impactWater.magic","Partículas mágicas",0,1.5,.05,fx.impactWater.magic,"")+
+            this.range("impactWater.flash","Flash inicial",0,1.5,.05,fx.impactWater.flash,"")+
             this.range("impactWater.ringCount","Anéis",1,4,1,fx.impactWater.ringCount,"")+
             this.color("impactWater.color","Cor",fx.impactWater.color)+
             this.color("impactWater.coreColor","Núcleo",fx.impactWater.coreColor)+
