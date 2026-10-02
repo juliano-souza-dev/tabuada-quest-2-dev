@@ -238,6 +238,7 @@ export class WorldRuntime {
     this.editorPreviewStartedAt=0;
     this.collected=new Set(this.state.collected||[]);
     this.keys=new Set();
+    this.cameraKeys=new Set();
     this.pointerDirections=new Set();
     this.joystick={x:0,y:0,active:false,pointerId:null};
     this.navigationTarget=null;
@@ -1132,6 +1133,7 @@ export class WorldRuntime {
     entity.el?.classList.add("is-combat-target");
     this.clearNavigationTarget({brake:true});
     this.keys.clear();
+    this.cameraKeys.clear();
     this.pointerDirections.clear();
     this.resetJoystick();
 
@@ -1840,24 +1842,47 @@ export class WorldRuntime {
   }
 
   bindControls(){
-    const keyMap={
-      ArrowUp:"up",KeyW:"up",
-      ArrowDown:"down",KeyS:"down",
-      ArrowLeft:"left",KeyA:"left",
-      ArrowRight:"right",KeyD:"right"
+    const shipKeyMap={
+      ArrowUp:"up",
+      ArrowDown:"down",
+      ArrowLeft:"left",
+      ArrowRight:"right"
+    };
+    const cameraKeyMap={
+      KeyW:"up",
+      KeyS:"down",
+      KeyA:"left",
+      KeyD:"right"
     };
 
     const keydown=e=>{
       if(this.mode!=="play"||this.challengeActive)return;
-      const dir=keyMap[e.code];
-      if(!dir)return;
+      const cameraDir=cameraKeyMap[e.code];
+      if(cameraDir){
+        e.preventDefault();
+        this.cameraKeys.add(cameraDir);
+        this.playCameraDetached=true;
+        this.playCameraRecenterAt=0;
+        if(this.recenterButton)this.recenterButton.hidden=false;
+        return;
+      }
+      const shipDir=shipKeyMap[e.code];
+      if(!shipDir)return;
       e.preventDefault();
       this.clearNavigationTarget();
-      this.keys.add(dir);
+      this.keys.add(shipDir);
     };
     const keyup=e=>{
-      const dir=keyMap[e.code];
-      if(dir)this.keys.delete(dir);
+      const cameraDir=cameraKeyMap[e.code];
+      if(cameraDir){
+        this.cameraKeys.delete(cameraDir);
+        if(this.mode==="play"&&this.cameraKeys.size===0&&this.playCameraDetached){
+          this.playCameraRecenterAt=performance.now()+3000;
+        }
+        return;
+      }
+      const shipDir=shipKeyMap[e.code];
+      if(shipDir)this.keys.delete(shipDir);
     };
 
     window.addEventListener("keydown",keydown,{passive:false});
@@ -2665,6 +2690,25 @@ export class WorldRuntime {
         if(img)img.hidden=atlasMode;
       }
     }
+  }
+
+  updateCameraKeyboard(dt=1/60){
+    if(this.mode!=="play"||!this.cameraKeys?.size||!this.viewportSize)return false;
+    let x=(this.cameraKeys.has("right")?1:0)-(this.cameraKeys.has("left")?1:0);
+    let y=(this.cameraKeys.has("down")?1:0)-(this.cameraKeys.has("up")?1:0);
+    if(!x&&!y)return false;
+    const length=Math.hypot(x,y)||1;
+    x/=length;y/=length;
+    const zoom=Math.max(.1,this.playZoom||1);
+    const speed=720/zoom;
+    const halfW=Math.min(this.config.width/2,this.viewportSize.width/(2*zoom));
+    const halfH=Math.min(this.config.height/2,this.viewportSize.height/(2*zoom));
+    this.playCameraDetached=true;
+    this.playCameraRecenterAt=0;
+    this.camera.x=clamp(this.camera.x+x*speed*dt,halfW,this.config.width-halfW);
+    this.camera.y=clamp(this.camera.y+y*speed*dt,halfH,this.config.height-halfH);
+    if(this.recenterButton)this.recenterButton.hidden=false;
+    return true;
   }
 
   updateCamera(immediate=false,dt=1/60){
@@ -4754,6 +4798,7 @@ export class WorldRuntime {
     if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
+    this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
