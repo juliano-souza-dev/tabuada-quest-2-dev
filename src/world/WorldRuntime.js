@@ -272,8 +272,14 @@ export class WorldRuntime {
   }
 
   createGeneratedNpc({shipId,index,typeConfig,population,random,occupied}){
-    const profile=this.npcShipProfile(typeConfig?.npcId||shipId);
-    if(!profile)return null;
+    const npcId=String(typeConfig?.npcId||"");
+    const backingShipId=String(typeConfig?.shipId||shipId||"");
+    let profile=npcId?this.npcShipProfile(npcId):null;
+    if(!profile&&backingShipId)profile=this.npcShipProfile(backingShipId);
+    if(!profile){
+      console.warn("[TabuadaQuest] NPC generation skipped: unresolved profile",{npcId,shipId:backingShipId});
+      return null;
+    }
     const point=this.npcSpawnPoint(random,occupied,population);
     occupied.push(point);
     const heading=random()*360-180;
