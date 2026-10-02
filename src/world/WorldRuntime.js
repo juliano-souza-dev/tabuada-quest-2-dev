@@ -208,7 +208,10 @@ export class WorldRuntime {
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
     const defaultCannonId=String(this.cannonCatalog[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[];
-    this.testCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
+    const validatedCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
+    this.testCannonIds=validatedCannonIds.length
+      ?validatedCannonIds
+      :(requestedCannonIds.length?requestedCannonIds:(defaultCannonId?[defaultCannonId]:[]));
     const requestedTestAmmoId=String(options.testAmmoId||"").trim();
     if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
     this.player={
