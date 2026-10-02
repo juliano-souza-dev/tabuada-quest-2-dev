@@ -20,6 +20,14 @@ export async function launchWorldTest(root,{worldId=""}={}){
   const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
   const testAmmoId=String(config.test?.ammoId||ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
 
+  const cannonResponse=await fetch("./src/config/cannon-catalog.json?v=20261002-0953",{cache:"no-store"});
+  if(!cannonResponse.ok)throw new Error("Cannon catalog failed: "+cannonResponse.status);
+  const cannonCatalog=await cannonResponse.json();
+  const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
+  const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
+  const requestedCannonIds=Array.isArray(config.test?.cannonIds)?config.test.cannonIds.map(String):[];
+  const testCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>availableCannons.some(item=>String(item.id)===id));
+
   const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
   const pedagogyCurriculum=await pedagogyResponse.json();
@@ -38,6 +46,8 @@ export async function launchWorldTest(root,{worldId=""}={}){
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoUnlimited:true,
+      cannonCatalog:availableCannons,
+      testCannonIds:testCannonIds.length?testCannonIds:[defaultCannonId],
       createPedagogyChallenge:({entity})=>pedagogyRuntime.createChallenge({
         kind:entity?.type==="treasure"?"treasure":"world-interaction",
         worldId:config.id,
