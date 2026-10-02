@@ -3,7 +3,7 @@ import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
 export async function launchWorldTest(root,{worldId=""}={}){
-  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261001-2209",{cache:"no-store"});
+  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261001-2307",{cache:"no-store"});
   if(!catalogResponse.ok)throw new Error("World catalog failed: "+catalogResponse.status);
   const catalog=await catalogResponse.json();
   const worlds=Array.isArray(catalog.worlds)?catalog.worlds:[];
