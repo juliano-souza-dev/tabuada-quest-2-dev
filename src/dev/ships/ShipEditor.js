@@ -73,12 +73,28 @@ export class ShipEditor{
 
   repositoryShips(){
     const ships=Array.isArray(this.catalog?.ships)?this.catalog.ships:[];
-    return ships.filter(ship=>!this.deletedCatalogIds.has(String(ship?.id||"")));
+    const draftById=new Map(
+      this.drafts
+        .filter(draft=>ships.some(ship=>String(ship?.id||"")===String(draft?.id||"")))
+        .map(draft=>[String(draft.id),draft])
+    );
+    return ships
+      .filter(ship=>!this.deletedCatalogIds.has(String(ship?.id||"")))
+      .map(ship=>{
+        const draft=draftById.get(String(ship?.id||""));
+        return draft?this.normalizeShip(draft):ship;
+      });
   }
 
   repositoryShipExists(id){
     return Array.isArray(this.catalog?.ships)
       &&this.catalog.ships.some(ship=>String(ship?.id||"")===String(id||""));
+  }
+
+  hasCatalogDraftOverride(id){
+    const key=String(id||"");
+    return this.repositoryShipExists(key)
+      &&this.drafts.some(ship=>String(ship?.id||"")===key);
   }
 
   saveDeletedCatalog(){
