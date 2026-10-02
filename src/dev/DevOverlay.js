@@ -384,6 +384,11 @@ export class DevOverlay {
   }
 
   resolveWorldShipProfile(shipId,role="npc"){
+    let npcProfile=null;
+    if(role==="npc"){
+      npcProfile=this.npcEditor?.resolve?.(shipId)||null;
+      if(npcProfile)shipId=npcProfile.shipId;
+    }
     const catalogShips=(this.shipEditor?.repositoryShips?.()||[])
       .map(ship=>this.shipEditor.normalizeShip(ship));
     const ship=catalogShips.find(item=>item.id===String(shipId||""));
@@ -401,7 +406,21 @@ export class DevOverlay {
     delete combat.sprite;
     delete combat.compiled;
     delete combat.legacySprite;
+    const npcNav=npcProfile?.navigation||{};
+    const npcCombat=npcProfile?.combat||{};
+    if(npcProfile){
+      navigation.minSpeed=Number(npcNav.minSpeed??navigation.minSpeed??0);
+      navigation.speed=Number(npcNav.speed??navigation.speed??80);
+      navigation.acceleration=Number(npcNav.acceleration??navigation.acceleration??250);
+      combat.hp=Number(npcCombat.hp??combat.hp??3);
+      combat.attackRange=Number(npcCombat.attackRange??combat.attackRange??1200);
+      combat.attackCooldownMs=Number(npcCombat.attackCooldownMs??combat.attackCooldownMs??900);
+      combat.damage=Number(npcCombat.damage??combat.damage??1);
+    }
     return {
+      npcId:npcProfile?.id||null,
+      npcAttitude:String(npcCombat.attitude||"retaliate"),
+      npcBehavior:String(npcNav.behavior||"roam"),
       shipId:ship.id,
       spriteMode:ship.spriteMode==="combined"?"combined":"split",
       shipName:ship.name||ship.id,
