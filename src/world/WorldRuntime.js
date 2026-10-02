@@ -468,12 +468,13 @@ export class WorldRuntime {
     const sprite=profile.sprite&&typeof profile.sprite==="object"?structuredClone(profile.sprite):null;
     const src=String(profile.src||sprite?.src||"");
     const entity={
-      id:"npc.auto."+String(shipId).replace(/[^a-z0-9._-]+/gi,"-")+"."+(index+1),
+      id:"npc.auto."+String(npcId||backingShipId||shipId).replace(/[^a-z0-9._-]+/gi,"-")+"."+(index+1),
       type:"ship",
       role:"npc",
-      shipId:String(shipId),
-      shipName:String(profile.shipName||profile.name||shipId),
-      label:String(profile.shipName||profile.name||shipId),
+      shipId:backingShipId,
+      npcId,
+      shipName:String(shipProfile.shipName||shipProfile.name||backingShipId),
+      label:String(npcProfile?.name||shipProfile.shipName||shipProfile.name||backingShipId),
       src,
       sprite,
       width:Math.max(32,Number(profile.width)||180),
