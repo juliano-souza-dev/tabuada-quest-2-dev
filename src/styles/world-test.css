@@ -993,3 +993,72 @@
 .tq-npc-trash__empty{display:block;padding:8px 2px;opacity:.55}
 @media(max-width:1000px){.tq-npc-workspace{grid-template-columns:1fr}.tq-npc-simulator{position:static}.tq-npc-sim-stage{height:320px}}
 @media(max-width:620px){.tq-npc-identity,.tq-npc-selects{grid-template-columns:1fr}.tq-npc-sim-stats{grid-template-columns:1fr}}
+
+
+/* NPC map editor v2 */
+.tq-world-npc-card{
+  display:grid;
+  gap:10px;
+  padding:11px;
+  border:1px solid rgba(126,231,255,.14);
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(10,42,59,.72),rgba(5,24,36,.62));
+}
+.tq-world-npc-card.is-invalid{
+  border-color:rgba(255,142,82,.3);
+  background:linear-gradient(180deg,rgba(87,42,15,.24),rgba(5,24,36,.62));
+}
+.tq-world-npc-card__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.tq-world-npc-card__head>div{display:grid;gap:3px;min-width:0}
+.tq-world-npc-card__head strong{font-size:11px;color:#e9f8ff}
+.tq-world-npc-card__head small{font-size:9px;color:#8fc7dc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tq-world-npc-card__grid{
+  display:grid;
+  grid-template-columns:minmax(190px,1.5fr) minmax(86px,.55fr) minmax(92px,.62fr) minmax(110px,.72fr);
+  gap:8px;
+  align-items:end;
+}
+.tq-world-npc-card__profile{grid-column:span 2}
+.tq-world-npc-card .tq-world-npc-remove{
+  width:auto;
+  min-width:128px;
+  height:34px;
+  padding:5px 9px!important;
+  font-size:9px!important;
+  border-color:rgba(255,105,105,.26)!important;
+  background:rgba(115,24,24,.18)!important;
+  color:#ffb7af!important;
+}
+.tq-world-npc-empty{
+  display:grid;
+  gap:6px;
+  padding:12px;
+  border:1px dashed rgba(126,231,255,.18);
+  border-radius:10px;
+  background:rgba(6,28,42,.38);
+}
+.tq-world-npc-empty strong{font-size:10px;color:#dff5ff}
+.tq-world-npc-empty small{font-size:9px;line-height:1.45;color:#94b8c8}
+.tq-world-npc-empty.is-warning{border-color:rgba(255,184,80,.28);background:rgba(81,50,11,.12)}
+.tq-world-npc-empty button{justify-self:start;margin-top:2px}
+.tq-config-area--npc-map>.tq-field--check{
+  padding:9px 10px;
+  border:1px solid rgba(126,231,255,.12);
+  border-radius:10px;
+  background:rgba(7,31,46,.42);
+}
+@media(max-width:900px){
+  .tq-world-npc-card__grid{grid-template-columns:1fr 1fr}
+  .tq-world-npc-card__profile{grid-column:1/-1}
+}
+@media(max-width:620px){
+  .tq-world-npc-card__head{align-items:flex-start;flex-direction:column}
+  .tq-world-npc-card__grid{grid-template-columns:1fr}
+  .tq-world-npc-card__profile{grid-column:auto}
+  .tq-world-npc-card .tq-world-npc-remove{width:100%}
+}
