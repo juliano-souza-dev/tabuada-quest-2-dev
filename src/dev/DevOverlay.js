@@ -1071,6 +1071,7 @@ export class DevOverlay {
           '<label class="tq-world-field"><span>Tipo de NPC</span><select data-npc-type-ship="'+index+'">'+npcShipOptions(item.shipId)+'</select></label>'+
           '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
           '<label class="tq-world-field"><span>Vida / casco</span><input data-npc-type-hp="'+index+'" type="number" min="1" max="99" value="'+Math.max(1,Number(item.hp)||3)+'"></label>'+
+          '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
           '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover tipo de NPC">×</button>'+
         '</div>'
       ).join("");
@@ -1323,7 +1324,7 @@ export class DevOverlay {
         if(!first)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({shipId:first.id,count:1,hp:3});
+        next.types.push({shipId:first.id,count:1,hp:3,respawn:false});
         next.enabled=true;
         saveNpcPopulation(next);
       });
@@ -1347,6 +1348,7 @@ export class DevOverlay {
       content.querySelectorAll("[data-npc-type-ship]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeShip),{shipId:input.value})));
       content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
       content.querySelectorAll("[data-npc-type-hp]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeHp),{hp:Math.max(1,Math.min(99,Number(input.value)||3))})));
+      content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
         const apply=commit=>{
