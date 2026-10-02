@@ -1,0 +1,44 @@
+{
+  "schema": "tq.treasure-catalog",
+  "version": 1,
+  "treasures": [
+    {
+      "id": "tesouro-ouro",
+      "name": "Tesouro de Ouro",
+      "asset": "./assets/02-bau-do-grande-tesouro.webp",
+      "width": 88,
+      "height": 88,
+      "rewards": {
+        "gold": {
+          "min": 1,
+          "max": 25,
+          "chance": 100
+        },
+        "rubies": {
+          "min": 1,
+          "max": 2,
+          "chance": 8
+        }
+      }
+    },
+    {
+      "id": "tesouro-rubis",
+      "name": "Tesouro de Rubis",
+      "asset": "./assets/08-perola-lendaria-do-oceano.webp",
+      "width": 88,
+      "height": 88,
+      "rewards": {
+        "gold": {
+          "min": 1,
+          "max": 12,
+          "chance": 35
+        },
+        "rubies": {
+          "min": 1,
+          "max": 5,
+          "chance": 70
+        }
+      }
+    }
+  ]
+}
