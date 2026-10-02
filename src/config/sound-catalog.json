@@ -1,0 +1,34 @@
+{
+  "schema": "tq.sound-catalog",
+  "version": 1,
+  "sounds": [
+    {
+      "id": "cannon-shot",
+      "event": "cannon-shot",
+      "src": "./assets/sound/cannon_shot.mp3",
+      "volume": 0.72,
+      "loop": false
+    },
+    {
+      "id": "cannon-impact-ship",
+      "event": "cannon-impact-ship",
+      "src": "./assets/sound/cannon_impact_with_ship.mp3",
+      "volume": 0.82,
+      "loop": false
+    },
+    {
+      "id": "cannon-water-splash",
+      "event": "cannon-water-splash",
+      "src": "./assets/sound/cannon_ball_in_water.mp3",
+      "volume": 0.78,
+      "loop": false
+    },
+    {
+      "id": "ocean-water",
+      "event": "ocean-ambient",
+      "src": "./assets/sound/ocean_water.mp3",
+      "volume": 0.28,
+      "loop": true
+    }
+  ]
+}
