@@ -1139,6 +1139,7 @@ export class DevOverlay {
           '<label class="tq-world-field"><span>NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(item.npcId||item.shipId)+'</select></label>'+
           '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
           '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
+          '<label class="tq-world-field"><span>DEV congelado</span><select data-npc-type-frozen="'+index+'"><option value="false" '+(item.devFrozen===true?'':'selected')+'>Não</option><option value="true" '+(item.devFrozen===true?'selected':'')+'>Sim</option></select></label>'+
           '<label class="tq-world-field"><span>Moedas</span><input data-npc-reward-coins="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.coins)||0)+'"></label>'+
           '<label class="tq-world-field"><span>XP</span><input data-npc-reward-xp="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.xp)||0)+'"></label>'+
           '<label class="tq-world-field"><span>Item recompensa</span><input data-npc-reward-item="'+index+'" value="'+this.escapeHtml(item.rewards?.itemId||'')+'"></label>'+
@@ -1446,6 +1447,7 @@ export class DevOverlay {
       content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-quantity]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardQuantity),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),quantity:Math.max(1,Number(input.value)||1)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
+      content.querySelectorAll("[data-npc-type-frozen]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeFrozen),{devFrozen:input.value==="true"})));
 
       const saveTreasurePopulation=next=>{this.worldEditor.updateWorld({treasurePopulation:next},true);this.syncLocalWorldFromEditor();this.renderWorldInspector();};
       const currentTreasurePopulation=()=>structuredClone(this.worldEditor?.getWorld()?.treasurePopulation||treasurePopulation);
