@@ -1,6 +1,6 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1805";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1805";
-import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1822";
+import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1834";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-1658";
 import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1726";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
@@ -26,7 +26,7 @@ export class DevOverlay {
       pedagogyRuntime:this.pedagogyRuntime,
       onPedagogyResult:this.onPedagogyResult,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
-      resolveNpc:npcId=>this.npcEditor?.resolve?.(npcId)||null,
+      resolveNpc:npcId=>this.npcEditor?.resolveForWorld?.(npcId)||null,
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
       getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
       getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]}),
@@ -1149,7 +1149,7 @@ export class DevOverlay {
       const treasureRows=treasurePopulation.types.map((item,index)=>'<div class="tq-world-npc-row" data-treasure-row="'+index+'"><label class="tq-world-field"><span>Tesouro</span><select data-treasure-type-id="'+index+'">'+treasureOptions(item.treasureId)+'</select></label><label class="tq-world-field"><span>Quantidade máxima</span><input data-treasure-type-count="'+index+'" type="number" min="0" max="100" value="'+Math.max(0,Number(item.count)||0)+'"></label><label class="tq-world-field"><span>Respawn</span><select data-treasure-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label><label class="tq-world-field"><span>Surgimento (s)</span><input data-treasure-type-spawn="'+index+'" type="number" min="0" max="3600" step="1" value="'+Math.max(0,Number(item.spawnIntervalSec)||0)+'"></label><label class="tq-world-field"><span>Respawn após (s)</span><input data-treasure-type-respawn-delay="'+index+'" type="number" min="1" max="3600" step="1" value="'+Math.max(1,Number(item.respawnDelaySec)||30)+'"></label><button type="button" class="tq-world-npc-remove" data-treasure-type-remove="'+index+'" aria-label="Remover tesouro">×</button></div>').join("");
       const availableShips=(this.shipEditor?.repositoryShips?.()||[])
         .map(ship=>this.shipEditor.normalizeShip(ship));
-      const npcProfiles=this.npcEditor?.all?.()||[];
+      const npcProfiles=this.npcEditor?.worldProfiles?.()||[];
       const npcOptions=selected=>npcProfiles.map(npc=>
         '<option value="'+this.escapeHtml(npc.id)+'" '+(String(selected||"")===npc.id?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
       ).join("");
