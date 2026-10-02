@@ -59,7 +59,7 @@ const normalizeNpcPopulation=input=>{
       npcId:String(item?.npcId||item?.shipId||""),
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,950000),
       respawn:item?.respawn===true,
       devFrozen:item?.devFrozen===true,
       rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
@@ -508,7 +508,7 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,99),
+        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,950000),
         attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
