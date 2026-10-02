@@ -1,7 +1,7 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-1712";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog,getAmmoCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
@@ -83,6 +83,7 @@ export class WorldEditor {
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,
+      soundCatalog:this.getSoundCatalog(),
       resolveShip:this.resolveShip,
       resolveTreasure:this.resolveTreasure,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
