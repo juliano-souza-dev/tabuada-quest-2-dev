@@ -2580,6 +2580,23 @@ export class WorldRuntime {
     this.syncCombatEnemyShip(entity);
     this.updateCombatHud();
     this.clearCombatFx();
+
+    // Opening volley: clicking "Atacar" must immediately feel like an attack,
+    // instead of waiting for the first pedagogy answer before showing cannon FX.
+    if(this.combatFeedback)this.combatFeedback.textContent="Combate iniciado! Abrindo fogo...";
+    this.playCombatSpriteAnimation("player","fireRight");
+    this.playCombatFx({from:"player",hit:true});
+    setTimeout(()=>{
+      if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
+      this.playCombatDamageFx("enemy");
+    },820);
+    setTimeout(()=>{
+      if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
+      this.playCombatSpriteAnimation("enemy","fireLeft",entity);
+      this.playCombatFx({from:"enemy",hit:false});
+    },1120);
+    await new Promise(resolve=>setTimeout(resolve,1700));
+    if(!this.combatActive||this.combatActive.entity.id!==entity.id)return;
     await this.loadCombatRound();
   }
 
