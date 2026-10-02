@@ -1182,9 +1182,14 @@ export class DevOverlay {
       const shipById=new Map(availableShips.map(ship=>[String(ship.id),ship]));
       const configuredNpcIds=new Set(npcPopulation.types.map(item=>String(item?.npcId||"")).filter(Boolean));
       const addableNpcProfiles=npcProfiles.filter(profile=>!configuredNpcIds.has(String(profile.id)));
-      const npcOptions=selected=>'<option value="" disabled '+(!selected?'selected':'')+'>Selecione um perfil NPC</option>'+npcProfiles.map(npc=>
-        '<option value="'+this.escapeHtml(npc.id)+'" '+(String(selected||"")===String(npc.id)?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
-      ).join("");
+      const npcOptions=(selected,rowIndex)=>{
+        const selectedId=String(selected||"");
+        const usedByOthers=new Set(npcPopulation.types.filter((_,index)=>index!==rowIndex).map(item=>String(item?.npcId||"")).filter(Boolean));
+        const options=npcProfiles.filter(npc=>String(npc.id)===selectedId||!usedByOthers.has(String(npc.id)));
+        return '<option value="" disabled '+(!selectedId?'selected':'')+'>Selecione um perfil NPC</option>'+options.map(npc=>
+          '<option value="'+this.escapeHtml(npc.id)+'" '+(selectedId===String(npc.id)?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
+        ).join("");
+      };
       const npcRows=npcPopulation.types.map((item,index)=>{
         const npcId=String(item?.npcId||"");
         const profile=npcById.get(npcId)||null;
@@ -1194,7 +1199,7 @@ export class DevOverlay {
         return '<article class="tq-world-npc-card '+(valid?'is-valid':'is-invalid')+'" data-npc-row="'+index+'">'+
           '<div class="tq-world-npc-card__head"><div><strong>'+(profile?this.escapeHtml(profile.name||profile.id):'Perfil NPC inválido')+'</strong><small>'+(ship?'🚢 '+this.escapeHtml(ship.name||ship.id):'⚠ Sem navio válido associado')+'</small></div><button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'">Remover do mapa</button></div>'+
           '<div class="tq-world-npc-card__grid">'+
-            '<label class="tq-world-field tq-world-npc-card__profile"><span>Perfil NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(npcId)+'</select></label>'+
+            '<label class="tq-world-field tq-world-npc-card__profile"><span>Perfil NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(npcId,index)+'</select></label>'+
             '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="1" max="50" value="'+Math.max(1,Number(item.count)||1)+'"></label>'+
             '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
             '<label class="tq-world-field"><span>Congelar no DEV</span><select data-npc-type-frozen="'+index+'"><option value="false" '+(item.devFrozen===true?'':'selected')+'>Não</option><option value="true" '+(item.devFrozen===true?'selected':'')+'>Sim</option></select></label>'+
