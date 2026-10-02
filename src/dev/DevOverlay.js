@@ -1352,8 +1352,6 @@ export class DevOverlay {
         if(!firstNpc)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        const firstNpc=this.npcEditor?.all?.()?.[0];
-        if(!firstNpc)return;
         next.types.push({npcId:firstNpc.id,count:1,respawn:false,rewards:{coins:0,xp:0,itemId:"",quantity:1}});
         next.enabled=true;
         saveNpcPopulation(next);
