@@ -226,7 +226,7 @@ export class AmmoEditor{
             '<label><span>Velocidade</span><input type="range" data-preview-speed min=".25" max="2" step=".25" value="1"></label>'+
             '<label class="tq-ammo-preview__loop"><input type="checkbox" data-preview-loop checked><span>Replay</span></label>'+
           '</div>'+
-          '<div class="tq-ammo-preview__stage" data-preview-stage><div class="tq-ammo-preview__sea"></div><div class="tq-ammo-preview__cannon">☠</div><div class="tq-ammo-preview__ship">⛵</div><div class="tq-ammo-preview__water-target">◎</div><canvas data-ammo-preview></canvas></div>'+
+          '<div class="tq-ammo-preview__stage" data-preview-stage><div class="tq-ammo-preview__sea"></div><div class="tq-ammo-preview__cannon">☠</div><div class="tq-ammo-preview__ship">⛵</div><div class="tq-ammo-preview__water-target">◎</div><div class="tq-ammo-preview__asset-state" data-preview-asset-state>Verificando asset…</div><canvas data-ammo-preview></canvas></div>'+
           '<div class="tq-ammo-preview__actions"><button type="button" data-fire-ship>💥 Testar casco</button><button type="button" data-fire-water>🌊 Testar água</button><button type="button" data-preview-clear>Limpar</button></div>'+
           '<div class="tq-ammo-preview__stats"><span>Dano <b data-preview-damage>'+Number(ammo.damage)+'</b></span><span>Velocidade <b data-preview-projectile-speed>'+Number(ammo.projectileSpeed)+'</b></span><span>Preset <b data-preview-preset>'+this.e(fx.preset)+'</b></span></div>'+
         '</section></aside>'+
@@ -234,6 +234,20 @@ export class AmmoEditor{
 
     const canvas=host.querySelector("[data-ammo-preview]");
     this.preview=new AmmoPreviewGL(canvas);
+    const assetState=host.querySelector("[data-preview-asset-state]");
+    const updateAssetState=state=>{
+      if(!assetState)return;
+      assetState.classList.toggle("is-ready",state?.ready===true);
+      assetState.classList.toggle("is-error",state?.failed===true);
+      assetState.textContent=!state?.src
+        ?"Sem asset central"
+        :state.ready
+          ?"✓ Asset carregado"
+          :state.failed
+            ?"⚠ Falha ao carregar asset"
+            :"Carregando asset…";
+    };
+    this.preview.setTextureStateListener(updateAssetState);
     this.preview.setAmmo(ammo);
     this.preview.mount();
 
