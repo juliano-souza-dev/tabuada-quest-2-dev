@@ -55,11 +55,13 @@ const normalizeNpcPopulation=input=>{
       speed:clamp(Number(movement.speed??80),0,1200)
     },
     types:types.slice(0,12).map(item=>({
+      npcId:String(item?.npcId||item?.shipId||""),
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
-      respawn:item?.respawn===true
-    })).filter(item=>item.shipId&&item.count>0)
+      respawn:item?.respawn===true,
+      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{}
+    })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
   };
 };
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
@@ -296,6 +298,8 @@ export class WorldRuntime {
       lockAspect:true,
       runtimeGenerated:true,
       respawn:typeConfig?.respawn===true,
+      rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
+      npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
       npcNavigation:{
         mode:"sailing",
         minSpeed:0,
@@ -3533,11 +3537,14 @@ export class WorldRuntime {
     })===true;
     if(!fired)return false;
 
-    // Being fired upon makes an NPC hostile. It keeps that hostility even
-    // outside range, but only shoots while the player is inside its own range.
+    // NPC attitude is configured in the dedicated NPC profile.
+    // peaceful: never retaliates; retaliate: becomes hostile when attacked;
+    // hostile: is already hostile and may initiate combat on sight/range.
     const id=String(entity.id);
-    const hostile=this.navalHostile.get(id)||{nextShotAt:0};
-    this.navalHostile.set(id,hostile);
+    if(entity.npcAttitude!=="peaceful"){
+      const hostile=this.navalHostile.get(id)||{nextShotAt:0};
+      this.navalHostile.set(id,hostile);
+    }
 
     setTimeout(()=>{
       if(!this.collected.has(entity.id)){
@@ -3630,6 +3637,12 @@ export class WorldRuntime {
           }
         }
       }
+    }
+
+    for(const entity of this.entities){
+      if(!entity?.runtimeGenerated||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
+      const id=String(entity.id);
+      if(!this.navalHostile.has(id))this.navalHostile.set(id,{nextShotAt:0});
     }
 
     for(const [id,state] of [...this.navalHostile.entries()]){
