@@ -2,7 +2,8 @@ import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-1952";
 import { AMMO_FX_PRESETS, normalizeAmmoFx, applyAmmoFxPreset } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-1948";
 
 export class AmmoEditor{
-  constructor(){
+  constructor({requestAsset}={}){
+    this.requestAsset=typeof requestAsset==="function"?requestAsset:null;
     this.catalog={schema:"tq.ammo-catalog",version:1,defaultAmmoId:"",ammo:[]};
     this.drafts=[];
     this.selectedId=null;
@@ -178,9 +179,12 @@ export class AmmoEditor{
             this.range("projectile.glow","Glow",0,2.5,.05,fx.projectile.glow,"")+
             this.range("projectile.opacity","Opacidade",.05,1,.05,fx.projectile.opacity,"")+
             this.range("projectile.wobble","Oscilação",0,1,.02,fx.projectile.wobble,"")+
+            this.toggle("projectile.auraEnabled","Aura do asset",fx.projectile.auraEnabled)+
+            this.range("projectile.auraScale","Escala da aura",1,3.5,.05,fx.projectile.auraScale,"×")+
+            this.range("projectile.auraOpacity","Opacidade da aura",0,1,.05,fx.projectile.auraOpacity,"")+
             this.color("projectile.color","Cor",fx.projectile.color)+
             this.color("projectile.coreColor","Núcleo",fx.projectile.coreColor)+
-            '<label class="tq-ammo-fx-text tq-ammo-fx-wide"><span>Textura opcional</span><input data-fx="projectile.texture" value="'+this.e(fx.projectile.texture)+'" placeholder="./assets/cannons/...webp"></label>'+
+            '<div class="tq-ammo-asset tq-ammo-fx-wide"><span>Asset central do projétil</span><div class="tq-ammo-asset__row">'+(fx.projectile.texture?'<img src="'+this.e(fx.projectile.texture)+'" alt="">':'<span class="tq-ammo-asset__empty">∅</span>')+'<div><button type="button" class="tq-ships__new" data-ammo-asset>▦ Escolher asset</button><small>'+this.e(fx.projectile.texture||"Sem asset: usando somente fallback WebGL")+'</small></div></div><input data-fx="projectile.texture" value="'+this.e(fx.projectile.texture)+'" placeholder="./assets/cannons/...webp"></div>'+
           '</div></details>'+
 
           '<details class="tq-ammo-fx-section" open><summary><strong>☄️ Rastro</strong><small>Comprimento, largura, fade e cor da trilha.</small></summary><div class="tq-ammo-fx-grid">'+
@@ -275,6 +279,8 @@ export class AmmoEditor{
 
     const persist=()=>this.save(refreshPreview());
 
+    host.querySelector("[data-ammo-asset]")?.addEventListener("click",()=>this.requestAsset?.({ammoId:ammo.id,currentAsset:fx.projectile.texture}));
+
     host.querySelector("[data-a-preset]").addEventListener("change",event=>{
       const current=read();
       this.save(applyAmmoFxPreset(current,event.currentTarget.value));
@@ -290,6 +296,17 @@ export class AmmoEditor{
     host.querySelector("[data-fire-water]").onclick=()=>this.preview?.fire("water");
     host.querySelector("[data-preview-clear]").onclick=()=>this.preview?.clear();
     refreshPreview();
+  }
+
+  setProjectileAsset(asset){
+    const current=this.current();
+    if(!current)return false;
+    const next=structuredClone(current);
+    next.fx=normalizeAmmoFx(next);
+    next.fx.projectile.texture=String(asset||"");
+    this.save(next);
+    this.renderEditor();
+    return true;
   }
 
   resolve(id){return this.all().find(x=>x.id===String(id||""))||null}
