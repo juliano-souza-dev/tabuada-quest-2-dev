@@ -36,7 +36,7 @@
   },
   "afterAuth": {
     "kind": "world",
-    "id": "ocean-prototype"
+    "id": "tempesta"
   },
   "auth": {
     "required": true,
