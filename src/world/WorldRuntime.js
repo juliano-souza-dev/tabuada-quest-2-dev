@@ -3757,11 +3757,30 @@ export class WorldRuntime {
     return true;
   }
 
+  showNavalDamageNumber({x=0,y=0,amount=0,received=false}={}){
+    if(!this.entityLayer||!(Number(amount)>0))return;
+    const el=document.createElement("span");
+    el.className="tq-world-damage-number"+(received?" is-received":"");
+    el.textContent="-"+Math.max(1,Math.floor(Number(amount)||1));
+    el.style.left=(Number(x)||0)+"px";
+    el.style.top=(Number(y)||0)+"px";
+    this.entityLayer.append(el);
+    const remove=()=>el.remove();
+    el.addEventListener("animationend",remove,{once:true});
+    setTimeout(remove,1200);
+  }
+
   applyDirectNavalDamage(entity,amount=1){
     if(!entity||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
     const hp=this.navalHpState(entity);
     const next=Math.max(0,hp.current-Math.max(1,Number(amount)||1));
     this.navalHp.set(String(entity.id),next);
+    const dealt=Math.max(0,hp.current-next);
+    this.showNavalDamageNumber({
+      x:Number(entity.visualX??entity.x)||0,
+      y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
+      amount:dealt
+    });
 
     if(next<=0){
       this.beginNavalDestruction(entity);
@@ -3841,7 +3860,14 @@ export class WorldRuntime {
 
   applyDirectPlayerNavalDamage(amount=1,source=null){
     if(this.navalPlayerHp<=0)return false;
+    const previousHp=this.navalPlayerHp;
     this.navalPlayerHp=Math.max(0,this.navalPlayerHp-Math.max(1,Number(amount)||1));
+    this.showNavalDamageNumber({
+      x:Number(this.player?.x)||0,
+      y:(Number(this.player?.y)||0)-Math.max(22,(Number(this.config.player?.height)||150)*.36),
+      amount:Math.max(0,previousHp-this.navalPlayerHp),
+      received:true
+    });
     if(this.actionMessage){
       const sourceLabel=String(source?.label||source?.shipName||"Navio inimigo");
       this.actionMessage.textContent=this.navalPlayerHp>0
