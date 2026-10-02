@@ -287,6 +287,9 @@ export class WorldRuntime {
 
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
+    for(const entity of this.entities){
+      if(entity?.runtimeGenerated&&entity.id)this.navalHp?.delete(String(entity.id));
+    }
     this.entities=this.entities.filter(entity=>!entity.runtimeGenerated);
     this.generatedNpcIds.clear();
 
