@@ -926,3 +926,34 @@
  .tq-cannon-editor-head{align-items:flex-start;flex-direction:column}
  .tq-cannon-trash-action{margin-left:0;width:100%}
 }
+
+
+/* Cannon editor: controls and live simulator visible together */
+.tq-dev__cannons .tq-ships__editor{overflow:hidden}
+.tq-cannon-workspace{
+  display:grid;
+  grid-template-columns:minmax(390px,.8fr) minmax(560px,1.2fr);
+  gap:14px;
+  height:calc(100vh - 190px);
+  min-height:560px;
+  max-width:1600px;
+  margin:0 auto;
+}
+.tq-cannon-controls,.tq-cannon-simulator-column{min-width:0;min-height:0}
+.tq-cannon-controls{overflow:auto;padding-right:4px}
+.tq-cannon-simulator-column{position:sticky;top:0;align-self:start;height:100%;overflow:hidden}
+.tq-cannon-simulator-column>[data-cannon-preview-host]{height:100%}
+.tq-cannon-simulator-column .tq-cannon-preview,
+.tq-cannon-simulator-column .tq-cannon-sim,
+.tq-cannon-simulator-column section{max-height:100%;margin-top:0}
+.tq-cannon-controls .tq-cannon-grid{grid-template-columns:1fr}
+.tq-cannon-controls .tq-cannon-group--identity,
+.tq-cannon-controls .tq-cannon-group--combat,
+.tq-cannon-controls .tq-cannon-group--purchase{grid-column:1;grid-row:auto}
+.tq-cannon-controls .tq-cannon-purchase-grid{grid-template-columns:1fr 1fr}
+@media(max-width:1180px){
+ .tq-dev__cannons .tq-ships__editor{overflow:auto}
+ .tq-cannon-workspace{display:block;height:auto;min-height:0}
+ .tq-cannon-controls{overflow:visible;padding-right:0}
+ .tq-cannon-simulator-column{position:static;height:auto;margin-top:14px;overflow:visible}
+}
