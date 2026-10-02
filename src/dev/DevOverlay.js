@@ -1,5 +1,6 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0036";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
+import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -8,6 +9,7 @@ export class DevOverlay {
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
+    this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[]});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
@@ -34,6 +36,7 @@ export class DevOverlay {
         <button data-worlds>🗺️ <span>Regiões</span></button>
         <button data-flow>⌁ <span>Fluxo</span></button>
         <button data-ships>🚢 <span>Navios</span></button>
+        <button data-npcs>☠ <span>NPC</span></button>
         <button data-assets>▦ <span>Assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
       </div>
@@ -122,11 +125,13 @@ export class DevOverlay {
     this.el.querySelector("[data-scene-event]").addEventListener("change",()=>this.syncCreateSceneForm());
     this.el.querySelector("[data-scene-name]").addEventListener("input",event=>{event.currentTarget.dataset.manual="true"});
     this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(this.shipEditor?.el?.hidden!==false));
+    this.el.querySelector("[data-npcs]").addEventListener("click",()=>this.toggleNpcs(this.npcEditor?.el?.hidden!==false));
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
     this.shipEditorReady=this.shipEditor.mount(this.el);
+    this.npcEditorReady=this.npcEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -206,6 +211,7 @@ export class DevOverlay {
       if(panel)panel.hidden=true;
     }
     if(except!=="ships")this.shipEditor?.setVisible(false);
+    if(except!=="npcs")this.npcEditor?.setVisible(false);
     if(except!=="assets")this.assetPickTarget=null;
   }
 
@@ -2310,6 +2316,11 @@ export class DevOverlay {
   toggleShips(show){
     if(show)this.closeToolPanels("ships");
     this.shipEditor.setVisible(show);
+  }
+
+  toggleNpcs(show){
+    if(show)this.closeToolPanels("npcs");
+    this.npcEditor.setVisible(show);
   }
 
   toggleAssets(show){
