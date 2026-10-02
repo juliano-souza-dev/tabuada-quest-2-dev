@@ -84,6 +84,19 @@ void main(){
     return;
   }
 
+  if(uEffectType<4.5){
+    float core=1.0-smoothstep(.04,.18,d);
+    float halo=1.0-smoothstep(.10,.50,d);
+    float fade=1.0-smoothstep(.0,1.0,progress);
+    vec3 violet=vec3(.56,.08,1.0);
+    vec3 hot=vec3(.94,.58,1.0);
+    vec3 color=mix(violet,hot,core);
+    float alpha=(core*.82+halo*.42)*fade;
+    if(alpha<.01)discard;
+    outColor=vec4(color,alpha);
+    return;
+  }
+
   float flash=(1.0-smoothstep(.0,.18,progress))*(1.0-smoothstep(.02,.34,d));
   float radius=mix(.05,.47,smoothstep(.04,.86,progress));
   float ring=1.0-smoothstep(.016,.07,abs(d-radius));
@@ -319,6 +332,18 @@ export class NavalCombatWebGLRenderer{
         const eased=1-Math.pow(1-t,2);
         const x=shot.from.x+(shot.to.x-shot.from.x)*eased;
         const y=shot.from.y+(shot.to.y-shot.from.y)*eased;
+        const isPurpleHalloween=String(shot.ammo?.id||"")==="cannonball-halloween-purple"||String(shot.ammo?.effects?.projectile||"")==="halloween-purple-webgl";
+        if(isPurpleHalloween){
+          const trailSteps=9;
+          for(let step=trailSteps;step>=1;step--){
+            const trailT=clamp(t-step*.035,0,1);
+            if(trailT>=t)continue;
+            const trailEased=1-Math.pow(1-trailT,2);
+            const trailX=shot.from.x+(shot.to.x-shot.from.x)*trailEased;
+            const trailY=shot.from.y+(shot.to.y-shot.from.y)*trailEased;
+            drawPoint(trailX,trailY,clamp(22-step*1.25,7,22),4,step/trailSteps,true);
+          }
+        }
         const point=toClip(x,y);
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
