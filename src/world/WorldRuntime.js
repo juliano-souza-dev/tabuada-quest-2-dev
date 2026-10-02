@@ -57,7 +57,8 @@ const normalizeNpcPopulation=input=>{
     types:types.slice(0,12).map(item=>({
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,99)
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,99),
+      respawn:item?.respawn===true
     })).filter(item=>item.shipId&&item.count>0)
   };
 };
@@ -294,6 +295,7 @@ export class WorldRuntime {
       direction:directionForHeading(heading,null,{hysteresis:0}),
       lockAspect:true,
       runtimeGenerated:true,
+      respawn:typeConfig?.respawn===true,
       npcNavigation:{
         mode:"sailing",
         minSpeed:0,
@@ -3457,6 +3459,43 @@ export class WorldRuntime {
     const timer=setTimeout(()=>{
       this.navalDestroyTimers.delete(id);
       this.navalDestroying.delete(id);
+      if(entity.runtimeGenerated&&entity.respawn===true){
+        const population=normalizeNpcPopulation(this.config.npcPopulation||{});
+        const occupied=this.entities
+          .filter(other=>other!==entity&&!this.collected.has(other.id)&&!this.navalDestroying.has(other.id))
+          .map(other=>({x:Number(other.x)||0,y:Number(other.y)||0}));
+        occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
+        const random=createSeededRandom(hashString(id+\".respawn.\"+Date.now()));
+        const point=this.npcSpawnPoint(random,occupied,population);
+        const heading=random()*360-180;
+        entity.x=point.x;
+        entity.y=point.y;
+        entity.anchorX=point.x;
+        entity.anchorY=point.y;
+        entity.visualX=point.x;
+        entity.visualY=point.y;
+        entity.rotation=heading;
+        entity.visualRotation=heading;
+        entity.direction=directionForHeading(heading,null,{hysteresis:0});
+        if(entity.npcNavigation){
+          entity.npcNavigation.heading=heading;
+          entity.npcNavigation.targetHeading=heading;
+          entity.npcNavigation.vx=0;
+          entity.npcNavigation.vy=0;
+          entity.npcNavigation.elapsed=0;
+          entity.npcNavigation.courseCycle=0;
+          entity.npcNavigation.nextCourseChange=3.5+random()*4.5;
+        }
+        entity.collision=normalizeCollision({
+          ...(entity.collision||{}),active:true,action:\"none\"
+        },entity);
+        this.navalHp.set(id,Math.max(1,Math.min(99,Number(entity.combat?.hp)||3)));
+        if(entity.el)entity.el.hidden=false;
+        this.applyEntityVisual(entity);
+        this.syncCombatClickableEntity(entity);
+        this.syncCollisionVisual(entity);
+        return;
+      }
       this.completeCollection(entity);
     },duration);
     this.navalDestroyTimers.set(id,timer);
