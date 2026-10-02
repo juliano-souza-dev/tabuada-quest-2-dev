@@ -1,0 +1,26 @@
+{
+  "schema": "tq.ammo-catalog",
+  "version": 1,
+  "defaultAmmoId": "cannonball-standard",
+  "ammo": [
+    {
+      "id": "cannonball-standard",
+      "name": "Bola de Canhão",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "range": 900,
+      "size": 1,
+      "cooldownMs": 900,
+      "effects": {
+        "projectile": "standard",
+        "impact": "standard",
+        "waterSplash": "standard"
+      },
+      "shop": {
+        "purchasable": true,
+        "price": 1
+      }
+    }
+  ]
+}
