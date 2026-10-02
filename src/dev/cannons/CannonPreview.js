@@ -155,7 +155,7 @@ export class CannonPreview{
     const travel=Math.min(this.targetDistance,range);
     const seconds=travel/speed;
 
-    const targetPct=18+(clamp((this.targetDistance-300)/(this.maxDistance-300),0,1)*72);
+    const targetPct=18+(clamp(this.targetDistance/this.maxDistance,0,1)*72);
     const rangePct=clamp(range/this.maxDistance,0,1)*72;
     const target=this.host.querySelector("[data-csim-target]");
     const rangeBar=this.host.querySelector("[data-csim-range]");
