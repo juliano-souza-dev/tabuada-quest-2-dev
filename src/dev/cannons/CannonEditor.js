@@ -84,7 +84,7 @@ export class CannonEditor{
     this.preview?.stop?.();
     if(!c){h.innerHTML='<div class="tq-ships__empty">Crie ou restaure um canhão.</div>';return}
     const cadence=(1000/Math.max(100,c.attackCooldownMs)).toFixed(2);
-    h.innerHTML='<section class="tq-ships__panel tq-cannon-editor-card">'+
+    h.innerHTML='<div class="tq-cannon-workspace"><div class="tq-cannon-controls"><section class="tq-ships__panel tq-cannon-editor-card">'+
       '<div class="tq-ships__panel-title tq-cannon-editor-head"><div><strong>Configuração do canhão</strong><small>Autosave ativo · alterações entram imediatamente no combate DEV.</small></div><button type="button" class="tq-ships__new tq-cannon-trash-action" data-cannon-trash>🗑 Mover para lixeira</button></div>'+
       '<div class="tq-cannon-grid">'+
         '<section class="tq-cannon-group tq-cannon-group--identity"><h4>Identidade</h4><div class="tq-cannon-identity">'+
@@ -103,7 +103,7 @@ export class CannonEditor{
           '<label><input data-c-shop type="checkbox" '+(c.acquisition.shop?"checked":"")+'><span><b>Loja</b><small>Disponível para compra no estaleiro.</small></span></label>'+
           '<label><input data-c-boss type="checkbox" '+(c.acquisition.shipBossReward?"checked":"")+'><span><b>Navio / Boss</b><small>Pode ser concedido como recompensa.</small></span></label>'+
         '</div></section>'+
-      '</div></section><div data-cannon-preview-host></div>';
+      '</div></section></div><aside class="tq-cannon-simulator-column"><div data-cannon-preview-host></div></aside></div>';
     const sync=()=>{
       c.name=h.querySelector("[data-c-name]").value.trim()||"Canhão";
       c.range=Math.max(100,Number(h.querySelector("[data-c-range]").value)||900);
