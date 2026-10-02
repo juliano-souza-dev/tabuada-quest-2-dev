@@ -4,300 +4,136 @@
   "defaultShipId": "pirate-default",
   "ships": [
     {
-      "id": "pirate-default",
-      "name": "Navio Pirata",
+      "id": "ship-1790964451141",
+      "name": "Novo navio",
+      "type": "player",
       "available": true,
-      "player": {
-        "width": 230,
-        "height": 230,
-        "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
-        "sprite": {
-          "src": "./assets/ships/pirate_ship_16dir_1600x1600_4x4.webp",
-          "imageWidth": 1600,
-          "imageHeight": 1600,
-          "regions": {
-            "n": {
-              "x": 0,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "nne": {
-              "x": 400,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "ne": {
-              "x": 800,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "ene": {
-              "x": 1200,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "e": {
-              "x": 0,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "ese": {
-              "x": 400,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "se": {
-              "x": 800,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "sse": {
-              "x": 1200,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "s": {
-              "x": 0,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "ssw": {
-              "x": 400,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "sw": {
-              "x": 800,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "wsw": {
-              "x": 1200,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "w": {
-              "x": 0,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "wnw": {
-              "x": 400,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "nw": {
-              "x": 800,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "nnw": {
-              "x": 1200,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            }
-          },
-          "columns": 4,
-          "rows": 4,
+      "spriteMode": "combined",
+      "autoFrame": true,
+      "cellSize": 400,
+      "animations": {
+        "idle": {
+          "frameMs": 140,
+          "loop": true,
           "cellWidth": 400,
           "cellHeight": 400,
-          "initialDirection": "n"
-        }
-      },
-      "type": "player",
-      "spriteMode": "combined",
-      "autoFrame": true,
-      "cellSize": 400
-    },
-    {
-      "id": "pirate-halloween",
-      "name": "Navio Pirata Halloween",
-      "available": true,
-      "player": {
-        "width": 230,
-        "height": 230,
-        "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
-        "sprite": {
-          "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
-          "imageWidth": 1600,
-          "imageHeight": 1600,
-          "regions": {
-            "n": {
-              "x": 0,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "nne": {
-              "x": 400,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "ne": {
-              "x": 800,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "ene": {
-              "x": 1200,
-              "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "e": {
-              "x": 0,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "ese": {
-              "x": 400,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "se": {
-              "x": 800,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "sse": {
-              "x": 1200,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "s": {
-              "x": 0,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "ssw": {
-              "x": 400,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "sw": {
-              "x": 800,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "wsw": {
-              "x": 1200,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "w": {
-              "x": 0,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "wnw": {
-              "x": 400,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "nw": {
-              "x": 800,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "nnw": {
-              "x": 1200,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            }
-          },
-          "columns": 4,
-          "rows": 4,
+          "frames": [0]
+        },
+        "fireRight": {
+          "frameMs": 135,
+          "loop": false,
           "cellWidth": 400,
           "cellHeight": 400,
-          "initialDirection": "n"
+          "frames": [4,5,6,7]
+        },
+        "fireLeft": {
+          "frameMs": 135,
+          "loop": false,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": []
+        },
+        "hit": {
+          "frameMs": 120,
+          "loop": false,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": []
+        },
+        "critical": {
+          "frameMs": 160,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": []
+        },
+        "defeat": {
+          "frameMs": 180,
+          "loop": false,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": []
         }
       },
-      "type": "player",
-      "spriteMode": "combined",
-      "autoFrame": true,
-      "cellSize": 400
-    },
-    {
-      "id": "corsario-colombo",
-      "name": "Corsário Colombo",
-      "available": true,
-      "type": "npc",
-      "npc": {
-        "width": 250,
-        "height": 250,
-        "src": "./assets/ships/el-colombo.webp"
+      "animationGroups": {
+        "idle": "combat",
+        "fireRight": "combat",
+        "fireLeft": "combat",
+        "hit": "combat",
+        "critical": "combat",
+        "defeat": "combat"
       },
-      "spriteMode": "combined",
-      "autoFrame": true,
-      "cellSize": 400
-    },
-    {
-      "id": "pirata-enseada",
-      "name": "Pirata da Enseada",
-      "available": true,
-      "type": "npc",
-      "npc": {
-        "width": 250,
-        "height": 250,
-        "src": "./assets/ships/navio_pirata_tabuadas.webp"
+      "editor": {
+        "createdAt": 1790964451141,
+        "updatedAt": 1790964451141
       },
-      "spriteMode": "combined",
-      "autoFrame": true,
-      "cellSize": 400
-    },
-    {
-      "id": "pirata-halloween-npc",
-      "name": "Pirata Halloween",
-      "available": true,
-      "type": "npc",
-      "npc": {
-        "width": 250,
-        "height": 250,
-        "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
+      "schema": "tq.ship",
+      "version": 2,
+      "navigation": {
+        "width": 230,
+        "height": 230,
+        "minSpeed": 80,
+        "speed": 420,
+        "acceleration": 1100,
+        "braking": 0.12,
+        "roll": 2.4,
+        "heave": 3.2,
+        "sway": 0,
+        "periodMs": 3600,
+        "wake": true,
+        "shadow": true,
+        "src": "",
+        "sprite": {
+          "src": "",
+          "columns": 4,
+          "rows": 4,
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "regions": {
+            "n": {"x":0,"y":0,"width":400,"height":400},
+            "nne": {"x":400,"y":0,"width":400,"height":400},
+            "ne": {"x":800,"y":0,"width":400,"height":400},
+            "ene": {"x":1200,"y":0,"width":400,"height":400},
+            "e": {"x":0,"y":400,"width":400,"height":400},
+            "ese": {"x":400,"y":400,"width":400,"height":400},
+            "se": {"x":800,"y":400,"width":400,"height":400},
+            "sse": {"x":1200,"y":400,"width":400,"height":400},
+            "s": {"x":0,"y":800,"width":400,"height":400},
+            "ssw": {"x":400,"y":800,"width":400,"height":400},
+            "sw": {"x":800,"y":800,"width":400,"height":400},
+            "wsw": {"x":1200,"y":800,"width":400,"height":400},
+            "w": {"x":0,"y":1200,"width":400,"height":400},
+            "wnw": {"x":400,"y":1200,"width":400,"height":400},
+            "nw": {"x":800,"y":1200,"width":400,"height":400},
+            "nnw": {"x":1200,"y":1200,"width":400,"height":400}
+          },
+          "directionFrames": {
+            "n":0,"nne":1,"ne":2,"ene":3,"e":4,"ese":5,"se":6,"sse":7,
+            "s":8,"ssw":9,"sw":10,"wsw":11,"w":12,"wnw":13,"nw":14,"nnw":15
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
+        },
+        "compiled": {}
       },
-      "spriteMode": "combined",
-      "autoFrame": true,
-      "cellSize": 400
+      "combat": {
+        "hp": 50,
+        "attackRange": 1200,
+        "attackCooldownMs": 900,
+        "damage": 1,
+        "recoil": 18,
+        "shake": 5,
+        "muzzleFlash": true,
+        "smoke": true,
+        "impact": true,
+        "useNavigationAtlas": false
+      }
     }
   ],
   "shipTypes": [
-    {
-      "id": "player",
-      "label": "Jogador"
-    },
-    {
-      "id": "npc",
-      "label": "NPC"
-    }
+    {"id":"player","label":"Jogador"},
+    {"id":"npc","label":"NPC"}
   ]
 }
