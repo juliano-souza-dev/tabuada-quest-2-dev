@@ -18,6 +18,9 @@
       "shop": {
         "purchasable": true,
         "price": 1
+      },
+      "fx": {
+        "preset": "standard"
       }
     },
     {
@@ -40,6 +43,9 @@
       "shop": {
         "purchasable": false,
         "price": 0
+      },
+      "fx": {
+        "preset": "halloween"
       }
     },
     {
@@ -59,6 +65,9 @@
       "shop": {
         "purchasable": true,
         "price": 3
+      },
+      "fx": {
+        "preset": "piercing"
       }
     }
   ]
