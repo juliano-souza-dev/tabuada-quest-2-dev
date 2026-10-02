@@ -104,6 +104,7 @@ export class ShipEditor{
     value.navigation={
       width:Number(value.navigation.width??profile.width??230),
       height:Number(value.navigation.height??profile.height??230),
+      minSpeed:Number(value.navigation.minSpeed??profile.minSpeed??80),
       speed:Number(value.navigation.speed??420),
       acceleration:Number(value.navigation.acceleration??1100),
       braking:Number(value.navigation.braking??.12),
@@ -156,6 +157,7 @@ export class ShipEditor{
     value.navigation.src=value.navigation.sprite.src||value.navigation.src||"";
     value.combat=value.combat&&typeof value.combat==="object"?value.combat:{};
     value.combat={
+      hp:Math.max(1,Math.min(99,Math.floor(Number(value.combat.hp??profile.combat?.hp)||3))),
       attackRange:Math.max(200,Math.min(6000,Number(value.combat.attackRange??profile.combat?.attackRange??1200)||1200)),
       attackCooldownMs:Math.max(300,Math.min(5000,Number(value.combat.attackCooldownMs??profile.combat?.attackCooldownMs??900)||900)),
       damage:Math.max(1,Math.min(20,Math.floor(Number(value.combat.damage??profile.combat?.damage)||1))),
@@ -681,6 +683,7 @@ export class ShipEditor{
           <span>WEBGL FX</span>
         </div>
         <div class="tq-ships__settings tq-ships__settings--v2">
+          <label><span>Vida máxima / casco</span><input data-action-hp type="number" min="1" max="99" value="${Math.round(ship.combat.hp)}"></label>
           <label><span>Alcance base px</span><input data-action-range type="number" min="200" max="6000" step="25" value="${Math.round(ship.combat.attackRange)}"></label>
           <label><span>Intervalo de tiro ms</span><input data-action-cooldown type="number" min="300" max="5000" step="50" value="${Math.round(ship.combat.attackCooldownMs)}"></label>
           <label><span>Dano por impacto</span><input data-action-damage type="number" min="1" max="20" value="${Math.round(ship.combat.damage)}"></label>
@@ -700,6 +703,7 @@ export class ShipEditor{
       if(!draft)return;
       draft.combat={
         ...(draft.combat||{}),
+        hp:Math.max(1,Math.min(99,Math.floor(Number(content.querySelector("[data-action-hp]")?.value)||3))),
         attackRange:Math.max(200,Math.min(6000,Number(content.querySelector("[data-action-range]")?.value)||1200)),
         attackCooldownMs:Math.max(300,Math.min(5000,Number(content.querySelector("[data-action-cooldown]")?.value)||900)),
         damage:Math.max(1,Math.min(20,Math.floor(Number(content.querySelector("[data-action-damage]")?.value)||1))),
@@ -714,7 +718,7 @@ export class ShipEditor{
       delete draft.combat.compiled;
       this.save();
     };
-    content.querySelectorAll("[data-action-range],[data-action-cooldown],[data-action-damage],[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
+    content.querySelectorAll("[data-action-hp],[data-action-range],[data-action-cooldown],[data-action-damage],[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
       .forEach(el=>el.addEventListener("change",saveStyle));
   }
 
@@ -787,7 +791,8 @@ export class ShipEditor{
           <div class="tq-ships__settings tq-ships__settings--v2">
             <label><span>Largura</span><input data-nav-width type="number" min="32" max="800" value="${Math.round(ship.navigation.width)}"></label>
             <label><span>Altura</span><input data-nav-height type="number" min="32" max="800" value="${Math.round(ship.navigation.height)}"></label>
-            <label><span>Velocidade</span><input data-nav-speed type="number" min="40" max="1200" value="${Math.round(ship.navigation.speed)}"></label>
+            <label><span>Velocidade mínima</span><input data-nav-min-speed type="number" min="0" max="1200" value="${Math.round(ship.navigation.minSpeed)}"></label>
+            <label><span>Velocidade máxima</span><input data-nav-speed type="number" min="40" max="1200" value="${Math.round(ship.navigation.speed)}"></label>
             <label><span>Aceleração</span><input data-nav-accel type="number" min="100" max="3000" value="${Math.round(ship.navigation.acceleration)}"></label>
             <label><span>Roll °</span><input data-nav-roll type="number" min="0" max="20" step=".1" value="${ship.navigation.roll}"></label>
             <label><span>Heave px</span><input data-nav-heave type="number" min="0" max="40" step=".1" value="${ship.navigation.heave}"></label>
@@ -838,6 +843,10 @@ export class ShipEditor{
       const values=()=>({
         width:Math.max(32,Number(content.querySelector("[data-nav-width]")?.value)||230),
         height:Math.max(32,Number(content.querySelector("[data-nav-height]")?.value)||230),
+        minSpeed:Math.max(0,Math.min(
+          Number(content.querySelector("[data-nav-speed]")?.value)||420,
+          Number(content.querySelector("[data-nav-min-speed]")?.value)||0
+        )),
         speed:Math.max(40,Number(content.querySelector("[data-nav-speed]")?.value)||420),
         acceleration:Math.max(100,Number(content.querySelector("[data-nav-accel]")?.value)||1100),
         roll:Math.max(0,Number(content.querySelector("[data-nav-roll]")?.value)||0),
@@ -845,7 +854,7 @@ export class ShipEditor{
         wake:content.querySelector("[data-nav-wake]")?.checked!==false,
         shadow:content.querySelector("[data-nav-shadow]")?.checked!==false
       });
-      content.querySelectorAll("[data-nav-width],[data-nav-height],[data-nav-speed],[data-nav-accel],[data-nav-roll],[data-nav-heave],[data-nav-wake],[data-nav-shadow]").forEach(el=>el.addEventListener("change",()=>updateNav(values())));
+      content.querySelectorAll("[data-nav-width],[data-nav-height],[data-nav-min-speed],[data-nav-speed],[data-nav-accel],[data-nav-roll],[data-nav-heave],[data-nav-wake],[data-nav-shadow]").forEach(el=>el.addEventListener("change",()=>updateNav(values())));
       content.querySelector("[data-nav-sprite-pick]")?.addEventListener("click",()=>this.requestFrameAsset?.({shipId:ship.id,section:"navigation",mode:"sprite"}));
       const resizeGrid=()=>{
         const cols=Math.max(1,Number(content.querySelector("[data-nav-columns]")?.value)||4);
