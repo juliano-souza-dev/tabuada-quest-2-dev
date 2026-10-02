@@ -1,12 +1,13 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-0927";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,getCannonCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
     this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
+    this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
@@ -64,8 +65,14 @@ export class WorldEditor {
     this.root.append(this.host);
     if(this.sceneRuntime?.stageHost)this.sceneRuntime.stageHost.style.display="none";
 
+    const cannonCatalog=this.getCannonCatalog()||{};
+    const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
+    const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
+    const requestedCannonIds=Array.isArray(world.test?.cannonIds)?world.test.cannonIds.map(String):[];
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
+      cannonCatalog:availableCannons,
+      testCannonIds:requestedCannonIds.length?requestedCannonIds:[defaultCannonId],
       resolveShip:this.resolveShip,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
