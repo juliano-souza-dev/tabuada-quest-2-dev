@@ -4,7 +4,7 @@ const slug=value=>String(value||"cannon").toLowerCase().normalize("NFD").replace
 export class CannonEditor{
   constructor({requestAsset}={}){
     this.requestAsset=typeof requestAsset==="function"?requestAsset:null;
-    this.catalog={schema:"tq.cannon-catalog",version:2,defaultCannonId:"cannon-basic",cannons:[]};
+    this.catalog={schema:"tq.cannon-catalog",version:2,defaultCannonId:"",cannons:[]};
     this.selectedId=null;this.el=null;
     this.storageKey="tq.dev.cannon-catalog-live:v1";
     this.trashKey="tq.dev.cannon-trash:v1";
