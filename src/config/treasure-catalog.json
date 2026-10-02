@@ -39,6 +39,46 @@
           "chance": 70
         }
       }
+    },
+    {
+      "id": "tesouro-halloween-abobora",
+      "name": "Abóbora Luminosa",
+      "asset": "./assets/treasures/events/halloween/Sprite de Abóboras Flutuantes de Halloween.png",
+      "width": 96,
+      "height": 96,
+      "animation": {
+        "type": "atlas",
+        "columns": 4,
+        "rows": 4,
+        "frames": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "fps": 6,
+        "loop": true
+      },
+      "visual": {
+        "event": "halloween",
+        "glow": true
+      },
+      "rewards": {
+        "gold": {
+          "min": 1,
+          "max": 25,
+          "chance": 100
+        },
+        "rubies": {
+          "min": 1,
+          "max": 2,
+          "chance": 8
+        }
+      }
     }
   ]
 }
