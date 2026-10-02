@@ -156,7 +156,7 @@
 .tq-world-clouds{position:fixed;inset:-12%;z-index:510;overflow:hidden;pointer-events:none;transform:translate(var(--cloud-camera-x,0px),var(--cloud-camera-y,0px));will-change:transform}
 .tq-world-clouds[hidden]{display:none}
 .tq-world-clouds i{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:calc(var(--size)*.34);opacity:calc(var(--cloud-opacity,.5)*var(--depth,1));transform:scale(calc(var(--cloud-scale,1)*var(--depth,1)));transform-origin:center;background:radial-gradient(ellipse at 28% 60%,rgba(255,255,255,.74) 0 22%,transparent 23%),radial-gradient(ellipse at 48% 46%,rgba(255,255,255,.84) 0 27%,transparent 28%),radial-gradient(ellipse at 70% 62%,rgba(255,255,255,.66) 0 23%,transparent 24%);filter:blur(calc((1 - var(--depth,1))*2px));animation:tq-cloud-drift var(--dur,24s) linear infinite;animation-delay:var(--delay,0s);will-change:transform}
-@keyframes tq-cloud-drift{from{translate:-28vw 0}to{translate:128vw 0}}
+@keyframes tq-cloud-drift{from{translate:var(--from-x,-28vw) var(--from-y,0)}to{translate:var(--to-x,128vw) var(--to-y,0)}}
 
 .tq-world-weather{position:fixed;inset:0;z-index:515;overflow:hidden;pointer-events:none}
 .tq-world-weather--none{display:none}
