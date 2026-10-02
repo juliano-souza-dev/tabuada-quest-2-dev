@@ -208,6 +208,34 @@ export class DevOverlay {
       if(!changed)return;
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
     });
+    window.addEventListener("tq:npcprofilechange",()=>{
+      if(this.workspace!=="world"||!this.worldEditor?.runtime)return;
+      const world=this.worldEditor.getWorld();
+      const population=world?.npcPopulation&&typeof world.npcPopulation==="object"
+        ?structuredClone(world.npcPopulation)
+        :null;
+      if(population&&Array.isArray(population.types)){
+        let changed=false;
+        const types=[];
+        for(const item of population.types){
+          const profile=this.npcEditor?.resolveForWorld?.(item?.npcId)||null;
+          if(!profile){
+            changed=true;
+            continue;
+          }
+          const shipId=String(profile.shipId||"");
+          if(String(item?.shipId||"")!==shipId)changed=true;
+          types.push({...item,npcId:String(profile.id),shipId});
+        }
+        if(changed){
+          population.types=types;
+          if(!types.length)population.enabled=false;
+          this.worldEditor.updateWorld({npcPopulation:population},true);
+          this.syncLocalWorldFromEditor();
+        }
+      }
+      if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
+    });
     window.addEventListener("tq:worldenterscene",e=>{
       if(this.workspace!=="world")return;
       const entity=e.detail?.entity;
