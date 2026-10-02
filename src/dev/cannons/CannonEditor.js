@@ -84,16 +84,25 @@ export class CannonEditor{
     this.preview?.stop?.();
     if(!c){h.innerHTML='<div class="tq-ships__empty">Crie ou restaure um canhão.</div>';return}
     const cadence=(1000/Math.max(100,c.attackCooldownMs)).toFixed(2);
-    h.innerHTML='<section class="tq-ships__panel"><div class="tq-ships__panel-title"><div><strong>Configuração do canhão</strong><small>Autosave ativo · alcance e cadência entram imediatamente no combate DEV.</small></div><button type="button" class="tq-ships__new" data-cannon-trash>🗑 Mover para lixeira</button></div><div class="tq-ships__settings tq-ships__settings--v2">'+
-      '<label><span>Nome</span><input data-c-name value="'+this.e(c.name)+'"></label>'+
-      '<label><span>Asset do canhão</span><div style="display:flex;gap:8px;align-items:center">'+(c.asset?'<img src="'+this.e(c.asset)+'" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:#071521">':'<span style="width:64px;height:64px;display:grid;place-items:center;border:1px dashed #49606f;border-radius:8px">∅</span>')+'<button type="button" class="tq-ships__new" data-c-asset>▦ Escolher asset</button></div><small>'+this.e(c.asset||"Nenhum asset selecionado")+'</small></label>'+
-      '<label><span>Alcance <b data-c-range-out>'+Math.round(c.range)+' px</b></span><input data-c-range type="range" min="100" max="6000" step="25" value="'+c.range+'"></label>'+
-      '<label><span>Velocidade de disparo <b data-c-rate-out>'+cadence+' tiro/s</b></span><input data-c-rate type="range" min="0.2" max="10" step="0.1" value="'+cadence+'"></label>'+
-      '<label><span>Velocidade do projétil <b data-c-projectile-out>'+Math.round(c.projectileSpeed)+' px/s</b></span><input data-c-projectile type="range" min="100" max="3000" step="20" value="'+c.projectileSpeed+'"></label>'+
-      '<label><span>Moeda de compra</span><select data-c-currency><option value="gold" '+(c.shop.currency==="gold"?"selected":"")+'>Ouro</option><option value="rubies" '+(c.shop.currency==="rubies"?"selected":"")+'>Rubis</option></select></label>'+
-      '<label><span>Valor de compra</span><input data-c-price type="number" min="0" max="999999" step="1" value="'+c.shop.price+'"></label>'+
-      '<label class="tq-ships__check"><input data-c-shop type="checkbox" '+(c.acquisition.shop?"checked":"")+'><span>Disponível em Loja</span></label>'+
-      '<label class="tq-ships__check"><input data-c-boss type="checkbox" '+(c.acquisition.shipBossReward?"checked":"")+'><span>Recompensa de destruir navio / boss</span></label>'+
+    h.innerHTML='<section class="tq-ships__panel tq-cannon-editor-card">'+
+      '<div class="tq-ships__panel-title tq-cannon-editor-head"><div><strong>Configuração do canhão</strong><small>Autosave ativo · alterações entram imediatamente no combate DEV.</small></div><button type="button" class="tq-ships__new tq-cannon-trash-action" data-cannon-trash>🗑 Mover para lixeira</button></div>'+
+      '<div class="tq-cannon-grid">'+
+        '<section class="tq-cannon-group tq-cannon-group--identity"><h4>Identidade</h4><div class="tq-cannon-identity">'+
+          '<label class="tq-cannon-field"><span>Nome</span><input data-c-name value="'+this.e(c.name)+'"></label>'+
+          '<div class="tq-cannon-asset"><span>Asset do canhão</span><div class="tq-cannon-asset-row">'+(c.asset?'<img src="'+this.e(c.asset)+'" alt="">':'<span class="tq-cannon-asset-empty">∅</span>')+'<div><button type="button" class="tq-ships__new" data-c-asset>▦ Escolher asset</button><small>'+this.e(c.asset||"Nenhum asset selecionado")+'</small></div></div></div>'+
+        '</div></section>'+
+        '<section class="tq-cannon-group tq-cannon-group--combat"><h4>Combate</h4>'+
+          '<label class="tq-cannon-slider"><span><b>Alcance</b><output data-c-range-out>'+Math.round(c.range)+' px</output></span><input data-c-range type="range" min="100" max="6000" step="25" value="'+c.range+'"></label>'+
+          '<label class="tq-cannon-slider"><span><b>Velocidade de disparo</b><output data-c-rate-out>'+cadence+' tiro/s</output></span><input data-c-rate type="range" min="0.2" max="10" step="0.1" value="'+cadence+'"></label>'+
+          '<label class="tq-cannon-slider"><span><b>Velocidade do projétil</b><output data-c-projectile-out>'+Math.round(c.projectileSpeed)+' px/s</output></span><input data-c-projectile type="range" min="100" max="3000" step="20" value="'+c.projectileSpeed+'"></label>'+
+        '</section>'+
+        '<section class="tq-cannon-group tq-cannon-group--purchase"><h4>Compra e obtenção</h4><div class="tq-cannon-purchase-grid">'+
+          '<label class="tq-cannon-field"><span>Moeda</span><select data-c-currency><option value="gold" '+(c.shop.currency==="gold"?"selected":"")+'>Ouro</option><option value="rubies" '+(c.shop.currency==="rubies"?"selected":"")+'>Rubis</option></select></label>'+
+          '<label class="tq-cannon-field"><span>Valor de compra</span><input data-c-price type="number" min="0" max="999999" step="1" value="'+c.shop.price+'"></label>'+
+        '</div><div class="tq-cannon-acquisition">'+
+          '<label><input data-c-shop type="checkbox" '+(c.acquisition.shop?"checked":"")+'><span><b>Loja</b><small>Disponível para compra no estaleiro.</small></span></label>'+
+          '<label><input data-c-boss type="checkbox" '+(c.acquisition.shipBossReward?"checked":"")+'><span><b>Navio / Boss</b><small>Pode ser concedido como recompensa.</small></span></label>'+
+        '</div></section>'+
       '</div></section><div data-cannon-preview-host></div>';
     const sync=()=>{
       c.name=h.querySelector("[data-c-name]").value.trim()||"Canhão";
