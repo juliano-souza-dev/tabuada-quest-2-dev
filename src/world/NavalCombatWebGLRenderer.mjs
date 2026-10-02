@@ -248,14 +248,21 @@ export class NavalCombatWebGLRenderer{
   }
 
   loadProjectileTexture(id,src){
+    if(!this.init())return null;
     const key=String(id||src||"");
-    if(!key||!src||this.projectileTextures.has(key))return;
-    const entry={texture:null,ready:false};
+    const source=String(src||"");
+    if(!key||!source)return null;
+    const current=this.projectileTextures.get(key);
+    if(current?.src===source)return current;
+    if(current?.texture&&this.gl){
+      try{this.gl.deleteTexture(current.texture)}catch{}
+    }
+    const entry={texture:null,ready:false,failed:false,src:source};
     this.projectileTextures.set(key,entry);
     const image=new Image();
     image.decoding="async";
     image.onload=()=>{
-      if(!this.gl)return;
+      if(!this.gl||this.projectileTextures.get(key)!==entry)return;
       const gl=this.gl,texture=gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D,texture);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
@@ -264,10 +271,31 @@ export class NavalCombatWebGLRenderer{
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);
-      entry.texture=texture;entry.ready=true;
+      entry.texture=texture;entry.ready=true;entry.failed=false;
     };
-    image.onerror=()=>console.warn("[TabuadaQuest] Projectile texture failed:",src);
-    image.src=src;
+    image.onerror=()=>{
+      if(this.projectileTextures.get(key)!==entry)return;
+      entry.failed=true;
+      console.warn("[TabuadaQuest] Projectile texture failed:",source);
+    };
+    image.src=source;
+    return entry;
+  }
+
+  prepareAmmo(ammo){
+    if(!ammo||typeof ammo!=="object")return null;
+    const fx=normalizeAmmoFx(ammo);
+    if(fx.projectile.texture)this.loadProjectileTexture(ammo.id,fx.projectile.texture);
+    return fx;
+  }
+
+  projectileTextureState(ammo){
+    if(!ammo||typeof ammo!=="object")return {src:"",ready:false,failed:false};
+    const fx=normalizeAmmoFx(ammo);
+    const src=String(fx.projectile.texture||"");
+    if(!src)return {src:"",ready:false,failed:false};
+    const entry=this.projectileTextures.get(String(ammo.id||src));
+    return {src,ready:entry?.ready===true,failed:entry?.failed===true};
   }
 
   fire({from,to,duration=620,startTime=performance.now(),onImpact=null,ammo=null,impactKind="ship"}={}){
