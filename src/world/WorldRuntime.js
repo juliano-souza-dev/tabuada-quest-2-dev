@@ -1096,9 +1096,29 @@ export class WorldRuntime {
     };
   }
 
+  playerCannonsInRange(entity){
+    if(!this.isClickableCombatShip(entity))return [];
+    const distance=this.navalTargetDistance(entity);
+    const cannons=(this.testCannonIds?.length?this.testCannonIds:["cannon-basic"])
+      .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
+      .filter(Boolean);
+    if(!cannons.length){
+      return distance<=this.playerNavalCombatStats().attackRange?[{range:this.playerNavalCombatStats().attackRange}]:[];
+    }
+    return cannons.filter(cannon=>distance<=Math.max(1,Number(cannon.range)||900));
+  }
+
+  playerEffectiveCannonRange(){
+    const cannons=(this.testCannonIds?.length?this.testCannonIds:["cannon-basic"])
+      .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
+      .filter(Boolean);
+    return cannons.length
+      ?Math.max(...cannons.map(cannon=>Math.max(1,Number(cannon.range)||900)))
+      :this.playerNavalCombatStats().attackRange;
+  }
+
   isNavalTargetInRange(entity){
-    return this.isClickableCombatShip(entity)
-      &&this.navalTargetDistance(entity)<=this.playerNavalCombatStats().attackRange;
+    return this.playerCannonsInRange(entity).length>0;
   }
 
   stopNavalAutoFire({keepTarget=true,message=""}={}){
@@ -1151,7 +1171,7 @@ export class WorldRuntime {
     if(this.actionMessage){
       this.actionMessage.textContent=this.isNavalTargetInRange(entity)
         ?label+" · casco "+hp.current+"/"+hp.max+" · "+targetDistance+" px"
-        :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.playerNavalCombatStats().attackRange)+" px";
+        :label+" · FORA DE ALCANCE · "+targetDistance+" / "+Math.round(this.playerEffectiveCannonRange())+" px";
     }
     if(this.actionButton){
       this.actionButton.disabled=this.navalPlayerHp<=0;
@@ -3588,7 +3608,7 @@ export class WorldRuntime {
         if(this.actionButton)this.actionButton.disabled=false;
         if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
           ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
-          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(playerStats.attackRange)+" px"+playerHull;
+          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
         if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
           ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
           :"⚔ Atacar";
@@ -3936,9 +3956,12 @@ export class WorldRuntime {
         const playerStats=this.playerNavalCombatStats();
         const dist=this.navalTargetDistance(target);
         const equippedCannons=(this.testCannonIds||[]).map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id))).filter(Boolean);
-        const effectiveRange=equippedCannons.length?Math.max(...equippedCannons.map(cannon=>Math.max(1,Number(cannon.range)||900))):playerStats.attackRange;
-        const effectiveCooldown=equippedCannons.length?Math.min(...equippedCannons.map(cannon=>clamp(Number(cannon.attackCooldownMs)||1200,150,10000))):playerStats.attackCooldownMs;
-        if(dist>effectiveRange){
+        const effectiveRange=this.playerEffectiveCannonRange();
+        const inRangeCannons=this.playerCannonsInRange(target);
+        const effectiveCooldown=inRangeCannons.length
+          ?Math.min(...inRangeCannons.map(cannon=>clamp(Number(cannon.attackCooldownMs)||1200,150,10000)))
+          :(equippedCannons.length?Math.min(...equippedCannons.map(cannon=>clamp(Number(cannon.attackCooldownMs)||1200,150,10000))):playerStats.attackCooldownMs);
+        if(!inRangeCannons.length){
           // Keep the attack armed. Range only pauses the shots. As soon as the
           // target comes back into range, the same target resumes automatically.
           this.navalNextShotAt=0;
