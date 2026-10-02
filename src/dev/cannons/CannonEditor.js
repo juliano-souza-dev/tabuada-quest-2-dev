@@ -2,7 +2,8 @@ const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
 const slug=value=>String(value||"cannon").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"cannon";
 
 export class CannonEditor{
-  constructor(){
+  constructor({requestAsset}={}){
+    this.requestAsset=typeof requestAsset==="function"?requestAsset:null;
     this.catalog={schema:"tq.cannon-catalog",version:2,defaultCannonId:"cannon-basic",cannons:[]};
     this.selectedId=null;this.el=null;
     this.storageKey="tq.dev.cannon-catalog-live:v1";
@@ -26,7 +27,7 @@ export class CannonEditor{
     this.selectedId=this.catalog.cannons[0]?.id||null;this.render();this.emit();
   }
   normalize(raw={}){
-    return {id:String(raw.id||"cannon"),name:String(raw.name||"Novo canhão"),available:raw.available!==false,
+    return {id:String(raw.id||"cannon"),name:String(raw.name||"Novo canhão"),asset:String(raw.asset||""),available:raw.available!==false,
       range:Math.max(100,Number(raw.range)||900),projectileSpeed:Math.max(100,Number(raw.projectileSpeed)||620),
       attackCooldownMs:Math.max(100,Number(raw.attackCooldownMs)||1200),
       shop:{purchasable:raw.shop?.purchasable===true,currency:String(raw.shop?.currency||"gold"),price:Math.max(0,Number(raw.shop?.price)||0)},
@@ -44,7 +45,7 @@ export class CannonEditor{
   create(){
     let base="novo-canhao",id=base,n=2;const used=new Set([...(this.catalog.cannons||[]),...this.trash].map(x=>x.id));
     while(used.has(id))id=base+"-"+n++;
-    const cannon=this.normalize({id,name:"Novo canhão",available:true,range:900,projectileSpeed:620,attackCooldownMs:1200,shop:{purchasable:true,currency:"gold",price:100},acquisition:{shop:true,shipBossReward:false}});
+    const cannon=this.normalize({id,name:"Novo canhão",asset:"",available:true,range:900,projectileSpeed:620,attackCooldownMs:1200,shop:{purchasable:true,currency:"gold",price:100},acquisition:{shop:true,shipBossReward:false}});
     this.catalog.cannons.push(cannon);this.selectedId=id;this.persist();this.render();
   }
   update(patch){
@@ -63,6 +64,7 @@ export class CannonEditor{
     const cannon=this.normalize({...this.trash[i],available:true});delete cannon.trashedAt;
     this.trash.splice(i,1);this.catalog.cannons.push(cannon);this.selectedId=cannon.id;this.persist();this.render();
   }
+  setAsset(asset){const c=this.current();if(!c)return;c.asset=String(asset||"");this.persist();this.renderEditor()}
   setVisible(show){if(this.el)this.el.hidden=!show;if(show)this.render()}
   render(){if(!this.el)return;this.renderList();this.renderTrash();this.renderEditor()}
   renderList(){
@@ -81,6 +83,7 @@ export class CannonEditor{
     const cadence=(1000/Math.max(100,c.attackCooldownMs)).toFixed(2);
     h.innerHTML='<section class="tq-ships__panel"><div class="tq-ships__panel-title"><div><strong>Configuração do canhão</strong><small>Autosave ativo · alcance e cadência entram imediatamente no combate DEV.</small></div><button type="button" class="tq-ships__new" data-cannon-trash>🗑 Mover para lixeira</button></div><div class="tq-ships__settings tq-ships__settings--v2">'+
       '<label><span>Nome</span><input data-c-name value="'+this.e(c.name)+'"></label>'+
+      '<label><span>Asset do canhão</span><div style="display:flex;gap:8px;align-items:center">'+(c.asset?'<img src="'+this.e(c.asset)+'" alt="" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:#071521">':'<span style="width:64px;height:64px;display:grid;place-items:center;border:1px dashed #49606f;border-radius:8px">∅</span>')+'<button type="button" class="tq-ships__new" data-c-asset>▦ Escolher asset</button></div><small>'+this.e(c.asset||"Nenhum asset selecionado")+'</small></label>'+
       '<label><span>Alcance <b data-c-range-out>'+Math.round(c.range)+' px</b></span><input data-c-range type="range" min="100" max="6000" step="25" value="'+c.range+'"></label>'+
       '<label><span>Velocidade de disparo <b data-c-rate-out>'+cadence+' tiro/s</b></span><input data-c-rate type="range" min="0.2" max="10" step="0.1" value="'+cadence+'"></label>'+
       '<label><span>Velocidade do projétil <b data-c-projectile-out>'+Math.round(c.projectileSpeed)+' px/s</b></span><input data-c-projectile type="range" min="100" max="3000" step="20" value="'+c.projectileSpeed+'"></label>'+
@@ -104,6 +107,7 @@ export class CannonEditor{
     };
     h.querySelectorAll("input,select").forEach(x=>x.addEventListener(x.type==="range"?"input":"change",sync));
     h.querySelector("[data-c-name]").addEventListener("input",sync);
+    h.querySelector("[data-c-asset]")?.addEventListener("click",()=>this.requestAsset?.({cannonId:c.id,currentAsset:c.asset}));
     h.querySelector("[data-cannon-trash]").onclick=()=>this.trashCurrent();
   }
   e(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
