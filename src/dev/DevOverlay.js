@@ -19,7 +19,7 @@ export class DevOverlay {
     this.cannonEditor=new CannonEditor({requestAsset:context=>this.openCannonAssetPicker(context)});
     this.cannonCatalog={defaultCannonId:"",cannons:[]};
     this.soundCatalog={sounds:[]};
-    this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
+    this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[],getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
@@ -1150,22 +1150,36 @@ export class DevOverlay {
       const availableShips=(this.shipEditor?.repositoryShips?.()||[])
         .map(ship=>this.shipEditor.normalizeShip(ship));
       const npcProfiles=this.npcEditor?.worldProfiles?.()||[];
-      const npcOptions=selected=>npcProfiles.map(npc=>
-        '<option value="'+this.escapeHtml(npc.id)+'" '+(String(selected||"")===npc.id?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
+      const npcById=new Map(npcProfiles.map(profile=>[String(profile.id),profile]));
+      const shipById=new Map(availableShips.map(ship=>[String(ship.id),ship]));
+      const configuredNpcIds=new Set(npcPopulation.types.map(item=>String(item?.npcId||"")).filter(Boolean));
+      const addableNpcProfiles=npcProfiles.filter(profile=>!configuredNpcIds.has(String(profile.id)));
+      const npcOptions=selected=>'<option value="" disabled '+(!selected?'selected':'')+'>Selecione um perfil NPC</option>'+npcProfiles.map(npc=>
+        '<option value="'+this.escapeHtml(npc.id)+'" '+(String(selected||"")===String(npc.id)?'selected':'')+'>'+this.escapeHtml(npc.name||npc.id)+'</option>'
       ).join("");
-      const npcRows=npcPopulation.types.map((item,index)=>
-        '<div class="tq-world-npc-row" data-npc-row="'+index+'">'+
-          '<label class="tq-world-field"><span>NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(item.npcId||item.shipId)+'</select></label>'+
-          '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="0" max="50" value="'+Math.max(0,Number(item.count)||0)+'"></label>'+
-          '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
-          '<label class="tq-world-field"><span>DEV congelado</span><select data-npc-type-frozen="'+index+'"><option value="false" '+(item.devFrozen===true?'':'selected')+'>Não</option><option value="true" '+(item.devFrozen===true?'selected':'')+'>Sim</option></select></label>'+
-          '<label class="tq-world-field"><span>Moedas</span><input data-npc-reward-coins="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.coins)||0)+'"></label>'+
-          '<label class="tq-world-field"><span>XP</span><input data-npc-reward-xp="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.xp)||0)+'"></label>'+
-          '<label class="tq-world-field"><span>Item recompensa</span><input data-npc-reward-item="'+index+'" value="'+this.escapeHtml(item.rewards?.itemId||'')+'"></label>'+
-          '<label class="tq-world-field"><span>Quantidade item</span><input data-npc-reward-quantity="'+index+'" type="number" min="1" value="'+Math.max(1,Number(item.rewards?.quantity)||1)+'"></label>'+
-          '<button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'" aria-label="Remover NPC">×</button>'+
-        '</div>'
-      ).join("");
+      const npcRows=npcPopulation.types.map((item,index)=>{
+        const npcId=String(item?.npcId||"");
+        const profile=npcById.get(npcId)||null;
+        const shipId=String(profile?.shipId||item?.shipId||"");
+        const ship=shipById.get(shipId)||null;
+        const valid=Boolean(profile&&ship);
+        return '<article class="tq-world-npc-card '+(valid?'is-valid':'is-invalid')+'" data-npc-row="'+index+'">'+
+          '<div class="tq-world-npc-card__head"><div><strong>'+(profile?this.escapeHtml(profile.name||profile.id):'Perfil NPC inválido')+'</strong><small>'+(ship?'🚢 '+this.escapeHtml(ship.name||ship.id):'⚠ Sem navio válido associado')+'</small></div><button type="button" class="tq-world-npc-remove" data-npc-type-remove="'+index+'">Remover do mapa</button></div>'+
+          '<div class="tq-world-npc-card__grid">'+
+            '<label class="tq-world-field tq-world-npc-card__profile"><span>Perfil NPC</span><select data-npc-type-id="'+index+'">'+npcOptions(npcId)+'</select></label>'+
+            '<label class="tq-world-field"><span>Quantidade</span><input data-npc-type-count="'+index+'" type="number" min="1" max="50" value="'+Math.max(1,Number(item.count)||1)+'"></label>'+
+            '<label class="tq-world-field"><span>Respawn</span><select data-npc-type-respawn="'+index+'"><option value="false" '+(item.respawn===true?'':'selected')+'>Não</option><option value="true" '+(item.respawn===true?'selected':'')+'>Sim</option></select></label>'+
+            '<label class="tq-world-field"><span>Congelar no DEV</span><select data-npc-type-frozen="'+index+'"><option value="false" '+(item.devFrozen===true?'':'selected')+'>Não</option><option value="true" '+(item.devFrozen===true?'selected':'')+'>Sim</option></select></label>'+
+            '<label class="tq-world-field"><span>Moedas</span><input data-npc-reward-coins="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.coins)||0)+'"></label>'+
+            '<label class="tq-world-field"><span>XP</span><input data-npc-reward-xp="'+index+'" type="number" min="0" value="'+Math.max(0,Number(item.rewards?.xp)||0)+'"></label>'+
+            '<label class="tq-world-field"><span>Item recompensa</span><input data-npc-reward-item="'+index+'" value="'+this.escapeHtml(item.rewards?.itemId||'')+'"></label>'+
+            '<label class="tq-world-field"><span>Qtd. item</span><input data-npc-reward-quantity="'+index+'" type="number" min="1" value="'+Math.max(1,Number(item.rewards?.quantity)||1)+'"></label>'+
+          '</div>'+
+        '</article>';
+      }).join("");
+      const npcEmptyState=npcProfiles.length
+        ?'<div class="tq-world-npc-empty"><strong>Nenhum NPC neste mapa.</strong><small>Use “Adicionar NPC ao mapa”. O navio e os atributos vêm do perfil NPC.</small></div>'
+        :'<div class="tq-world-npc-empty is-warning"><strong>Nenhum NPC está pronto para o mapa.</strong><small>Abra o editor NPC e associe um navio a pelo menos um perfil. Qualquer navio disponível pode ser usado por um NPC.</small></div>';
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
       const spriteSrc=String(sprite.src||"");
@@ -1272,9 +1286,9 @@ export class DevOverlay {
               '<label class="tq-world-field"><span>Distância mínima</span><input data-npc-spread-distance type="number" min="0" max="1800" value="'+Math.max(0,Number(npcPopulation.spread.minDistance)||0)+'"></label>'+
               '<label class="tq-world-field"><span>Velocidade dos NPCs</span><input data-npc-movement-speed type="number" min="0" max="1200" value="'+Math.max(0,Number(npcPopulation.movement.speed)||0)+'"></label>'+
             '</div>'+
-            '<div class="tq-world-npc-types">'+(npcRows||'<div class="tq-world-editor-note">Nenhum tipo de NPC configurado.</div>')+'</div>'+
-            '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(npcProfiles.length?'':'disabled')+'>＋ Adicionar tipo</button><button type="button" data-npc-redistribute>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
-            '<small class="tq-world-editor-note">NPCs usam o modelo visual e os atributos de combate do catálogo, mas velocidade e vida são configuradas nesta região. O navio do jogador usa os atributos globais do catálogo.</small>'+
+            '<div class="tq-world-npc-types">'+(npcRows||npcEmptyState)+'</div>'+
+            '<div class="tq-world-npc-actions"><button type="button" data-npc-type-add '+(addableNpcProfiles.length?'':'disabled')+'>＋ Adicionar NPC ao mapa</button><button type="button" data-npc-redistribute '+(npcPopulation.types.length?'':'disabled')+'>⟳ Redistribuir</button><small>Seed '+Math.max(1,Number(npcPopulation.seed)||1)+'</small></div>'+
+            '<small class="tq-world-editor-note">O perfil NPC define navio, vida, velocidade, aceleração, comportamento e atitude. Esta região controla apenas quantidade, distribuição, respawn e recompensas.</small>'+
           '</div></section>'+
           '<section class="tq-config-area tq-config-area--treasure-map">'+
             '<label class="tq-field tq-field--check"><span>Tesouros ativos nesta região</span><input data-treasure-enabled type="checkbox" '+(treasurePopulation.enabled===true?'checked':'')+'></label>'+
@@ -1434,13 +1448,21 @@ export class DevOverlay {
         saveNpcPopulation(next);
       });
       content.querySelector("[data-npc-type-add]")?.addEventListener("click",()=>{
-        const firstNpc=this.npcEditor?.all?.()?.[0];
-        if(!firstNpc)return;
-        const next=currentNpcPopulation();
-        next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({npcId:firstNpc.id,shipId:String(firstNpc.shipId||""),count:1,respawn:false,rewards:{coins:0,xp:0,itemId:"",quantity:1}});
-        next.enabled=true;
-        saveNpcPopulation(next);
+        const current=currentNpcPopulation();
+        current.types=Array.isArray(current.types)?current.types:[];
+        const used=new Set(current.types.map(item=>String(item?.npcId||"")).filter(Boolean));
+        const profile=(this.npcEditor?.worldProfiles?.()||[]).find(item=>!used.has(String(item.id)));
+        if(!profile)return;
+        current.types.push({
+          npcId:String(profile.id),
+          shipId:String(profile.shipId),
+          count:1,
+          respawn:false,
+          devFrozen:false,
+          rewards:{coins:0,xp:0,itemId:"",quantity:1}
+        });
+        current.enabled=true;
+        saveNpcPopulation(current);
       });
       content.querySelector("[data-npc-redistribute]")?.addEventListener("click",()=>{
         const next=currentNpcPopulation();
@@ -1451,16 +1473,22 @@ export class DevOverlay {
         const index=Number(button.dataset.npcTypeRemove);
         const next=currentNpcPopulation();
         next.types=(Array.isArray(next.types)?next.types:[]).filter((_,i)=>i!==index);
+        if(!next.types.length)next.enabled=false;
         saveNpcPopulation(next);
       }));
       const updateNpcType=(index,patch)=>{
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
+        if(index<0||index>=next.types.length)return;
         next.types[index]={...(next.types[index]||{}),...patch};
         saveNpcPopulation(next);
       };
-      content.querySelectorAll("[data-npc-type-id]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeId),{npcId:input.value,shipId:String(this.npcEditor?.resolve?.(input.value)?.shipId||"")})));
-      content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
+      content.querySelectorAll("[data-npc-type-id]").forEach(input=>input.addEventListener("change",()=>{
+        const profile=this.npcEditor?.resolveForWorld?.(input.value)||null;
+        if(!profile){this.renderWorldInspector();return}
+        updateNpcType(Number(input.dataset.npcTypeId),{npcId:String(profile.id),shipId:String(profile.shipId)});
+      }));
+      content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(1,Math.min(50,Number(input.value)||1))})));
       content.querySelectorAll("[data-npc-reward-coins]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardCoins),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),coins:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-xp]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardXp),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),xp:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
