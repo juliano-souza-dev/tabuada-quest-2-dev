@@ -37,7 +37,7 @@ export class DevOverlay {
         <button data-mode="edit" class="active">✥ <span>Editar</span></button>
         <button data-mode="config">⚙ <span>Config</span></button>
         <button data-mode="play">▶ <span>Play</span></button>
-        <button data-export>⇩ <span>JSON</span></button>
+        <button data-export title="Exportar configuração global completa">⇩ <span>JSON Global</span></button>
         <button data-mold>▣ <span>Molde</span></button>
         <button data-scenes>☷ <span>Cenas</span></button>
         <button data-worlds>🗺️ <span>Regiões</span></button>
@@ -110,7 +110,7 @@ export class DevOverlay {
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
-    this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportScene());
+    this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
     this.el.querySelector("[data-scenes]").addEventListener("click",()=>this.toggleScenes(this.el.querySelector(".tq-dev__scenes").hidden));
     this.el.querySelector("[data-scenes-close]").addEventListener("click",()=>this.toggleScenes(false));
@@ -2846,6 +2846,262 @@ export class DevOverlay {
     this.el.querySelector("[data-mold]").classList.toggle("active",!this.mold.hidden);
     if(!this.mold.hidden)this.positionMold();
   }
+  snapshotCurrentScene(){
+    const scene=structuredClone(this.runtime?.scene||{});
+    scene.reference={...(this.runtime?.reference||scene.reference||{})};
+    scene.root=scene.root||{id:"viewport",kind:"viewport",canonical:true};
+    if(this.runtime?.nodes instanceof Map){
+      scene.nodes=[...this.runtime.nodes.values()].map(({node})=>structuredClone(node));
+    }else if(!Array.isArray(scene.nodes)){
+      scene.nodes=[];
+    }
+    scene.meta={...(scene.meta||{}),exportedFrom:"tabuada-quest-dev",schema:"tq.scene",version:1};
+    return scene;
+  }
+
+  async fetchGlobalJson(path,fallback=null){
+    try{
+      const response=await fetch(String(path||""),{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      return await response.json();
+    }catch(error){
+      console.warn("[TabuadaQuest] Global export source failed",path,error);
+      return fallback===null?null:structuredClone(fallback);
+    }
+  }
+
+  globalConfigSafeEntry(entry){
+    if(!entry||typeof entry!=="object")return entry;
+    const clean=structuredClone(entry);
+    delete clean.local;
+    return clean;
+  }
+
+  async globalSceneDocument(entry){
+    if(!entry?.id)return null;
+    if(this.runtime?.scene?.id===entry.id&&this.workspace!=="world"){
+      return this.snapshotCurrentScene();
+    }
+    return this.sceneDocument(entry);
+  }
+
+  async buildGlobalConfig(){
+    await Promise.allSettled([
+      this.shipEditorReady,
+      this.ammoEditorReady,
+      this.npcEditorReady,
+      this.treasureEditorReady,
+      this.cannonCatalogReady,
+      this.sceneCatalogReady,
+      this.worldCatalogReady,
+      this.actionCatalogReady
+    ].filter(Boolean));
+
+    this.syncLocalWorldFromEditor?.();
+
+    const manifest=await this.fetchGlobalJson("./src/config/game.manifest.json",{
+      schema:"tq.game-manifest",version:1,catalogs:{}
+    });
+    const manifestCatalogs=manifest?.catalogs&&typeof manifest.catalogs==="object"?manifest.catalogs:{};
+    const sourcePaths={
+      gameManifest:"./src/config/game.manifest.json",
+      firebasePublic:"./src/config/firebase-public.json",
+      ...manifestCatalogs
+    };
+    const repository={};
+    await Promise.all(Object.entries(sourcePaths).map(async([key,path])=>{
+      repository[key]=await this.fetchGlobalJson(path,null);
+    }));
+
+    const sceneEntries=this.allSceneEntries().map(entry=>this.globalConfigSafeEntry(entry));
+    const worldEntries=this.allWorldEntries().map(entry=>this.globalConfigSafeEntry(entry));
+
+    const sceneDocuments=(await Promise.all(sceneEntries.map(async entry=>({
+      id:String(entry.id||""),
+      entry:structuredClone(entry),
+      scene:await this.globalSceneDocument(entry)
+    })))).filter(item=>item.id&&item.scene);
+
+    const worldDocuments=(await Promise.all(worldEntries.map(async entry=>({
+      id:String(entry.id||""),
+      entry:structuredClone(entry),
+      world:await this.worldDocument(entry)
+    })))).filter(item=>item.id&&item.world);
+
+    const shipCatalog={
+      ...(repository.ships||this.shipEditor?.catalog||{schema:"tq.ship-catalog",version:2}),
+      ships:(this.shipEditor?.allShips?.()||[]).map(ship=>this.shipEditor.normalizeShip(ship))
+    };
+    const npcCatalog={
+      ...(repository.npcs||this.npcEditor?.catalog||{schema:"tq.npc-catalog",version:1}),
+      npcs:(this.npcEditor?.all?.()||[]).map(item=>structuredClone(item))
+    };
+    const ammoCatalog={
+      ...(repository.ammo||this.ammoEditor?.catalog||{schema:"tq.ammo-catalog",version:1}),
+      ammo:(this.ammoEditor?.all?.()||[]).map(item=>structuredClone(item))
+    };
+    const treasureCatalog={
+      ...(repository.treasures||this.treasureEditor?.catalog||{schema:"tq.treasure-catalog",version:1}),
+      treasures:(this.treasureEditor?.all?.()||[]).map(item=>structuredClone(item))
+    };
+    const cannonCatalog=structuredClone(this.cannonCatalog||repository.cannons||{schema:"tq.cannon-catalog",version:1,cannons:[]});
+    const sceneCatalog={
+      ...(repository.scenes||this.sceneCatalog||{schema:"tq.scene-catalog",version:1}),
+      scenes:sceneEntries.map(entry=>structuredClone(entry))
+    };
+    const worldCatalog={
+      ...(repository.worlds||this.worldCatalog||{schema:"tq.world-catalog",version:1}),
+      worlds:worldEntries.map(entry=>structuredClone(entry))
+    };
+    const assetBundle={
+      schema:"tq.asset-bundle",
+      version:1,
+      root:structuredClone(this.assetTree||repository.assets?.root||null),
+      assets:structuredClone(this.assetCatalog||repository.assets?.assets||repository.assetCatalog?.assets||[])
+    };
+
+    const islandAsset=(asset)=>{
+      const path=String(asset?.path||"").toLowerCase();
+      return /(^|\/)(islands?|ilhas?)(\/|$)/.test(path)
+        ||/(^|[\/_-])(ilha|island)([\/_-]|\.)/.test(path);
+    };
+    const collectibleAsset=(asset)=>{
+      const path=String(asset?.path||"").toLowerCase();
+      const category=String(asset?.category||"").toLowerCase();
+      return category==="collectibles"||path.includes("/collectibles/");
+    };
+    const crewAsset=(asset)=>String(asset?.path||"").toLowerCase().startsWith("assets/crew/");
+    const islands={
+      assets:assetBundle.assets.filter(islandAsset).map(asset=>structuredClone(asset)),
+      entities:[]
+    };
+    for(const document of worldDocuments){
+      for(const entity of Array.isArray(document.world?.entities)?document.world.entities:[]){
+        const src=String(entity?.src||entity?.asset||"").toLowerCase();
+        const island=String(entity?.type||"")==="island"
+          ||String(entity?.effect?.category||"")==="island"
+          ||src.includes("/islands/")
+          ||/(^|[\/_-])(ilha|island)([\/_-]|\.)/.test(src);
+        if(!island)continue;
+        islands.entities.push({
+          worldId:document.id,
+          id:String(entity?.id||""),
+          label:String(entity?.label||entity?.name||entity?.id||"Ilha"),
+          src:String(entity?.src||entity?.asset||""),
+          x:Number(entity?.x)||0,
+          y:Number(entity?.y)||0,
+          width:Number(entity?.width)||0,
+          height:Number(entity?.height)||0
+        });
+      }
+    }
+
+    const items={
+      treasures:treasureCatalog.treasures.map(item=>structuredClone(item)),
+      ammunition:ammoCatalog.ammo.map(item=>structuredClone(item)),
+      cannons:(cannonCatalog.cannons||[]).map(item=>structuredClone(item)),
+      collectibles:assetBundle.assets.filter(collectibleAsset).map(asset=>structuredClone(asset)),
+      crewAssets:assetBundle.assets.filter(crewAsset).map(asset=>structuredClone(asset))
+    };
+
+    const exportedAt=new Date().toISOString();
+    return {
+      schema:"tq.global-config",
+      version:1,
+      gameId:String(manifest?.id||"tabuada-quest"),
+      exportedAt,
+      exportedFrom:"tabuada-quest-dev",
+      description:"Snapshot global completo. repository preserva os JSON versionados; effective contém o estado efetivo incluindo rascunhos e conteúdo local do DEV.",
+      manifest:structuredClone(manifest),
+      repository,
+      effective:{
+        catalogs:{
+          actions:structuredClone(this.actionCatalog||repository.actions||{schema:"tq.action-catalog",version:1,actions:[]}),
+          assets:assetBundle,
+          compositionTypes:structuredClone(this.compositionTypes||repository.compositionTypes||null),
+          runtimePolicy:structuredClone(repository.runtimePolicy||null),
+          pedagogy:structuredClone(repository.pedagogy||null),
+          ships:shipCatalog,
+          npcs:npcCatalog,
+          treasures:treasureCatalog,
+          ammo:ammoCatalog,
+          cannons:cannonCatalog,
+          scenes:sceneCatalog,
+          worlds:worldCatalog
+        },
+        documents:{
+          scenes:sceneDocuments,
+          worlds:worldDocuments
+        },
+        indexes:{
+          islands,
+          items
+        }
+      },
+      authoring:{
+        drafts:{
+          ships:structuredClone(this.shipEditor?.drafts||[]),
+          npcs:structuredClone(this.npcEditor?.drafts||[]),
+          treasures:structuredClone(this.treasureEditor?.drafts||[]),
+          ammo:structuredClone(this.ammoEditor?.drafts||[])
+        },
+        deletedCatalogIds:{
+          ships:[...(this.shipEditor?.deletedCatalogIds||new Set())]
+        },
+        local:{
+          scenes:structuredClone(this.localScenes||[]),
+          worlds:structuredClone(this.localWorlds||[])
+        }
+      },
+      counts:{
+        ships:shipCatalog.ships.length,
+        npcs:npcCatalog.npcs.length,
+        treasures:treasureCatalog.treasures.length,
+        ammunition:ammoCatalog.ammo.length,
+        cannons:Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons.length:0,
+        scenes:sceneDocuments.length,
+        worlds:worldDocuments.length,
+        assets:assetBundle.assets.length,
+        islands:Math.max(islands.assets.length,islands.entities.length),
+        islandAssets:islands.assets.length,
+        islandEntities:islands.entities.length,
+        collectibles:items.collectibles.length,
+        crewAssets:items.crewAssets.length
+      }
+    };
+  }
+
+  async exportGlobalConfig(){
+    const button=this.el?.querySelector("[data-export]");
+    const label=button?.querySelector("span");
+    const previous=label?.textContent||"JSON Global";
+    if(button)button.disabled=true;
+    if(label)label.textContent="Gerando…";
+    try{
+      const output=await this.buildGlobalConfig();
+      const json=JSON.stringify(output,null,2);
+      const blob=new Blob([json],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z").replace("T","-");
+      a.href=url;
+      a.download="tabuada-quest-global-"+stamp+".json";
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),0);
+      console.info("[TabuadaQuest] Global config exported",output.counts);
+      return output;
+    }catch(error){
+      console.error("[TabuadaQuest] Global config export failed",error);
+      alert("Falha ao gerar o JSON global. Veja o console para detalhes.");
+      return null;
+    }finally{
+      if(button)button.disabled=false;
+      if(label)label.textContent=previous;
+    }
+  }
+
   exportScene(){
     if(this.workspace==="world"&&this.worldEditor?.active){this.worldEditor.exportWorld();return;}
     const scene=structuredClone(this.runtime.scene||{});
