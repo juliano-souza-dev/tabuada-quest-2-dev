@@ -26,7 +26,7 @@ export class AmmoEditor{
 
   async load(){
     try{
-      const r=await fetch("./src/config/ammo-catalog.json?v=20261002-2052",{cache:"no-store"});
+      const r=await fetch("./src/config/ammo-catalog.json?v=20261002-2118",{cache:"no-store"});
       if(r.ok)this.catalog=await r.json();
     }catch(e){console.warn("Ammo catalog load failed",e)}
     try{
