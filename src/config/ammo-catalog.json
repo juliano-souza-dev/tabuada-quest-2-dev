@@ -10,7 +10,6 @@
       "damage": 10,
       "projectileSpeed": 720,
       "size": 1,
-      "cooldownMs": 900,
       "effects": {
         "projectile": "standard",
         "impact": "standard",
@@ -19,6 +18,28 @@
       "shop": {
         "purchasable": true,
         "price": 1
+      }
+    },
+    {
+      "id": "cannonball-halloween-purple",
+      "name": "Bola de Canhão Halloween Roxa",
+      "available": true,
+      "damage": 10,
+      "projectileSpeed": 720,
+      "size": 1,
+      "effects": {
+        "projectile": "halloween-purple-webgl",
+        "impact": "halloween-purple-webgl",
+        "waterSplash": "halloween-purple-webgl",
+        "texture": "./assets/cannons/bola_canhao_halloween_roxa.webp",
+        "renderer": "webgl2"
+      },
+      "test": {
+        "unlimited": true
+      },
+      "shop": {
+        "purchasable": false,
+        "price": 0
       }
     }
   ]
