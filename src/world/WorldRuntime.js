@@ -7,7 +7,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-0927";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-0944";
 import {
   normalizeCollision,
   inferCollisionAction,
