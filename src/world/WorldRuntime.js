@@ -584,6 +584,17 @@ export class WorldRuntime {
         el.append(canvas);
       }
 
+      if(String(entity.type||"")==="island"){
+        const waterShadow=document.createElement("span");
+        waterShadow.className="tq-world-island-water tq-world-island-water--shadow";
+        waterShadow.setAttribute("aria-hidden","true");
+        el.append(waterShadow);
+        const shoreFoam=document.createElement("span");
+        shoreFoam.className="tq-world-island-water tq-world-island-water--foam";
+        shoreFoam.setAttribute("aria-hidden","true");
+        el.append(shoreFoam);
+      }
+
       const collider=document.createElement("span");
       collider.className="tq-world-entity__collider";
       collider.setAttribute("aria-hidden","true");
@@ -616,6 +627,23 @@ export class WorldRuntime {
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
     const img=el.querySelector("img");
     if(img&&img.getAttribute("src")!==String(entity.src||""))img.src=entity.src||"";
+    if(String(entity.type||"")==="island"){
+      const raw=entity.waterIntegration&&typeof entity.waterIntegration==="object"?entity.waterIntegration:{};
+      const active=raw.active!==false;
+      const immersion=clamp(Number(raw.immersion??.18),0,.55);
+      const foam=clamp(Number(raw.foam??.65),0,1);
+      const foamWidth=clamp(Number(raw.foamWidth??.12),.02,.35);
+      const wetness=clamp(Number(raw.wetness??.5),0,1);
+      const shadow=clamp(Number(raw.submergedShadow??.42),0,1);
+      el.classList.toggle("has-water-integration",active);
+      el.style.setProperty("--island-immersion",String(immersion));
+      el.style.setProperty("--island-foam",String(foam));
+      el.style.setProperty("--island-foam-width",String(foamWidth));
+      el.style.setProperty("--island-wetness",String(wetness));
+      el.style.setProperty("--island-submerged-shadow",String(shadow));
+    }else{
+      el.classList.remove("has-water-integration");
+    }
     this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
   }
