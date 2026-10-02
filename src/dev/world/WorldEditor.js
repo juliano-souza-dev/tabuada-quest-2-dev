@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-2351";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261001-2354";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip}={}){
