@@ -1,0 +1,444 @@
+{
+  "schema": "tq.progression-balance",
+  "version": 1,
+  "rules": {
+    "regionSpendRatio": 0.7,
+    "majorUpgradeRatio": 0.4,
+    "equipmentRequiresUnlock": true,
+    "maxPlayerHp": 1000,
+    "missionRewardWeights": [
+      0.12,
+      0.15,
+      0.18,
+      0.22,
+      0.33
+    ]
+  },
+  "regions": [
+    {
+      "id": "R1",
+      "index": 1,
+      "name": "Enseada dos Aprendizes",
+      "economy": {
+        "expectedGold": 800,
+        "spendTarget": 560,
+        "majorUpgradeTarget": 320,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 50,
+        "expectedDamagePerShot": 10,
+        "commonNpcHp": {
+          "min": 30,
+          "max": 50
+        },
+        "targetHitsCommon": 4
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          5,
+          10
+        ],
+        "adaptiveReview": false,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R2",
+      "index": 2,
+      "name": "Costa dos Corsários",
+      "economy": {
+        "expectedGold": 1020,
+        "spendTarget": 714,
+        "majorUpgradeTarget": 408,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 70,
+        "expectedDamagePerShot": 12,
+        "commonNpcHp": {
+          "min": 45,
+          "max": 65
+        },
+        "targetHitsCommon": 4
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          3,
+          5,
+          10
+        ],
+        "adaptiveReview": false,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R3",
+      "index": 3,
+      "name": "Arquipélago das Pérolas",
+      "economy": {
+        "expectedGold": 1310,
+        "spendTarget": 917,
+        "majorUpgradeTarget": 524,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 90,
+        "expectedDamagePerShot": 15,
+        "commonNpcHp": {
+          "min": 60,
+          "max": 85
+        },
+        "targetHitsCommon": 4
+      },
+      "pedagogy": {
+        "families": [
+          3,
+          4
+        ],
+        "adaptiveReview": false,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R4",
+      "index": 4,
+      "name": "Mar das Correntes",
+      "economy": {
+        "expectedGold": 1680,
+        "spendTarget": 1176,
+        "majorUpgradeTarget": 672,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 120,
+        "expectedDamagePerShot": 18,
+        "commonNpcHp": {
+          "min": 80,
+          "max": 110
+        },
+        "targetHitsCommon": 5
+      },
+      "pedagogy": {
+        "families": [
+          3,
+          4,
+          6
+        ],
+        "adaptiveReview": false,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R5",
+      "index": 5,
+      "name": "Costa dos Naufrágios",
+      "economy": {
+        "expectedGold": 2150,
+        "spendTarget": 1505,
+        "majorUpgradeTarget": 860,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 150,
+        "expectedDamagePerShot": 22,
+        "commonNpcHp": {
+          "min": 100,
+          "max": 140
+        },
+        "targetHitsCommon": 5
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          10
+        ],
+        "adaptiveReview": false,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R6",
+      "index": 6,
+      "name": "Águas Vulcânicas",
+      "economy": {
+        "expectedGold": 2750,
+        "spendTarget": 1925,
+        "majorUpgradeTarget": 1100,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 200,
+        "expectedDamagePerShot": 27,
+        "commonNpcHp": {
+          "min": 130,
+          "max": 180
+        },
+        "targetHitsCommon": 5
+      },
+      "pedagogy": {
+        "families": [
+          6,
+          7
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R7",
+      "index": 7,
+      "name": "Mar dos Navegadores",
+      "economy": {
+        "expectedGold": 3520,
+        "spendTarget": 2464,
+        "majorUpgradeTarget": 1408,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 260,
+        "expectedDamagePerShot": 33,
+        "commonNpcHp": {
+          "min": 170,
+          "max": 230
+        },
+        "targetHitsCommon": 6
+      },
+      "pedagogy": {
+        "families": [
+          7,
+          8
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R8",
+      "index": 8,
+      "name": "Costa das Joias",
+      "economy": {
+        "expectedGold": 4510,
+        "spendTarget": 3157,
+        "majorUpgradeTarget": 1804,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 330,
+        "expectedDamagePerShot": 40,
+        "commonNpcHp": {
+          "min": 210,
+          "max": 290
+        },
+        "targetHitsCommon": 6
+      },
+      "pedagogy": {
+        "families": [
+          8
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R9",
+      "index": 9,
+      "name": "Mar das Tempestades",
+      "economy": {
+        "expectedGold": 5770,
+        "spendTarget": 4039,
+        "majorUpgradeTarget": 2308,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 420,
+        "expectedDamagePerShot": 48,
+        "commonNpcHp": {
+          "min": 270,
+          "max": 360
+        },
+        "targetHitsCommon": 6
+      },
+      "pedagogy": {
+        "families": [
+          7,
+          8,
+          9
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.75
+      }
+    },
+    {
+      "id": "R10",
+      "index": 10,
+      "name": "Domínio dos Piratas",
+      "economy": {
+        "expectedGold": 7390,
+        "spendTarget": 5173,
+        "majorUpgradeTarget": 2956,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 540,
+        "expectedDamagePerShot": 58,
+        "commonNpcHp": {
+          "min": 340,
+          "max": 450
+        },
+        "targetHitsCommon": 7
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.8
+      }
+    },
+    {
+      "id": "R11",
+      "index": 11,
+      "name": "Águas da Coroa Pirata",
+      "economy": {
+        "expectedGold": 9460,
+        "spendTarget": 6622,
+        "majorUpgradeTarget": 3784,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 700,
+        "expectedDamagePerShot": 70,
+        "commonNpcHp": {
+          "min": 420,
+          "max": 560
+        },
+        "targetHitsCommon": 7
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.8
+      }
+    },
+    {
+      "id": "R12",
+      "index": 12,
+      "name": "Reino do Rei Pirata",
+      "economy": {
+        "expectedGold": 12100,
+        "spendTarget": 8470,
+        "majorUpgradeTarget": 4840,
+        "incomeMix": {
+          "missions": 0.35,
+          "treasures": 0.3,
+          "combat": 0.25,
+          "exploration": 0.1
+        }
+      },
+      "combat": {
+        "expectedPlayerHp": 900,
+        "expectedDamagePerShot": 85,
+        "commonNpcHp": {
+          "min": 520,
+          "max": 700
+        },
+        "targetHitsCommon": 7
+      },
+      "pedagogy": {
+        "families": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "adaptiveReview": true,
+        "masteryGate": 0.8
+      }
+    }
+  ]
+}

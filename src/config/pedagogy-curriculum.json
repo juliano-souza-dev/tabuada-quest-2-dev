@@ -1,31 +1,162 @@
 {
   "schema": "tq.pedagogy-curriculum",
-  "version": 1,
-  "id": "multiplication-core-v1",
+  "version": 2,
+  "id": "multiplication-campaign-v2",
   "operation": "multiplication",
   "factors": {
     "min": 1,
     "max": 10
   },
-  "factsTotal": 100,
-  "exposuresPerFact": 4,
-  "plannedPresentations": 400,
-  "regions": 10,
-  "islandsPerRegion": 5,
-  "challengesPerIsland": 8,
-  "presentationsPerRegion": 40,
-  "presentationsPerIsland": 8,
-  "distribution": {
-    "type": "four-passes",
-    "factOrder": "row-major",
-    "description": "Cada passagem percorre os 100 fatos de 1×1 a 10×10. As quatro passagens formam 400 apresentações distribuídas sequencialmente por 10 regiões."
+  "regions": 12,
+  "progressionMode": "region-families-adaptive",
+  "mastery": {
+    "regionalGateDefault": 0.75,
+    "advancedGate": 0.8
   },
+  "regionsConfig": [
+    {
+      "region": 1,
+      "families": [
+        2,
+        5,
+        10
+      ],
+      "adaptiveReview": false,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 2,
+      "families": [
+        2,
+        3,
+        5,
+        10
+      ],
+      "adaptiveReview": false,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 3,
+      "families": [
+        3,
+        4
+      ],
+      "adaptiveReview": false,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 4,
+      "families": [
+        3,
+        4,
+        6
+      ],
+      "adaptiveReview": false,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 5,
+      "families": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        10
+      ],
+      "adaptiveReview": false,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 6,
+      "families": [
+        6,
+        7
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 7,
+      "families": [
+        7,
+        8
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 8,
+      "families": [
+        8
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 9,
+      "families": [
+        7,
+        8,
+        9
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.75
+    },
+    {
+      "region": 10,
+      "families": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.8
+    },
+    {
+      "region": 11,
+      "families": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.8
+    },
+    {
+      "region": 12,
+      "families": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "adaptiveReview": true,
+      "masteryGate": 0.8
+    }
+  ],
   "bonusChallenges": {
     "treasureChest": {
       "enabled": true,
       "countTowardPlannedPresentations": false,
-      "source": "current-region-planned-facts",
-      "description": "Baús acrescentam exposições extras usando apenas fatos já pertencentes à região pedagógica atual."
+      "source": "current-region-families"
     }
   }
 }
