@@ -839,6 +839,8 @@ export class ShipEditor{
           </div>
         </section>
 
+        ${ship.spriteMode==="combined"?this.combinedActionCombatHtml(ship):""}
+
         <section class="tq-ships__panel tq-ships__sprite-panel">
           <div class="tq-ships__panel-title"><div><strong>Sprite de navegação</strong><small>${ship.spriteMode==="combined"?"Atlas único de 16 direções. Combate usa efeitos dinâmicos.":"Atlas exclusivo para as 16 direções."}</small></div><button type="button" data-nav-sprite-pick>▦ ${ship.spriteMode==="combined"?"Escolher atlas 16-dir":"Escolher sprite"}</button></div>
           <div class="tq-ships__sprite-meta">
@@ -873,8 +875,7 @@ export class ShipEditor{
             <label><span>Posição inicial</span><select data-nav-initial>${keys.map(key=>'<option value="'+key+'" '+(sprite.initialDirection===key?'selected':'')+'>'+info[key][1]+'</option>').join("")}</select></label>
           </div>
           <small class="tq-world-editor-note">Clique em uma direção para configurá-la. Cada direção aponta para uma célula do mesmo spritesheet. ${ship.autoFrame!==false?"Grade calculada automaticamente em células de "+ship.cellSize+"×"+ship.cellSize+".":"Grade manual ativa."}</small>
-        </section>
-        ${ship.spriteMode==="combined"?this.combinedActionCombatHtml(ship):""}`;
+        </section>`;
 
       this.bindAtlasControls(content);
       const updateNav=patch=>this.updateShip({navigation:{...ship.navigation,...patch}});
