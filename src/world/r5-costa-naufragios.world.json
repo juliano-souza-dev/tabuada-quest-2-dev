@@ -1,0 +1,527 @@
+{
+  "schema": "tq.world",
+  "version": 1,
+  "id": "r5-costa-naufragios",
+  "name": "Costa dos Naufrágios",
+  "type": "ocean",
+  "width": 8000,
+  "height": 8000,
+  "playerSpawn": {
+    "x": 4000,
+    "y": 7580,
+    "direction": "n"
+  },
+  "player": {
+    "x": 4000,
+    "y": 7580,
+    "direction": "n",
+    "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
+    "shipId": "pirate-halloween",
+    "spriteMode": "combined",
+    "shipName": "Navio Pirata Halloween",
+    "name": "Navio Pirata Halloween",
+    "role": "player",
+    "sprite": {
+      "src": "./assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp",
+      "columns": 4,
+      "rows": 4,
+      "imageWidth": 1600,
+      "imageHeight": 1600,
+      "cellWidth": 400,
+      "cellHeight": 400,
+      "regions": {
+        "n": {
+          "x": 0,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "nne": {
+          "x": 400,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ne": {
+          "x": 800,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "ene": {
+          "x": 1200,
+          "y": 0,
+          "width": 400,
+          "height": 400
+        },
+        "e": {
+          "x": 0,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "ese": {
+          "x": 400,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "se": {
+          "x": 800,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "sse": {
+          "x": 1200,
+          "y": 400,
+          "width": 400,
+          "height": 400
+        },
+        "s": {
+          "x": 0,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "ssw": {
+          "x": 400,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "sw": {
+          "x": 800,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "wsw": {
+          "x": 1200,
+          "y": 800,
+          "width": 400,
+          "height": 400
+        },
+        "w": {
+          "x": 0,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "wnw": {
+          "x": 400,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nw": {
+          "x": 800,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        },
+        "nnw": {
+          "x": 1200,
+          "y": 1200,
+          "width": 400,
+          "height": 400
+        }
+      },
+      "directionFrames": {
+        "n": 0,
+        "nne": 1,
+        "ne": 2,
+        "ene": 3,
+        "e": 4,
+        "ese": 5,
+        "se": 6,
+        "sse": 7,
+        "s": 8,
+        "ssw": 9,
+        "sw": 10,
+        "wsw": 11,
+        "w": 12,
+        "wnw": 13,
+        "nw": 14,
+        "nnw": 15
+      },
+      "initialDirection": "n",
+      "autoFrameExact": true
+    },
+    "width": 230,
+    "height": 230,
+    "speed": 420,
+    "acceleration": 1100,
+    "braking": 0.12,
+    "effects": {
+      "wakeActive": true,
+      "shadowActive": true,
+      "idleBalanceActive": true,
+      "idleRoll": 2.4,
+      "idleHeave": 3.2,
+      "idlePeriod": 3600
+    },
+    "combat": {
+      "hp": 50,
+      "attackRange": 1200,
+      "attackCooldownMs": 900,
+      "damage": 1
+    },
+    "combatVisual": {
+      "hp": 50,
+      "attackRange": 1200,
+      "attackCooldownMs": 900,
+      "damage": 1,
+      "recoil": 18,
+      "shake": 5,
+      "muzzleFlash": true,
+      "smoke": true,
+      "impact": true,
+      "useNavigationAtlas": false,
+      "animations": {}
+    },
+    "npcId": null,
+    "npcAttitude": "retaliate",
+    "npcBehavior": "roam",
+    "minSpeed": 80,
+    "combatModifiers": {}
+  },
+  "ocean": {
+    "active": true,
+    "renderer": "webgl",
+    "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+    "preset": "storm",
+    "speed": 70,
+    "directionX": 1,
+    "directionY": 0.68,
+    "swell": 67,
+    "tileSize": 590,
+    "brightness": 48,
+    "saturation": 55,
+    "contrast": 72,
+    "tintR": 88,
+    "tintG": 71,
+    "tintB": 95,
+    "distortion": 32,
+    "waveFrequencyA": 24,
+    "waveFrequencyB": 29,
+    "waveMix": 56,
+    "foamMix": 48,
+    "sparkleIntensity": 18,
+    "sparkleSharpness": 32,
+    "layers": {
+      "deep": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.22,
+        "driftX": 7,
+        "driftY": 4,
+        "tileScale": 1.18,
+        "opacity": 1
+      },
+      "wave": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.45,
+        "driftX": 18,
+        "driftY": 11,
+        "tileScale": 0.72,
+        "opacity": 0.34
+      },
+      "foam": {
+        "background": "./assets/oceans/ocean-tile-tabuada-region01.webp",
+        "parallax": 0.68,
+        "driftX": 36,
+        "driftY": 24,
+        "tileScale": 0.48,
+        "opacity": 0.2
+      }
+    }
+  },
+  "minimap": {
+    "enabled": true,
+    "frameAsset": "./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp",
+    "showLocations": true,
+    "showShips": true,
+    "showCamera": true,
+    "types": [
+      "location",
+      "island",
+      "ship"
+    ]
+  },
+  "entities": [
+    {
+      "id": "r5-costa-naufragios.ilha-fundo-transparente",
+      "type": "island",
+      "label": "ilha_fundo_transparente",
+      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
+      "x": 6176.816635626767,
+      "y": 3901.2286961397704,
+      "width": 1115.4736842105262,
+      "height": 710.3333333333337,
+      "z": 20,
+      "rotation": 0,
+      "lockAspect": true,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "interactionRadius": 230,
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      },
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": ""
+      },
+      "skewX": 0,
+      "skewY": 0
+    },
+    {
+      "id": "r5-costa-naufragios.ilha-fundo-transparente-2",
+      "type": "island",
+      "label": "ilha_fundo_transparente",
+      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
+      "x": 5755.74646018817,
+      "y": 2911.2286961397695,
+      "width": 826.6666666666667,
+      "height": 791.6666666666667,
+      "z": 20,
+      "rotation": 0,
+      "lockAspect": true,
+      "renderMode": "sprite",
+      "showLabel": false,
+      "interactionRadius": 230,
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 50,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      },
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": ""
+      },
+      "skewX": 0,
+      "skewY": 0
+    },
+    {
+      "id": "r5-costa-naufragios.ilha-comercio-redonda",
+      "type": "object",
+      "label": "ilha_comercio_redonda",
+      "src": "./assets/regions/global/islands/ilha_comercio_redonda.webp",
+      "x": 2920.174942186042,
+      "y": 4732.3932871571415,
+      "width": 1530.3103274622058,
+      "height": 1654.637065321605,
+      "z": 20,
+      "rotation": 0,
+      "lockAspect": true,
+      "skewX": 0,
+      "skewY": 0,
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 50,
+        "intensity": 0,
+        "range": 0,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 0,
+        "distortion": 0,
+        "glow": 0,
+        "rotateToPath": false
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 1.27,
+        "scaleY": 0.9,
+        "padding": 6,
+        "action": "enter-scene",
+        "message": ""
+      }
+    },
+    {
+      "id": "r5-costa-naufragios.ilha-estaleiro-redonda",
+      "type": "object",
+      "label": "ilha_estaleiro_redonda",
+      "src": "./assets/regions/global/islands/ilha_estaleiro_redonda.webp",
+      "x": 3359.393314773995,
+      "y": 317.76157532404875,
+      "width": 1242.9090909090908,
+      "height": 922.5454545454547,
+      "z": 20,
+      "rotation": 0,
+      "lockAspect": true,
+      "skewX": 0,
+      "skewY": 0,
+      "effect": {
+        "category": "island",
+        "preset": "none",
+        "active": false,
+        "renderer": "dom",
+        "mode": "none",
+        "speed": 51,
+        "intensity": 0,
+        "range": 2320,
+        "parallax": 1,
+        "opacity": 1,
+        "blur": 4.8,
+        "distortion": 71,
+        "glow": 72,
+        "rotateToPath": true
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.91,
+        "scaleY": 1.14,
+        "padding": 0,
+        "action": "enter-scene",
+        "message": ""
+      }
+    }
+  ],
+  "npcPopulation": {
+    "enabled": true,
+    "seed": 31,
+    "spread": {
+      "mode": "random-spaced",
+      "margin": 320,
+      "minDistance": 363
+    },
+    "movement": {
+      "mode": "straight",
+      "speed": 0
+    },
+    "types": []
+  },
+  "camera": {
+    "playZoom": 0.55
+  },
+  "editor": {
+    "cameraX": 4065.902094123714,
+    "cameraY": 7236.58573284943,
+    "zoom": 0.55
+  },
+  "meta": {
+    "schema": "tq.world",
+    "version": 1,
+    "sourceRevision": "regions-halloween-20261002",
+    "editorVersion": 1,
+    "createdFrom": "tabuada-quest-dev",
+    "regionIndex": 5,
+    "halloween": true
+  },
+  "playableArea": {
+    "x": 0,
+    "y": 0,
+    "width": 8000,
+    "height": 8000
+  },
+  "environment": {
+    "preset": "storm",
+    "weather": "rain",
+    "clouds": {
+      "active": true,
+      "density": 0.7100000000000001,
+      "opacity": 0.172,
+      "scale": 1.79,
+      "speed": 16,
+      "direction": 140,
+      "parallax": 0.42
+    },
+    "halloween": {
+      "active": true,
+      "fog": {
+        "active": true,
+        "intensity": 0.24
+      },
+      "pumpkinGlow": true
+    }
+  },
+  "test": {
+    "cannonIds": [
+      "novo-canhao-3"
+    ],
+    "ammoId": "cannonball-piercing",
+    "ammoQuantity": 10000
+  },
+  "treasurePopulation": {
+    "enabled": true,
+    "seed": 105,
+    "spread": {
+      "mode": "random-spaced",
+      "margin": 240,
+      "minDistance": 190
+    },
+    "types": [
+      {
+        "treasureId": "tesouro-halloween-abobora",
+        "count": 26,
+        "respawn": false,
+        "spawnIntervalSec": 0.12,
+        "respawnDelaySec": 30
+      }
+    ]
+  },
+  "region": {
+    "index": 5,
+    "code": "R5",
+    "nextWorldId": "r6-aguas-vulcanicas",
+    "previousWorldId": "r4-mar-correntes",
+    "halloween": true
+  }
+}
