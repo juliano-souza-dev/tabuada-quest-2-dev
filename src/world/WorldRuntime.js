@@ -2787,7 +2787,13 @@ export class WorldRuntime {
           cloud.style.setProperty("--size",(120+((i*47)%180))+"px");
           cloud.style.setProperty("--depth",String(.55+((i%5)*.12)));
           cloud.style.setProperty("--delay",(-((i*911)%12000))+"ms");
-          cloud.style.setProperty("--dur",(Math.max(6,38-clouds.speed*.24)+(i%5)*2.6)+"s");
+          const angle=clouds.direction*Math.PI/180;
+          const dx=Math.cos(angle),dy=Math.sin(angle);
+          cloud.style.setProperty("--from-x",(-28*dx)+"vw");
+          cloud.style.setProperty("--from-y",(-28*dy)+"vh");
+          cloud.style.setProperty("--to-x",(128*dx)+"vw");
+          cloud.style.setProperty("--to-y",(128*dy)+"vh");
+          cloud.style.setProperty("--dur",(clouds.speed<=0?86400:(Math.max(6,44-clouds.speed*.3)+(i%5)*2.6))+"s");
           this.cloudsEl.append(cloud);
         }
       }
