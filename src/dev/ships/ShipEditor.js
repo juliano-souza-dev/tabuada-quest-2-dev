@@ -14,6 +14,8 @@ export class ShipEditor{
     this.directionByShip=new Map();
     this.previewTimer=0;
     this.storageKey="tq.dev.ship-drafts:v4";
+    this.deletedCatalogStorageKey="tq.dev.ship-catalog-deleted:v1";
+    this.deletedCatalogIds=new Set();
     this.legacyStorageKeys=["tq.dev.ship-drafts:v3","tq.dev.ship-drafts:v2","tq.dev.ship-drafts:v1"];
     this.el=null;
   }
@@ -28,6 +30,7 @@ export class ShipEditor{
         <aside class="tq-ships__sidebar">
           <button type="button" class="tq-ships__new" data-ship-new>＋ Novo navio</button>
           <button type="button" class="tq-ships__new" data-ship-delete-draft>🗑 Excluir rascunho</button>
+          <button type="button" class="tq-ships__new" data-ship-delete-catalog>🗑 Excluir do catálogo</button>
           <button type="button" class="tq-ships__new" data-ship-delete-all-drafts>🧹 Excluir todos os rascunhos</button>
           <div class="tq-ships__list" data-ships-list></div>
         </aside>
@@ -39,6 +42,7 @@ export class ShipEditor{
     this.el.querySelector("[data-ships-close]").addEventListener("click",()=>this.setVisible(false));
     this.el.querySelector("[data-ship-new]").addEventListener("click",()=>this.createShip());
     this.el.querySelector("[data-ship-delete-draft]").addEventListener("click",()=>this.deleteSelectedDraft());
+    this.el.querySelector("[data-ship-delete-catalog]").addEventListener("click",()=>this.deleteSelectedCatalog());
     this.el.querySelector("[data-ship-delete-all-drafts]").addEventListener("click",()=>this.deleteAllDrafts());
     await this.load();
   }
@@ -56,14 +60,33 @@ export class ShipEditor{
       for(const key of this.legacyStorageKeys)localStorage.removeItem(key);
       const value=JSON.parse(localStorage.getItem(this.storageKey)||"[]");
       this.drafts=Array.isArray(value)?value.filter(ship=>ship?.id):[];
-    }catch{this.drafts=[]}
+      const deleted=JSON.parse(localStorage.getItem(this.deletedCatalogStorageKey)||"[]");
+      this.deletedCatalogIds=new Set(Array.isArray(deleted)?deleted.map(String):[]);
+    }catch{
+      this.drafts=[];
+      this.deletedCatalogIds=new Set();
+    }
     const first=this.allShips()[0];
     if(first&&!this.selectedId)this.selectedId=first.id;
     this.render();
   }
 
   repositoryShips(){
-    return Array.isArray(this.catalog?.ships)?this.catalog.ships:[];
+    const ships=Array.isArray(this.catalog?.ships)?this.catalog.ships:[];
+    return ships.filter(ship=>!this.deletedCatalogIds.has(String(ship?.id||"")));
+  }
+
+  repositoryShipExists(id){
+    return Array.isArray(this.catalog?.ships)
+      &&this.catalog.ships.some(ship=>String(ship?.id||"")===String(id||""));
+  }
+
+  saveDeletedCatalog(){
+    try{
+      localStorage.setItem(this.deletedCatalogStorageKey,JSON.stringify([...this.deletedCatalogIds]));
+    }catch(error){
+      console.warn("Ship catalog deletion save failed",error);
+    }
   }
 
   normalizeShip(ship){
@@ -210,6 +233,16 @@ export class ShipEditor{
     this.save();
     const catalogShip=this.repositoryShips().find(ship=>ship.id===id);
     this.selectedId=catalogShip?.id||this.allShips()[0]?.id||null;
+    this.render();
+    return true;
+  }
+
+  deleteSelectedCatalog(){
+    const id=String(this.selectedId||"");
+    if(!id||!this.repositoryShipExists(id)||this.deletedCatalogIds.has(id))return false;
+    this.deletedCatalogIds.add(id);
+    this.saveDeletedCatalog();
+    this.selectedId=this.allShips()[0]?.id||null;
     this.render();
     return true;
   }
@@ -628,9 +661,12 @@ export class ShipEditor{
       </button>`).join(""):'<div class="tq-ships__empty">Nenhum navio cadastrado.</div>';
     list.querySelectorAll("[data-ship-id]").forEach(button=>button.addEventListener("click",()=>this.select(button.dataset.shipId)));
     const selectedIsDraft=Boolean(this.selectedId&&this.drafts.some(d=>d.id===this.selectedId));
+    const selectedIsCatalog=Boolean(this.selectedId&&this.repositoryShipExists(this.selectedId)&&!this.deletedCatalogIds.has(this.selectedId));
     const deleteOne=this.el.querySelector("[data-ship-delete-draft]");
+    const deleteCatalog=this.el.querySelector("[data-ship-delete-catalog]");
     const deleteAll=this.el.querySelector("[data-ship-delete-all-drafts]");
     if(deleteOne)deleteOne.disabled=!selectedIsDraft;
+    if(deleteCatalog)deleteCatalog.disabled=!selectedIsCatalog;
     if(deleteAll)deleteAll.disabled=this.drafts.length===0;
   }
 
