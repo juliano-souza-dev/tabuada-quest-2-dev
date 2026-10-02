@@ -280,7 +280,10 @@ export class GameRuntime {
   }
 
   startMultiplayerWorld(worldId){
-    if(!this.multiplayer||!this.worldRuntime||!this.authenticated)return false;
+    if(!this.multiplayer||!this.worldRuntime)return false;
+    const multiplayerAuthenticated=this.multiplayer.auth?.status?.().authenticated===true;
+    if(!this.authenticated&&multiplayerAuthenticated)this.authenticated=true;
+    if(!multiplayerAuthenticated)return false;
     this.stopMultiplayerWorld();
     const onPlayers=event=>this.worldRuntime?.syncRemotePlayers?.(event.detail?.players||[]);
     const onEvent=event=>this.worldRuntime?.handleMultiplayerEvent?.(event.detail||{});
