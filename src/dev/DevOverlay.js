@@ -1352,7 +1352,7 @@ export class DevOverlay {
         if(!firstNpc)return;
         const next=currentNpcPopulation();
         next.types=Array.isArray(next.types)?next.types:[];
-        next.types.push({npcId:firstNpc.id,count:1,respawn:false,rewards:{coins:0,xp:0,itemId:"",quantity:1}});
+        next.types.push({npcId:firstNpc.id,shipId:String(firstNpc.shipId||""),count:1,respawn:false,rewards:{coins:0,xp:0,itemId:"",quantity:1}});
         next.enabled=true;
         saveNpcPopulation(next);
       });
@@ -1373,7 +1373,7 @@ export class DevOverlay {
         next.types[index]={...(next.types[index]||{}),...patch};
         saveNpcPopulation(next);
       };
-      content.querySelectorAll("[data-npc-type-id]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeId),{npcId:input.value,shipId:""})));
+      content.querySelectorAll("[data-npc-type-id]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeId),{npcId:input.value,shipId:String(this.npcEditor?.resolve?.(input.value)?.shipId||"")})));
       content.querySelectorAll("[data-npc-type-count]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeCount),{count:Math.max(0,Number(input.value)||0)})));
       content.querySelectorAll("[data-npc-reward-coins]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardCoins),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),coins:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-xp]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardXp),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),xp:Math.max(0,Number(input.value)||0)};updateNpcType(i,{rewards:r})}));
