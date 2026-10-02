@@ -1,5 +1,5 @@
 import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1238";
-import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
+import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1621";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1610";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
