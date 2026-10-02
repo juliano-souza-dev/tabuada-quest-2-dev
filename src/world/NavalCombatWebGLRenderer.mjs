@@ -473,12 +473,29 @@ export class NavalCombatWebGLRenderer{
             const tx=shot.from.x+dx*te+(-dy/length)*tw;
             const ty=shot.from.y+dy*te+(dx/length)*tw;
             const taper=1-ratio*fx.trail.taper;
-            drawPoint(tx,ty,Math.max(2,fx.trail.width*taper),4,ratio,true,{
+            const beadGate=fx.trail.beads>0
+              ?(.62+.38*Math.max(0,Math.sin((step*2.35)+(shot.startTime*.0017))))
+              :1;
+            drawPoint(tx,ty,Math.max(2,fx.trail.width*taper*(1-fx.trail.beads*.22)),4,ratio,true,{
               color:fx.trail.color,
               coreColor:fx.projectile.coreColor,
               glow:fx.projectile.glow,
-              opacity:fx.trail.opacity*(1-ratio*.72)
+              opacity:fx.trail.opacity*(1-ratio*.72)*beadGate
             });
+            if(fx.trail.beads>0&&step%2===0){
+              const beadPulse=.72+.28*Math.sin(now*.021+step*1.7);
+              drawPoint(
+                tx,ty,
+                Math.max(2.4,fx.trail.width*taper*(.34+fx.trail.beads*.58)*beadPulse),
+                0,ratio,true,
+                {
+                  color:step%4===0?fx.trail.secondaryColor:fx.trail.color,
+                  coreColor:fx.projectile.coreColor,
+                  glow:1.25+fx.projectile.glow*.55,
+                  opacity:clamp(fx.trail.opacity*fx.trail.beads*(1-ratio)*.82,0,1)
+                }
+              );
+            }
             if(fx.trail.ribbon>0&&step%2===0){
               const side=Math.sin((trailT*18)+(step*.92)+(shot.startTime*.0013));
               const ribbonOffset=(fx.trail.width*(.35+fx.trail.ribbon*.72)*side)/Math.max(.2,Number(zoom)||1);
@@ -519,6 +536,29 @@ export class NavalCombatWebGLRenderer{
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
         const assetSize=clamp((textured?32:18)*Number(shot.ammo?.size||1)*fx.projectile.scale,6,128);
+
+        const echoCount=Math.min(4,Math.max(0,fx.projectile.echoCount));
+        for(let echo=1;echo<=echoCount;echo++){
+          const echoT=clamp(t-echo*fx.projectile.echoSpacing,0,t);
+          if(echoT<=0)continue;
+          const echoEase=1-Math.pow(1-echoT,2);
+          const echoWobble=Math.sin(echoT*Math.PI*8)*fx.projectile.wobble*18;
+          const ex=shot.from.x+dx*echoEase+(-dy/length)*echoWobble;
+          const ey=shot.from.y+dy*echoEase+(dx/length)*echoWobble;
+          const echoFade=1-echo/(echoCount+1);
+          const echoPulse=.84+.16*Math.sin(now*.019+echo*1.8);
+          drawPoint(
+            ex,ey,
+            assetSize*fx.projectile.echoScale*echoFade*echoPulse,
+            0,echo/(echoCount+1),true,
+            {
+              color:echo%2?fx.projectile.accentColor:fx.projectile.color,
+              coreColor:fx.projectile.coreColor,
+              glow:1.15+fx.projectile.glow*.58,
+              opacity:clamp(fx.projectile.auraOpacity*echoFade*.72,0,.92)
+            }
+          );
+        }
 
         if(fx.projectile.auraEnabled){
           const pulse=.88+.12*Math.sin(now*.012*fx.projectile.pulseSpeed+shot.startTime*.003);
@@ -590,6 +630,27 @@ export class NavalCombatWebGLRenderer{
       const progress=clamp((now-impact.startTime)/impact.duration,0,1);
       if(impact.kind==="water"){
         const water=impact.fx.impactWater;
+        if(water.flash>0&&progress<.28){
+          const flashProgress=clamp(progress/.28,0,1);
+          const flashFade=1-smoothstep(.05,1,flashProgress);
+          drawPoint(
+            impact.x,impact.y,
+            water.size*(.52+water.flash*.42+flashProgress*.34),
+            6,flashProgress,true,
+            {
+              color:water.accentColor,
+              coreColor:"#ffffff",
+              glow:1.45+water.flash*.52,
+              opacity:clamp(flashFade*water.flash,0,1)
+            }
+          );
+          drawPoint(
+            impact.x,impact.y,
+            water.size*(.28+water.flash*.22),
+            0,flashProgress,true,
+            {color:water.coreColor,coreColor:"#ffffff",glow:1.8,opacity:clamp(flashFade*.94,0,1)}
+          );
+        }
         const scale=.55+progress*.7;
         drawPoint(impact.x,impact.y,water.size*scale,7,progress,false,{
           color:water.color,coreColor:water.coreColor,
@@ -639,6 +700,27 @@ export class NavalCombatWebGLRenderer{
         continue;
       }
       const shipFx=impact.fx.impactShip;
+      if(shipFx.flash>0&&progress<.24){
+        const flashProgress=clamp(progress/.24,0,1);
+        const flashFade=1-smoothstep(.03,1,flashProgress);
+        drawPoint(
+          impact.x,impact.y,
+          shipFx.size*(.46+shipFx.flash*.46+flashProgress*.38),
+          6,flashProgress,true,
+          {
+            color:shipFx.accentColor,
+            coreColor:"#ffffff",
+            glow:1.55+shipFx.flash*.5,
+            opacity:clamp(flashFade*shipFx.flash,0,1)
+          }
+        );
+        drawPoint(
+          impact.x,impact.y,
+          shipFx.size*(.22+shipFx.flash*.2),
+          0,flashProgress,true,
+          {color:shipFx.coreColor,coreColor:"#ffffff",glow:1.9,opacity:clamp(flashFade,0,1)}
+        );
+      }
       if(impact.effect==="piercing-shrapnel"){
         const burst=clamp(progress/.42,0,1);
         const fade=1-smoothstep(.34,1,progress);
