@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r7-mar-navegadores.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Costa das Joias",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r8-costa-joias",
+      "destinationWorldName": "Costa das Joias",
+      "transitionMessage": "Navegar para Costa das Joias?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r7-mar-navegadores.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Águas Vulcânicas",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r6-aguas-vulcanicas",
+      "destinationWorldName": "Águas Vulcânicas",
+      "transitionMessage": "Voltar para Águas Vulcânicas?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
