@@ -375,6 +375,7 @@ export class WorldRuntime {
           <div class="tq-world-ocean-layer tq-world-ocean-layer--wave" data-ocean-layer="wave"></div>
           <div class="tq-world-ocean-layer tq-world-ocean-layer--foam" data-ocean-layer="foam"></div>
         </div>
+        <div class="tq-world-clouds" data-world-clouds aria-hidden="true"></div>
         <div class="tq-world-weather" data-world-weather aria-hidden="true"></div>
         <div class="tq-world-stage">
           <div class="tq-world-playable-boundary" data-world-playable-boundary aria-hidden="true"></div>
@@ -470,6 +471,7 @@ export class WorldRuntime {
     this.oceanRenderer=null;
     this.oceanRendererInit=null;
     this.stage=this.host.querySelector(".tq-world-stage");
+    this.cloudsEl=this.host.querySelector("[data-world-clouds]");
     this.weatherEl=this.host.querySelector("[data-world-weather]");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
@@ -2728,7 +2730,21 @@ export class WorldRuntime {
   environmentConfig(){
     const id=String(this.config.environment?.preset||"day");
     const preset=WORLD_ENVIRONMENT_PRESETS[id]?id:"day";
-    return {preset,weather:String(this.config.environment?.weather||environmentPreset(preset).weather||"none")};
+    const env=this.config.environment||{};
+    const clouds=env.clouds&&typeof env.clouds==="object"?env.clouds:{};
+    return {
+      preset,
+      weather:String(env.weather||environmentPreset(preset).weather||"none"),
+      clouds:{
+        active:clouds.active===true,
+        density:clamp(Number(clouds.density??.5),0,1),
+        opacity:clamp(Number(clouds.opacity??.5),0,1),
+        scale:clamp(Number(clouds.scale??1),.4,2.5),
+        speed:clamp(Number(clouds.speed??18),0,120),
+        direction:clamp(Number(clouds.direction??0),-180,180),
+        parallax:clamp(Number(clouds.parallax??.18),0,1)
+      }
+    };
   }
 
   applyEnvironmentVisual(){
@@ -2751,6 +2767,31 @@ export class WorldRuntime {
         this.combatArena.style.removeProperty("--combat-water-size");
       }
     }
+    if(this.cloudsEl){
+      const clouds=env.clouds;
+      const count=clouds.active?Math.round(4+clouds.density*12):0;
+      const signature=[count,clouds.opacity,clouds.scale,clouds.speed,clouds.direction,clouds.parallax].join("|");
+      if(this.cloudsEl.dataset.signature!==signature){
+        this.cloudsEl.dataset.signature=signature;
+        this.cloudsEl.replaceChildren();
+        this.cloudsEl.hidden=!clouds.active||count===0;
+        this.cloudsEl.style.setProperty("--cloud-opacity",String(clouds.opacity));
+        this.cloudsEl.style.setProperty("--cloud-scale",String(clouds.scale));
+        this.cloudsEl.style.setProperty("--cloud-speed",String(clouds.speed));
+        this.cloudsEl.style.setProperty("--cloud-direction",String(clouds.direction));
+        this.cloudsEl.style.setProperty("--cloud-parallax",String(clouds.parallax));
+        for(let i=0;i<count;i++){
+          const cloud=document.createElement("i");
+          cloud.style.setProperty("--x",(((i*29+11)%97))+"%");
+          cloud.style.setProperty("--y",(8+((i*17)%58))+"%");
+          cloud.style.setProperty("--size",(120+((i*47)%180))+"px");
+          cloud.style.setProperty("--depth",String(.55+((i%5)*.12)));
+          cloud.style.setProperty("--delay",(-((i*911)%12000))+"ms");
+          cloud.style.setProperty("--dur",(Math.max(6,38-clouds.speed*.24)+(i%5)*2.6)+"s");
+          this.cloudsEl.append(cloud);
+        }
+      }
+    }
     if(!this.weatherEl)return;
     const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
     if(this.weatherEl.dataset.weather===weather)return;
@@ -2771,7 +2812,7 @@ export class WorldRuntime {
   applyEnvironmentPreset(id="day"){
     const key=WORLD_ENVIRONMENT_PRESETS[id]?id:"day";
     const preset=environmentPreset(key);
-    this.config.environment={preset:key,weather:preset.weather};
+    this.config.environment={...(this.config.environment||{}),preset:key,weather:preset.weather};
     this.updateOcean(preset.ocean);
     this.updatePlayerConfig({effects:preset.ship});
     this.applyEnvironmentVisual();
@@ -3339,6 +3380,11 @@ export class WorldRuntime {
     this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time,dt);
     this.updateCamera(false,dt);
+    if(this.cloudsEl&&!this.cloudsEl.hidden){
+      const parallax=this.environmentConfig().clouds.parallax;
+      this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
+      this.cloudsEl.style.setProperty("--cloud-camera-y",(-this.camera.y*parallax)+"px");
+    }
     this.updateOceanFrame(time);
     this.updateNearby();
     this.renderMinimap(false,time);
