@@ -318,7 +318,7 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:clamp(Math.floor(Number(typeConfig.hp)||3),1,99),
+        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,99),
         attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
@@ -3770,7 +3770,7 @@ export class WorldRuntime {
     }
 
     const usesNpc=(this.config.npcPopulation?.types||[])
-      .some(type=>String(type?.shipId||"")===id);
+      .some(type=>String(type?.shipId||"")===id||String(type?.npcId||"")===id);
     if(usesNpc){
       this.rebuildNpcPopulation({render:true});
       changed=true;
