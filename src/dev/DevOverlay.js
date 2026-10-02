@@ -204,8 +204,7 @@ export class DevOverlay {
     window.addEventListener("tq:shipprofilechange",event=>{
       const shipId=String(event.detail?.shipId||"");
       if(!shipId||this.workspace!=="world"||!this.worldEditor?.runtime)return;
-      const changed=this.worldEditor.runtime.refreshShipProfile?.(shipId)===true;
-      if(!changed)return;
+      this.worldEditor.runtime.refreshShipProfile?.(shipId);
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
     });
     window.addEventListener("tq:npcprofilechange",()=>{
