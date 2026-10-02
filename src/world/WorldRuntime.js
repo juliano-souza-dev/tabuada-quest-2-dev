@@ -2764,7 +2764,7 @@ export class WorldRuntime {
       preset,
       weather:String(env.weather||environmentPreset(preset).weather||"none"),
       clouds:{
-        active:clouds.active===true,
+        active:clouds.active!==false,
         density:clamp(Number(clouds.density??.5),0,1),
         opacity:clamp(Number(clouds.opacity??.5),0,1),
         scale:clamp(Number(clouds.scale??1),.4,2.5),
