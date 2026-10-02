@@ -957,3 +957,39 @@
  .tq-cannon-controls{overflow:visible;padding-right:0}
  .tq-cannon-simulator-column{position:static;height:auto;margin-top:14px;overflow:visible}
 }
+
+
+/* NPC editor: sliders, live simulator and soft-delete trash */
+.tq-dev__npcs .tq-ships__editor{overflow:auto;padding:16px}
+.tq-npc-workspace{display:grid;grid-template-columns:minmax(430px,.95fr) minmax(420px,1.05fr);gap:16px;max-width:1500px;margin:0 auto}
+.tq-npc-controls,.tq-npc-simulator{min-width:0}
+.tq-npc-simulator{position:sticky;top:0;align-self:start}
+.tq-npc-identity,.tq-npc-selects{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tq-npc-identity label,.tq-npc-selects label{display:grid;gap:6px}
+.tq-npc-identity span,.tq-npc-selects span{font-size:9px;opacity:.66;text-transform:uppercase;letter-spacing:.08em}
+.tq-npc-identity input,.tq-npc-identity select,.tq-npc-selects select{min-height:40px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:#0b2231;color:#fff;padding:8px}
+.tq-npc-sliders{display:grid;gap:4px;margin-bottom:14px}
+.tq-npc-slider{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.tq-npc-slider>span{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:11px;font-weight:800;color:#bcd4df}
+.tq-npc-slider output{min-width:82px;padding:5px 8px;border:1px solid rgba(73,200,255,.25);border-radius:8px;background:#092536;color:#8ee9ff;text-align:center;font-weight:900}
+.tq-npc-slider input[type=range]{width:100%;accent-color:#56d7ff}
+.tq-npc-delete{margin-left:auto;border-color:rgba(255,105,105,.28)!important;color:#ffb0a9!important;background:rgba(130,35,35,.14)!important}
+.tq-npc-sim-stage{position:relative;height:min(52vh,440px);min-height:300px;overflow:hidden;border:1px solid rgba(91,185,220,.22);border-radius:14px;background:linear-gradient(#123f58 0 20%,#0b6883 20%,#07516d 100%)}
+.tq-npc-sim-sea{position:absolute;inset:20% 0 0;background:repeating-radial-gradient(ellipse at 50% 0,rgba(255,255,255,.09) 0 2px,transparent 3px 22px);opacity:.75}
+.tq-npc-sim-ship{--npc-sim-duration:4s;position:absolute;left:12%;top:56%;width:150px;height:150px;background-repeat:no-repeat;transform:translate(-50%,-50%);animation:tq-npc-sail var(--npc-sim-duration) ease-in-out infinite alternate;filter:drop-shadow(0 12px 9px rgba(0,0,0,.3))}
+.tq-npc-sim-ship.is-empty{display:grid;place-items:center;font-size:64px}
+.tq-npc-sim-ship.is-stationary{animation:tq-npc-rock 2.2s ease-in-out infinite}
+@keyframes tq-npc-sail{0%{left:12%;transform:translate(-50%,-50%) rotate(-2deg)}50%{transform:translate(-50%,-53%) rotate(2deg)}100%{left:88%;transform:translate(-50%,-50%) rotate(-1deg)}}
+@keyframes tq-npc-rock{0%,100%{transform:translate(-50%,-50%) rotate(-2deg)}50%{transform:translate(-50%,-53%) rotate(2deg)}}
+.tq-npc-sim-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.tq-npc-sim-stats span{display:grid;gap:4px;padding:10px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(5,24,36,.5);font-size:9px;text-transform:uppercase;color:#8ea8b7}
+.tq-npc-sim-stats b{font-size:15px;color:#e8f8ff}
+.tq-npc-trash-toggle{width:100%;display:flex!important;justify-content:space-between;align-items:center;margin:0 0 10px;padding:9px 11px!important;border:1px solid rgba(255,255,255,.1)!important;border-radius:10px!important;background:rgba(255,255,255,.035)!important;color:#cbdce5!important}
+.tq-npc-trash-toggle b{display:grid;place-items:center;min-width:22px;height:22px;border-radius:999px;background:rgba(255,255,255,.09);font-size:10px}
+.tq-npc-trash{margin-bottom:12px;padding:9px;border:1px solid rgba(255,112,112,.16);border-radius:11px;background:rgba(90,25,25,.09)}
+.tq-npc-trash__head{display:grid;gap:2px;margin-bottom:8px}.tq-npc-trash__head small{font-size:9px;opacity:.55}
+.tq-npc-trash__item{display:grid;gap:7px;padding:8px 0;border-top:1px solid rgba(255,255,255,.07)}
+.tq-npc-trash__item>span{display:grid;gap:2px}.tq-npc-trash__item small{font-size:9px;opacity:.55}.tq-npc-trash__item>div{display:grid;grid-template-columns:1fr 34px;gap:5px}.tq-npc-trash__item button{min-height:30px;padding:4px 7px!important;font-size:9px!important}
+.tq-npc-trash__empty{display:block;padding:8px 2px;opacity:.55}
+@media(max-width:1000px){.tq-npc-workspace{grid-template-columns:1fr}.tq-npc-simulator{position:static}.tq-npc-sim-stage{height:320px}}
+@media(max-width:620px){.tq-npc-identity,.tq-npc-selects{grid-template-columns:1fr}.tq-npc-sim-stats{grid-template-columns:1fr}}
