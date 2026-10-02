@@ -1,5 +1,5 @@
-import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-1944";
-import { AMMO_FX_PRESETS, normalizeAmmoFx, applyAmmoFxPreset } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-1942";
+import { AmmoPreviewGL } from "./AmmoPreviewGL.js?v=20261002-1948";
+import { AMMO_FX_PRESETS, normalizeAmmoFx, applyAmmoFxPreset } from "../../world/fx/AmmoFxProfile.mjs?v=20261002-1948";
 
 export class AmmoEditor{
   constructor(){
@@ -25,7 +25,7 @@ export class AmmoEditor{
 
   async load(){
     try{
-      const r=await fetch("./src/config/ammo-catalog.json?v=20261002-1944",{cache:"no-store"});
+      const r=await fetch("./src/config/ammo-catalog.json?v=20261002-1948",{cache:"no-store"});
       if(r.ok)this.catalog=await r.json();
     }catch(e){console.warn("Ammo catalog load failed",e)}
     try{
