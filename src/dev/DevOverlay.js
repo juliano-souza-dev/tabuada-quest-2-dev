@@ -993,7 +993,13 @@ export class DevOverlay {
       ?this.persistentPlayerShipProfile(this.worldEditor?.getPlayerConfig?.())
       :null;
     try{
-      await this.shipEditorReady;
+      await Promise.allSettled([
+        this.shipEditorReady,
+        this.ammoEditorReady,
+        this.cannonCatalogReady,
+        this.treasureEditorReady,
+        this.npcEditorReady
+      ]);
       if(this.workspace==="scene"&&!this.sceneBeforeWorld)this.sceneBeforeWorld=structuredClone(this.runtime.scene||null);
       this.removeWorldSceneBackButton();
       const local=this.localWorlds.find(item=>item.entry.id===id);
@@ -2577,7 +2583,12 @@ export class DevOverlay {
     try{
       await Promise.allSettled([
         this.sceneCatalogReady||this.loadSceneCatalog(),
-        this.worldCatalogReady||this.loadWorldCatalog()
+        this.worldCatalogReady||this.loadWorldCatalog(),
+        this.shipEditorReady,
+        this.ammoEditorReady,
+        this.cannonCatalogReady,
+        this.treasureEditorReady,
+        this.npcEditorReady
       ]);
 
       if(state.workspace==="world"&&state.worldId){
