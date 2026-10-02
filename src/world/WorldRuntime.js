@@ -200,6 +200,11 @@ export class WorldRuntime {
     this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];
     this.testAmmoUnlimited=options.testAmmoUnlimited===true;
+    const initialTestAmmoQuantity=Math.max(0,Math.floor(Number(options.testAmmoQuantity)||0));
+    if(Number.isFinite(Number(options.testAmmoQuantity))){
+      const initialAmmoId=String(options.testAmmoId||this.state.ammo.selectedAmmoId||"cannonball-standard");
+      this.state.ammo.stock[initialAmmoId]=initialTestAmmoQuantity;
+    }
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
     const defaultCannonId=String(this.cannonCatalog[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[];
@@ -3736,8 +3741,15 @@ export class WorldRuntime {
     if(!eligible.length)return false;
 
     const hp=this.navalHpState(entity);
+    const ammoUnlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
+    let ammoRemaining=ammoUnlimited?Number.POSITIVE_INFINITY:Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
+    if(!ammo||ammoRemaining<=0){
+      if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
+      return false;
+    }
     let firedCount=0;
     for(const cannon of eligible){
+      if(ammoRemaining<=0)break;
       const projectileSpeed=Math.max(120,Number(cannon.projectileSpeed)||620);
       const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
       const fired=this.navalRenderer?.fire?.({
@@ -3748,6 +3760,10 @@ export class WorldRuntime {
       })===true;
       if(!fired)continue;
       firedCount+=1;
+      if(!ammoUnlimited){
+        ammoRemaining=Math.max(0,ammoRemaining-1);
+        this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
+      }
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
         const remainingDistance=Math.hypot(
@@ -3770,6 +3786,7 @@ export class WorldRuntime {
     if(this.actionMessage){
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
         +" · "+firedCount+" canhão"+(firedCount===1?"":"ões")+" disparado"+(firedCount===1?"":"s")
+        +(ammoUnlimited?"":" · munição "+ammoRemaining)
         +" · casco "+hp.current+"/"+hp.max;
     }
     return true;
