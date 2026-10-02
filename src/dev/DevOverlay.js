@@ -2,6 +2,7 @@ import { WorldEditor } from "./world/WorldEditor.js?v=20261002-1238";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1621";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1610";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
+import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-1642";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261002-1058";
 export class DevOverlay {
   constructor(root,runtime,options={}){
@@ -15,6 +16,7 @@ export class DevOverlay {
       getNpcProfiles:()=>this.npcEditor?.all?.()||[]
     });
     this.ammoEditor=new AmmoEditor();
+    this.cannonEditor=new CannonEditor();
     this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
@@ -24,7 +26,7 @@ export class DevOverlay {
       onPedagogyResult:this.onPedagogyResult,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
-      getCannonCatalog:()=>this.cannonCatalog,
+      getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
       getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||"cannonball-standard",ammo:this.ammoEditor?.all?.()||[]})
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
@@ -49,6 +51,7 @@ export class DevOverlay {
         <button data-ships>🚢 <span>Navios</span></button>
         <button data-npcs>☠ <span>NPC</span></button>
         <button data-treasures>💎 <span>Tesouros</span></button>
+        <button data-cannons>🎯 <span>Canhões</span></button>
         <button data-ammo>💣 <span>Munições</span></button>
         <button data-assets>▦ <span>Assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
@@ -140,14 +143,15 @@ export class DevOverlay {
     this.el.querySelector("[data-ships]").addEventListener("click",()=>this.toggleShips(this.shipEditor?.el?.hidden!==false));
     this.el.querySelector("[data-npcs]").addEventListener("click",()=>this.toggleNpcs(this.npcEditor?.el?.hidden!==false));
     this.el.querySelector("[data-treasures]").addEventListener("click",()=>this.toggleTreasures(this.treasureEditor?.el?.hidden!==false));
-    this.el.querySelector("[data-ammo]").addEventListener("click",()=>this.ammoEditor.setVisible(this.ammoEditor?.el?.hidden!==false));
+    this.el.querySelector("[data-cannons]").addEventListener("click",()=>{this.closeToolPanels("cannons");this.cannonEditor.setVisible(this.cannonEditor?.el?.hidden!==false)});
+    this.el.querySelector("[data-ammo]").addEventListener("click",()=>{this.closeToolPanels("ammo");this.ammoEditor.setVisible(this.ammoEditor?.el?.hidden!==false)});
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
     this.shipEditorReady=this.shipEditor.mount(this.el);
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
-    this.cannonCatalogReady=fetch("./src/config/cannon-catalog.json?v=20261002-0953",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Cannon catalog "+r.status))).then(catalog=>{this.cannonCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Cannon catalog failed",error);return this.cannonCatalog});
+    this.cannonCatalogReady=this.cannonEditor.mount(this.el).then(()=>{this.cannonCatalog=this.cannonEditor.getCatalog();return this.cannonCatalog});
     this.npcEditorReady=this.npcEditor.mount(this.el);
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
@@ -183,6 +187,15 @@ export class DevOverlay {
       this.syncLocalWorldFromEditor();
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
       this.renderWorlds();
+    });
+    window.addEventListener("tq:cannonprofilechange",()=>{
+      this.cannonCatalog=this.cannonEditor?.getCatalog?.()||this.cannonCatalog;
+      const runtime=this.worldEditor?.runtime;
+      if(runtime){
+        runtime.cannonCatalog=this.cannonCatalog.cannons||[];
+        runtime.testCannonIds=(runtime.testCannonIds||[]).filter(id=>runtime.cannonCatalog.some(cannon=>String(cannon.id)===String(id)));
+      }
+      if(this.mode==="config"&&this.workspace==="world")this.renderWorldInspector();
     });
     window.addEventListener("tq:shipprofilechange",event=>{
       const shipId=String(event.detail?.shipId||"");
@@ -231,6 +244,8 @@ export class DevOverlay {
     if(except!=="ships")this.shipEditor?.setVisible(false);
     if(except!=="npcs")this.npcEditor?.setVisible(false);
     if(except!=="treasures")this.treasureEditor?.setVisible(false);
+    if(except!=="cannons")this.cannonEditor?.setVisible(false);
+    if(except!=="ammo")this.ammoEditor?.setVisible(false);
     if(except!=="assets")this.assetPickTarget=null;
   }
 
