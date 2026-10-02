@@ -407,6 +407,11 @@ export class DevOverlay {
         idleHeave:Number(navigation.heave??3.2),
         idlePeriod:Number(navigation.periodMs??3600)
       },
+      combat:{
+        attackRange:Math.max(200,Math.min(6000,Number(combat.attackRange)||1200)),
+        attackCooldownMs:Math.max(300,Math.min(5000,Number(combat.attackCooldownMs)||900)),
+        damage:Math.max(1,Math.min(20,Math.floor(Number(combat.damage)||1)))
+      },
       combatVisual:combat
     };
   }
@@ -415,7 +420,7 @@ export class DevOverlay {
     if(!player||typeof player!=="object")return null;
     const keys=[
       "shipId","shipName","src","sprite","directions","width","height",
-      "speed","acceleration","braking","effects","combatVisual"
+      "speed","acceleration","braking","effects","combat","combatModifiers","combatVisual"
     ];
     const profile={};
     for(const key of keys){
@@ -1042,7 +1047,8 @@ export class DevOverlay {
       npcPopulation.spread={mode:"random-spaced",margin:320,minDistance:360,...(npcPopulation.spread||{})};
       npcPopulation.movement={mode:"straight",speed:80,...(npcPopulation.movement||{})};
       npcPopulation.types=Array.isArray(npcPopulation.types)?npcPopulation.types:[];
-      const npcShips=(this.shipEditor?.allShips?.()||[]).filter(ship=>ship.type==="npc");
+      const availableShips=this.shipEditor?.allShips?.()||[];
+      const npcShips=availableShips;
       const npcShipOptions=selected=>npcShips.map(ship=>
         '<option value="'+this.escapeHtml(ship.id)+'" '+(String(selected||"")===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
       ).join("");
@@ -1057,6 +1063,13 @@ export class DevOverlay {
       const directionLabels={n:"N",ne:"NE",e:"E",se:"SE",s:"S",sw:"SW",w:"W",nw:"NW"};
       const sprite=player.sprite||{};
       const spriteSrc=String(sprite.src||"");
+      const inferredPlayerShip=availableShips.find(ship=>
+        String(ship.navigation?.src||ship.navigation?.sprite?.src||"")===spriteSrc
+      )?.id||"";
+      const selectedPlayerShipId=String(player.shipId||inferredPlayerShip||"");
+      const playerShipOptions='<option value="">Personalizado atual</option>'+availableShips.map(ship=>
+        '<option value="'+this.escapeHtml(ship.id)+'" '+(selectedPlayerShipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
+      ).join("");
       const playerEffects={
         wakeActive:player.effects?.wakeActive!==false,
         wakeScale:Number(player.effects?.wakeScale??1),
@@ -1190,6 +1203,8 @@ export class DevOverlay {
             '</div>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Navio do jogador</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+            '<label class="tq-world-field"><span>Modelo do navio</span><select data-player-ship-id>'+playerShipOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Qualquer navio do catálogo pode ser usado pelo jogador ou como NPC. O papel é definido nesta região.</small>'+
             '<button type="button" class="tq-world-sprite-picker" data-player-sprite-pick title="Trocar spritesheet do navio">'+
               (spriteSrc?'<span class="tq-world-sprite-picker__icon">🖼️</span>':'<span class="tq-world-sprite-picker__icon">＋</span>')+
               '<span><strong>'+(spriteSrc?'Trocar spritesheet':'Selecionar spritesheet')+'</strong><small>'+this.escapeHtml(spriteSrc?spriteSrc.split("/").pop():"Nenhum asset selecionado")+'</small></span>'+
@@ -1795,6 +1810,22 @@ export class DevOverlay {
         atlasCanvas.addEventListener("pointercancel",finish);
       });
 
+      content.querySelector("[data-player-ship-id]")?.addEventListener("change",event=>{
+        const shipId=String(event.currentTarget.value||"");
+        if(!shipId)return;
+        const profile=this.resolveWorldShipProfile(shipId,"player");
+        if(!profile)return;
+        this.worldEditor.updatePlayerConfig({
+          ...profile,
+          shipId,
+          shipName:profile.shipName||profile.name||shipId,
+          combat:structuredClone(profile.combat||{}),
+          combatVisual:structuredClone(profile.combatVisual||{})
+        },true);
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      });
+
       content.querySelectorAll("[data-player-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.playerProp;
         const value=["width","height"].includes(key)?Number(input.value):input.value;
@@ -1885,7 +1916,7 @@ export class DevOverlay {
     const combat=entity.combat&&typeof entity.combat==="object"?entity.combat:{hp:3};
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
     const shipOptions=(this.shipEditor?.allShips?.()||[]).map(ship=>
-      '<option value="'+this.escapeHtml(ship.id)+'" '+(entity.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+' · '+(ship.type==="npc"?"NPC":"PLAYER")+'</option>'
+      '<option value="'+this.escapeHtml(ship.id)+'" '+(entity.shipId===ship.id?'selected':'')+'>'+this.escapeHtml(ship.name||ship.id)+'</option>'
     ).join("");
     const effectPresetItems=this.worldEditor.listEntityEffectPresets(entity.id)||[];
     const num=(key,label,min="",max="",step="0.01")=>'<label class="tq-world-field"><span>'+label+'</span><input data-world-prop="'+key+'" type="number" '+(min!==""?'min="'+min+'" ':'')+(max!==""?'max="'+max+'" ':'')+'step="'+step+'" value="'+this.escapeHtml(entity[key]??"")+'"></label>';
