@@ -3,9 +3,10 @@ export class NpcEditor{
     this.getShips=typeof getShips==="function"?getShips:()=>[];
     this.getAmmo=typeof getAmmo==="function"?getAmmo:()=>[];
     this.catalog={schema:"tq.npc-catalog",version:1,npcs:[]};
-    this.drafts=[];this.trash=[];this.selectedId=null;
+    this.drafts=[];this.trash=[];this.permanentlyDeletedIds=new Set();this.selectedId=null;
     this.storageKey="tq.dev.npc-drafts:v1";
     this.trashStorageKey="tq.dev.npc-trash:v1";
+    this.permanentDeleteStorageKey="tq.dev.npc-permanent-deleted:v1";
     this.el=null;
   }
   async mount(parent){
@@ -21,18 +22,20 @@ export class NpcEditor{
     try{const r=await fetch("./src/config/npc-catalog.json?v=20261002-1610",{cache:"no-store"});if(r.ok)this.catalog=await r.json()}catch(e){console.warn("NPC catalog load failed",e)}
     try{const d=JSON.parse(localStorage.getItem(this.storageKey)||"[]");this.drafts=Array.isArray(d)?d:[]}catch{this.drafts=[]}
     try{const d=JSON.parse(localStorage.getItem(this.trashStorageKey)||"[]");this.trash=Array.isArray(d)?d:[]}catch{this.trash=[]}
+    try{const d=JSON.parse(localStorage.getItem(this.permanentDeleteStorageKey)||"[]");this.permanentlyDeletedIds=new Set(Array.isArray(d)?d.map(String):[])}catch{this.permanentlyDeletedIds=new Set()}
     this.selectedId=this.all()[0]?.id||null;this.render();
   }
   trashedIds(){return new Set(this.trash.map(x=>String(x.id)))}
-  all(){const removed=this.trashedIds(),m=new Map((this.catalog.npcs||[]).filter(x=>!removed.has(String(x.id))).map(x=>[x.id,structuredClone(x)]));for(const x of this.drafts)if(!removed.has(String(x.id)))m.set(x.id,structuredClone(x));return [...m.values()]}
+  all(){const removed=this.trashedIds(),deleted=this.permanentlyDeletedIds,m=new Map((this.catalog.npcs||[]).filter(x=>!removed.has(String(x.id))&&!deleted.has(String(x.id))).map(x=>[x.id,structuredClone(x)]));for(const x of this.drafts)if(!removed.has(String(x.id))&&!deleted.has(String(x.id)))m.set(x.id,structuredClone(x));return [...m.values()]}
   current(){return this.all().find(x=>x.id===this.selectedId)||null}
   persistDrafts(){localStorage.setItem(this.storageKey,JSON.stringify(this.drafts))}
   persistTrash(){localStorage.setItem(this.trashStorageKey,JSON.stringify(this.trash))}
+  persistPermanentDeletes(){localStorage.setItem(this.permanentDeleteStorageKey,JSON.stringify([...this.permanentlyDeletedIds]))}
   saveDraft(value){const i=this.drafts.findIndex(x=>x.id===value.id);if(i>=0)this.drafts[i]=value;else this.drafts.push(value);this.persistDrafts();globalThis.dispatchEvent(new CustomEvent("tq:npcprofilechange",{detail:{npcId:value.id}}))}
-  createNpc(){const ships=this.getShips();if(!ships.length)return;let n=1,id="npc-"+n;while(this.all().some(x=>x.id===id)||this.trash.some(x=>x.id===id))id="npc-"+(++n);const npc={id,name:"Novo NPC",shipId:ships[0].id,navigation:{minSpeed:0,speed:80,acceleration:250,behavior:"roam"},combat:{hp:3,attitude:"retaliate",attackRange:1200,attackCooldownMs:900,damage:1,allowedAmmoIds:(this.getAmmo()[0]?.id?[this.getAmmo()[0].id]:[])}};this.saveDraft(npc);this.selectedId=id;this.render()}
+  createNpc(){const ships=this.getShips();if(!ships.length)return;let n=1,id="npc-"+n;while(this.all().some(x=>x.id===id)||this.trash.some(x=>x.id===id)||this.permanentlyDeletedIds.has(id))id="npc-"+(++n);const npc={id,name:"Novo NPC",shipId:ships[0].id,navigation:{minSpeed:0,speed:80,acceleration:250,behavior:"roam"},combat:{hp:3,attitude:"retaliate",attackRange:1200,attackCooldownMs:900,damage:1,allowedAmmoIds:(this.getAmmo()[0]?.id?[this.getAmmo()[0].id]:[])}};this.saveDraft(npc);this.selectedId=id;this.render()}
   moveToTrash(id){const npc=this.all().find(x=>x.id===id);if(!npc)return;this.trash=this.trash.filter(x=>x.id!==id);this.trash.unshift({...structuredClone(npc),deletedAt:Date.now()});this.drafts=this.drafts.filter(x=>x.id!==id);this.persistTrash();this.persistDrafts();this.selectedId=this.all()[0]?.id||null;globalThis.dispatchEvent(new CustomEvent("tq:npcprofilechange",{detail:{npcId:id,deleted:true}}));this.render()}
   restoreNpc(id){const i=this.trash.findIndex(x=>x.id===id);if(i<0)return;const npc=structuredClone(this.trash[i]);delete npc.deletedAt;this.trash.splice(i,1);this.saveDraft(npc);this.persistTrash();this.selectedId=id;this.render()}
-  deleteForever(id){this.trash=this.trash.filter(x=>x.id!==id);this.persistTrash();this.render()}
+  deleteForever(id){const item=this.trash.find(x=>String(x.id)===String(id));if(!item)return;if(!globalThis.confirm?.('Apagar definitivamente o NPC "'+String(item.name||item.id)+'"? Esta ação não pode ser desfeita.'))return;const key=String(id);this.trash=this.trash.filter(x=>String(x.id)!==key);this.drafts=this.drafts.filter(x=>String(x.id)!==key);this.permanentlyDeletedIds.add(key);this.persistTrash();this.persistDrafts();this.persistPermanentDeletes();if(this.selectedId===key)this.selectedId=this.all()[0]?.id||null;globalThis.dispatchEvent(new CustomEvent("tq:npcprofilechange",{detail:{npcId:key,deleted:true,permanent:true}}));this.render()}
   setVisible(show){if(this.el)this.el.hidden=!show;if(show)this.render()}
   render(){
     if(!this.el)return;
@@ -41,7 +44,7 @@ export class NpcEditor{
     list.querySelectorAll("[data-npc-id]").forEach(b=>b.onclick=()=>{this.selectedId=b.dataset.npcId;this.render()});
     this.el.querySelector("[data-npc-trash-count]").textContent=String(this.trash.length);
     const trash=this.el.querySelector("[data-npc-trash-list]");
-    trash.innerHTML=this.trash.length?this.trash.map(x=>'<article class="tq-npc-trash__item"><span><b>'+this.e(x.name)+'</b><small>'+this.e(x.id)+'</small></span><div><button type="button" data-npc-restore="'+this.e(x.id)+'">↩ Restaurar</button><button type="button" data-npc-delete="'+this.e(x.id)+'">✕</button></div></article>').join(""):'<small class="tq-npc-trash__empty">A lixeira está vazia.</small>';
+    trash.innerHTML=this.trash.length?this.trash.map(x=>'<article class="tq-npc-trash__item"><span><b>'+this.e(x.name)+'</b><small>'+this.e(x.id)+'</small></span><div><button type="button" data-npc-restore="'+this.e(x.id)+'">↩ Restaurar</button><button type="button" class="tq-npc-delete-forever" data-npc-delete="'+this.e(x.id)+'">Apagar definitivamente</button></div></article>').join(""):'<small class="tq-npc-trash__empty">A lixeira está vazia.</small>';
     trash.querySelectorAll("[data-npc-restore]").forEach(b=>b.onclick=()=>this.restoreNpc(b.dataset.npcRestore));
     trash.querySelectorAll("[data-npc-delete]").forEach(b=>b.onclick=()=>this.deleteForever(b.dataset.npcDelete));
     this.renderEditor();
