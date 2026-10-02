@@ -633,7 +633,8 @@ export class WorldRuntime {
           <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
           <small>BAÚ DO TESOURO</small>
           <h2 id="tq-world-challenge-title">Resolva para recolher</h2>
-          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>\n          <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
+          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
+          <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
           <form data-world-challenge-form>
             <label>
               <span>Sua resposta</span>
@@ -722,7 +723,10 @@ export class WorldRuntime {
     this.challengeFeedback=this.host.querySelector("[data-world-challenge-feedback]");
     this.challengeSubmit=this.host.querySelector("[data-world-challenge-submit]");
     this.challengeClose=this.host.querySelector("[data-world-challenge-close]");
-    this.repairOptions=this.host.querySelector("[data-world-repair-options]");\n    this.repairHp=this.host.querySelector("[data-world-repair-hp]");\n    this.repairHpFill=this.host.querySelector("[data-world-repair-hp-fill]");\n    this.repairHpLabel=this.host.querySelector("[data-world-repair-hp-label]");
+    this.repairOptions=this.host.querySelector("[data-world-repair-options]");
+    this.repairHp=this.host.querySelector("[data-world-repair-hp]");
+    this.repairHpFill=this.host.querySelector("[data-world-repair-hp-fill]");
+    this.repairHpLabel=this.host.querySelector("[data-world-repair-hp-label]");
     this.combatWrap=this.host.querySelector("[data-world-combat]");
     this.combatArena=this.host.querySelector("[data-world-combat-arena]");
     this.combatOptions=this.host.querySelector("[data-world-combat-options]");
@@ -3063,7 +3067,8 @@ export class WorldRuntime {
     active.challenge=challenge;
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
     if(this.challengeWrap)this.challengeWrap.hidden=false;
-    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}\n    if(this.repairHp){this.repairHp.hidden=false;const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;}
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
+    if(this.repairHp){this.repairHp.hidden=false;const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;}
     if(this.repairOptions){
       this.repairOptions.hidden=false;
       this.repairOptions.replaceChildren();
@@ -3116,7 +3121,8 @@ export class WorldRuntime {
     this.challengeActive=null;
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
     if(this.challengeWrap)this.challengeWrap.hidden=true;
-    if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}\n    if(this.repairHp)this.repairHp.hidden=true;
+    if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}
+    if(this.repairHp)this.repairHp.hidden=true;
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeAnswer){
@@ -3255,7 +3261,8 @@ export class WorldRuntime {
       };
       this.onPedagogyResult?.(detail);
       if(result.correct===true){
-        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);\n        if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
+        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);
+        if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
         if(this.challengeFeedback)this.challengeFeedback.textContent=
           "Acertou! +20 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
         if(this.navalPlayerHp>=this.navalPlayerMaxHp){
