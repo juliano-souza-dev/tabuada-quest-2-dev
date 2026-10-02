@@ -177,6 +177,10 @@ export class WorldRuntime {
     this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];
     this.testAmmoUnlimited=options.testAmmoUnlimited===true;
+    this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
+    const defaultCannonId=String(this.cannonCatalog[0]?.id||"cannon-basic");
+    const requestedCannonIds=Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[];
+    this.testCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
     const requestedTestAmmoId=String(options.testAmmoId||"").trim();
     if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
     this.player={
@@ -3606,41 +3610,54 @@ export class WorldRuntime {
 
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
-    const stats=this.playerNavalCombatStats();
     const targetDistance=this.navalTargetDistance(entity);
-    if(targetDistance>stats.attackRange)return false;
+    const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
+    const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
+      ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
+    const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,999);
+    const cannons=(this.testCannonIds.length?this.testCannonIds:["cannon-basic"])
+      .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
+      .filter(Boolean);
+    if(!cannons.length)return false;
+    const eligible=cannons.filter(cannon=>targetDistance<=Math.max(1,Number(cannon.range)||900));
+    if(!eligible.length)return false;
 
     const hp=this.navalHpState(entity);
-    const duration=620;
-    const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
-    const ammo=selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null;
-    const fired=this.navalRenderer?.fire?.({
-      from:{x:this.player.x,y:this.player.y},
-      to:{x:entity.x,y:entity.y},
-      duration,
-      ammo
-    })===true;
-    if(!fired)return false;
+    let firedCount=0;
+    for(const cannon of eligible){
+      const projectileSpeed=Math.max(120,Number(cannon.projectileSpeed)||620);
+      const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
+      const fired=this.navalRenderer?.fire?.({
+        from:{x:this.player.x,y:this.player.y},
+        to:{x:entity.x,y:entity.y},
+        duration,
+        ammo
+      })===true;
+      if(!fired)continue;
+      firedCount+=1;
+      setTimeout(()=>{
+        if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
+        const remainingDistance=Math.hypot(
+          Number(entity.x||0)-Number(this.player?.x||0),
+          Number(entity.y||0)-Number(this.player?.y||0)
+        );
+        if(remainingDistance<=Math.max(1,Number(cannon.range)||900)){
+          this.applyDirectNavalDamage(entity,ammoDamage);
+        }
+      },duration);
+    }
+    if(!firedCount)return false;
 
-    // NPC attitude is configured in the dedicated NPC profile.
-    // peaceful: never retaliates; retaliate: becomes hostile when attacked;
-    // hostile: is already hostile and may initiate combat on sight/range.
     const id=String(entity.id);
     if(entity.npcAttitude!=="peaceful"){
       const hostile=this.navalHostile.get(id)||{nextShotAt:0};
       this.navalHostile.set(id,hostile);
     }
 
-    setTimeout(()=>{
-      if(!this.collected.has(entity.id)){
-        this.applyDirectNavalDamage(entity,stats.damage);
-      }
-    },duration);
-
     if(this.actionMessage){
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
-        +" · casco "+hp.current+"/"+hp.max
-        +" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+        +" · "+firedCount+" canhão"+(firedCount===1?"":"ões")+" disparado"+(firedCount===1?"":"s")
+        +" · casco "+hp.current+"/"+hp.max;
     }
     return true;
   }
