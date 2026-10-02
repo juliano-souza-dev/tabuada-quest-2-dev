@@ -56,14 +56,13 @@ export class ShipEditor{
     try{
       for(const key of this.legacyStorageKeys)localStorage.removeItem(key);
       const value=JSON.parse(localStorage.getItem(this.storageKey)||"[]");
-      this.drafts=Array.isArray(value)?value.filter(ship=>ship?.id):[];
-      if(this.drafts.length){
+      const persistedShips=Array.isArray(value)?value.filter(ship=>ship?.id):[];
+      if(persistedShips.length){
         const byId=new Map((this.catalog.ships||[]).map(ship=>[String(ship.id),ship]));
-        for(const ship of this.drafts)byId.set(String(ship.id),this.normalizeShip(ship));
+        for(const ship of persistedShips)byId.set(String(ship.id),this.normalizeShip(ship));
         this.catalog.ships=[...byId.values()];
-        this.drafts=[];
-        localStorage.removeItem(this.storageKey);
       }
+      this.drafts=[];
       const deleted=JSON.parse(localStorage.getItem(this.deletedCatalogStorageKey)||"[]");
       this.deletedCatalogIds=new Set(Array.isArray(deleted)?deleted.map(String):[]);
     }catch{
