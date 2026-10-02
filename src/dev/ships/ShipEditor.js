@@ -8,12 +8,14 @@ export class ShipEditor{
     this.requestFrameAsset=typeof requestFrameAsset==="function"?requestFrameAsset:null;
     this.catalog=null;
     this.drafts=[];
+    this.published=[];
     this.selectedId=null;
     this.animationByShip=new Map();
     this.tabByShip=new Map();
     this.directionByShip=new Map();
     this.previewTimer=0;
     this.storageKey="tq.dev.ship-drafts:v4";
+    this.publishedStorageKey="tq.dev.ship-catalog-local:v1";
     this.deletedCatalogStorageKey="tq.dev.ship-catalog-deleted:v1";
     this.deletedCatalogIds=new Set();
     this.legacyStorageKeys=["tq.dev.ship-drafts:v3","tq.dev.ship-drafts:v2","tq.dev.ship-drafts:v1"];
@@ -29,6 +31,7 @@ export class ShipEditor{
       <div class="tq-ships__body">
         <aside class="tq-ships__sidebar">
           <button type="button" class="tq-ships__new" data-ship-new>＋ Novo navio</button>
+          <button type="button" class="tq-ships__new is-primary" data-ship-publish>✓ Salvar navio</button>
           <button type="button" class="tq-ships__new" data-ship-delete-draft>🗑 Excluir rascunho</button>
           <button type="button" class="tq-ships__new" data-ship-delete-catalog>🗑 Excluir do catálogo</button>
           <button type="button" class="tq-ships__new" data-ship-delete-all-drafts>🧹 Excluir todos os rascunhos</button>
@@ -41,6 +44,7 @@ export class ShipEditor{
     parent.append(this.el);
     this.el.querySelector("[data-ships-close]").addEventListener("click",()=>this.setVisible(false));
     this.el.querySelector("[data-ship-new]").addEventListener("click",()=>this.createShip());
+    this.el.querySelector("[data-ship-publish]").addEventListener("click",()=>this.publishSelectedShip());
     this.el.querySelector("[data-ship-delete-draft]").addEventListener("click",()=>this.deleteSelectedDraft());
     this.el.querySelector("[data-ship-delete-catalog]").addEventListener("click",()=>this.deleteSelectedCatalog());
     this.el.querySelector("[data-ship-delete-all-drafts]").addEventListener("click",()=>this.deleteAllDrafts());
@@ -60,10 +64,13 @@ export class ShipEditor{
       for(const key of this.legacyStorageKeys)localStorage.removeItem(key);
       const value=JSON.parse(localStorage.getItem(this.storageKey)||"[]");
       this.drafts=Array.isArray(value)?value.filter(ship=>ship?.id):[];
+      const published=JSON.parse(localStorage.getItem(this.publishedStorageKey)||"[]");
+      this.published=Array.isArray(published)?published.filter(ship=>ship?.id):[];
       const deleted=JSON.parse(localStorage.getItem(this.deletedCatalogStorageKey)||"[]");
       this.deletedCatalogIds=new Set(Array.isArray(deleted)?deleted.map(String):[]);
     }catch{
       this.drafts=[];
+      this.published=[];
       this.deletedCatalogIds=new Set();
     }
     const first=this.allShips()[0];
@@ -79,6 +86,29 @@ export class ShipEditor{
   repositoryShipExists(id){
     return Array.isArray(this.catalog?.ships)
       &&this.catalog.ships.some(ship=>String(ship?.id||"")===String(id||""));
+  }
+
+  publishedShips(){
+    return Array.isArray(this.published)?this.published:[];
+  }
+
+  publishedShipExists(id){
+    return this.publishedShips().some(ship=>String(ship?.id||"")===String(id||""));
+  }
+
+  savedShipExists(id){
+    return this.publishedShipExists(id)
+      ||(this.repositoryShipExists(id)&&!this.deletedCatalogIds.has(String(id||"")));
+  }
+
+  savePublishedCatalog(){
+    try{
+      localStorage.setItem(this.publishedStorageKey,JSON.stringify(this.publishedShips()));
+      return true;
+    }catch(error){
+      console.warn("Ship local catalog save failed",error);
+      return false;
+    }
   }
 
   saveDeletedCatalog(){
@@ -198,6 +228,7 @@ export class ShipEditor{
 
   allShips(){
     const byId=new Map(this.repositoryShips().map(ship=>[ship.id,this.normalizeShip(ship)]));
+    for(const saved of this.publishedShips())byId.set(saved.id,this.normalizeShip(saved));
     for(const draft of this.drafts)byId.set(draft.id,this.normalizeShip(draft));
     return [...byId.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
   }
@@ -223,6 +254,27 @@ export class ShipEditor{
     try{localStorage.setItem(this.storageKey,JSON.stringify(this.drafts))}catch(error){console.warn("Ship draft save failed",error)}
   }
 
+  publishSelectedShip(){
+    const id=String(this.selectedId||"");
+    if(!id)return false;
+    const source=this.drafts.find(item=>String(item?.id||"")===id)||this.current();
+    if(!source)return false;
+    const saved=this.normalizeShip(source);
+    saved.available=saved.available!==false;
+    saved.editor={...(saved.editor||{}),draft:false,publishedAt:Number(saved.editor?.publishedAt)||Date.now(),updatedAt:Date.now()};
+    const index=this.published.findIndex(item=>String(item?.id||"")===id);
+    if(index>=0)this.published[index]=saved;
+    else this.published.push(saved);
+    if(!this.savePublishedCatalog())return false;
+    this.drafts=this.drafts.filter(item=>String(item?.id||"")!==id);
+    this.save();
+    this.deletedCatalogIds.delete(id);
+    this.saveDeletedCatalog();
+    this.render();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shipcatalogchange",{detail:{action:"save",ship:clone(saved)}}));
+    return true;
+  }
+
   deleteSelectedDraft(){
     const id=String(this.selectedId||"");
     if(!id||!this.drafts.some(ship=>ship.id===id))return false;
@@ -239,11 +291,19 @@ export class ShipEditor{
 
   deleteSelectedCatalog(){
     const id=String(this.selectedId||"");
-    if(!id||!this.repositoryShipExists(id)||this.deletedCatalogIds.has(id))return false;
-    this.deletedCatalogIds.add(id);
-    this.saveDeletedCatalog();
-    this.selectedId=this.allShips()[0]?.id||null;
+    if(!id||!this.savedShipExists(id))return false;
+    const localIndex=this.published.findIndex(item=>String(item?.id||"")===id);
+    if(localIndex>=0){
+      this.published.splice(localIndex,1);
+      this.savePublishedCatalog();
+    }else if(this.repositoryShipExists(id)&&!this.deletedCatalogIds.has(id)){
+      this.deletedCatalogIds.add(id);
+      this.saveDeletedCatalog();
+    }
+    const draft=this.drafts.find(item=>String(item?.id||"")===id);
+    this.selectedId=draft?.id||this.allShips()[0]?.id||null;
     this.render();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shipcatalogchange",{detail:{action:"delete",shipId:id}}));
     return true;
   }
 
@@ -657,14 +717,19 @@ export class ShipEditor{
     list.innerHTML=ships.length?ships.map(ship=>`
       <button type="button" class="tq-ship-item ${ship.id===this.selectedId?"is-current":""}" data-ship-id="${this.escape(ship.id)}">
         <span><b>${this.escape(ship.name)}</b><small>${ship.type==="npc"?"NPC":"JOGADOR"} · ${this.escape(ship.id)}</small></span>
-        <strong>${this.drafts.some(d=>d.id===ship.id)?"RASCUNHO":"CATÁLOGO"}</strong>
+        <strong>${this.drafts.some(d=>d.id===ship.id)?"RASCUNHO":(this.publishedShipExists(ship.id)?"SALVO":"CATÁLOGO")}</strong>
       </button>`).join(""):'<div class="tq-ships__empty">Nenhum navio cadastrado.</div>';
     list.querySelectorAll("[data-ship-id]").forEach(button=>button.addEventListener("click",()=>this.select(button.dataset.shipId)));
     const selectedIsDraft=Boolean(this.selectedId&&this.drafts.some(d=>d.id===this.selectedId));
-    const selectedIsCatalog=Boolean(this.selectedId&&this.repositoryShipExists(this.selectedId)&&!this.deletedCatalogIds.has(this.selectedId));
+    const selectedIsCatalog=Boolean(this.selectedId&&this.savedShipExists(this.selectedId));
+    const publish=this.el.querySelector("[data-ship-publish]");
     const deleteOne=this.el.querySelector("[data-ship-delete-draft]");
     const deleteCatalog=this.el.querySelector("[data-ship-delete-catalog]");
     const deleteAll=this.el.querySelector("[data-ship-delete-all-drafts]");
+    if(publish){
+      publish.disabled=!selectedIsDraft;
+      publish.textContent=selectedIsCatalog&&selectedIsDraft?"✓ Atualizar navio":"✓ Salvar navio";
+    }
     if(deleteOne)deleteOne.disabled=!selectedIsDraft;
     if(deleteCatalog)deleteCatalog.disabled=!selectedIsCatalog;
     if(deleteAll)deleteAll.disabled=this.drafts.length===0;
