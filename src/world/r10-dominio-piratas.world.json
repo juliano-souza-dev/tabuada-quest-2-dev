@@ -432,6 +432,52 @@
         "action": "enter-scene",
         "message": ""
       }
+    },
+    {
+      "id": "r10-dominio-piratas.saida-proxima",
+      "type": "region-exit",
+      "label": "Navegar para Águas da Coroa Pirata",
+      "x": 4000,
+      "y": 180,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r11-aguas-coroa-pirata",
+      "destinationWorldName": "Águas da Coroa Pirata",
+      "transitionMessage": "Navegar para Águas da Coroa Pirata?",
+      "transitionActionLabel": "Navegar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Próxima região"
+      }
+    },
+    {
+      "id": "r10-dominio-piratas.saida-anterior",
+      "type": "region-exit",
+      "label": "Voltar para Mar das Tempestades",
+      "x": 4000,
+      "y": 7820,
+      "width": 1500,
+      "height": 260,
+      "z": 4,
+      "destinationWorldId": "r9-mar-tempestades",
+      "destinationWorldName": "Mar das Tempestades",
+      "transitionMessage": "Voltar para Mar das Tempestades?",
+      "transitionActionLabel": "Voltar",
+      "collision": {
+        "active": true,
+        "shape": "box",
+        "scaleX": 1,
+        "scaleY": 1,
+        "padding": 0,
+        "action": "auto",
+        "message": "Região anterior"
+      }
     }
   ],
   "npcPopulation": {
