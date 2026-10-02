@@ -1,3 +1,4 @@
+import { CannonPreview } from "./CannonPreview.js?v=20261002-1653";
 const clone=value=>value==null?value:JSON.parse(JSON.stringify(value));
 const slug=value=>String(value||"cannon").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"cannon";
 
@@ -9,6 +10,7 @@ export class CannonEditor{
     this.storageKey="tq.dev.cannon-catalog-live:v1";
     this.trashKey="tq.dev.cannon-trash:v1";
     this.trash=[];
+    this.preview=new CannonPreview();
   }
   async mount(parent){
     this.el=document.createElement("section");this.el.className="tq-dev__ships tq-dev__cannons";this.el.hidden=true;
@@ -65,7 +67,7 @@ export class CannonEditor{
     this.trash.splice(i,1);this.catalog.cannons.push(cannon);this.selectedId=cannon.id;this.persist();this.render();
   }
   setAsset(asset){const c=this.current();if(!c)return;c.asset=String(asset||"");this.persist();this.renderEditor()}
-  setVisible(show){if(this.el)this.el.hidden=!show;if(show)this.render()}
+  setVisible(show){if(this.el)this.el.hidden=!show;if(show)this.render();else this.preview?.stop?.()}
   render(){if(!this.el)return;this.renderList();this.renderTrash();this.renderEditor()}
   renderList(){
     const list=this.el?.querySelector("[data-cannon-list]");if(!list)return;
@@ -79,6 +81,7 @@ export class CannonEditor{
   }
   renderEditor(){
     const h=this.el?.querySelector("[data-cannon-editor]"),c=this.current();if(!h)return;
+    this.preview?.stop?.();
     if(!c){h.innerHTML='<div class="tq-ships__empty">Crie ou restaure um canhão.</div>';return}
     const cadence=(1000/Math.max(100,c.attackCooldownMs)).toFixed(2);
     h.innerHTML='<section class="tq-ships__panel"><div class="tq-ships__panel-title"><div><strong>Configuração do canhão</strong><small>Autosave ativo · alcance e cadência entram imediatamente no combate DEV.</small></div><button type="button" class="tq-ships__new" data-cannon-trash>🗑 Mover para lixeira</button></div><div class="tq-ships__settings tq-ships__settings--v2">'+
@@ -91,7 +94,7 @@ export class CannonEditor{
       '<label><span>Valor de compra</span><input data-c-price type="number" min="0" max="999999" step="1" value="'+c.shop.price+'"></label>'+
       '<label class="tq-ships__check"><input data-c-shop type="checkbox" '+(c.acquisition.shop?"checked":"")+'><span>Disponível em Loja</span></label>'+
       '<label class="tq-ships__check"><input data-c-boss type="checkbox" '+(c.acquisition.shipBossReward?"checked":"")+'><span>Recompensa de destruir navio / boss</span></label>'+
-      '</div></section>';
+      '</div></section><div data-cannon-preview-host></div>';
     const sync=()=>{
       c.name=h.querySelector("[data-c-name]").value.trim()||"Canhão";
       c.range=Math.max(100,Number(h.querySelector("[data-c-range]").value)||900);
@@ -103,11 +106,12 @@ export class CannonEditor{
       h.querySelector("[data-c-range-out]").textContent=Math.round(c.range)+" px";
       h.querySelector("[data-c-rate-out]").textContent=rate.toFixed(2)+" tiro/s";
       h.querySelector("[data-c-projectile-out]").textContent=Math.round(c.projectileSpeed)+" px/s";
-      this.persist();this.renderList();
+      this.persist();this.renderList();this.preview?.update?.(c);
     };
     h.querySelectorAll("input,select").forEach(x=>x.addEventListener(x.type==="range"?"input":"change",sync));
     h.querySelector("[data-c-name]").addEventListener("input",sync);
     h.querySelector("[data-c-asset]")?.addEventListener("click",()=>this.requestAsset?.({cannonId:c.id,currentAsset:c.asset}));
+    this.preview?.mount?.(h.querySelector("[data-cannon-preview-host]"),c);
     h.querySelector("[data-cannon-trash]").onclick=()=>this.trashCurrent();
   }
   e(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
