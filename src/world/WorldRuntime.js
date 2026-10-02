@@ -641,8 +641,20 @@ export class WorldRuntime {
       el.style.setProperty("--island-foam-width",String(foamWidth));
       el.style.setProperty("--island-wetness",String(wetness));
       el.style.setProperty("--island-submerged-shadow",String(shadow));
+
+      // Reuse the island's own alpha channel as the shoreline mask.
+      // The visual layers are tinted/expanded/blurred by CSS, so the effect
+      // follows the asset silhouette instead of drawing a generic ellipse.
+      const src=String(entity.src||"");
+      if(src){
+        const safeSrc=src.replace(/\\/g,"\\\\").replace(/"/g,'\\"');
+        el.style.setProperty("--island-alpha-mask",'url("'+safeSrc+'")');
+      }else{
+        el.style.setProperty("--island-alpha-mask","none");
+      }
     }else{
       el.classList.remove("has-water-integration");
+      el.style.removeProperty("--island-alpha-mask");
     }
     this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
