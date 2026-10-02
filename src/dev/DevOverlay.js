@@ -1,4 +1,9 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261002-0927";
+import { Wo+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+            '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
+            '<label class="tq-world-field"><span>Adicionar canhão</span><select data-test-cannon-add><option value="">Selecione...</option>'+testCannonOptions+'</select></label>'+
+            '<small class="tq-world-editor-note">Loadout exclusivo do DEV. Cada canhão dispara um projétil próprio e mantém alcance, velocidade e cadência individuais.</small>'+
+          '</div></section>'rldEditor } from "./world/WorldEditor.js?v=20261002-0927";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-0038";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1031";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-0927";
@@ -11,6 +16,7 @@ export class DevOverlay {
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({requestFrameAsset:context=>this.openShipFramePicker(context)});
     this.ammoEditor=new AmmoEditor();
+    this.cannonCatalog={defaultCannonId:"cannon-basic",cannons:[]};
     this.npcEditor=new NpcEditor({getShips:()=>((this.shipEditor?.allShips?.()||[]).filter(ship=>ship?.type==="npc")),getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
@@ -136,6 +142,7 @@ export class DevOverlay {
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
     this.shipEditorReady=this.shipEditor.mount(this.el);
     this.ammoEditorReady=this.ammoEditor.mount(this.el);
+    this.cannonCatalogReady=fetch("./src/config/cannon-catalog.json?v=20261002-0953",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Cannon catalog "+r.status))).then(catalog=>{this.cannonCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Cannon catalog failed",error);return this.cannonCatalog});
     this.npcEditorReady=this.npcEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
@@ -1086,6 +1093,11 @@ export class DevOverlay {
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
       const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"cannonball-standard");
       const testAmmoOptions=testAmmo.map(item=>'<option value="'+this.escapeHtml(item.id)+'" '+(selectedTestAmmoId===String(item.id)?'selected':'')+'>'+this.escapeHtml(item.name||item.id)+'</option>').join("");
+      const testCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
+      const defaultTestCannonId=String(this.cannonCatalog?.defaultCannonId||testCannons[0]?.id||"cannon-basic");
+      const selectedTestCannonIds=(Array.isArray(world.test?.cannonIds)&&world.test.cannonIds.length?world.test.cannonIds:[defaultTestCannonId]).map(String);
+      const testCannonOptions=testCannons.map(item=>'<option value="'+this.escapeHtml(item.id)+'">'+this.escapeHtml(item.name||item.id)+' · alcance '+Math.round(Number(item.range)||0)+' · '+Math.round(Number(item.projectileSpeed)||0)+' px/s</option>').join("");
+      const testCannonRows=selectedTestCannonIds.map((id,index)=>{const cannon=testCannons.find(item=>String(item.id)===id);return '<div class="tq-world-npc-row"><strong>'+this.escapeHtml(cannon?.name||id)+'</strong><small>alcance '+Math.round(Number(cannon?.range)||0)+' · velocidade '+Math.round(Number(cannon?.projectileSpeed)||0)+' px/s</small><button type="button" data-test-cannon-remove="'+index+'" '+(selectedTestCannonIds.length<=1?'disabled':'')+'>Remover</button></div>'}).join("");
       const player=this.worldEditor?.getPlayerConfig()||world.player||{};
       const npcPopulation=world.npcPopulation&&typeof world.npcPopulation==="object"
         ?structuredClone(world.npcPopulation)
@@ -1393,6 +1405,22 @@ export class DevOverlay {
       content.querySelectorAll("[data-npc-reward-item]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardItem),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),itemId:input.value};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-reward-quantity]").forEach(input=>input.addEventListener("change",()=>{const i=Number(input.dataset.npcRewardQuantity),n=currentNpcPopulation(),r={...(n.types?.[i]?.rewards||{}),quantity:Math.max(1,Number(input.value)||1)};updateNpcType(i,{rewards:r})}));
       content.querySelectorAll("[data-npc-type-respawn]").forEach(input=>input.addEventListener("change",()=>updateNpcType(Number(input.dataset.npcTypeRespawn),{respawn:input.value==="true"})));
+
+      const saveTestCannons=cannonIds=>{
+        const ids=cannonIds.length?cannonIds:[defaultTestCannonId];
+        this.worldEditor.updateWorld({test:{...(this.worldEditor.getWorld()?.test||{}),cannonIds:ids}},true);
+        if(this.worldEditor?.runtime)this.worldEditor.runtime.testCannonIds=[...ids];
+        this.syncLocalWorldFromEditor();
+        this.renderWorldInspector();
+      };
+      content.querySelector("[data-test-cannon-add]")?.addEventListener("change",event=>{
+        const id=String(event.currentTarget.value||"");
+        if(id)saveTestCannons([...selectedTestCannonIds,id]);
+      });
+      content.querySelectorAll("[data-test-cannon-remove]").forEach(button=>button.addEventListener("click",()=>{
+        const index=Number(button.dataset.testCannonRemove);
+        saveTestCannons(selectedTestCannonIds.filter((_,i)=>i!==index));
+      }));
 
       content.querySelector("[data-world-test-ammo]")?.addEventListener("change",event=>{
         const ammoId=String(event.currentTarget.value||"");
