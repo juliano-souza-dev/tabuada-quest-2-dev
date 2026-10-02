@@ -86,11 +86,7 @@ export class ShipEditor{
       &&this.catalog.ships.some(ship=>String(ship?.id||"")===String(id||""));
   }
 
-  hasCatalogDraftOverride(id){
-    const key=String(id||"");
-    return this.repositoryShipExists(key)
-      &&this.drafts.some(ship=>String(ship?.id||"")===key);
-  }
+  hasCatalogDraftOverride(){return false}
 
   saveDeletedCatalog(){
     try{
@@ -217,9 +213,7 @@ export class ShipEditor{
   }
 
   allShips(){
-    const byId=new Map(this.repositoryShips().map(ship=>[ship.id,this.normalizeShip(ship)]));
-    for(const draft of this.drafts)byId.set(draft.id,this.normalizeShip(draft));
-    return [...byId.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
+    return this.repositoryShips().sort((a,b)=>String(a.name).localeCompare(String(b.name),"pt-BR"));
   }
 
   current(){
@@ -583,8 +577,8 @@ export class ShipEditor{
   }
 
   addFrameTo(shipId,animationKey,src,section=null){
-    let ship=this.drafts.find(item=>item.id===shipId)||null;
-    if(!ship&&this.selectedId===shipId)ship=this.editableCurrent();
+    let ship=(this.catalog?.ships||[]).find(item=>item.id===shipId)||null;
+    if(ship&&this.selectedId===shipId)ship=this.editableCurrent();
     if(!ship)return false;
     const targetSection=section==="combat"?"combat":"navigation";
     this.tabByShip.set(ship.id,targetSection);
