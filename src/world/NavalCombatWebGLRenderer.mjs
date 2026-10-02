@@ -1,4 +1,4 @@
-import { normalizeAmmoFx, hexToRgb01 } from "./fx/AmmoFxProfile.mjs";
+import { normalizeAmmoFx, hexToRgb01 } from "./fx/AmmoFxProfile.mjs?v=20261002-2012";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const smoothstep=(edge0,edge1,value)=>{
   const t=clamp((value-edge0)/Math.max(.000001,edge1-edge0),0,1);
