@@ -1,12 +1,13 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261002-1742";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
     this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
+    this.resolveNpc=typeof resolveNpc==="function"?resolveNpc:null;
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
     this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
     this.getAmmoCatalog=typeof getAmmoCatalog==="function"?getAmmoCatalog:()=>({defaultAmmoId:"cannonball-standard",ammo:[]});
@@ -86,6 +87,7 @@ export class WorldEditor {
       testAmmoQuantity,
       soundCatalog:this.getSoundCatalog(),
       resolveShip:this.resolveShip,
+      resolveNpc:this.resolveNpc,
       resolveTreasure:this.resolveTreasure,
       createPedagogyChallenge:context=>this.pedagogyRuntime?.createChallenge?.({
         ...context,
