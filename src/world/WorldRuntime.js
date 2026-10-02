@@ -7,7 +7,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261001-2231";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261001-2255";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -177,6 +177,8 @@ export class WorldRuntime {
     this.contactEntity=null;
     this.combatTarget=null;
     this.navalHp=new Map();
+    this.navalDestroying=new Set();
+    this.navalDestroyTimers=new Map();
     this.regionTransitionActive=null;
     this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
@@ -320,7 +322,7 @@ export class WorldRuntime {
   }
 
   updateNpcNavigation(entity,dt){
-    if(this.mode!=="play"||!entity?.runtimeGenerated)return;
+    if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
     if(!nav||nav.mode!=="straight")return;
     const speed=Math.max(0,Number(nav.speed)||0);
@@ -633,6 +635,7 @@ export class WorldRuntime {
       entity
       &&String(entity.type||"")==="ship"
       &&!this.collected.has(entity.id)
+      &&!this.navalDestroying.has(entity.id)
     );
   }
 
@@ -2902,14 +2905,69 @@ export class WorldRuntime {
     return {current:Math.max(0,Number(this.navalHp.get(id))||0),max};
   }
 
+  navalDamageVisuals(){
+    const visuals=[];
+    for(const entity of this.entities){
+      if(!entity?.id||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))continue;
+      if(String(entity.type||"")!=="ship")continue;
+      const hp=this.navalHpState(entity);
+      if(hp.current<=0||hp.max<=0)continue;
+      const damageRatio=clamp(1-(hp.current/hp.max),0,1);
+      if(damageRatio<.5)continue;
+      visuals.push({
+        id:String(entity.id),
+        x:Number(entity.visualX??entity.x)||0,
+        y:Number(entity.visualY??entity.y)||0,
+        size:Math.max(48,Number(entity.width)||96,Number(entity.height)||96),
+        damageRatio
+      });
+    }
+    return visuals;
+  }
+
+  beginNavalDestruction(entity){
+    if(!entity?.id||this.collected.has(entity.id))return false;
+    const id=String(entity.id);
+    if(this.navalDestroying.has(id))return false;
+
+    this.navalDestroying.add(id);
+    if(this.combatTarget?.id===id)this.clearCombatTarget({hideAction:true});
+    if(this.contactEntity?.id===id)this.contactEntity=null;
+    if(this.nearby?.id===id)this.nearby=null;
+
+    entity.collision=normalizeCollision({
+      ...(entity.collision||{}),
+      active:false,
+      action:"none"
+    },entity);
+    this.syncCombatClickableEntity(entity);
+    this.syncCollisionVisual(entity);
+
+    const duration=1100;
+    const point={
+      x:Number(entity.visualX??entity.x)||0,
+      y:Number(entity.visualY??entity.y)||0
+    };
+    const size=Math.max(48,Number(entity.width)||96,Number(entity.height)||96);
+    this.navalRenderer?.destroyShip?.({at:point,size,duration});
+
+    const timer=setTimeout(()=>{
+      this.navalDestroyTimers.delete(id);
+      this.navalDestroying.delete(id);
+      this.completeCollection(entity);
+    },duration);
+    this.navalDestroyTimers.set(id,timer);
+    return true;
+  }
+
   applyDirectNavalDamage(entity,amount=1){
-    if(!entity||this.collected.has(entity.id))return;
+    if(!entity||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
     const hp=this.navalHpState(entity);
     const next=Math.max(0,hp.current-Math.max(1,Number(amount)||1));
     this.navalHp.set(String(entity.id),next);
 
     if(next<=0){
-      this.completeCollection(entity);
+      this.beginNavalDestruction(entity);
       return;
     }
 
@@ -3711,7 +3769,8 @@ export class WorldRuntime {
       camera:this.camera,
       zoom:this.mode==="play"?this.playZoom:this.zoom,
       width:this.viewportSize?.width||this.viewport?.clientWidth||1,
-      height:this.viewportSize?.height||this.viewport?.clientHeight||1
+      height:this.viewportSize?.height||this.viewport?.clientHeight||1,
+      damagedShips:this.navalDamageVisuals()
     });
     this.updateNearby();
     this.renderMinimap(false,time);
@@ -3747,6 +3806,9 @@ export class WorldRuntime {
     this.combatFxTimer=0;
     cancelAnimationFrame(this.raf);
     this.resetOceanRenderer();
+    for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
+    this.navalDestroyTimers.clear();
+    this.navalDestroying.clear();
     this.navalRenderer?.destroy?.();
     this.navalRenderer=null;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
