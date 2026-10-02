@@ -455,6 +455,48 @@
         "action": "auto",
         "message": "Próxima região"
       }
+    },
+    {
+      "id": "r1.coop-boss-test",
+      "type": "ship",
+      "role": "npc",
+      "label": "Boss Coop de Teste",
+      "shipId": "ship-1790964451141",
+      "x": 4000,
+      "y": 6200,
+      "width": 230,
+      "height": 230,
+      "z": 25,
+      "rotation": 0,
+      "lockAspect": true,
+      "coopBoss": true,
+      "coopBossId": "r1-coop-boss-test",
+      "npcAttitude": "retaliate",
+      "npcBehavior": "stationary",
+      "combat": {
+        "hp": 500,
+        "attackRange": 900,
+        "attackCooldownMs": 1500,
+        "damage": 2
+      },
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.65,
+        "scaleY": 0.65,
+        "padding": 0,
+        "action": "none",
+        "message": ""
+      },
+      "motion": {
+        "active": false,
+        "preset": "none",
+        "speed": 0,
+        "heave": 0,
+        "pitch": 0,
+        "roll": 0,
+        "sway": 0
+      }
     }
   ],
   "npcPopulation": {
