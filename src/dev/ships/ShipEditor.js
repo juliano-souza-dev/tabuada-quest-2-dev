@@ -156,6 +156,9 @@ export class ShipEditor{
     value.navigation.src=value.navigation.sprite.src||value.navigation.src||"";
     value.combat=value.combat&&typeof value.combat==="object"?value.combat:{};
     value.combat={
+      attackRange:Math.max(200,Math.min(6000,Number(value.combat.attackRange??profile.combat?.attackRange??1200)||1200)),
+      attackCooldownMs:Math.max(300,Math.min(5000,Number(value.combat.attackCooldownMs??profile.combat?.attackCooldownMs??900)||900)),
+      damage:Math.max(1,Math.min(20,Math.floor(Number(value.combat.damage??profile.combat?.damage)||1))),
       recoil:Number(value.combat.recoil??18),
       shake:Number(value.combat.shake??5),
       muzzleFlash:value.combat.muzzleFlash!==false,
@@ -678,6 +681,9 @@ export class ShipEditor{
           <span>WEBGL FX</span>
         </div>
         <div class="tq-ships__settings tq-ships__settings--v2">
+          <label><span>Alcance base px</span><input data-action-range type="number" min="200" max="6000" step="25" value="${Math.round(ship.combat.attackRange)}"></label>
+          <label><span>Intervalo de tiro ms</span><input data-action-cooldown type="number" min="300" max="5000" step="50" value="${Math.round(ship.combat.attackCooldownMs)}"></label>
+          <label><span>Dano por impacto</span><input data-action-damage type="number" min="1" max="20" value="${Math.round(ship.combat.damage)}"></label>
           <label><span>Recoil px</span><input data-action-recoil type="number" min="0" max="80" value="${Math.round(ship.combat.recoil)}"></label>
           <label><span>Shake px</span><input data-action-shake type="number" min="0" max="30" value="${Math.round(ship.combat.shake)}"></label>
           <label class="tq-ships__check"><input data-action-flash type="checkbox" ${ship.combat.muzzleFlash!==false?"checked":""}><span>Flash</span></label>
@@ -694,6 +700,9 @@ export class ShipEditor{
       if(!draft)return;
       draft.combat={
         ...(draft.combat||{}),
+        attackRange:Math.max(200,Math.min(6000,Number(content.querySelector("[data-action-range]")?.value)||1200)),
+        attackCooldownMs:Math.max(300,Math.min(5000,Number(content.querySelector("[data-action-cooldown]")?.value)||900)),
+        damage:Math.max(1,Math.min(20,Math.floor(Number(content.querySelector("[data-action-damage]")?.value)||1))),
         recoil:Math.max(0,Number(content.querySelector("[data-action-recoil]")?.value)||0),
         shake:Math.max(0,Number(content.querySelector("[data-action-shake]")?.value)||0),
         muzzleFlash:content.querySelector("[data-action-flash]")?.checked!==false,
@@ -705,7 +714,7 @@ export class ShipEditor{
       delete draft.combat.compiled;
       this.save();
     };
-    content.querySelectorAll("[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
+    content.querySelectorAll("[data-action-range],[data-action-cooldown],[data-action-damage],[data-action-recoil],[data-action-shake],[data-action-flash],[data-action-smoke],[data-action-impact]")
       .forEach(el=>el.addEventListener("change",saveStyle));
   }
 
@@ -734,7 +743,7 @@ export class ShipEditor{
     if(tab==="general"){
       content.innerHTML=this.atlasControlsHtml(ship)+`
         <section class="tq-ships__panel">
-          <div class="tq-ships__panel-title"><div><strong>Identidade do navio</strong><small>Uma definição para PLAYER ou NPC.</small></div><span>tq.ship v2</span></div>
+          <div class="tq-ships__panel-title"><div><strong>Identidade do navio</strong><small>O mesmo navio pode ser usado como jogador ou NPC.</small></div><span>tq.ship v2</span></div>
           <div class="tq-ships__top">
             <label><span>Nome</span><input data-ship-name value="${this.escape(ship.name)}"></label>
             <label><span>ID</span><input value="${this.escape(ship.id)}" disabled></label>
