@@ -1,4 +1,8 @@
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+const smoothstep=(edge0,edge1,value)=>{
+  const t=clamp((value-edge0)/Math.max(.000001,edge1-edge0),0,1);
+  return t*t*(3-2*t);
+};
 
 const VERTEX=`#version 300 es
 precision highp float;
@@ -281,11 +285,14 @@ export class NavalCombatWebGLRenderer{
       const elapsed=now-shot.startTime;
       if(elapsed>=shot.duration&&!shot.impactSpawned){
         shot.impactSpawned=true;
+        const piercing=String(shot.ammo?.effects?.impact||"")==="piercing-shrapnel-webgl";
         this.impacts.push({
           x:shot.to.x,
           y:shot.to.y,
           startTime:shot.startTime+shot.duration,
-          duration:460
+          duration:piercing?680:460,
+          effect:piercing?"piercing-shrapnel":"standard",
+          seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
         });
         try{shot.onImpact?.()}catch(error){
           console.warn("[TabuadaQuest] Naval impact callback failed:",error);
@@ -365,14 +372,43 @@ export class NavalCombatWebGLRenderer{
 
     for(const impact of this.impacts){
       const progress=clamp((now-impact.startTime)/impact.duration,0,1);
-      const point=toClip(impact.x,impact.y);
-      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
-      gl.uniform1f(this.uniforms.pointSize,(42+progress*54)*this.pixelRatio);
-      gl.uniform1f(this.uniforms.effectType,1);
-      gl.uniform1f(this.uniforms.progress,progress);
-      gl.uniform1f(this.uniforms.useTexture,0);
-      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
-      gl.drawArrays(gl.POINTS,0,1);
+      if(impact.effect==="piercing-shrapnel"){
+        const burst=clamp(progress/.42,0,1);
+        const fade=1-smoothstep(.34,1,progress);
+        drawPoint(impact.x,impact.y,(34+burst*92)*fade,5,progress,true);
+        const shardCount=14;
+        for(let i=0;i<shardCount;i++){
+          const hash=Math.sin((i+1)*91.733+(impact.seed||0)*731.17)*43758.5453;
+          const jitter=hash-Math.floor(hash);
+          const angle=(i/shardCount)*Math.PI*2+(jitter-.5)*.42;
+          const speed=.72+jitter*.72;
+          const travel=(18+92*speed)*Math.sin(Math.min(1,progress)*Math.PI*.72)*Math.pow(progress,.68);
+          const sx=impact.x+Math.cos(angle)*travel;
+          const sy=impact.y+Math.sin(angle)*travel+progress*progress*28;
+          const shardFade=clamp(1-progress,0,1);
+          drawPoint(sx,sy,(8+jitter*9)*shardFade,5,clamp(progress+jitter*.12,0,1),true);
+          if(i%3===0){
+            const sparkTravel=travel*1.28;
+            drawPoint(
+              impact.x+Math.cos(angle+.11)*sparkTravel,
+              impact.y+Math.sin(angle+.11)*sparkTravel+progress*progress*20,
+              (4+jitter*5)*shardFade,
+              0,
+              progress,
+              true
+            );
+          }
+        }
+      }else{
+        const point=toClip(impact.x,impact.y);
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
+        gl.uniform1f(this.uniforms.pointSize,(42+progress*54)*this.pixelRatio);
+        gl.uniform1f(this.uniforms.effectType,1);
+        gl.uniform1f(this.uniforms.progress,progress);
+        gl.uniform1f(this.uniforms.useTexture,0);
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+        gl.drawArrays(gl.POINTS,0,1);
+      }
     }
 
     for(const ship of visibleDamage){
