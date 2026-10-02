@@ -23,7 +23,7 @@ export class CannonPreview{
       ".tq-cannon-sim__head>div:first-child{display:grid;gap:3px}.tq-cannon-sim__head strong{font-size:14px}.tq-cannon-sim__head small{font-size:11px;color:#9fb5c2}",
       ".tq-cannon-sim__actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tq-cannon-sim__actions button{border:1px solid #39738f;border-radius:9px;background:#103447;color:#eefaff;padding:8px 12px;font-weight:800;cursor:pointer}.tq-cannon-sim__actions button:hover{background:#17465c}",
       ".tq-cannon-sim__auto{display:flex;align-items:center;gap:6px;font-size:11px;color:#c9dce5;background:#0a1b27;border:1px solid #294757;border-radius:9px;padding:7px 9px}.tq-cannon-sim__auto input{accent-color:#27a7ef}",
-      ".tq-cannon-sim__stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:#203b49;border-bottom:1px solid #244454}",
+      ".tq-cannon-sim__stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:#203b49;border-bottom:1px solid #244454}",
       ".tq-cannon-sim__stat{background:#091b27;padding:8px 10px;min-width:0}.tq-cannon-sim__stat span{display:block;color:#819aaa;font-size:9px;text-transform:uppercase;letter-spacing:.04em}.tq-cannon-sim__stat b{display:block;margin-top:2px;color:#eaf7ff;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".tq-cannon-sim__stat.is-ok b{color:#79e3a1}.tq-cannon-sim__stat.is-out b{color:#ffae78}",
       ".tq-cannon-sim__stage{--start:18%;--end:90%;position:relative;height:330px;overflow:hidden;touch-action:none;user-select:none;background:radial-gradient(ellipse at 50% 115%,#1f7396 0%,#0f4d6b 42%,#082f46 72%,#061e2e 100%)}",
@@ -72,6 +72,7 @@ export class CannonPreview{
       '<div class="tq-cannon-sim__stat"><span>Alcance</span><b data-csim-range-stat></b></div>',
       '<div class="tq-cannon-sim__stat"><span>Distância do alvo</span><b data-csim-distance></b></div>',
       '<div class="tq-cannon-sim__stat"><span>Projétil</span><b data-csim-speed></b></div>',
+      '<div class="tq-cannon-sim__stat"><span>Dano</span><b data-csim-damage></b></div>',
       '<div class="tq-cannon-sim__stat"><span>Tempo estimado</span><b data-csim-time></b></div>',
       '<div class="tq-cannon-sim__stat" data-csim-status-box><span>Status</span><b data-csim-status></b></div>',
       '</div>',
@@ -168,6 +169,8 @@ export class CannonPreview{
     this.host.querySelector("[data-csim-range-stat]").textContent=Math.round(range)+" px";
     this.host.querySelector("[data-csim-distance]").textContent=Math.round(this.targetDistance)+" px";
     this.host.querySelector("[data-csim-speed]").textContent=Math.round(speed)+" px/s · "+rate.toFixed(2)+" tiro/s";
+    const multiplier=Math.max(.1,Math.min(5,Number(c.damageMultiplier)||1));
+    this.host.querySelector("[data-csim-damage]").textContent="×"+multiplier.toFixed(2);
     this.host.querySelector("[data-csim-time]").textContent=seconds.toFixed(2)+" s";
     this.host.querySelector("[data-csim-range-label]").textContent="limite "+Math.round(range)+" px";
     this.host.querySelector("[data-csim-status]").textContent=inRange?"DENTRO DO ALCANCE":"FORA DO ALCANCE";
