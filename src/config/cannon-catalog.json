@@ -1,0 +1,34 @@
+{
+  "schema": "tq.cannon-catalog",
+  "version": 1,
+  "defaultCannonId": "cannon-basic",
+  "cannons": [
+    {
+      "id": "cannon-basic",
+      "name": "Canhão Básico",
+      "available": true,
+      "range": 900,
+      "projectileSpeed": 620,
+      "attackCooldownMs": 1200,
+      "shop": { "purchasable": true, "price": 0 }
+    },
+    {
+      "id": "cannon-bronze",
+      "name": "Canhão de Bronze",
+      "available": true,
+      "range": 1200,
+      "projectileSpeed": 760,
+      "attackCooldownMs": 1000,
+      "shop": { "purchasable": true, "price": 0 }
+    },
+    {
+      "id": "cannon-long-range",
+      "name": "Canhão Longo Alcance",
+      "available": true,
+      "range": 1600,
+      "projectileSpeed": 880,
+      "attackCooldownMs": 1350,
+      "shop": { "purchasable": true, "price": 0 }
+    }
+  ]
+}
