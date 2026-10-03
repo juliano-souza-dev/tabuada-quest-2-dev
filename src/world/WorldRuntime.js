@@ -4552,17 +4552,17 @@ export class WorldRuntime {
   }
 
   fireNpcNavalProjectile(entity){
-    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0||entity.devFrozen)return false;
+    if(!this.isClickableCombatShip(entity)||this.mode!=="play"||entity.devFrozen)return false;
     const stats=this.entityNavalCombatStats(entity);
     const maxTargets=this.isCoopBoss(entity)?clamp(Math.floor(Number(entity.combat?.maxTargets)||1),1,2):1;
     const candidates=[
-      {
+      ...(this.navalPlayerHp>0?[{
         id:"local",
         local:true,
         x:Number(this.player?.x)||0,
         y:Number(this.player?.y)||0,
         distance:Math.hypot((Number(entity.x)||0)-(Number(this.player?.x)||0),(Number(entity.y)||0)-(Number(this.player?.y)||0))
-      },
+      }]:[]),
       ...[...this.remotePlayers.values()].map(remote=>({
         id:String(remote.id||""),
         local:false,
@@ -4602,10 +4602,13 @@ export class WorldRuntime {
   }
 
   updateDirectNavalCombat(time=performance.now()){
-    if(this.mode!=="play"||this.challengeActive||this.combatActive||this.navalPlayerHp<=0)return;
+    if(this.mode!=="play"||this.combatActive)return;
+    // A forced repair only disables the destroyed local ship. The shared ocean,
+    // NPCs, bosses and remote players must keep simulating in multiplayer.
+    if(this.challengeActive&&!this.repairActive?.forced)return;
 
     const target=this.combatTarget;
-    if(this.navalAutoFire){
+    if(this.navalPlayerHp>0&&this.navalAutoFire){
       if(!target||!this.isClickableCombatShip(target)){
         this.stopNavalAutoFire({keepTarget:false});
       }else{
@@ -5704,12 +5707,13 @@ export class WorldRuntime {
   tick(time){
     const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
-    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive)this.updatePlayer(dt);
+    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     this.updatePlayerVisual(time,dt);
     this.updateRemotePlayers(time);
     this.updatePlayerWaterEffects(time);
-    if(!this.repairActive?.forced)this.updateEntityMotionFrame(time,dt);
+    // World simulation never freezes because the local player sank.
+    this.updateEntityMotionFrame(time,dt);
     this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
     this.updateCameraKeyboard(dt);
