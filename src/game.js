@@ -75,6 +75,7 @@ const mountRewardDiagnostics=()=>{
     runtimeRewards:game?.rewards||null,
     persistedRewards:services?.playerState?.load?.()?.game?.rewards||null
   });
+  const rewardClaim=event=>push("firebase-reward-claim",event.detail||{});
   const authReady=event=>push("auth-entry-ready",{
     reason:event.detail?.reason,
     restore:event.detail?.restore?.code,
@@ -85,6 +86,7 @@ const mountRewardDiagnostics=()=>{
   globalThis.addEventListener("tq:rewarddebug",rewardDebug);
   globalThis.addEventListener("tq:rewardgranted",rewardGranted);
   globalThis.addEventListener("tq:player-sync",playerSync);
+  globalThis.addEventListener("tq:player-reward-claim",rewardClaim);
   globalThis.addEventListener("tq:auth-entry-ready",authReady);
 
   return panel;
