@@ -74,7 +74,7 @@ export class MultiplayerRuntime extends EventTarget{
     }
   }
   async poll(){
-    if(!this.worldId||this.pollInFlight)return;this.pollInFlight=true;
+    if(!this.worldId||this.pollInFlight)return;const uid=String(this.auth.status().uid||"");this.pollInFlight=true;
     try{
     await this.pollPlayers();
     const bosses=await this.request("multiplayer/rooms/"+this.worldId+"/bosses");
@@ -102,11 +102,8 @@ export class MultiplayerRuntime extends EventTarget{
     this.socketSend({type:"boss.damage",bossId,damage:clamp(Number(damage)||1,1,5000),shotId:safeKey(meta.shotId||"")});
     return null;
   }
-  async sendHit(hit={}){
-    if(!this.worldId)return false;const uid=String(this.auth.status().uid||"");const targetUid=safeKey(hit.targetUid);if(!uid||!targetUid)return false;
+  async sendHit(){
     return false; // PvP disabled: players never damage other players.
-    const event={type:"hit",uid,targetUid,shotId:safeKey(hit.shotId||""),damage:clamp(Number(hit.damage)||1,1,5000),at:Date.now()};
-    await this.request("multiplayer/rooms/"+this.worldId+"/events",{method:"POST",body:event});return true;
   }
   async leaveWorld(){
     clearInterval(this.timer);clearInterval(this.pollTimer);clearTimeout(this.socketReconnect);this.timer=0;this.pollTimer=0;this.socketReady=false;try{this.socket?.close()}catch{}this.socket=null;
