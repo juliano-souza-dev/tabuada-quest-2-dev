@@ -201,6 +201,7 @@ export class WorldRuntime {
         return {
           attacking:this.navalAutoFire===true,
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
+          hasAmmo:this.hasPlayerAmmo(),
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           target:{
@@ -267,6 +268,7 @@ export class WorldRuntime {
     }
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
     this.onStarterCannonEarned=typeof options.onStarterCannonEarned==="function"?options.onStarterCannonEarned:null;
+    this.onStarterAmmoEarned=typeof options.onStarterAmmoEarned==="function"?options.onStarterAmmoEarned:null;
     const defaultCannonId=String(this.cannonCatalog[0]?.id||"");
     const productionCannonIds=Array.isArray(options.playerCannonIds)?options.playerCannonIds.map(String):null;
     const requestedCannonIds=productionCannonIds||(
@@ -3616,6 +3618,115 @@ export class WorldRuntime {
     if(this.challengeSubmit)this.challengeSubmit.disabled=false;
   }
 
+  hasPlayerAmmo(){
+    return (Array.isArray(this.ammoCatalog)?this.ammoCatalog:[]).some(item=>{
+      if(!item||item.available===false)return false;
+      const id=String(item.id||"");
+      return id&&Math.max(0,Math.floor(Number(this.state?.ammo?.stock?.[id])||0))>0;
+    });
+  }
+
+  async beginStarterAmmoChallenge(){
+    if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    if(this.hasPlayerAmmo())return false;
+
+    this.stopNavalAutoFire({keepTarget:true});
+    this.stopForChallenge();
+    if(this.actionWrap)this.actionWrap.hidden=true;
+
+    const entity={
+      id:"starter-ammo-rescue",
+      type:"ammo-rescue",
+      label:"Munição básica"
+    };
+    let challenge=null;
+    try{
+      challenge=this.createPedagogyChallenge
+        ?await this.createPedagogyChallenge({entity,worldState:this.getState()})
+        :null;
+    }catch(error){
+      console.warn("Starter ammo challenge creation failed",error);
+    }
+
+    this.challengeActive={entity,challenge,kind:"starter-ammo"};
+    if(this.challengeKicker)this.challengeKicker.textContent="SEM MUNIÇÃO";
+    if(this.challengeTitle)this.challengeTitle.textContent="Ganhe 50 munições básicas";
+    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
+    if(this.repairHp)this.repairHp.hidden=true;
+    if(this.challengeFeedback)this.challengeFeedback.textContent=
+      "Você ficou sem munição. Acerte a multiplicação para receber 50 Bolas de Canhão.";
+    if(this.repairOptions){
+      this.repairOptions.hidden=false;
+      this.repairOptions.replaceChildren();
+      if(challenge?.available){
+        for(const value of this.combatChoices(challenge)){
+          const button=document.createElement("button");
+          button.type="button";
+          button.className="tq-world-combat__option";
+          button.dataset.repairAnswer=String(value);
+          button.textContent=String(value);
+          this.repairOptions.append(button);
+        }
+      }
+    }
+
+    if(!challenge?.available){
+      if(this.challengePrompt)this.challengePrompt.textContent="Desafio indisponível";
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        String(challenge?.message||"Não foi possível gerar a multiplicação agora.");
+      return false;
+    }
+    if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
+    return true;
+  }
+
+  resolveStarterAmmoChallenge(result,challenge){
+    const detail={
+      entityId:"starter-ammo-rescue",
+      challengeId:String(challenge?.id||""),
+      operation:String(challenge?.operation||challenge?.kind||"multiplication"),
+      a:Number(challenge?.a),
+      b:Number(challenge?.b),
+      answer:result?.answer,
+      correct:result?.correct===true,
+      region:Number(challenge?.region)||null,
+      bonus:false,
+      countsTowardPlanned:challenge?.countsTowardPlanned!==false
+    };
+    this.onPedagogyResult?.(detail);
+
+    if(result?.correct!==true){
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        "Ainda não. Tente novamente para receber a munição básica.";
+      return false;
+    }
+
+    const ammoId="cannonball-standard";
+    const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId&&item?.available!==false);
+    if(!ammo){
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        "Acertou, mas a munição básica não está disponível no catálogo.";
+      return false;
+    }
+
+    if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
+    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+50;
+    this.state.ammo.selectedAmmoId=ammoId;
+    this.onStarterAmmoEarned?.({
+      ammoId,
+      ammoName:String(ammo.name||"Bola de Canhão"),
+      quantity:50,
+      total:this.state.ammo.stock[ammoId]
+    });
+
+    if(this.challengeFeedback)this.challengeFeedback.textContent=
+      "Acertou! +50 Bolas de Canhão recebidas e equipadas.";
+    this.showGameplayToast("🎁 +50 Bolas de Canhão");
+    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
+    return true;
+  }
+
   async beginStarterCannonChallenge(){
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
@@ -3837,6 +3948,10 @@ export class WorldRuntime {
 
     if(active?.kind==="starter-cannon"){
       this.resolveStarterCannonChallenge(result,challenge);
+      return;
+    }
+    if(active?.kind==="starter-ammo"){
+      this.resolveStarterAmmoChallenge(result,challenge);
       return;
     }
 
@@ -4449,6 +4564,10 @@ export class WorldRuntime {
     }
     if(!Array.isArray(this.testCannonIds)||this.testCannonIds.length===0){
       this.beginStarterCannonChallenge();
+      return;
+    }
+    if(!this.hasPlayerAmmo()){
+      this.beginStarterAmmoChallenge();
       return;
     }
     const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
@@ -5421,6 +5540,7 @@ export class WorldRuntime {
       player:{x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction},
       collected:[...this.collected],
       navalPlayerHp:this.navalPlayerHp,
+      ammo:normalizeAmmoInventory(this.state.ammo||{}),
       combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
     };
   }
