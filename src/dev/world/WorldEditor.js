@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-3445";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1938-repair";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
