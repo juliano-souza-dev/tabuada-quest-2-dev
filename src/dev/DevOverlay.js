@@ -1361,7 +1361,6 @@ export class DevOverlay {
         types:[]
       },
       treasurePopulation:{enabled:false,seed:1,spread:{mode:"random-spaced",margin:220,minDistance:180},types:[]},
-      camera:{playZoom:0.4841},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
       meta:{
         schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev",
@@ -1514,7 +1513,7 @@ export class DevOverlay {
         .map(([value,label])=>'<option value="'+value+'" '+(environmentPreset===value?'selected':'')+'>'+label+'</option>').join("");
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
-      const cameraPlayZoom=Math.max(.30,Math.min(1.4,Number(world.camera?.playZoom??0.4841)));
+      const cameraPlayZoom=Math.max(.30,Math.min(1.4,Number(this.gameManifest?.worldDefaults?.camera?.playZoom??0.4841)));
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
       const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"");
       const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??10000)||0));
@@ -1721,12 +1720,12 @@ export class DevOverlay {
             '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
             '<small class="tq-world-editor-note">Use − e ＋ para definir quantos canhões de cada modelo ficam equipados. Loadout exclusivo do DEV.</small>'+
           '</div></section>'+
-          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera global do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(4)+'x</output></span>'+
               '<input data-world-camera-prop="playZoom" type="range" min="0.30" max="1.40" step="0.0001" value="'+cameraPlayZoom+'">'+
             '</label>'+
             '<div class="tq-world-camera-scale"><small>0.30x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
-            '<small class="tq-world-editor-note">Esse valor é salvo neste oceano. Afeta somente o enquadramento visual no Play, sem mudar velocidade, física ou colisões.</small>'+
+            '<small class="tq-world-editor-note">Configuração global: um único zoom é aplicado a todos os mapas no Play, sem mudar velocidade, física ou colisões.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Minimapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-field tq-field--check"><span>Minimapa ativo</span><input data-world-minimap-prop="enabled" type="checkbox" '+(world.minimap?.enabled!==false?'checked':'')+'></label>'+
@@ -1962,16 +1961,25 @@ export class DevOverlay {
       });
 
       content.querySelectorAll("[data-world-camera-prop]").forEach(input=>{
-        const apply=commit=>{
+        const apply=()=>{
           const key=input.dataset.worldCameraProp;
-          const value=Number(input.value);
+          const value=Math.max(.30,Math.min(1.4,Number(input.value)||0.4841));
           const output=content.querySelector('[data-world-camera-output="'+key+'"]');
-          if(output)output.value=value.toFixed(2)+"x";
-          this.worldEditor.updateWorld({camera:{[key]:value}},commit);
-          if(commit)this.syncLocalWorldFromEditor();
+          if(output)output.value=value.toFixed(4)+"x";
+          this.gameManifest={
+            ...(this.gameManifest||{}),
+            worldDefaults:{
+              ...(this.gameManifest?.worldDefaults||{}),
+              camera:{
+                ...(this.gameManifest?.worldDefaults?.camera||{}),
+                [key]:value
+              }
+            }
+          };
+          this.worldEditor?.runtime?.setGlobalCamera?.({[key]:value});
         };
-        input.addEventListener("input",()=>apply(false));
-        input.addEventListener("change",()=>apply(true));
+        input.addEventListener("input",apply);
+        input.addEventListener("change",apply);
       });
 
       content.querySelectorAll("[data-world-playable-prop]").forEach(input=>input.addEventListener("change",()=>{
