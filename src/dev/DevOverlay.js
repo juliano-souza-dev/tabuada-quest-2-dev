@@ -3664,6 +3664,7 @@ export class DevOverlay {
     const params=new URLSearchParams();
     if(currentWorld)params.set("start","world:"+currentWorld);
     params.set("flowtest","1");
+    params.set("build","20261003-2025-flowfix");
     const url="./game.html"+(params.toString()?"?"+params.toString():"");
     window.open(url,"tq-production-flow");
   }
