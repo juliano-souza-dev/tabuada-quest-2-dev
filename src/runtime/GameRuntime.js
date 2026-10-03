@@ -638,11 +638,11 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
-  handleCombatVictory({entity,rewards}={}){
+  handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
     const worldId=String(this.current?.id||"");
-    const claimKey=worldId+":"+String(cleanEntity.id||"");
+    const claimKey=String(explicitClaimKey||worldId+":"+String(cleanEntity.id||""));
     if(!cleanEntity.id)return false;
 
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
@@ -689,7 +689,14 @@ export class GameRuntime {
     };
     globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
     this.saveState();
+    this.syncCloud("reward-claim");
     return detail;
+  }
+
+  handleBossDefeated({bossId,entity,rewards}={}){
+    const stableBossId=String(bossId||entity?.coopBossId||entity?.id||"").trim();
+    if(!stableBossId)return false;
+    return this.handleCombatVictory({entity,rewards,claimKey:"boss:"+stableBossId});
   }
 
   handleTreasureCollected({entity,challenge}={}){
@@ -799,6 +806,7 @@ export class GameRuntime {
         worldId
       }),
       onTreasureCollected:payload=>this.handleTreasureCollected(payload),
+      onBossDefeated:payload=>this.handleBossDefeated(payload),
       onRewardCollected:payload=>this.handleCombatVictory(payload),
       onEnterScene:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
