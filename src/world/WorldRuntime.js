@@ -1124,6 +1124,17 @@ export class WorldRuntime {
       collider.setAttribute("aria-hidden","true");
       el.append(collider);
 
+      const isNamedShip=String(entity.type||"")==="ship"
+        &&(entity.role==="npc"||entity.role==="multiplayer"||entity.runtimeGenerated===true||Boolean(entity.npcId));
+      if(isNamedShip){
+        const name=document.createElement("span");
+        name.className="tq-world-ship-name";
+        name.textContent=String(entity.label||entity.shipName||"Navio");
+        name.setAttribute("aria-hidden","true");
+        el.append(name);
+        entity.nameEl=name;
+      }else entity.nameEl=null;
+
       entity.el=el;
       this.syncCombatClickableEntity(entity);
       this.applyEntityVisual(entity);
@@ -1248,7 +1259,10 @@ export class WorldRuntime {
   }
 
   isNavalTargetInRange(entity){
-    return this.playerCannonsInRange(entity).length>0;
+    if(!this.isClickableCombatShip(entity))return false;
+    // O foco usa o maior alcance dentre os canhões equipados, inclusive
+    // quando há somente um canhão no navio.
+    return this.navalTargetDistance(entity)<=this.playerEffectiveCannonRange();
   }
 
   stopNavalAutoFire({keepTarget=true,message=""}={}){
@@ -1332,6 +1346,10 @@ export class WorldRuntime {
     el.style.width=(entity.width||96)+"px";
     el.style.height=(entity.height||96)+"px";
     el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg)`;
+    if(entity.nameEl){
+      entity.nameEl.textContent=String(entity.label||entity.shipName||"Navio");
+      entity.nameEl.style.setProperty("--tq-ship-name-counter-rotation",(-Number(entity.rotation||0))+"deg");
+    }
     const logicalOnly=el.dataset.renderMode==="logical";
     el.classList.toggle("is-logical-only",logicalOnly);
     el.style.visibility=logicalOnly&&this.mode==="play"?"hidden":"visible";
