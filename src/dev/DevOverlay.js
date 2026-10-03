@@ -51,12 +51,6 @@ export class DevOverlay {
     this.worldAtlasSelectionMode=null;
     this.sceneGroupOpen=new Set();
     this.configAreaOpenState=new Set();
-    this.liveCssStorageKey="tq.dev.live-css:v1";
-    this.challengeStyleStorageKey="tq.dev.challenge-styles:v1";
-    this.compositionAssetStorageKey="tq.dev.composition-assets:v1";
-    this.selectedCssComposition="treasure";
-    this.liveCssStyle=null;
-    this.compositionAssetStyle=null;
   }
   mount(){
     this.el=document.createElement("aside");this.el.className="tq-dev";
@@ -78,7 +72,6 @@ export class DevOverlay {
         <button data-cannons>🎯 <span>Canhões</span></button>
         <button data-ammo>💣 <span>Munições</span></button>
         <button data-assets>▦ <span>Assets</span></button>
-        <button data-live-css>{ } <span>CSS</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
       </div>
       <section class="tq-dev__scenes" hidden>
@@ -135,59 +128,6 @@ export class DevOverlay {
         <div class="tq-assets__filters"><input data-asset-search type="search" placeholder="Buscar em /assets..."></div>
         <div class="tq-assets__grid" data-assets-grid></div>
       </section>
-      <section class="tq-dev__live-css" hidden>
-        <header>
-          <div><strong>CSS ao vivo</strong><small>Alterações DEV aplicadas instantaneamente</small></div>
-          <button type="button" data-live-css-close aria-label="Fechar">×</button>
-        </header>
-        <div class="tq-live-css__body">
-          <div class="tq-live-css__actions">
-            <button type="button" data-live-css-catalog>Composições</button>
-            <button type="button" data-live-css-shop>Loja</button>
-            <button type="button" data-live-css-challenge>Desafio</button>
-            <button type="button" data-challenge-export>Exportar JSON</button>
-            <button type="button" data-challenge-import>Importar JSON</button>
-            <button type="button" data-live-css-clear>Limpar</button>
-          </div>
-          <section class="tq-live-css__catalog" data-live-css-catalog-panel>
-            <strong>Composições visuais</strong>
-            <div><button type="button" data-css-composition="shop">Loja</button><button type="button" data-css-composition="treasure">Baú do tesouro</button><button type="button" data-css-composition="repair">Conserto do navio</button><button type="button" data-css-composition="shipyard">Estaleiro</button></div>
-            <label>Asset de fundo / moldura <input data-css-composition-asset readonly placeholder="Selecione uma composição"></label>
-            <button type="button" data-css-composition-asset-pick>Escolher no catálogo de assets</button>
-            <small>O asset escolhido fica vinculado à composição selecionada e entra no JSON exportado do DEV.</small>
-          </section>
-          <fieldset class="tq-live-css__challenge" data-challenge-style-controls hidden>
-            <legend>Editor visual · desafio</legend>
-            <label>Tipo lógico <select data-challenge-kind><option value="treasure">Coletar tesouro</option><option value="repair">Consertar navio</option></select></label>
-            <label>Elemento selecionado <select data-challenge-component><option value="layout">Moldura</option><option value="prompt">Conta</option><option value="options">Grupo de alternativas</option><option value="answer">Alternativas</option></select></label>
-            <div class="tq-live-css__component" data-challenge-component-controls>
-              <strong data-challenge-component-title>Conta</strong>
-              <label class="tq-live-css__component-preview">Texto da conta <input data-challenge-component-text type="text" value="4 × 6 = ?" maxlength="32"></label>
-              <label class="tq-live-css__component-answer-index" hidden>Alternativa <select data-challenge-answer-index><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select></label>
-              <label class="tq-live-css__component-answer-text" hidden>Texto da alternativa <input data-challenge-answer-text type="text" value="24" maxlength="16"></label>
-              <label>Display <select data-challenge-component-display><option value="block">Exibir</option><option value="none">Ocultar</option></select></label>
-              <label>Deslocamento X <input data-challenge-component-x type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-x-output>0px</output></label>
-              <label>Deslocamento Y <input data-challenge-component-y type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-y-output>0px</output></label>
-              <label>Escala <input data-challenge-component-scale type="range" min="40" max="160" step="1" value="100"><output data-challenge-component-scale-output>100%</output></label>
-              <small>Toque/clique diretamente no elemento do popup para selecioná-lo. Arraste-o na tela para posição fina.</small>
-            </div>
-            <label>Largura máxima <input data-challenge-max-width type="range" min="360" max="1080" step="10" value="1080"><output data-challenge-max-width-output>1080px</output></label>
-            <label>Posição vertical <input data-challenge-top type="range" min="24" max="42" step=".5" value="33.5"><output data-challenge-top-output>33.5%</output></label>
-            <label>Margem lateral <input data-challenge-side type="range" min="18" max="32" step=".5" value="25.5"><output data-challenge-side-output>25.5%</output></label>
-            <label>Posição da conta <input data-challenge-prompt-offset type="range" min="-80" max="80" step="1" value="0"><output data-challenge-prompt-offset-output>0px</output></label>
-            <label>Tamanho da conta <input data-challenge-prompt-size type="range" min="28" max="96" step="1" value="72"><output data-challenge-prompt-size-output>72px</output></label>
-            <label>Posição das opções <input data-challenge-options-offset type="range" min="-80" max="80" step="1" value="0"><output data-challenge-options-offset-output>0px</output></label>
-            <label>Altura do slot <input data-challenge-slot-height type="range" min="29" max="90" step="1" value="78"><output data-challenge-slot-height-output>78px</output></label>
-            <label>Espaço entre opções <input data-challenge-option-gap type="range" min="0" max="28" step="1" value="22"><output data-challenge-option-gap-output>22px</output></label>
-            <label>Tamanho das opções <input data-challenge-answer-size type="range" min="18" max="72" step="1" value="58"><output data-challenge-answer-size-output>58px</output></label>
-            <label>Fonte da conta <select data-challenge-prompt-font><option value="system-ui,sans-serif">Sistema</option><option value="Georgia,serif">Pirata clássica</option><option value="Trebuchet MS,sans-serif">Aventura</option></select></label>
-            <label>Cor da conta <input data-challenge-prompt-color type="color" value="#24101f"></label>
-            <label>Cor das respostas <input data-challenge-answer-color type="color" value="#fff3bb"></label>
-          </fieldset>
-          <textarea data-live-css-editor spellcheck="false" autocomplete="off" aria-label="Editor CSS ao vivo"></textarea>
-          <small>As alterações ficam somente no DEV e são salvas neste navegador. Para produção, copie o CSS aprovado para o stylesheet do projeto.</small>
-        </div>
-      </section>
       <section class="tq-dev__panel" hidden>
         <header><div><strong>Config</strong><small data-node-title>Nenhum nó</small></div><button data-close aria-label="Fechar">×</button></header>
         <div class="tq-dev__content"><div class="tq-dev__empty">Selecione um nó para configurar.</div></div>
@@ -226,30 +166,6 @@ export class DevOverlay {
     this.el.querySelector("[data-ammo]").addEventListener("click",()=>{this.closeToolPanels("ammo");this.ammoEditor.setVisible(this.ammoEditor?.el?.hidden!==false)});
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
-    this.el.querySelector("[data-live-css]").addEventListener("click",()=>this.toggleLiveCss(this.el.querySelector(".tq-dev__live-css").hidden));
-    this.el.querySelector("[data-live-css-close]").addEventListener("click",()=>this.toggleLiveCss(false));
-    this.el.querySelector("[data-live-css-editor]").addEventListener("input",event=>this.applyLiveCss(event.currentTarget.value,{persist:true}));
-    this.el.querySelector("[data-live-css-clear]").addEventListener("click",()=>{
-      const editor=this.el.querySelector("[data-live-css-editor]");
-      if(editor)editor.value="";
-      this.applyLiveCss("",{persist:true});
-    });
-    this.el.querySelector("[data-live-css-shop]").addEventListener("click",()=>this.loadShopLiveCssPreset());
-    this.el.querySelector("[data-live-css-challenge]").addEventListener("click",()=>this.loadChallengeLiveCssPreset());
-    this.el.querySelector("[data-live-css-catalog]").addEventListener("click",()=>this.toggleCompositionCatalog(true));
-    this.el.querySelectorAll("[data-css-composition]").forEach(button=>button.addEventListener("click",()=>this.selectCssComposition(button.dataset.cssComposition)));
-    this.el.querySelector("[data-css-composition-asset-pick]").addEventListener("click",()=>this.openCompositionAssetPicker());
-    this.el.querySelector("[data-challenge-export]").addEventListener("click",()=>this.exportChallengeStyles());
-    this.el.querySelector("[data-challenge-import]").addEventListener("click",()=>this.importChallengeStyles());
-    this.el.querySelectorAll("[data-challenge-style-controls] input").forEach(input=>input.addEventListener("input",()=>this.applyChallengeStyleControls()));
-    this.el.querySelector("[data-challenge-kind]").addEventListener("change",event=>{this.loadChallengeProfileIntoControls(event.currentTarget.value);this.applyChallengeStyleControls()});
-    this.el.querySelector("[data-challenge-prompt-font]").addEventListener("change",()=>this.applyChallengeStyleControls());
-    this.el.querySelector("[data-challenge-component]").addEventListener("change",()=>this.loadChallengeComponentControls());
-    this.el.querySelector("[data-challenge-component-display]").addEventListener("change",()=>this.applyChallengeStyleControls());
-    this.el.querySelector("[data-challenge-component-text]").addEventListener("input",()=>this.applyChallengeStyleControls());
-    this.el.querySelector("[data-challenge-answer-index]").addEventListener("change",()=>this.loadChallengeComponentControls());
-    this.el.querySelector("[data-challenge-answer-text]").addEventListener("input",()=>this.applyChallengeStyleControls());
-    this.bindChallengeCanvasSelection();
 
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
@@ -259,7 +175,6 @@ export class DevOverlay {
     this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
     this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el)).then(result=>{if(this.workspace==="world"&&this.mode==="config"&&!this.selected)this.renderWorldInspector();return result});
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
-    this.restoreLiveCss();
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -654,13 +569,12 @@ export class DevOverlay {
       regions:".tq-dev__worlds",
       flow:".tq-dev__flow",
       assets:".tq-dev__assets",
-      css:".tq-dev__live-css",
       config:".tq-dev__panel"
     };
     for(const [key,selector] of Object.entries(panels)){
       if(key===except)continue;
       const panel=this.el?.querySelector(selector);
-      if(panel){panel.hidden=true;if(key==="css")this.hideCssCompositionPreview()}
+      if(panel)panel.hidden=true;
     }
     if(except!=="ships")this.shipEditor?.setVisible(false);
     if(except!=="npcs")this.npcEditor?.setVisible(false);
@@ -3082,11 +2996,6 @@ export class DevOverlay {
     const target=this.assetPickTarget;
     if(!target||!asset)return false;
 
-    if(target.kind==="css-composition-asset"){
-      const assets=this.compositionAssets();assets[target.composition]="./"+asset.path;this.saveCompositionAssets(assets);this.applyCompositionAssets();
-      this.assetPickTarget=null;this.toggleAssets(false);this.toggleLiveCss(true);this.toggleCompositionCatalog(true);this.selectCssComposition(target.composition);return true;
-    }
-
     if(target.kind==="ship-frame"){
       const src="./"+asset.path;
       const added=target.mode==="sprite"
@@ -3352,8 +3261,7 @@ export class DevOverlay {
       [".tq-dev__scenes","scenes"],
       [".tq-dev__worlds","regions"],
       [".tq-dev__flow","flow"],
-      [".tq-dev__assets","assets"],
-      [".tq-dev__live-css","css"]
+      [".tq-dev__assets","assets"]
     ];
 
     const clearPosition=panel=>{
