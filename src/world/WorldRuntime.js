@@ -326,6 +326,7 @@ export class WorldRuntime {
       y:Number(config.editor?.cameraY??this.player.y)
     };
     this.zoom=Number(config.editor?.zoom??0.58);
+    this.globalCameraLocked=Number.isFinite(Number(options.globalCamera?.playZoom));
     this.playZoom=clamp(Number(options.globalCamera?.playZoom??config.camera?.playZoom??0.4841),.30,1.4);
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
@@ -5101,6 +5102,7 @@ export class WorldRuntime {
 
   setGlobalCamera(patch={}){
     if(patch.playZoom!==undefined){
+      this.globalCameraLocked=true;
       this.playZoom=clamp(Number(patch.playZoom)||0.4841,.30,1.4);
       if(this.mode==="play")this.zoom=this.playZoom;
     }
@@ -5112,12 +5114,14 @@ export class WorldRuntime {
     if(patch.width!==undefined)this.config.width=clamp(Number(patch.width)||390,390,20000);
     if(patch.height!==undefined)this.config.height=clamp(Number(patch.height)||844,844,20000);
     if(patch.camera&&typeof patch.camera==="object"){
+      const cameraPatch=structuredClone(patch.camera);
+      if(this.globalCameraLocked)delete cameraPatch.playZoom;
       this.config.camera={
         ...(this.config.camera||{}),
-        ...structuredClone(patch.camera)
+        ...cameraPatch
       };
-      if(patch.camera.playZoom!==undefined){
-        this.playZoom=clamp(Number(patch.camera.playZoom)||1,.30,1.4);
+      if(!this.globalCameraLocked&&patch.camera.playZoom!==undefined){
+        this.playZoom=clamp(Number(patch.camera.playZoom)||0.4841,.30,1.4);
         this.config.camera.playZoom=this.playZoom;
         if(this.mode==="play")this.zoom=this.playZoom;
       }
