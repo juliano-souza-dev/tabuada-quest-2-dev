@@ -878,6 +878,7 @@ export class WorldRuntime {
           </div>
         </section>
       </div>
+      <div class="tq-world-gameplay-toast" data-world-gameplay-toast role="status" aria-live="polite" hidden></div>
       <div class="tq-world-challenge" data-world-challenge hidden>
         <section class="tq-world-challenge__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
           <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
@@ -885,14 +886,7 @@ export class WorldRuntime {
           <h2 id="tq-world-challenge-title">Resolva para recolher</h2>
           <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
           <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
-          <form data-world-challenge-form>
-            <label>
-              <span>Sua resposta</span>
-              <input type="number" inputmode="numeric" autocomplete="off" data-world-challenge-answer>
-            </label>
-            <button type="submit" data-world-challenge-submit>Responder</button>
-          </form>
-          <div class="tq-world-combat__options" data-world-repair-options aria-label="Escolha a resposta" hidden></div>
+          <div class="tq-world-combat__options" data-world-repair-options aria-label="Escolha a resposta"></div>
           <p class="tq-world-challenge__feedback" data-world-challenge-feedback aria-live="polite"></p>
         </section>
       </div>
@@ -970,6 +964,8 @@ export class WorldRuntime {
     this.minimapCanvas=this.host.querySelector("[data-world-minimap-canvas]");
     this.minimapFrameEl=this.host.querySelector("[data-world-minimap-frame]");
     this.minimapCtx=this.minimapCanvas?.getContext?.("2d")||null;
+    this.gameplayToast=this.host.querySelector("[data-world-gameplay-toast]");
+    this.gameplayToastTimer=0;
     this.challengeWrap=this.host.querySelector("[data-world-challenge]");
     this.challengeForm=this.host.querySelector("[data-world-challenge-form]");
     this.challengePrompt=this.host.querySelector("[data-world-challenge-prompt]");
@@ -3555,6 +3551,8 @@ export class WorldRuntime {
     }
     this.challengeActive=null;
     if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
+    if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeAnswer){
       this.challengeAnswer.value="";
@@ -3583,11 +3581,19 @@ export class WorldRuntime {
     this.challengeActive={entity,challenge};
     if(this.challengeWrap)this.challengeWrap.hidden=false;
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
-    if(this.challengeAnswer){
-      this.challengeAnswer.value="";
-      this.challengeAnswer.disabled=false;
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
+    if(this.repairOptions){
+      this.repairOptions.hidden=false;
+      this.repairOptions.replaceChildren();
+      if(challenge?.available){
+        for(const value of this.combatChoices(challenge)){
+          const button=document.createElement("button");
+          button.type="button";button.className="tq-world-combat__option";
+          button.dataset.repairAnswer=String(value);button.textContent=String(value);
+          this.repairOptions.append(button);
+        }
+      }
     }
-    if(this.challengeSubmit)this.challengeSubmit.disabled=false;
 
     if(!challenge?.available){
       if(this.challengePrompt)this.challengePrompt.textContent="Desafio indisponível";
@@ -3600,7 +3606,6 @@ export class WorldRuntime {
     }
 
     if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
-    queueMicrotask(()=>this.challengeAnswer?.focus?.());
   }
 
   completeCollection(entity,{challenge=null}={}){
@@ -3612,6 +3617,7 @@ export class WorldRuntime {
     if(this.combatTarget?.id===entity.id)this.clearCombatTarget({hideAction:false});
     this.actionWrap.hidden=true;
     this.updateProgress();
+    this.showGameplayToast(entity.type==="treasure"?"Tesouro coletado":((entity.label||"Item")+" coletado"));
     if(entity.type==="treasure"){
       const rolled=entity.runtimeTreasure?this.rollTreasureRewards(entity):null;
       if(rolled)entity.rewards=rolled;
@@ -3636,7 +3642,7 @@ export class WorldRuntime {
 
     const raw=selectedRaw??this.challengeAnswer?.value??"";
     if(String(raw).trim()===""){
-      if(this.challengeFeedback)this.challengeFeedback.textContent="Digite uma resposta.";
+      if(this.challengeFeedback)this.challengeFeedback.textContent="Escolha uma alternativa.";
       return;
     }
 
@@ -3871,12 +3877,20 @@ export class WorldRuntime {
     return visuals;
   }
 
+  showGameplayToast(message,duration=1500){
+    const el=this.gameplayToast;if(!el||!message)return;
+    if(this.gameplayToastTimer)clearTimeout(this.gameplayToastTimer);
+    el.textContent=String(message);el.hidden=false;el.classList.remove("is-leaving");
+    this.gameplayToastTimer=setTimeout(()=>{el.classList.add("is-leaving");setTimeout(()=>{el.hidden=true;el.classList.remove("is-leaving")},180)},Math.max(700,Number(duration)||1500));
+  }
+
   beginNavalDestruction(entity){
     if(!entity?.id||this.collected.has(entity.id))return false;
     const id=String(entity.id);
     if(this.navalDestroying.has(id))return false;
 
     this.navalDestroying.add(id);
+    this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído");
     this.navalHostile.delete(id);
     if(this.combatTarget?.id===id)this.clearCombatTarget({hideAction:true});
     if(this.contactEntity?.id===id)this.contactEntity=null;
