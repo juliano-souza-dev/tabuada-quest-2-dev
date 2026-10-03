@@ -233,6 +233,7 @@ export class GameRuntime {
       if(value)this[key]=value;
     }
     if(next.pedagogyCurriculum)this.pedagogyRuntime.setCurriculum(next.pedagogyCurriculum);
+    if(next.actionCatalog)this.actionRuntime?.setCatalog?.(next.actionCatalog);
     this.ensurePlayerShips();
     this.ensurePlayerCannons();
     this.contentSource="canonical";
