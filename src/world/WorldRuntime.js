@@ -4217,41 +4217,36 @@ export class WorldRuntime {
     if(this.combatTarget){
       if(this.isClickableCombatShip(this.combatTarget)){
         const entity=this.combatTarget;
-        // Um alvo naval só é liberado automaticamente quando deixa o alcance
-        // efetivo dos canhões. Clique no mar e em tesouros não o cancelam.
-        if(!this.isNavalTargetInRange(entity)){
-          this.clearCombatTarget({hideAction:true});
-        }else{
-          this.nearby=entity;
-          const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
-          const safeAsset=asset.replace(/["\\]/g,"");
-          this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
-          this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
-          const hp=this.navalHpState(entity);
-          const playerStats=this.playerNavalCombatStats();
-          const distanceToTarget=Math.round(this.navalTargetDistance(entity));
-          const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
-          if(this.navalPlayerHp<=0){
-            if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
-            if(this.actionButton){
-              this.actionButton.textContent="☠ Navio derrotado";
-              this.actionButton.disabled=true;
-            }
-            this.actionWrap.hidden=false;
-            return;
+        // Automatic targeting keeps the nearest valid ship selected even
+        // outside cannon range. Range gates firing, not target acquisition.
+        this.nearby=entity;
+        const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
+        const safeAsset=asset.replace(/["\\]/g,"");
+        this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
+        this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
+        const hp=this.navalHpState(entity);
+        const distanceToTarget=Math.round(this.navalTargetDistance(entity));
+        const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+        if(this.navalPlayerHp<=0){
+          if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
+          if(this.actionButton){
+            this.actionButton.textContent="☠ Navio derrotado";
+            this.actionButton.disabled=true;
           }
-          if(this.actionButton)this.actionButton.disabled=false;
-          if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
-            ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
-            :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
-          if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
-            ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
-            :"⚔ Atacar";
           this.actionWrap.hidden=false;
           return;
         }
+        if(this.actionButton)this.actionButton.disabled=false;
+        if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
+          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
+          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
+        if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
+          ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+          :"⚔ Atacar";
+        this.actionWrap.hidden=false;
+        return;
       }
-      if(this.combatTarget)this.clearCombatTarget({hideAction:true});
+      this.clearCombatTarget({hideAction:true});
     }
 
     let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
