@@ -43,7 +43,7 @@
     {
       "id": "tesouro-halloween-abobora",
       "name": "Abóbora Luminosa",
-      "asset": "./assets/treasures/events/halloween/abobora_tesouro_halloween_sprite.webp",
+      "asset": "./assets/treasures/events/halloween/abobora_magica_halloween_brilhante_50kb.webp",
       "width": 88,
       "height": 88,
       "rewards": {
