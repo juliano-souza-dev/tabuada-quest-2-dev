@@ -286,9 +286,6 @@
       }
     ]
   },
-  "camera": {
-    "playZoom": 0.3
-  },
   "editor": {
     "cameraX": 4000,
     "cameraY": 7420,
