@@ -380,6 +380,34 @@ export class GameRuntime {
       .find(treasure=>treasure.id===id)||null;
   }
 
+  getWalletBalances(){
+    const account=this.accountState&&typeof this.accountState==="object"?this.accountState:{};
+    const game=account.game&&typeof account.game==="object"?account.game:{};
+    const candidates=[
+      this.rewards,
+      game.rewards,
+      game.wallet,
+      game.currency,
+      game.currencies,
+      account.wallet,
+      account.currency,
+      account.currencies
+    ].filter(value=>value&&typeof value==="object");
+    const firstNumber=(keys)=>{
+      for(const source of candidates){
+        for(const key of keys){
+          const value=source?.[key];
+          if(value!==undefined&&value!==null&&Number.isFinite(Number(value)))return Math.max(0,Number(value));
+        }
+      }
+      return 0;
+    };
+    return {
+      gold:firstNumber(["gold","coins","coin","ouro"]),
+      rubies:firstNumber(["rubies","ruby","gems","gem","diamonds","diamond","rubis"])
+    };
+  }
+
   listAvailableShips(){
     return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[])
       .filter(ship=>ship.available!==false)
@@ -796,10 +824,7 @@ export class GameRuntime {
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
-      shopBalances:()=>({
-        gold:Number(this.rewards?.gold ?? this.rewards?.coins ?? this.accountState?.game?.rewards?.gold ?? this.accountState?.game?.rewards?.coins ?? 0),
-        rubies:Number(this.rewards?.rubies ?? this.accountState?.game?.rewards?.rubies ?? this.accountState?.game?.rubies ?? 0)
-      }),
+      shopBalances:()=>this.getWalletBalances(),
       resolveShip:(shipId,role="npc")=>{
         const ship=this.shipEntry(shipId);
         if(!ship||ship.available===false)return null;
