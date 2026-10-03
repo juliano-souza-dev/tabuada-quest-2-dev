@@ -3993,19 +3993,25 @@ export class WorldRuntime {
         ammoRemaining=Math.max(0,ammoRemaining-1);
         this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
       }
+      const coopBoss=this.isCoopBoss(entity)&&this.coopTransport?.damageBoss;
+      const coopBossId=coopBoss?this.coopBossId(entity):"";
+      if(coopBoss){
+        const bossHp=this.navalHpState(entity);
+        this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max}).catch?.(()=>{});
+      }
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
         const remainingDistance=Math.hypot(
           Number(entity.x||0)-Number(this.player?.x||0),
           Number(entity.y||0)-Number(this.player?.y||0)
         );
-        if(remainingDistance<=Math.max(1,Number(cannon.range)||900)){
+        if(coopBoss||remainingDistance<=Math.max(1,Number(cannon.range)||900)){
           this.audio?.play("cannon-impact-ship");
           const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
           const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
-          if(this.isCoopBoss(entity)&&this.coopTransport?.damageBoss){
+          if(coopBoss){
             const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-            this.coopTransport.damageBoss(this.coopBossId(entity),shotDamage,{shotId}).catch?.(()=>{});
+            this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
           }else this.applyDirectNavalDamage(entity,shotDamage);
         }
       },duration);
