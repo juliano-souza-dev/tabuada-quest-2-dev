@@ -1333,7 +1333,34 @@ export class WorldRuntime {
     if(hideAction&&this.actionWrap)this.actionWrap.hidden=true;
   }
 
-  selectCombatTarget(entity){
+  nearestCombatTarget(){
+    if(this.mode!=="play"||this.challengeActive||this.combatActive||this.navalPlayerHp<=0)return null;
+    let nearest=null;
+    let nearestDistance=Infinity;
+    for(const entity of this.entities){
+      if(!this.isClickableCombatShip(entity))continue;
+      const distance=this.navalTargetDistance(entity);
+      if(!Number.isFinite(distance)||distance>=nearestDistance)continue;
+      nearest=entity;
+      nearestDistance=distance;
+    }
+    return nearest;
+  }
+
+  syncAutomaticCombatTarget(){
+    if(this.mode!=="play"||this.challengeActive||this.combatActive||this.navalPlayerHp<=0)return false;
+    // While an attack order is active, keep the current target locked.
+    if(this.navalAutoFire===true&&this.combatTarget&&this.isClickableCombatShip(this.combatTarget))return false;
+    const nearest=this.nearestCombatTarget();
+    if(!nearest){
+      if(this.combatTarget)this.clearCombatTarget({hideAction:true});
+      return false;
+    }
+    if(this.combatTarget===nearest)return false;
+    return this.selectCombatTarget(nearest,{preserveMovement:true});
+  }
+
+  selectCombatTarget(entity,{preserveMovement=false}={}){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.challengeActive||this.combatActive)return false;
     const keepAutoFire=this.navalAutoFire===true;
     if(this.combatTarget&&this.combatTarget!==entity&&this.combatTarget.el){
@@ -1351,11 +1378,13 @@ export class WorldRuntime {
     // button reopen repair instead of attacking the newly selected enemy.
     if(this.actionButton)delete this.actionButton.dataset.worldAction;
     entity.el?.classList.add("is-combat-target");
-    this.clearNavigationTarget({brake:true});
-    this.keys.clear();
-    this.cameraKeys.clear();
-    this.pointerDirections.clear();
-    this.resetJoystick();
+    if(!preserveMovement){
+      this.clearNavigationTarget({brake:true});
+      this.keys.clear();
+      this.cameraKeys.clear();
+      this.pointerDirections.clear();
+      this.resetJoystick();
+    }
 
     const label=String(entity.label||entity.shipName||"Navio inimigo");
     const hp=this.navalHpState(entity);
@@ -5832,6 +5861,7 @@ export class WorldRuntime {
     this.updatePlayerWaterEffects(time);
     // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
+    this.syncAutomaticCombatTarget();
     this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
     this.updateCameraKeyboard(dt);
