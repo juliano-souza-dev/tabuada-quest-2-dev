@@ -321,6 +321,22 @@ export class GameRuntime {
       :this.openScene(fallback,{pushHistory:false});
   }
 
+  canShowRegionTransition(targetWorldId,fromWorldId=this.current?.kind==="world"?this.current.id:""){
+    const target=String(targetWorldId||"").trim();
+    const from=String(fromWorldId||"").trim();
+    if(!target||!from)return true;
+    const fromIndex=Math.max(0,Number(from.match(/^r(\d+)/i)?.[1])||0);
+    const targetIndex=Math.max(0,Number(target.match(/^r(\d+)/i)?.[1])||0);
+    if(!fromIndex||!targetIndex)return true;
+    if(targetIndex<=fromIndex)return true;
+    const completed=new Set(
+      Array.isArray(this.flags?.completedRegions)
+        ?this.flags.completedRegions.map(value=>String(value||""))
+        :[]
+    );
+    return completed.has(from);
+  }
+
   completeCurrentRegion(){
     const regionId=this.current?.kind==="world"?String(this.current.id||""):"";
     if(!regionId)return false;
@@ -1518,6 +1534,7 @@ export class GameRuntime {
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         return this.openScene(entity.scene,{pushHistory:true});
       },
+      canEnterWorld:entity=>this.canShowRegionTransition(entity?.destinationWorldId,worldId),
       onEnterWorld:(entity,worldState)=>{
         if(worldId)this.worldStates[worldId]=clone(worldState||this.worldRuntime?.getState?.()||{});
         const target=entity?.destinationWorldId;
