@@ -1409,17 +1409,17 @@
   color:#fff;
   font-family:system-ui,sans-serif;
 }
-.tq-world-shop__item-image{position:absolute;left:2.3%;top:9%;width:25.8%;height:78%;display:grid;place-items:center;overflow:hidden;border-radius:8%}
-.tq-world-shop__item-image img{max-width:82%;max-height:82%;object-fit:contain;filter:drop-shadow(0 3px 5px #000c);user-select:none;-webkit-user-drag:none}
-.tq-world-shop__item-name{position:absolute;left:31%;top:11%;width:39%;height:20%;display:flex;align-items:center;padding:0 2.6%;overflow:hidden;color:#fff7dc;font-size:clamp(9px,1.7vw,13px);line-height:1.05;text-shadow:0 2px 3px #000}
-.tq-world-shop__item-info{position:absolute;left:31%;top:39%;width:39%;height:45%;margin:0;padding:3% 2.7%;box-sizing:border-box;overflow:hidden;color:#dce6e7;font:700 clamp(8px,1.45vw,11px)/1.25 system-ui;text-shadow:0 1px 2px #000}
-.tq-world-shop__price{position:absolute;left:73.1%;top:8.5%;width:24.3%;height:22%;display:flex;align-items:center;padding-left:31%;box-sizing:border-box;color:#ffeab0}
+.tq-world-shop__item-image{position:absolute;left:2.8%;top:8%;width:24.4%;height:80%;display:grid;place-items:center;overflow:hidden;border-radius:8%}
+.tq-world-shop__item-image img{max-width:88%;max-height:88%;object-fit:contain;filter:drop-shadow(0 3px 5px #000c);user-select:none;-webkit-user-drag:none}
+.tq-world-shop__item-name{position:absolute;left:29.2%;top:8.5%;width:40.8%;height:24%;display:flex;align-items:center;justify-content:center;padding:0 2.2%;box-sizing:border-box;overflow:hidden;color:#fff7dc;font:900 clamp(8px,1.45vw,11px)/1.02 system-ui;text-align:center;text-wrap:balance;text-shadow:0 2px 3px #000}
+.tq-world-shop__item-info{position:absolute;left:29.2%;top:38.5%;width:40.8%;height:45.5%;margin:0;padding:2.4% 2.5%;box-sizing:border-box;display:flex;align-items:center;overflow:hidden;color:#dce6e7;font:700 clamp(7px,1.25vw,10px)/1.18 system-ui;text-shadow:0 1px 2px #000}
+.tq-world-shop__price{position:absolute;left:70.4%;top:8.2%;width:27%;height:22.5%;display:flex;align-items:center;justify-content:flex-end;padding:0 8% 0 30%;box-sizing:border-box;color:#ffeab0}
 .tq-world-shop__price span{display:none}
-.tq-world-shop__price b{font:900 clamp(10px,1.9vw,14px)/1 system-ui;text-shadow:0 2px 3px #000;white-space:nowrap}
-.tq-world-shop__quantity{position:absolute;left:73%;top:37%;width:24.7%;height:21%;display:grid;grid-template-columns:28% 44% 28%;align-items:stretch}
+.tq-world-shop__price b{font:900 clamp(8px,1.45vw,11px)/1 system-ui;text-shadow:0 2px 3px #000;white-space:nowrap}
+.tq-world-shop__quantity{position:absolute;left:70.2%;top:36.5%;width:27.3%;height:22.5%;display:grid;grid-template-columns:29% 42% 29%;align-items:stretch}
 .tq-world-shop__quantity button{border:0;background:transparent;color:transparent;touch-action:manipulation}
 .tq-world-shop__quantity b{display:grid;place-items:center;color:#fff4d2;font:900 clamp(9px,1.7vw,13px)/1 system-ui;text-shadow:0 2px 3px #000}
-.tq-world-shop__buy{position:absolute;left:73%;top:63%;width:24.6%;height:25%;border:0;background:transparent;color:#f7ffe9;font:900 clamp(8px,1.45vw,11px)/1 system-ui;text-shadow:0 2px 3px #173b16;touch-action:manipulation}
+.tq-world-shop__buy{position:absolute;left:70.2%;top:62%;width:27.3%;height:27%;border:0;background:transparent;color:#f7ffe9;font:900 clamp(8px,1.3vw,10px)/1 system-ui;text-align:center;text-shadow:0 2px 3px #173b16;touch-action:manipulation}
 .tq-world-shop__empty{margin:12% 8%;padding:18px;border:1px solid #c9a45c;border-radius:12px;background:#150e18d9;color:#f4e5bd;text-align:center;font:800 12px/1.4 system-ui}
 .tq-world-shop__feedback{position:absolute;left:16%;right:16%;bottom:5.4%;z-index:6;margin:0;text-align:center;color:#fff0c3;font:800 clamp(9px,1.55vw,12px)/1.2 system-ui;text-shadow:0 2px 4px #000;pointer-events:none}
 html.tq-shop-open .tq-world-controls,html.tq-shop-open .tq-world-action,html.tq-shop-open .tq-world-shop-launcher{pointer-events:none}
