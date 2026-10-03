@@ -1832,6 +1832,11 @@
     },
     {
       "type": "image",
+      "name": "navio_spritesheet_4x4_1600.png",
+      "path": "assets/ships/events/halloween/navio_spritesheet_4x4_1600.png"
+    },
+    {
+      "type": "image",
       "name": "navio_viking_sprite_transparente_1600x1600.webp",
       "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
     },
