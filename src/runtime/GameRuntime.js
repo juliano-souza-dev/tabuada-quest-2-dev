@@ -39,7 +39,7 @@ export class GameRuntime {
     this.worldStates={};
     this.flags={};
     this.inventory=[];
-    this.rewards={coins:0,xp:0,claims:[]};
+    this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[]};
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerStateStore=null;
     this.multiplayer=null;
@@ -335,6 +335,8 @@ export class GameRuntime {
       :(runtime?.rewards&&typeof runtime.rewards==="object"?runtime.rewards:{});
     this.rewards={
       coins:Math.max(0,Number(rewardSource.coins)||0),
+      gold:Math.max(0,Number(rewardSource.gold ?? rewardSource.coins)||0),
+      rubies:Math.max(0,Number(rewardSource.rubies)||0),
       xp:Math.max(0,Number(rewardSource.xp)||0),
       claims:Array.isArray(rewardSource.claims)?unique(rewardSource.claims):[]
     };
@@ -653,12 +655,14 @@ export class GameRuntime {
 
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
-    const rewardState=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,xp:0,claims:[]};
+    const rewardState=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,gold:0,rubies:0,xp:0,claims:[]};
     const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
     if(claims.includes(claimKey))return false;
 
     claims.push(claimKey);
     const coins=Math.max(0,Number(configured.coins)||0);
+    const gold=Math.max(0,Number(configured.gold ?? configured.coins)||0);
+    const rubies=Math.max(0,Number(configured.rubies)||0);
     const xp=Math.max(0,Number(configured.xp)||0);
     const itemId=String(configured.itemId||"").trim();
     const quantity=Math.max(1,Number(configured.quantity)||1);
@@ -677,6 +681,8 @@ export class GameRuntime {
 
     this.rewards={
       coins:Number(rewardState.coins||0)+coins,
+      gold:Number(rewardState.gold ?? rewardState.coins ?? 0)+gold,
+      rubies:Number(rewardState.rubies||0)+rubies,
       xp:Number(rewardState.xp||0)+xp,
       claims
     };
@@ -691,7 +697,7 @@ export class GameRuntime {
     const detail={
       worldId,
       entityId:String(cleanEntity.id),
-      rewards:{coins,xp,itemId,quantity:itemId?quantity:0,shipId}
+      rewards:{coins,gold,rubies,xp,itemId,quantity:itemId?quantity:0,shipId}
     };
     globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
     this.saveState();
@@ -790,7 +796,10 @@ export class GameRuntime {
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
-      shopBalances:()=>({gold:Number(this.rewards?.coins||0),rubies:Number(this.accountState?.game?.rubies||0)}),
+      shopBalances:()=>({
+        gold:Number(this.rewards?.gold ?? this.rewards?.coins ?? this.accountState?.game?.rewards?.gold ?? this.accountState?.game?.rewards?.coins ?? 0),
+        rubies:Number(this.rewards?.rubies ?? this.accountState?.game?.rewards?.rubies ?? this.accountState?.game?.rubies ?? 0)
+      }),
       resolveShip:(shipId,role="npc")=>{
         const ship=this.shipEntry(shipId);
         if(!ship||ship.available===false)return null;
