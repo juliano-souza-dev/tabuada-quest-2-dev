@@ -13,8 +13,8 @@ export class MultiplayerRuntime extends EventTarget{
   constructor(auth,config={},options={}){
     super();
     this.auth=auth;this.config=config||{};this.enabled=options.enabled!==false;
-    this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");\n    this.functionsBaseURL=String(config.functionsBaseURL||("https://southamerica-east1-"+config.projectId+".cloudfunctions.net")).replace(/\/$/,"");
-    this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";
+    this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");
+    this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";this.socket=null;this.socketReady=false;this.socketUrl=String(config.multiplayer?.websocketURL||options.websocketURL||"").trim();this.socketReconnect=0;
     this.snapshotHz=clamp(Number(options.snapshotHz)||10,5,20);this.pollMs=Math.max(80,Number(options.pollMs)||100);
     this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";this.pushInFlight=false;this.pollInFlight=false;
   }
@@ -25,18 +25,26 @@ export class MultiplayerRuntime extends EventTarget{
     const response=await fetch(url,{method,headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});
     return json(response);
   }
-  async serverRequest(functionName,body={}){
-    if(!this.enabled||!this.auth?.status?.().authenticated)return null;
-    const token=await this.auth.ensureFreshToken();if(!token)return null;
-    const response=await fetch(this.functionsBaseURL+"/"+functionName,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(body)});
-    const result=await json(response);
-    if(!response.ok)throw new Error(result?.error||("server_"+response.status));
-    return result;
+  connectSocket(){
+    clearTimeout(this.socketReconnect);
+    if(!this.socketUrl||!this.worldId||typeof WebSocket==="undefined")return false;
+    try{this.socket?.close()}catch{}
+    const ws=new WebSocket(this.socketUrl);this.socket=ws;this.socketReady=false;
+    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;const st=this.auth.status();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
+    ws.addEventListener("message",event=>{if(ws!==this.socket)return;let data;try{data=JSON.parse(event.data)}catch{return}
+      if(data.type==="snapshot"){const uid=String(this.auth.status().uid||"");this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:(data.players||[]).filter(p=>p.uid!==uid)}}));this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:data.bosses||{}}}));}
+      else if(data.type==="boss.state"&&data.boss)this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
+      else if(data.type==="shot"||data.type==="boss-hit"||data.type==="player-left")this.dispatchEvent(new CustomEvent("event",{detail:data}));
+    });
+    const offline=()=>{if(ws!==this.socket)return;this.socketReady=false;this.dispatchEvent(new CustomEvent("transport",{detail:{online:false,kind:"websocket"}}));clearTimeout(this.socketReconnect);this.socketReconnect=setTimeout(()=>this.connectSocket(),3000)};
+    ws.addEventListener("close",offline);ws.addEventListener("error",()=>{try{ws.close()}catch{}});
+    return true;
   }
+  socketSend(payload){if(!this.socketReady||this.socket?.readyState!==WebSocket.OPEN)return false;this.socket.send(JSON.stringify(payload));return true}
   async joinWorld(worldId,{getLocalState,shipId="",displayName=""}={}){
     await this.leaveWorld();this.worldId=safeKey(worldId);if(!this.worldId)return false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;this.shipId=String(shipId||"");this.displayName=String(displayName||"");
-    console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);
+    console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);\n    this.connectSocket();
     await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
     this.pollTimer=setInterval(()=>this.pollPlayers().catch(()=>{}),this.pollMs);await this.poll();return true;
   }
@@ -47,7 +55,7 @@ export class MultiplayerRuntime extends EventTarget{
   async pushPresence(force=false){
     if(!this.worldId||this.pushInFlight)return false;const now=Date.now();if(!force&&now-this.lastPush<80)return false;
     const uid=safeKey(this.auth.status().uid);if(!uid)return false;
-    this.pushInFlight=true;
+    const local=this.localPayload();\n    this.socketSend({type:"state",x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp});\n    this.pushInFlight=true;
     try{
       await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"PUT",body:this.localPayload()});
       this.lastPush=Date.now();
@@ -78,17 +86,18 @@ export class MultiplayerRuntime extends EventTarget{
   async sendShot(shot={}){
     if(!this.worldId)return false;const uid=String(this.auth.status().uid||"");if(!uid)return false;
     const event={type:"shot",uid,shotId:safeKey(shot.shotId||uid+"-"+Date.now()),from:shot.from||null,to:shot.to||null,ammoId:String(shot.ammoId||""),damage:Math.max(0,Number(shot.damage)||0),duration:Math.max(120,Number(shot.duration)||620),at:Date.now()};
-    await this.request("multiplayer/rooms/"+this.worldId+"/events",{method:"POST",body:event});return true;
+    if(this.socketSend(event))return true;
+    return false;
   }
   async ensureBoss(boss={}){
     if(!this.worldId)return null;const bossId=safeKey(boss.bossId);if(!bossId)return null;
-    const result=await this.serverRequest("ensureBoss",{worldId:this.worldId,bossId,entityId:String(boss.entityId||boss.bossId||""),name:String(boss.name||"Boss"),maxHp:Math.max(1,Number(boss.maxHp)||1)});
-    return result?.boss||null;
+    this.socketSend({type:"boss.ensure",bossId,entityId:String(boss.entityId||boss.bossId||""),name:String(boss.name||"Boss"),maxHp:Math.max(1,Number(boss.maxHp)||1)});
+    return null;
   }
   async damageBoss(bossId,damage=1,meta={}){
     if(!this.worldId)return null;bossId=safeKey(bossId);if(!bossId)return null;
-    const result=await this.serverRequest("bossDamage",{worldId:this.worldId,bossId,damage:clamp(Number(damage)||1,1,5000),shotId:safeKey(meta.shotId||"")});
-    return result?.boss||null;
+    this.socketSend({type:"boss.damage",bossId,damage:clamp(Number(damage)||1,1,5000),shotId:safeKey(meta.shotId||"")});
+    return null;
   }
   async sendHit(hit={}){
     if(!this.worldId)return false;const uid=String(this.auth.status().uid||"");const targetUid=safeKey(hit.targetUid);if(!uid||!targetUid)return false;
@@ -97,7 +106,7 @@ export class MultiplayerRuntime extends EventTarget{
     await this.request("multiplayer/rooms/"+this.worldId+"/events",{method:"POST",body:event});return true;
   }
   async leaveWorld(){
-    clearInterval(this.timer);clearInterval(this.pollTimer);this.timer=0;this.pollTimer=0;
+    clearInterval(this.timer);clearInterval(this.pollTimer);clearTimeout(this.socketReconnect);this.timer=0;this.pollTimer=0;this.socketReady=false;try{this.socket?.close()}catch{}this.socket=null;
     if(this.worldId&&this.auth?.status?.().authenticated){const uid=safeKey(this.auth.status().uid);if(uid)await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"DELETE"}).catch(()=>{});}
     this.worldId="";this.getLocalState=null;this.lastEventKey="";
   }
