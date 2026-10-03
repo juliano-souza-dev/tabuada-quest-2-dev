@@ -241,7 +241,8 @@ export class MobileHudOverlay{
     if(fire){
       const attacking=state.attacking===true;
       const hasCannons=state.hasCannons!==false;
-      fire.disabled=!attacking&&(php<=0||(hasCannons&&!targetVisible));
+      const hasAmmo=state.hasAmmo!==false;
+      fire.disabled=!attacking&&(php<=0||((hasCannons&&hasAmmo)&&!targetVisible));
       fire.classList.toggle("is-cancel",attacking);
       fire.classList.toggle("is-disabled",fire.disabled);
       fire.querySelector("span").textContent=attacking?"✕":"🔥";
