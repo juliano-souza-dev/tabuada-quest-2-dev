@@ -112,7 +112,7 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"});
+      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
 
       if(!this.started){
         if(this.authenticated)this.pendingAuthRoute=authRoute;
@@ -229,7 +229,7 @@ export class GameRuntime {
     const route=this.routeSnapshot()||clone(this.current)||clone(this.manifest.afterAuth||this.manifest.start);
     if(route?.kind==="world")return this.openWorld(route,{pushHistory:false});
     if(route?.kind==="scene")return this.openScene(route,{pushHistory:false});
-    const fallback=clone(this.manifest.afterAuth||{kind:"world",id:"ocean-prototype"});
+    const fallback=clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
     return fallback.kind==="world"
       ?this.openWorld(fallback,{pushHistory:false})
       :this.openScene(fallback,{pushHistory:false});
