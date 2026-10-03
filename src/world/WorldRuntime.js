@@ -9,6 +9,7 @@ import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } f
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
+import { ShopOverlay } from "./ShopOverlay.js?v=20261003-0245";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -171,6 +172,13 @@ export class WorldRuntime {
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
+    this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
+    this.shopOverlay=new ShopOverlay({
+      ammoCatalog:Array.isArray(options.ammoCatalog)?options.ammoCatalog:[],
+      cannonCatalog:Array.isArray(options.cannonCatalog)?options.cannonCatalog:[],
+      shipCatalog:Array.isArray(options.shipCatalog)?options.shipCatalog:[],
+      getBalances:()=>this.shopBalances()
+    });
     this.remotePlayers=new Map();
     this.coopTransport=null;
     this.coopBossStates=new Map();
@@ -881,6 +889,7 @@ export class WorldRuntime {
       </div>`;
 
     this.root.append(this.host);
+    if(!this.editorEnabled)this.shopOverlay?.mount?.(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
     this.oceanRenderer=null;
@@ -5123,6 +5132,7 @@ export class WorldRuntime {
     this.entityEffectRenderers.clear();
     this.clearPlayerWake();
     for(const cleanup of this.cleanups.splice(0))cleanup();
+    this.shopOverlay?.destroy?.();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";
   }
