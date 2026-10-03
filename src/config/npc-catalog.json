@@ -36,8 +36,8 @@
       "combat": {
         "hp": 5000000,
         "attitude": "hostile",
-        "attackRangeMode": "max-player-cannon",
-        "attackRange": 1600,
+        "attackRangeMode": "fixed",
+        "attackRange": 900,
         "attackCooldownMs": 900,
         "damage": 5,
         "maxTargets": 2,
