@@ -9,8 +9,8 @@ import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } f
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
-import { ShopOverlay } from "./ShopOverlay.js?v=20261003-0242";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-0248";
+import { ShopOverlay } from "./ShopOverlay.js?v=20261003-0252";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-0252";
 import {
   normalizeCollision,
   inferCollisionAction,
