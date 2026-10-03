@@ -7,7 +7,7 @@ const money=value=>new Intl.NumberFormat("pt-BR").format(Math.max(0,Math.floor(N
 
 const normalizeItems=(source,type)=>{
   const list=Array.isArray(source)?source:[];
-  return list.filter(item=>item&&item.available!==false).map(item=>({
+  return list.filter(item=>item&&item.available!==false&&item.shop?.purchasable===true).map(item=>({
     id:String(item.id||""),
     type,
     name:String(item.name||item.id||"Item"),
@@ -19,7 +19,7 @@ const normalizeItems=(source,type)=>{
     image:String(item.effects?.texture||item.asset||item.image||item.sprite||""),
     price:Math.max(0,Number(item.shop?.price??item.price??0)||0),
     currency:String(item.shop?.currency||item.currency||"gold").toLowerCase(),
-    purchasable:item.shop?.purchasable!==false
+    purchasable:true
   })).filter(item=>item.id);
 };
 
