@@ -4007,7 +4007,7 @@ export class WorldRuntime {
     if(rewards?.shipName||rewards?.shipId)rewardParts.push(String(rewards.shipName||rewards.shipId));
     const collectedLabel=entity.type==="treasure"?"Tesouro encontrado":String(entity.label||"Item")+" coletado";
     this.showGameplayToast(collectedLabel+(rewardParts.length?" · "+rewardParts.join(" · "):""));
-    if(rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||Number(rewards.gold)>0||Number(rewards.rubies)>0||rewards.itemId||rewards.shipId)){
+    if(entity.type!=="treasure"&&rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||Number(rewards.gold)>0||Number(rewards.rubies)>0||rewards.itemId||rewards.shipId)){
       this.onRewardCollected?.({
         entity:this.cleanEntity(entity),
         rewards:structuredClone(rewards)
