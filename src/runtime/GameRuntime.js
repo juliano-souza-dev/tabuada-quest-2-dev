@@ -1137,11 +1137,34 @@ export class GameRuntime {
         claims,
         claimDetails
       };
+
+      const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
+      const missionProgress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
+      const currentRegion=Math.max(0,Number(String(worldId).match(/^r(\d+)/i)?.[1])||0);
+      if(cleanEntity.npcId){
+        const missions=Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[];
+        for(const mission of missions){
+          const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
+          if(String(objective.type||"")!=="defeat_npc")continue;
+          if(Number(mission.region)!==currentRegion)continue;
+          const requiredNpcId=String(objective.npcId||objective.targetNpcId||"").trim();
+          if(requiredNpcId&&requiredNpcId!==String(cleanEntity.npcId))continue;
+          const target=Math.max(1,Math.floor(Number(objective.target)||1));
+          const id=String(mission.id||"").trim();
+          if(!id)continue;
+          missionProgress[id]=Math.min(target,Math.max(0,Math.floor(Number(missionProgress[id])||0))+1);
+        }
+      }
+
       this.accountState={
         ...base,
         game:{
           ...game,
-          rewards:clone(this.rewards)
+          rewards:clone(this.rewards),
+          missions:{
+            ...missionState,
+            progress:missionProgress
+          }
         }
       };
 
@@ -1358,6 +1381,7 @@ export class GameRuntime {
       onStarterAmmoEarned:()=>{queueMicrotask(()=>this.saveState())},
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
+      getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
       shopBalances:()=>this.getWalletBalances(),
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       getShipyardState:()=>({
