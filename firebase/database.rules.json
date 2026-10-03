@@ -10,17 +10,8 @@
               ".validate": "newData.val() == null || (newData.hasChildren(['uid','x','y','rotation','updatedAt','online']) && newData.child('uid').val() === auth.uid)"
             }
           },
-          "events": {
-            ".indexOn": ["at"],
-            "$eventId": {
-              ".write": false
-            }
-          },
-          "bosses": {
-            "$bossId": {
-              ".write": false
-            }
-          }
+          "events": { ".write": false },
+          "bosses": { ".write": false }
         }
       }
     }
