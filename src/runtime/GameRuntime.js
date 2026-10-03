@@ -256,6 +256,8 @@ export class GameRuntime {
     if(next.actionCatalog)this.actionRuntime?.setCatalog?.(next.actionCatalog);
     this.ensurePlayerShips();
     this.ensurePlayerCannons();
+    this.ensurePlayerAmmo();
+    this.ensureStarterLoadout();
     this.contentSource="canonical";
     globalThis.dispatchEvent?.(new CustomEvent("tq:canonical-content-ready",{detail:{
       releaseId:this.contentStore.status().releaseId,
@@ -1617,6 +1619,10 @@ export class GameRuntime {
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
+      onAmmoChange:ammo=>{
+        this.playerAmmo=normalizeGlobalAmmo(ammo);
+        this.ensurePlayerAmmo({migrateWorldStates:false});
+      },
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
