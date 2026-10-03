@@ -43,6 +43,25 @@
         "maxTargets": 2,
         "rewardMinDamageRatio": 0.15
       }
+    },
+    {
+      "id": "npc-halloween-pumpkin-corsair",
+      "name": "Corsário da Abóbora Maldita",
+      "shipId": "ship-halloween-pumpkin-corsair",
+      "navigation": {
+        "minSpeed": 80,
+        "speed": 360,
+        "acceleration": 1000,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 3,
+        "attitude": "hostile",
+        "attackRangeMode": "max-player-cannon",
+        "attackRange": 1600,
+        "attackCooldownMs": 900,
+        "damage": 2
+      }
     }
   ]
 }
