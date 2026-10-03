@@ -17,14 +17,21 @@
           "loop": true,
           "cellWidth": 400,
           "cellHeight": 400,
-          "frames": [0]
+          "frames": [
+            0
+          ]
         },
         "fireRight": {
           "frameMs": 135,
           "loop": false,
           "cellWidth": 400,
           "cellHeight": 400,
-          "frames": [4,5,6,7]
+          "frames": [
+            4,
+            5,
+            6,
+            7
+          ]
         },
         "fireLeft": {
           "frameMs": 135,
@@ -92,26 +99,120 @@
           "cellWidth": 400,
           "cellHeight": 400,
           "regions": {
-            "n": {"x":0,"y":0,"width":400,"height":400},
-            "nne": {"x":400,"y":0,"width":400,"height":400},
-            "ne": {"x":800,"y":0,"width":400,"height":400},
-            "ene": {"x":1200,"y":0,"width":400,"height":400},
-            "e": {"x":0,"y":400,"width":400,"height":400},
-            "ese": {"x":400,"y":400,"width":400,"height":400},
-            "se": {"x":800,"y":400,"width":400,"height":400},
-            "sse": {"x":1200,"y":400,"width":400,"height":400},
-            "s": {"x":0,"y":800,"width":400,"height":400},
-            "ssw": {"x":400,"y":800,"width":400,"height":400},
-            "sw": {"x":800,"y":800,"width":400,"height":400},
-            "wsw": {"x":1200,"y":800,"width":400,"height":400},
-            "w": {"x":0,"y":1200,"width":400,"height":400},
-            "wnw": {"x":400,"y":1200,"width":400,"height":400},
-            "nw": {"x":800,"y":1200,"width":400,"height":400},
-            "nnw": {"x":1200,"y":1200,"width":400,"height":400}
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
           },
           "directionFrames": {
-            "n":0,"nne":1,"ne":2,"ene":3,"e":4,"ese":5,"se":6,"sse":7,
-            "s":8,"ssw":9,"sw":10,"wsw":11,"w":12,"wnw":13,"nw":14,"nnw":15
+            "n": 0,
+            "nne": 1,
+            "ne": 2,
+            "ene": 3,
+            "e": 4,
+            "ese": 5,
+            "se": 6,
+            "sse": 7,
+            "s": 8,
+            "ssw": 9,
+            "sw": 10,
+            "wsw": 11,
+            "w": 12,
+            "wnw": 13,
+            "nw": 14,
+            "nnw": 15
           },
           "initialDirection": "n",
           "autoFrameExact": true
@@ -128,12 +229,19 @@
         "muzzleFlash": true,
         "smoke": true,
         "impact": true,
-        "useNavigationAtlas": false
+        "useNavigationAtlas": false,
+        "cannonSlots": 1
       }
     }
   ],
   "shipTypes": [
-    {"id":"player","label":"Jogador"},
-    {"id":"npc","label":"NPC"}
+    {
+      "id": "player",
+      "label": "Jogador"
+    },
+    {
+      "id": "npc",
+      "label": "NPC"
+    }
   ]
 }
