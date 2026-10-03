@@ -2208,6 +2208,15 @@ export class WorldRuntime {
 
     const keydown=e=>{
       if(this.mode!=="play"||this.challengeActive)return;
+      if(e.code==="KeyF"){
+        const target=e.target;
+        const tagName=String(target?.tagName||"").toLowerCase();
+        if(tagName==="input"||tagName==="textarea"||tagName==="select"||target?.isContentEditable)return;
+        e.preventDefault();
+        if(!this.combatTarget)this.syncAutomaticCombatTarget();
+        if(this.combatTarget&&this.isClickableCombatShip(this.combatTarget))this.activateNearby();
+        return;
+      }
       const cameraDir=cameraKeyMap[e.code];
       if(cameraDir){
         e.preventDefault();
