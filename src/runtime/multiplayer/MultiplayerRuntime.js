@@ -29,14 +29,14 @@ export class MultiplayerRuntime extends EventTarget{
     clearTimeout(this.socketReconnect);
     if(!this.socketUrl||!this.worldId||typeof WebSocket==="undefined")return false;
     try{this.socket?.close()}catch{}
-    const ws=new WebSocket(this.socketUrl);this.socket=ws;this.socketReady=false;
-    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;const st=this.auth.status();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
+    console.info("[TQ WS] connecting",this.socketUrl,this.worldId);const ws=new WebSocket(this.socketUrl);this.socket=ws;this.socketReady=false;
+    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;console.info("[TQ WS] open",this.worldId);const st=this.auth.status();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
     ws.addEventListener("message",event=>{if(ws!==this.socket)return;let data;try{data=JSON.parse(event.data)}catch{return}
-      if(data.type==="snapshot"){const uid=String(this.auth.status().uid||"");this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:(data.players||[]).filter(p=>p.uid!==uid)}}));this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:data.bosses||{}}}));}
+      if(data.type==="snapshot"){const uid=String(this.auth.status().uid||"");console.info("[TQ WS] snapshot","players="+(Array.isArray(data.players)?data.players.length:0),"bosses="+Object.keys(data.bosses||{}).length);this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:(data.players||[]).filter(p=>p.uid!==uid)}}));this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:data.bosses||{}}}));}
       else if(data.type==="boss.state"&&data.boss)this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
       else if(data.type==="shot"||data.type==="boss-hit"||data.type==="player-left")this.dispatchEvent(new CustomEvent("event",{detail:data}));
     });
-    const offline=()=>{if(ws!==this.socket)return;this.socketReady=false;this.dispatchEvent(new CustomEvent("transport",{detail:{online:false,kind:"websocket"}}));clearTimeout(this.socketReconnect);this.socketReconnect=setTimeout(()=>this.connectSocket(),3000)};
+    const offline=()=>{if(ws!==this.socket)return;console.warn("[TQ WS] closed",ws.readyState);this.socketReady=false;this.dispatchEvent(new CustomEvent("transport",{detail:{online:false,kind:"websocket"}}));clearTimeout(this.socketReconnect);this.socketReconnect=setTimeout(()=>this.connectSocket(),3000)};
     ws.addEventListener("close",offline);ws.addEventListener("error",()=>{try{ws.close()}catch{}});
     return true;
   }
@@ -66,7 +66,7 @@ export class MultiplayerRuntime extends EventTarget{
     }finally{this.pushInFlight=false}
   }
   async pollPlayers(){
-    if(!this.worldId)return;const uid=String(this.auth.status().uid||"");
+    if(!this.worldId||this.socketReady)return;const uid=String(this.auth.status().uid||"");
     const players=await this.request("multiplayer/rooms/"+this.worldId+"/players",{query:"shallow=false"});
     if(players&&typeof players==="object"){
       const now=Date.now();const remote=Object.values(players).filter(p=>p&&p.uid!==uid&&now-Number(p.updatedAt||0)<8000).slice(0,4);
