@@ -509,6 +509,28 @@
           "margin": 420,
           "minDistance": 900
         }
+      },
+      {
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "shipId": "ship-halloween-pumpkin-corsair",
+        "count": 5,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 20,
+        "hp": 3,
+        "rewards": {
+          "gold": 100,
+          "rubies": {
+            "chance": 25,
+            "min": 1,
+            "max": 5
+          }
+        },
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 360,
+          "minDistance": 420
+        }
       }
     ]
   },
