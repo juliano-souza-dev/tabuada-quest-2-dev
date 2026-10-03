@@ -3197,7 +3197,8 @@ export class DevOverlay {
       [".tq-dev__scenes","scenes"],
       [".tq-dev__worlds","regions"],
       [".tq-dev__flow","flow"],
-      [".tq-dev__assets","assets"]
+      [".tq-dev__assets","assets"],
+      [".tq-dev__live-css","css"]
     ];
 
     const clearPosition=panel=>{

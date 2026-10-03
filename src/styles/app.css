@@ -334,7 +334,7 @@
 .tq-live-css__body textarea:focus{border-color:#49c8ff;box-shadow:0 0 0 2px rgba(73,200,255,.12)}
 .tq-live-css__body>small{color:#9fc6d8;font-size:10px;line-height:1.4}
 .tq-dev.is-collapsed .tq-dev__live-css{display:none!important}
-@media(min-width:800px){.tq-dev__live-css{left:50%;right:auto;top:72px;bottom:18px;width:min(760px,calc(100vw - 36px));transform:translateX(-50%);border-radius:16px}}
+@media(min-width:800px){.tq-dev__live-css{left:auto;right:18px;top:72px;bottom:18px;width:min(460px,calc(100vw - 36px));transform:none;border-radius:16px}}
 @media(max-width:799px){.tq-dev__live-css{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:min(62dvh,560px);border-radius:16px}.tq-live-css__body{overflow:auto}.tq-live-css__body textarea{min-height:150px}.tq-live-css__challenge{grid-template-columns:1fr}}
 
 
