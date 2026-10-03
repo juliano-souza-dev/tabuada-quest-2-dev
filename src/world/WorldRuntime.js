@@ -173,6 +173,7 @@ export class WorldRuntime {
     this.environmentCycleSignature="";
     this.onEnterScene=options.onEnterScene||null;
     this.onEnterWorld=options.onEnterWorld||null;
+    this.canEnterWorld=typeof options.canEnterWorld==="function"?options.canEnterWorld:()=>true;
     this.onSelectionChange=options.onSelectionChange||null;
     this.onEntityChange=options.onEntityChange||null;
     this.createPedagogyChallenge=typeof options.createPedagogyChallenge==="function"?options.createPedagogyChallenge:null;
@@ -3110,6 +3111,7 @@ export class WorldRuntime {
 
   openRegionTransition(entity){
     if(!entity||this.regionTransitionActive)return;
+    if(this.canEnterWorld&&!this.canEnterWorld(entity))return;
     this.stopForChallenge();
     this.regionTransitionActive=entity;
     const destination=String(entity.destinationWorldName||entity.destinationWorldId||"próxima região");
@@ -4270,6 +4272,11 @@ export class WorldRuntime {
     }
     if(action==="enter-world"||interaction?.actionId==="enter-region"){
       this.actionWrap.hidden=true;
+      const canEnter=!this.canEnterWorld||this.canEnterWorld(entity);
+      if(!canEnter){
+        if(this.regionTransitionActive?.id===entity.id)this.closeRegionTransition();
+        return;
+      }
       if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
       return;
     }
