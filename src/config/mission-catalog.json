@@ -36,10 +36,12 @@
       "id": "R1_M03",
       "region": 1,
       "order": 3,
-      "name": "Piratas à Vista!",
+      "name": "Caçada da Abóbora Maldita",
       "objective": {
         "type": "defeat_npc",
-        "target": 2
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "targetLabel": "Corsários da Abóbora Maldita",
+        "target": 20
       },
       "reward": {
         "gold": 50,
