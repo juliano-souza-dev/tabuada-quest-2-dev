@@ -1,6 +1,6 @@
 {
   "schema": "tq.world-catalog",
-  "version": 4,
+  "version": 5,
   "worlds": [
     {
       "id": "r1-enseada-aprendizes",
@@ -85,6 +85,14 @@
       "type": "ocean",
       "region": 12,
       "path": "./src/world/r12-reino-rei-pirata.world.json"
+    },
+    {
+      "id": "evento-halloween-mar-das-almas",
+      "name": "🎃 Mar das Almas",
+      "type": "ocean",
+      "region": 0,
+      "event": "halloween",
+      "path": "./src/world/evento-halloween-mar-das-almas.world.json"
     }
   ]
 }
