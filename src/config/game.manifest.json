@@ -45,5 +45,10 @@
   "auth": {
     "required": true,
     "loginSceneId": "login"
+  },
+  "worldDefaults": {
+    "camera": {
+      "playZoom": 0.4841
+    }
   }
 }
