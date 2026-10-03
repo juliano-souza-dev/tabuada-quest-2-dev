@@ -20,7 +20,7 @@ wss.on("connection",ws=>{
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:0,y:0,rotation:0,direction:"n",hp:0,updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ});return;
     }
     if(!current||!uid)return;
