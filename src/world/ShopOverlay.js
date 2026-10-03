@@ -1,5 +1,6 @@
 const DEFAULT_FRAME=new URL("../../assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp",import.meta.url).href;
 const DEFAULT_SLOT=new URL("../../assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp",import.meta.url).href;
+const SHOP_BUTTON=new URL("../../assets/hud/halloween_hud_loja.webp",import.meta.url).href;
 
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const money=value=>new Intl.NumberFormat("pt-BR").format(Math.max(0,Math.floor(Number(value)||0)));
@@ -51,7 +52,8 @@ export class ShopOverlay{
     launcher.type="button";
     launcher.className="tq-world-shop-launcher";
     launcher.setAttribute("aria-label","Abrir loja");
-    launcher.innerHTML="<span aria-hidden=\"true\">🛒</span><b>Loja</b>";
+    launcher.innerHTML="<span aria-hidden=\"true\"></span><b>Loja</b>";
+    launcher.style.backgroundImage=`url("${SHOP_BUTTON}")`;
 
     const overlay=document.createElement("div");
     overlay.className="tq-world-shop";
