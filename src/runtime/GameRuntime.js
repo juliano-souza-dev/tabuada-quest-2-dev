@@ -1045,7 +1045,60 @@ export class GameRuntime {
     const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
-    const restored=state||this.worldStates[worldId]||null;
+
+    // Reconcile legacy reward claims with world collection state.
+    //
+    // Older builds regenerated deterministic treasure ids and removed them from
+    // state.collected during world construction. The reward claim, however,
+    // remained persisted. That left a split-brain state:
+    //   rewards.claims = chest already paid
+    //   worldState.collected = chest appears available again
+    // The player could solve the chest again, but payout was correctly rejected
+    // as a duplicate. Rebuild the missing collected state from canonical claims.
+    const restoredSource=state||this.worldStates[worldId]||null;
+    const restored=restoredSource&&typeof restoredSource==="object"
+      ?clone(restoredSource)
+      :{};
+    const collected=new Set(Array.isArray(restored.collected)?restored.collected.map(String):[]);
+    const claimPrefix=String(worldId)+":";
+    const staticTreasureIds=new Set(
+      (Array.isArray(world.entities)?world.entities:[])
+        .filter(entity=>String(entity?.type||"")==="treasure")
+        .map(entity=>String(entity?.id||""))
+        .filter(Boolean)
+    );
+    const respawningTreasureIds=new Set(
+      (Array.isArray(world.treasurePopulation?.types)?world.treasurePopulation.types:[])
+        .filter(type=>type?.respawn===true)
+        .map(type=>String(type?.treasureId||""))
+        .filter(Boolean)
+    );
+    let reconciledTreasureClaims=0;
+    for(const rawClaim of Array.isArray(this.rewards?.claims)?this.rewards.claims:[]){
+      const claim=String(rawClaim||"");
+      if(!claim.startsWith(claimPrefix))continue;
+      const entityId=claim.slice(claimPrefix.length);
+      if(!entityId)continue;
+
+      let isNonRespawnTreasure=staticTreasureIds.has(entityId);
+      if(entityId.startsWith("treasure.auto.")){
+        const suffix=entityId.slice("treasure.auto.".length);
+        const lastDot=suffix.lastIndexOf(".");
+        const treasureId=lastDot>0?suffix.slice(0,lastDot):suffix;
+        isNonRespawnTreasure=!respawningTreasureIds.has(treasureId);
+      }
+      if(!isNonRespawnTreasure||collected.has(entityId))continue;
+      collected.add(entityId);
+      reconciledTreasureClaims++;
+    }
+    restored.collected=[...collected];
+    if(reconciledTreasureClaims>0){
+      this.worldStates[worldId]=clone(restored);
+      console.info("[TQ rewards] reconciled claimed treasures into world state",{
+        worldId,
+        count:reconciledTreasureClaims
+      });
+    }
 
     this.sceneHost.hidden=true;
     this.worldHost.hidden=false;
