@@ -11,7 +11,7 @@ import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261003-1118";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1222";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1910";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -223,6 +223,7 @@ export class WorldRuntime {
           attacking:this.navalAutoFire===true,
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
+          repairAvailable:this.navalHostile.size===0&&!this.combatTarget&&!this.navalAutoFire,
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           target:{
@@ -236,6 +237,7 @@ export class WorldRuntime {
       },
       onAttack:()=>this.activateNearby(),
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
+      onRepair:()=>this.beginPlayerRepair({forced:false}),
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
       onShop:()=>this.shopOverlay?.open?.(),
       onShipyard:()=>{this.shipyardOverlay?.open?.();return true;}
@@ -4144,19 +4146,10 @@ export class WorldRuntime {
         &&this.navalHostile.size===0
         &&!this.combatTarget
         &&!this.navalAutoFire;
-      if(canRepair){
-        if(this.actionMessage)this.actionMessage.textContent=
-          "Casco danificado · "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp+" · resolva multiplicações para reparar";
-        if(this.actionButton){
-          this.actionButton.disabled=false;
-          this.actionButton.textContent="🔧 Reparar navio";
-          this.actionButton.dataset.worldAction="repair";
-        }
-        this.actionWrap.hidden=false;
-      }else{
-        if(this.actionButton)delete this.actionButton.dataset.worldAction;
-        this.actionWrap.hidden=true;
-      }
+      if(this.actionButton)delete this.actionButton.dataset.worldAction;
+      // O reparo é acionado pelo botão próprio do HUD, ao lado de Atirar.
+      // A área central permanece reservada apenas para interações do mapa.
+      if(this.actionWrap)this.actionWrap.hidden=true;
       return;
     }
     if(this.actionButton)delete this.actionButton.dataset.worldAction;
