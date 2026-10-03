@@ -448,7 +448,14 @@ export class WorldRuntime {
       for(const typeConfig of population.types){
         for(let i=0;i<typeConfig.count&&total<160;i++,total++){
           const entity=this.createGeneratedTreasure({typeConfig,index:total,population,random,occupied});
-          if(entity){this.collected.delete(entity.id);this.entities.push(entity);this.generatedTreasureIds.add(entity.id)}
+          if(entity){
+            // Never resurrect a non-respawning treasure already collected in persisted world state.
+            // Recreating it with the same deterministic id made it visible again while the reward
+            // claim correctly stayed blocked, which looked like "treasure gives no reward".
+            if(typeConfig.respawn===true)this.collected.delete(entity.id);
+            this.entities.push(entity);
+            this.generatedTreasureIds.add(entity.id);
+          }
         }
       }
     }
