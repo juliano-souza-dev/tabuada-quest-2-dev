@@ -69,8 +69,9 @@ const normalizeNpcPopulation=input=>{
         minDistance:clamp(Number(item?.spawn?.minDistance??spread.minDistance??360),0,1800),
         seed:Math.max(0,Math.floor(Number(item?.spawn?.seed)||0))
       },
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,950000),
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,50000000),
       respawn:item?.respawn===true,
+      respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,86400),
       devFrozen:item?.devFrozen===true,
       rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
       allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
@@ -128,10 +129,10 @@ const normalizeNpcAmmoIds=input=>{
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
   const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
   const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
-  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,1000);
-  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-950,950);
+  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,500000);
+  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-499950,500000);
   const pct=clamp(Number(modifiers.maxHpPct??modifiers.hpPct)||0,-.9,10);
-  return clamp(Math.round(base*(1+pct)+flat),50,1000);
+  return clamp(Math.round(base*(1+pct)+flat),50,1000000);
 };
 
 const normalizePlayerWaterEffects=player=>{
@@ -246,6 +247,8 @@ export class WorldRuntime {
     this.coopTransport=null;
     this.coopBossStates=new Map();
     this.coopBossRewardNotified=new Set();
+    this.coopBossLocalDamage=new Map();
+    this.coopLocalUid="";
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -581,6 +584,11 @@ export class WorldRuntime {
       lockAspect:true,
       runtimeGenerated:true,
       respawn:typeConfig?.respawn===true,
+      respawnDelayMs:Math.max(1000,Number(typeConfig?.respawnDelaySec??30)*1000),
+      boss:profile.boss===true||profile.coopBoss===true||profile.combat?.boss===true,
+      coopBoss:profile.coopBoss===true||profile.boss===true||profile.combat?.boss===true,
+      coopBossId:String(profile.coopBossId||npcId||""),
+      bossSpawnCycle:1,
       devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
       rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
       npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
@@ -602,10 +610,15 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,950000),
-        attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
+        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,50000000),
+        attackRange:String(profile.combat?.attackRangeMode||"")==="max-player-cannon"
+          ?Math.max(200,...this.cannonCatalog.map(item=>Math.max(0,Number(item?.range)||0)))
+          :clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
+        attackRangeMode:String(profile.combat?.attackRangeMode||""),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
-        damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,20)
+        damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,200),
+        maxTargets:clamp(Math.floor(Number(profile.combat?.maxTargets)||1),1,2),
+        rewardMinDamageRatio:clamp(Number(profile.combat?.rewardMinDamageRatio)||0,0,1)
       },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
       effect:{category:"ship",preset:"none",active:false},
@@ -4255,7 +4268,7 @@ export class WorldRuntime {
   navalHpState(entity){
     if(!entity?.id)return {current:0,max:0};
     const id=String(entity.id);
-    const max=Math.max(1,Math.min(99,Number(entity.combat?.hp)||3));
+    const max=Math.max(1,Math.min(50000000,Number(entity.combat?.hp)||3));
     if(!this.navalHp.has(id))this.navalHp.set(id,max);
     return {current:Math.max(0,Number(this.navalHp.get(id))||0),max};
   }
@@ -4316,6 +4329,9 @@ export class WorldRuntime {
     const size=Math.max(48,Number(entity.width)||96,Number(entity.height)||96);
     this.navalRenderer?.destroyShip?.({at:point,size,duration});
 
+    const respawnDelay=entity.runtimeGenerated&&entity.respawn===true
+      ?Math.max(0,Number(entity.respawnDelayMs)||0)
+      :0;
     const timer=setTimeout(()=>{
       this.navalDestroyTimers.delete(id);
       this.navalDestroying.delete(id);
@@ -4349,7 +4365,11 @@ export class WorldRuntime {
         entity.collision=normalizeCollision({
           ...(entity.collision||{}),active:true,action:"none"
         },entity);
-        this.navalHp.set(id,Math.max(1,Math.min(99,Number(entity.combat?.hp)||3)));
+        this.navalHp.set(id,Math.max(1,Math.min(50000000,Number(entity.combat?.hp)||3)));
+        if(this.isCoopBoss(entity)){
+          entity.bossSpawnCycle=Math.max(1,Number(entity.bossSpawnCycle)||1)+1;
+          this.coopBossLocalDamage.set(this.coopBossId(entity),0);
+        }
         if(entity.el)entity.el.hidden=false;
         this.applyEntityVisual(entity);
         this.syncCombatClickableEntity(entity);
@@ -4357,7 +4377,7 @@ export class WorldRuntime {
         return;
       }
       this.completeCollection(entity);
-    },duration);
+    },duration+respawnDelay);
     this.navalDestroyTimers.set(id,timer);
     return true;
   }
@@ -4394,7 +4414,13 @@ export class WorldRuntime {
       amount:dealt
     });
 
+    if(this.isCoopBoss(entity)){
+      const bossId=this.coopBossId(entity);
+      this.coopBossLocalDamage.set(bossId,Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0)+dealt);
+    }
+
     if(next<=0){
+      if(this.isCoopBoss(entity))this.notifyCoopBossDefeated(entity);
       this.beginNavalDestruction(entity);
       return;
     }
@@ -4448,7 +4474,7 @@ export class WorldRuntime {
       const coopBossId=coopBoss?this.coopBossId(entity):"";
       if(coopBoss){
         const bossHp=this.navalHpState(entity);
-        this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max}).catch?.(()=>{});
+        this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max,respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)}).catch?.(()=>{});
       }
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
@@ -4527,21 +4553,52 @@ export class WorldRuntime {
   fireNpcNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0||entity.devFrozen)return false;
     const stats=this.entityNavalCombatStats(entity);
-    if(this.navalTargetDistance(entity)>stats.attackRange)return false;
-    const duration=620;
-    const fired=this.navalRenderer?.fire?.({
-      from:{x:entity.x,y:entity.y},
-      to:{x:this.player.x,y:this.player.y},
-      duration
-    })===true;
-    if(!fired)return false;
-    this.audio?.play("cannon-shot");
-    setTimeout(()=>{
-      if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
-        this.audio?.play("cannon-impact-ship");
-        this.applyDirectPlayerNavalDamage(stats.damage,entity);
-      }
-    },duration);
+    const maxTargets=this.isCoopBoss(entity)?clamp(Math.floor(Number(entity.combat?.maxTargets)||1),1,2):1;
+    const candidates=[
+      {
+        id:"local",
+        local:true,
+        x:Number(this.player?.x)||0,
+        y:Number(this.player?.y)||0,
+        distance:Math.hypot((Number(entity.x)||0)-(Number(this.player?.x)||0),(Number(entity.y)||0)-(Number(this.player?.y)||0))
+      },
+      ...[...this.remotePlayers.values()].map(remote=>({
+        id:String(remote.id||""),
+        local:false,
+        x:Number(remote.x)||0,
+        y:Number(remote.y)||0,
+        distance:Math.hypot((Number(entity.x)||0)-(Number(remote.x)||0),(Number(entity.y)||0)-(Number(remote.y)||0))
+      }))
+    ]
+      .filter(target=>target.distance<=stats.attackRange)
+      .sort((a,b)=>a.distance-b.distance)
+      .slice(0,maxTargets);
+    if(!candidates.length)return false;
+
+    let firedAny=false;
+    candidates.forEach((target,index)=>{
+      const delay=index*170;
+      setTimeout(()=>{
+        if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
+        const duration=620;
+        const fired=this.navalRenderer?.fire?.({
+          from:{x:entity.x,y:entity.y},
+          to:{x:target.x,y:target.y},
+          duration
+        })===true;
+        if(!fired)return;
+        firedAny=true;
+        this.audio?.play("cannon-shot");
+        if(target.local){
+          setTimeout(()=>{
+            if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
+              this.audio?.play("cannon-impact-ship");
+              this.applyDirectPlayerNavalDamage(stats.damage,entity);
+            }
+          },duration);
+        }
+      },delay);
+    });
     return true;
   }
 
@@ -5509,10 +5566,17 @@ export class WorldRuntime {
 
   setCoopTransport(transport=null){
     this.coopTransport=transport||null;
+    this.coopLocalUid=String(transport?.uid||"");
     for(const entity of this.entities){
       if(this.isCoopBoss(entity)){
         const hp=this.navalHpState(entity);
-        this.coopTransport?.ensureBoss?.({bossId:this.coopBossId(entity),entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:hp.max}).catch?.(()=>{});
+        this.coopTransport?.ensureBoss?.({
+          bossId:this.coopBossId(entity),
+          entityId:entity.id,
+          name:entity.label||entity.shipName||"Boss",
+          maxHp:hp.max,
+          respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)
+        }).catch?.(()=>{});
       }
     }
   }
@@ -5526,12 +5590,23 @@ export class WorldRuntime {
   notifyCoopBossDefeated(entity){
     if(!this.isCoopBoss(entity))return false;
     const bossId=this.coopBossId(entity);
-    if(!bossId||this.coopBossRewardNotified.has(bossId))return false;
-    this.coopBossRewardNotified.add(bossId);
+    const state=this.coopBossStates.get(bossId)||{};
+    const spawnId=String(state.spawnId||entity.bossSpawnCycle||1);
+    const notifyKey=bossId+":"+spawnId;
+    if(!bossId||this.coopBossRewardNotified.has(notifyKey))return false;
+    this.coopBossRewardNotified.add(notifyKey);
+    const maxHp=Math.max(1,Number(state.maxHp)||Number(entity.combat?.hp)||1);
+    const serverContribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
+    const localContribution=Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0);
+    const damage=Math.max(serverContribution,localContribution);
+    const damageRatio=clamp(damage/maxHp,0,1);
+    const minimumRatio=clamp(Number(entity.combat?.rewardMinDamageRatio)||0,0,1);
     this.onBossDefeated?.({
       bossId,
+      spawnId,
       entity:this.cleanEntity(entity),
-      rewards:structuredClone(entity?.rewards||{})
+      rewards:structuredClone(entity?.rewards||{}),
+      contribution:{damage,damageRatio,minimumRatio,eligible:damageRatio>=minimumRatio}
     });
     return true;
   }
@@ -5539,9 +5614,17 @@ export class WorldRuntime {
   syncCoopBosses(bosses={}){
     this.coopBossStates=new Map(Object.entries(bosses&&typeof bosses==="object"?bosses:{}));
     for(const entity of this.entities){
-      if(!this.isCoopBoss(entity))continue;const state=this.coopBossStates.get(this.coopBossId(entity));if(!state)continue;
+      if(!this.isCoopBoss(entity))continue;const bossId=this.coopBossId(entity),state=this.coopBossStates.get(bossId);if(!state)continue;
       const hp=Math.max(0,Number(state.hp)||0);this.navalHp.set(String(entity.id),hp);
-      if(state.defeated===true||hp<=0){this.notifyCoopBossDefeated(entity);if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);}
+      const contribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
+      this.coopBossLocalDamage.set(bossId,contribution);
+      if(state.defeated===true||hp<=0){
+        this.notifyCoopBossDefeated(entity);
+        if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
+      }else if(Number(state.spawnId)>Number(entity.bossSpawnCycle||1)){
+        entity.bossSpawnCycle=Number(state.spawnId);
+        this.coopBossLocalDamage.set(bossId,contribution);
+      }
     }
   }
 
@@ -5598,7 +5681,22 @@ export class WorldRuntime {
       this.audio?.play("cannon-shot");
     }
     if(event.type==="boss-hit"){
-      const bossId=String(event.bossId||"");const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);if(entity){this.navalHp.set(String(entity.id),Math.max(0,Number(event.hp)||0));if(event.defeated===true){this.notifyCoopBossDefeated(entity);if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);}}
+      const bossId=String(event.bossId||"");
+      const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);
+      if(entity){
+        this.navalHp.set(String(entity.id),Math.max(0,Number(event.hp)||0));
+        if(event.contributors&&typeof event.contributors==="object"){
+          const state=this.coopBossStates.get(bossId)||{};
+          this.coopBossStates.set(bossId,{...state,...event,contributors:{...event.contributors}});
+          this.coopBossLocalDamage.set(bossId,Math.max(0,Number(event.contributors?.[this.coopLocalUid])||0));
+        }else if(String(event.uid||"")===this.coopLocalUid){
+          this.coopBossLocalDamage.set(bossId,Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0)+Math.max(0,Number(event.damage)||0));
+        }
+        if(event.defeated===true){
+          this.notifyCoopBossDefeated(entity);
+          if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
+        }
+      }
     }
   }
 
