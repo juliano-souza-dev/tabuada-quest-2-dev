@@ -37,6 +37,8 @@ export class DevOverlay {
     this.worldAtlasSelectionMode=null;
     this.sceneGroupOpen=new Set();
     this.configAreaOpenState=new Set();
+    this.liveCssStorageKey="tq.dev.live-css:v1";
+    this.liveCssStyle=null;
   }
   mount(){
     this.el=document.createElement("aside");this.el.className="tq-dev";
@@ -58,6 +60,7 @@ export class DevOverlay {
         <button data-cannons>🎯 <span>Canhões</span></button>
         <button data-ammo>💣 <span>Munições</span></button>
         <button data-assets>▦ <span>Assets</span></button>
+        <button data-live-css>{ } <span>CSS</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
       </div>
       <section class="tq-dev__scenes" hidden>
@@ -114,6 +117,20 @@ export class DevOverlay {
         <div class="tq-assets__filters"><input data-asset-search type="search" placeholder="Buscar em /assets..."></div>
         <div class="tq-assets__grid" data-assets-grid></div>
       </section>
+      <section class="tq-dev__live-css" hidden>
+        <header>
+          <div><strong>CSS ao vivo</strong><small>Alterações DEV aplicadas instantaneamente</small></div>
+          <button type="button" data-live-css-close aria-label="Fechar">×</button>
+        </header>
+        <div class="tq-live-css__body">
+          <div class="tq-live-css__actions">
+            <button type="button" data-live-css-shop>Loja</button>
+            <button type="button" data-live-css-clear>Limpar</button>
+          </div>
+          <textarea data-live-css-editor spellcheck="false" autocomplete="off" aria-label="Editor CSS ao vivo"></textarea>
+          <small>As alterações ficam somente no DEV e são salvas neste navegador. Para produção, copie o CSS aprovado para o stylesheet do projeto.</small>
+        </div>
+      </section>
       <section class="tq-dev__panel" hidden>
         <header><div><strong>Config</strong><small data-node-title>Nenhum nó</small></div><button data-close aria-label="Fechar">×</button></header>
         <div class="tq-dev__content"><div class="tq-dev__empty">Selecione um nó para configurar.</div></div>
@@ -152,6 +169,16 @@ export class DevOverlay {
     this.el.querySelector("[data-ammo]").addEventListener("click",()=>{this.closeToolPanels("ammo");this.ammoEditor.setVisible(this.ammoEditor?.el?.hidden!==false)});
     this.el.querySelector("[data-assets]").addEventListener("click",()=>this.toggleAssets(this.el.querySelector(".tq-dev__assets").hidden));
     this.el.querySelector("[data-assets-close]").addEventListener("click",()=>this.toggleAssets(false));
+    this.el.querySelector("[data-live-css]").addEventListener("click",()=>this.toggleLiveCss(this.el.querySelector(".tq-dev__live-css").hidden));
+    this.el.querySelector("[data-live-css-close]").addEventListener("click",()=>this.toggleLiveCss(false));
+    this.el.querySelector("[data-live-css-editor]").addEventListener("input",event=>this.applyLiveCss(event.currentTarget.value,{persist:true}));
+    this.el.querySelector("[data-live-css-clear]").addEventListener("click",()=>{
+      const editor=this.el.querySelector("[data-live-css-editor]");
+      if(editor)editor.value="";
+      this.applyLiveCss("",{persist:true});
+    });
+    this.el.querySelector("[data-live-css-shop]").addEventListener("click",()=>this.loadShopLiveCssPreset());
+
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
     this.shipEditorReady=this.shipEditor.mount(this.el);
@@ -160,6 +187,7 @@ export class DevOverlay {
     this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
     this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el)).then(result=>{if(this.workspace==="world"&&this.mode==="config"&&!this.selected)this.renderWorldInspector();return result});
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
+    this.restoreLiveCss();
     this.loadAssets();
     this.loadCompositionTypes();
     this.sceneCatalogReady=this.loadSceneCatalog();
@@ -278,12 +306,91 @@ export class DevOverlay {
     });
   }
 
+  toggleLiveCss(show){
+    const panel=this.el?.querySelector(".tq-dev__live-css");
+    if(!panel)return;
+    if(show){
+      this.closeToolPanels("css");
+      panel.hidden=false;
+      const editor=panel.querySelector("[data-live-css-editor]");
+      if(editor){
+        editor.value=this.liveCssStyle?.textContent||localStorage.getItem(this.liveCssStorageKey)||"";
+        requestAnimationFrame(()=>editor.focus({preventScroll:true}));
+      }
+    }else panel.hidden=true;
+  }
+
+  applyLiveCss(css,{persist=false}={}){
+    if(!this.liveCssStyle){
+      this.liveCssStyle=document.createElement("style");
+      this.liveCssStyle.id="tq-dev-live-css";
+      document.head.append(this.liveCssStyle);
+    }
+    this.liveCssStyle.textContent=String(css||"");
+    if(persist){
+      try{localStorage.setItem(this.liveCssStorageKey,this.liveCssStyle.textContent)}catch{}
+    }
+  }
+
+  restoreLiveCss(){
+    let css="";
+    try{css=localStorage.getItem(this.liveCssStorageKey)||""}catch{}
+    this.applyLiveCss(css);
+    const editor=this.el?.querySelector("[data-live-css-editor]");
+    if(editor)editor.value=css;
+  }
+
+  loadShopLiveCssPreset(){
+    const css=`/* Loja Halloween · ajuste em tempo real */
+.tq-world-shop__item-image{
+  left:2.8%;
+  top:8%;
+  width:24.4%;
+  height:80%;
+}
+.tq-world-shop__item-name{
+  left:29.2%;
+  top:8.5%;
+  width:40.8%;
+  height:24%;
+}
+.tq-world-shop__item-info{
+  left:29.2%;
+  top:38.5%;
+  width:40.8%;
+  height:45.5%;
+}
+.tq-world-shop__price{
+  left:70.4%;
+  top:8.2%;
+  width:27%;
+  height:22.5%;
+}
+.tq-world-shop__quantity{
+  left:70.2%;
+  top:36.5%;
+  width:27.3%;
+  height:22.5%;
+}
+.tq-world-shop__buy{
+  left:70.2%;
+  top:62%;
+  width:27.3%;
+  height:27%;
+}
+`;
+    const editor=this.el?.querySelector("[data-live-css-editor]");
+    if(editor)editor.value=css;
+    this.applyLiveCss(css,{persist:true});
+  }
+
   closeToolPanels(except=""){
     const panels={
       scenes:".tq-dev__scenes",
       regions:".tq-dev__worlds",
       flow:".tq-dev__flow",
       assets:".tq-dev__assets",
+      css:".tq-dev__live-css",
       config:".tq-dev__panel"
     };
     for(const [key,selector] of Object.entries(panels)){
