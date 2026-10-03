@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-1222";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-1500";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-1210";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
@@ -1043,6 +1043,14 @@ export class GameRuntime {
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       shopBalances:()=>this.getWalletBalances(),
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
+      getShipyardState:()=>({
+        ships:this.listOwnedShips().map(ship=>({id:ship.id,name:ship.name||ship.id,equipped:ship.id===this.playerShips.equippedShip,cannons:this.getShipCannons(ship.id).map(id=>this.cannonEntry(id)).filter(Boolean).map(c=>({id:c.id,name:c.name||c.id}))})),
+        cannons:(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).map(c=>({id:c.id,name:c.name||c.id})),
+        storage:this.getCannonStorage()
+      }),
+      onEquipShip:async id=>{const ok=await this.equipShip(id);return ok?{ok:true,message:"Navio equipado."}:{ok:false,message:"Não foi possível equipar este navio."};},
+      onEquipCannon:id=>{const result=this.equipCannonToShip(id);return result.ok?{ok:true,message:"Canhão equipado."}:result;},
+      onRemoveCannon:(id,shipId)=>{const result=this.removeCannonFromShip(id,shipId);return result.ok?{ok:true,message:"Canhão guardado."}:result;},
       resolveShip:(shipId,role="npc")=>{
         const ship=this.shipEntry(shipId);
         if(!ship||ship.available===false)return null;

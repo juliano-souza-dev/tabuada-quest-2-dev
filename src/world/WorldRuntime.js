@@ -10,6 +10,7 @@ import { directionForHeading, resolveDirectionalSource, directionalRegionStyle }
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261003-1118";
+import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1222";
 import {
   normalizeCollision,
@@ -175,6 +176,10 @@ export class WorldRuntime {
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
+    this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
+    this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
+    this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
+    this.onRemoveCannon=typeof options.onRemoveCannon==="function"?options.onRemoveCannon:null;
     this.shipCatalog=Array.isArray(options.shipCatalog)?structuredClone(options.shipCatalog):[];
     this.shopOverlay=new ShopOverlay({
       ammoCatalog:Array.isArray(options.ammoCatalog)?options.ammoCatalog:[],
@@ -182,6 +187,12 @@ export class WorldRuntime {
       shipCatalog:this.shipCatalog,
       getBalances:()=>this.shopBalances(),
       onPurchase:request=>this.onShopPurchase?.(request)
+    });
+    this.shipyardOverlay=new ShipyardOverlay({
+      getState:()=>this.getShipyardState?.()||{},
+      onEquipShip:id=>this.onEquipShip?.(id),
+      onEquipCannon:id=>this.onEquipCannon?.(id),
+      onRemoveCannon:(cannonId,shipId)=>this.onRemoveCannon?.(cannonId,shipId)
     });
     const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
     this.mobileHud=new MobileHudOverlay({
@@ -220,10 +231,7 @@ export class WorldRuntime {
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
       onShop:()=>this.shopOverlay?.open?.(),
-      onShipyard:()=>{
-        globalThis.dispatchEvent?.(new CustomEvent("tq:shipyard-request",{detail:{worldId:String(this.config.id||"")}}));
-        return false;
-      }
+      onShipyard:()=>{this.shipyardOverlay?.open?.();return true;}
     });
     this.remotePlayers=new Map();
     this.coopTransport=null;
@@ -936,6 +944,7 @@ export class WorldRuntime {
     // Mount the production HUD in every runtime. In DEV it stays hidden while
     // editing and becomes identical to production as soon as mode === "play".
     this.shopOverlay?.mount?.(this.host);
+    this.shipyardOverlay?.mount?.(this.host);
     this.mobileHud?.mount?.(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
@@ -3517,7 +3526,7 @@ export class WorldRuntime {
     if(!this.repairActive||this.repairActive!==active)return;
     active.challenge=challenge;
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
-    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeWrap){this.challengeWrap.hidden=false;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.classList.add("is-repair-challenge")}
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairHp){this.repairHp.hidden=false;const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;}
     if(this.repairOptions){
@@ -3538,7 +3547,7 @@ export class WorldRuntime {
       ?String(challenge.prompt||"")
       :"Desafio indisponível";
     if(this.challengeFeedback)this.challengeFeedback.textContent=challenge?.available
-      ?"Cada acerto recupera 20 pontos de vida. Casco: "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+      ?"Cada acerto recupera 25 pontos de vida. Casco: "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
       :"Não foi possível gerar uma conta de multiplicação.";
     if(this.challengeAnswer){
       this.challengeAnswer.value="";
@@ -3571,7 +3580,7 @@ export class WorldRuntime {
     this.repairActive=null;
     this.challengeActive=null;
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
-    if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-repair-challenge")}
     if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}
     if(this.repairHp)this.repairHp.hidden=true;
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
@@ -3610,7 +3619,7 @@ export class WorldRuntime {
     this.challengeActive=null;
     if(this.challengeKicker)this.challengeKicker.textContent="BAÚ DO TESOURO";
     if(this.challengeTitle)this.challengeTitle.textContent="Resolva para recolher";
-    if(this.challengeWrap)this.challengeWrap.hidden=true;
+    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-treasure-challenge")}
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
@@ -3843,7 +3852,7 @@ export class WorldRuntime {
     }
 
     this.challengeActive={entity,challenge};
-    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeWrap){this.challengeWrap.hidden=false;this.challengeWrap.classList.add("is-treasure-challenge")}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairOptions){
@@ -3973,10 +3982,10 @@ export class WorldRuntime {
       };
       this.onPedagogyResult?.(detail);
       if(result.correct===true){
-        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+20);
+        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+25);
         if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
         if(this.challengeFeedback)this.challengeFeedback.textContent=
-          "Acertou! +20 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+          "Acertou! +25 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
         if(this.navalPlayerHp>=this.navalPlayerMaxHp){
           this.challengeTimer=setTimeout(()=>this.closePlayerRepair({completed:true}),650);
           return;
@@ -5581,6 +5590,7 @@ export class WorldRuntime {
     this.clearPlayerWake();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.shopOverlay?.destroy?.();
+    this.shipyardOverlay?.destroy?.();
     this.mobileHud?.destroy?.();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";

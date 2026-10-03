@@ -13,6 +13,10 @@ export class DevOverlay {
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
+    this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:()=>({});
+    this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
+    this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
+    this.onRemoveCannon=typeof options.onRemoveCannon==="function"?options.onRemoveCannon:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({
       requestFrameAsset:context=>this.openShipFramePicker(context),
@@ -31,6 +35,10 @@ export class DevOverlay {
       onRewardCollected:this.onRewardCollected,
       onShopPurchase:this.onShopPurchase,
       shopBalances:this.shopBalances,
+      getShipyardState:this.getShipyardState,
+      onEquipShip:this.onEquipShip,
+      onEquipCannon:this.onEquipCannon,
+      onRemoveCannon:this.onRemoveCannon,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveNpc:npcId=>this.npcEditor?.resolveForWorld?.(npcId)||null,
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
@@ -131,8 +139,20 @@ export class DevOverlay {
         <div class="tq-live-css__body">
           <div class="tq-live-css__actions">
             <button type="button" data-live-css-shop>Loja</button>
+            <button type="button" data-live-css-challenge>Desafio</button>
             <button type="button" data-live-css-clear>Limpar</button>
           </div>
+          <fieldset class="tq-live-css__challenge" data-challenge-style-controls hidden>
+            <legend>Editor visual · desafio</legend>
+            <label>Tipo lógico <select data-challenge-kind><option value="treasure">Coletar tesouro</option><option value="repair">Consertar navio</option></select></label>
+            <label>Largura máxima <input data-challenge-max-width type="range" min="360" max="1080" step="10" value="1080"><output data-challenge-max-width-output>1080px</output></label>
+            <label>Posição vertical <input data-challenge-top type="range" min="24" max="42" step=".5" value="33.5"><output data-challenge-top-output>33.5%</output></label>
+            <label>Margem lateral <input data-challenge-side type="range" min="18" max="32" step=".5" value="25.5"><output data-challenge-side-output>25.5%</output></label>
+            <label>Altura do slot <input data-challenge-slot-height type="range" min="29" max="90" step="1" value="78"><output data-challenge-slot-height-output>78px</output></label>
+            <label>Fonte da conta <select data-challenge-prompt-font><option value="system-ui,sans-serif">Sistema</option><option value="Georgia,serif">Pirata clássica</option><option value="Trebuchet MS,sans-serif">Aventura</option></select></label>
+            <label>Cor da conta <input data-challenge-prompt-color type="color" value="#24101f"></label>
+            <label>Cor das respostas <input data-challenge-answer-color type="color" value="#fff3bb"></label>
+          </fieldset>
           <textarea data-live-css-editor spellcheck="false" autocomplete="off" aria-label="Editor CSS ao vivo"></textarea>
           <small>As alterações ficam somente no DEV e são salvas neste navegador. Para produção, copie o CSS aprovado para o stylesheet do projeto.</small>
         </div>
@@ -184,6 +204,8 @@ export class DevOverlay {
       this.applyLiveCss("",{persist:true});
     });
     this.el.querySelector("[data-live-css-shop]").addEventListener("click",()=>this.loadShopLiveCssPreset());
+    this.el.querySelector("[data-live-css-challenge]").addEventListener("click",()=>this.loadChallengeLiveCssPreset());
+    this.el.querySelectorAll("[data-challenge-style-controls] input,[data-challenge-style-controls] select").forEach(input=>input.addEventListener("input",()=>this.applyChallengeStyleControls()));
 
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
@@ -393,6 +415,38 @@ export class DevOverlay {
     const editor=this.el?.querySelector("[data-live-css-editor]");
     if(editor)editor.value=css;
     this.applyLiveCss(css,{persist:true});
+  }
+
+  challengeStyleValues(){
+    const panel=this.el?.querySelector("[data-challenge-style-controls]");
+    const value=name=>panel?.querySelector("[data-challenge-"+name+"]")?.value||"";
+    return {kind:value("kind")||"treasure",maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",slotHeight:value("slot-height")||"78",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
+  }
+
+  challengeCss(values=this.challengeStyleValues()){
+    const selector=values.kind==="repair"?".tq-world-challenge.is-repair-challenge":".tq-world-challenge.is-treasure-challenge";
+    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important}\n${selector} .tq-world-challenge__prompt{font-family:${values.font}!important;color:${values.promptColor}!important}\n${selector} .tq-world-combat__option{min-height:${values.slotHeight}px!important;color:${values.answerColor}!important}`;
+  }
+
+  syncChallengeStyleOutputs(){
+    const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
+    for(const [name,suffix] of [["max-width","px"],["top","%"],["side","%"],["slot-height","px"]]){
+      const input=panel.querySelector("[data-challenge-"+name+"]"),output=panel.querySelector("[data-challenge-"+name+"-output]");
+      if(input&&output)output.textContent=input.value+suffix;
+    }
+  }
+
+  applyChallengeStyleControls(){
+    this.syncChallengeStyleOutputs();
+    const css=this.challengeCss();
+    const editor=this.el?.querySelector("[data-live-css-editor]");if(editor)editor.value=css;
+    this.applyLiveCss(css,{persist:true});
+  }
+
+  loadChallengeLiveCssPreset(){
+    const controls=this.el?.querySelector("[data-challenge-style-controls]");if(!controls)return;
+    controls.hidden=false;
+    this.applyChallengeStyleControls();
   }
 
   closeToolPanels(except=""){

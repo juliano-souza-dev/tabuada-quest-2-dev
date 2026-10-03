@@ -187,6 +187,71 @@ if(worldTest){
     devPlayerState.save({...current,game:{...game,rewards:nextRewards,devInventory:inventory}},{sync:false});
     return {ok:true,message:`Compra realizada: ${amount}× ${product.name||product.id}.`};
   };
+  const readDevShipyard=()=>{
+    const current=devPlayerState.load()||{};
+    const game=current.game&&typeof current.game==="object"?current.game:{};
+    const inventory=game.devInventory&&typeof game.devInventory==="object"?game.devInventory:{ammo:{},cannons:{},ships:[]};
+    const yard=game.devShipyard&&typeof game.devShipyard==="object"?game.devShipyard:{};
+    return {current,game,inventory,yard};
+  };
+  const devShipyardCatalog=()=>{
+    const overlay=globalThis.TabuadaQuest?.dev;
+    return {
+      ships:overlay?.shipEditor?.repositoryShips?.()||[],
+      cannons:overlay?.cannonEditor?.getCatalog?.()?.cannons||[]
+    };
+  };
+  const getDevShipyardState=()=>{
+    const {inventory,yard}=readDevShipyard();
+    const catalog=devShipyardCatalog();
+    // No DEV, todos os itens publicados ficam disponíveis para teste antes da compra real.
+    const ownedIds=new Set(Array.isArray(inventory.ships)&&inventory.ships.length?inventory.ships:catalog.ships.map(ship=>String(ship?.id||"")));
+    const ships=catalog.ships.filter(ship=>ownedIds.has(String(ship?.id||""))).map(ship=>{
+      const id=String(ship.id||"");
+      const installed=Array.isArray(yard.mountedCannons?.[id])?yard.mountedCannons[id]:[];
+      return {id,name:ship.name||id,equipped:String(yard.equippedShip||catalog.ships[0]?.id||"")===id,cannons:installed.map(cannonId=>{
+        const cannon=catalog.cannons.find(item=>String(item?.id||"")===String(cannonId));
+        return {id:String(cannonId),name:cannon?.name||String(cannonId)};
+      })};
+    });
+    const storage={...(inventory.cannons||{})};
+    if(!Object.keys(storage).length&&catalog.cannons[0]?.id)storage[catalog.cannons[0].id]=1;
+    return {ships,cannons:catalog.cannons.map(cannon=>({id:String(cannon.id||""),name:cannon.name||cannon.id})),storage};
+  };
+  const saveDevShipyard=next=>{
+    const {current,game}=readDevShipyard();
+    devPlayerState.save({...current,game:{...game,devShipyard:next}},{sync:false});
+  };
+  const equipDevShip=id=>{
+    const state=getDevShipyardState();
+    if(!state.ships.some(ship=>ship.id===id))return {ok:false,message:"Este navio não está disponível no teste."};
+    const {yard}=readDevShipyard();
+    saveDevShipyard({...yard,equippedShip:id});
+    return {ok:true,message:"Navio equipado para o teste DEV."};
+  };
+  const equipDevCannon=id=>{
+    const state=getDevShipyardState();
+    if(!(Number(state.storage[id])>0))return {ok:false,message:"Este canhão não está disponível no depósito."};
+    const active=state.ships.find(ship=>ship.equipped);
+    if(!active)return {ok:false,message:"Equipe um navio antes de instalar o canhão."};
+    const {inventory,yard}=readDevShipyard();
+    const storage={...(inventory.cannons||{}),[id]:Math.max(0,Number(inventory.cannons?.[id])||0)-1};
+    const mounted={...(yard.mountedCannons||{}),[active.id]:[...(yard.mountedCannons?.[active.id]||[]),id]};
+    const current=devPlayerState.load()||{};
+    devPlayerState.save({...current,game:{...current.game,devInventory:{...inventory,cannons:storage},devShipyard:{...yard,mountedCannons:mounted, equippedShip:active.id}}},{sync:false});
+    return {ok:true,message:"Canhão instalado no navio ativo."};
+  };
+  const removeDevCannon=(id,shipId)=>{
+    const {current,game,inventory,yard}=readDevShipyard();
+    const installed=[...(yard.mountedCannons?.[shipId]||[])];
+    const index=installed.indexOf(id);
+    if(index<0)return {ok:false,message:"Canhão não encontrado neste navio."};
+    installed.splice(index,1);
+    const mounted={...(yard.mountedCannons||{}),[shipId]:installed};
+    const cannons={...(inventory.cannons||{}),[id]:Math.max(0,Number(inventory.cannons?.[id])||0)+1};
+    devPlayerState.save({...current,game:{...game,devInventory:{...inventory,cannons},devShipyard:{...yard,mountedCannons:mounted}}},{sync:false});
+    return {ok:true,message:"Canhão guardado no depósito."};
+  };
   globalThis.addEventListener?.("tq:treasurecollected",recordTreasureCollected);
 
   await runtime.load(resolved.scene.path);
@@ -197,6 +262,10 @@ if(worldTest){
     onPedagogyResult:recordPedagogyResult,
     onRewardCollected:applyWorldReward,
     onShopPurchase:purchaseWorldShopItem,
+    getShipyardState:getDevShipyardState,
+    onEquipShip:equipDevShip,
+    onEquipCannon:equipDevCannon,
+    onRemoveCannon:removeDevCannon,
     shopBalances:()=>{
       const rewards=devPlayerState.load()?.game?.rewards||{};
       return {

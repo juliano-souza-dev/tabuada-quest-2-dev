@@ -1,7 +1,7 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1222";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1500";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
@@ -9,6 +9,10 @@ export class WorldEditor {
     this.onRewardCollected=typeof onRewardCollected==="function"?onRewardCollected:null;
     this.onShopPurchase=typeof onShopPurchase==="function"?onShopPurchase:null;
     this.shopBalances=typeof shopBalances==="function"?shopBalances:()=>({gold:0,rubies:0});
+    this.getShipyardState=typeof getShipyardState==="function"?getShipyardState:()=>({});
+    this.onEquipShip=typeof onEquipShip==="function"?onEquipShip:null;
+    this.onEquipCannon=typeof onEquipCannon==="function"?onEquipCannon:null;
+    this.onRemoveCannon=typeof onRemoveCannon==="function"?onRemoveCannon:null;
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.resolveNpc=typeof resolveNpc==="function"?resolveNpc:null;
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
@@ -114,6 +118,10 @@ export class WorldEditor {
       testAmmoQuantity,
       shopBalances:()=>this.shopBalances(),
       onShopPurchase:request=>this.onShopPurchase?.(request),
+      getShipyardState:()=>this.getShipyardState(),
+      onEquipShip:id=>this.onEquipShip?.(id),
+      onEquipCannon:id=>this.onEquipCannon?.(id),
+      onRemoveCannon:(cannonId,shipId)=>this.onRemoveCannon?.(cannonId,shipId),
       soundCatalog:this.getSoundCatalog(),
       resolveShip:this.resolveShip,
       resolveNpc:this.resolveNpc,

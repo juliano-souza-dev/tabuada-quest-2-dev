@@ -329,6 +329,7 @@
 .tq-live-css__body{height:calc(100% - 62px);display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:12px}
 .tq-live-css__actions{display:flex;gap:8px}
 .tq-live-css__actions button{min-height:40px;border:1px solid rgba(255,255,255,.14)!important;background:#102535!important;color:#fff!important}
+.tq-live-css__challenge{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:10px;border:1px solid rgba(126,231,255,.22);border-radius:10px;color:#ccebf5}.tq-live-css__challenge legend{padding:0 5px;color:#7ee7ff;font-size:11px;font-weight:800}.tq-live-css__challenge label{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;align-items:center;font-size:10px}.tq-live-css__challenge input[type="range"]{grid-column:1 / -1;width:100%}.tq-live-css__challenge select{min-width:0;background:#071924;color:#eafaff;border:1px solid #2e6478;border-radius:5px;font-size:10px}.tq-live-css__challenge input[type="color"]{width:28px;height:22px;padding:0;border:0;background:transparent}.tq-live-css__challenge output{color:#ffe69a;font:10px ui-monospace,monospace}
 .tq-live-css__body textarea{width:100%;height:100%;min-height:260px;resize:none;box-sizing:border-box;border:1px solid rgba(126,231,255,.25);border-radius:12px;background:#04111c;color:#dff7ff;padding:12px;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2;outline:none}
 .tq-live-css__body textarea:focus{border-color:#49c8ff;box-shadow:0 0 0 2px rgba(73,200,255,.12)}
 .tq-live-css__body>small{color:#9fc6d8;font-size:10px;line-height:1.4}
