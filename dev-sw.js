@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-v20261003-3155";
+const CACHE_NAME="tq-dev-assets-v20261003-2040-galeao";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
