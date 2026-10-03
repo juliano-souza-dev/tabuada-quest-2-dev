@@ -5039,9 +5039,9 @@ export class WorldRuntime {
         entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(75,sampleMs*1.15)};
       }
       entity.netSampleAt=now;
-      entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");
+      entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");entity.netLastSeen=performance.now();
     }
-    for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
+    const now=performance.now();for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)&&now-Number(entity.netLastSeen||now)>3000){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
     this.entities.forEach((e,i)=>e.index=i);
   }
 
