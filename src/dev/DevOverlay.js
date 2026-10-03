@@ -3454,6 +3454,7 @@ export class DevOverlay {
       this.npcEditorReady,
       this.treasureEditorReady,
       this.cannonCatalogReady,
+      this.gameManifestReady,
       this.sceneCatalogReady,
       this.worldCatalogReady,
       this.actionCatalogReady
@@ -3461,10 +3462,13 @@ export class DevOverlay {
 
     this.syncLocalWorldFromEditor?.();
 
-    const manifest=await this.fetchGlobalJson("./src/config/game.manifest.json",{
+    const repositoryManifest=await this.fetchGlobalJson("./src/config/game.manifest.json",{
       schema:"tq.game-manifest",version:1,catalogs:{}
     });
-    const manifestCatalogs=manifest?.catalogs&&typeof manifest.catalogs==="object"?manifest.catalogs:{};
+    const manifest=structuredClone(this.gameManifest||repositoryManifest);
+    const manifestCatalogs=repositoryManifest?.catalogs&&typeof repositoryManifest.catalogs==="object"
+      ?repositoryManifest.catalogs
+      :(manifest?.catalogs&&typeof manifest.catalogs==="object"?manifest.catalogs:{});
     const sourcePaths={
       gameManifest:"./src/config/game.manifest.json",
       firebasePublic:"./src/config/firebase-public.json",
