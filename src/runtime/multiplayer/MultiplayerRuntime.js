@@ -13,7 +13,7 @@ export class MultiplayerRuntime extends EventTarget{
   constructor(auth,config={},options={}){
     super();
     this.auth=auth;this.config=config||{};this.enabled=options.enabled!==false;
-    this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");
+    this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");\n    this.functionsBaseURL=String(config.functionsBaseURL||("https://southamerica-east1-"+config.projectId+".cloudfunctions.net")).replace(/\/$/,"");
     this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";
     this.snapshotHz=clamp(Number(options.snapshotHz)||10,5,20);this.pollMs=Math.max(80,Number(options.pollMs)||100);
     this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";this.pushInFlight=false;this.pollInFlight=false;
@@ -24,6 +24,14 @@ export class MultiplayerRuntime extends EventTarget{
     const url=this.databaseURL+"/"+path.replace(/^\/+|\/+$/g,"")+".json?auth="+encodeURIComponent(token)+(query?"&"+query:"");
     const response=await fetch(url,{method,headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});
     return json(response);
+  }
+  async serverRequest(functionName,body={}){
+    if(!this.enabled||!this.auth?.status?.().authenticated)return null;
+    const token=await this.auth.ensureFreshToken();if(!token)return null;
+    const response=await fetch(this.functionsBaseURL+"/"+functionName,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(body)});
+    const result=await json(response);
+    if(!response.ok)throw new Error(result?.error||("server_"+response.status));
+    return result;
   }
   async joinWorld(worldId,{getLocalState,shipId="",displayName=""}={}){
     await this.leaveWorld();this.worldId=safeKey(worldId);if(!this.worldId)return false;
@@ -74,17 +82,13 @@ export class MultiplayerRuntime extends EventTarget{
   }
   async ensureBoss(boss={}){
     if(!this.worldId)return null;const bossId=safeKey(boss.bossId);if(!bossId)return null;
-    const path="multiplayer/rooms/"+this.worldId+"/bosses/"+bossId;const existing=await this.request(path);
-    if(existing&&typeof existing==="object")return existing;
-    const initial={bossId,entityId:String(boss.entityId||boss.bossId||""),name:String(boss.name||"Boss"),maxHp:Math.max(1,Number(boss.maxHp)||1),hp:Math.max(1,Number(boss.maxHp)||1),phase:1,defeated:false,updatedAt:Date.now()};
-    await this.request(path,{method:"PUT",body:initial});return initial;
+    const result=await this.serverRequest("ensureBoss",{worldId:this.worldId,bossId,entityId:String(boss.entityId||boss.bossId||""),name:String(boss.name||"Boss"),maxHp:Math.max(1,Number(boss.maxHp)||1)});
+    return result?.boss||null;
   }
   async damageBoss(bossId,damage=1,meta={}){
-    if(!this.worldId)return null;bossId=safeKey(bossId);if(!bossId)return null;const path="multiplayer/rooms/"+this.worldId+"/bosses/"+bossId;
-    const current=await this.request(path);if(!current||current.defeated===true)return current;
-    const dealt=clamp(Number(damage)||1,1,5000),hp=Math.max(0,Number(current.hp||current.maxHp||1)-dealt),next={...current,hp,defeated:hp<=0,updatedAt:Date.now(),lastHitBy:String(this.auth.status().uid||""),lastShotId:safeKey(meta.shotId||"")};
-    await this.request(path,{method:"PUT",body:next});
-    await this.request("multiplayer/rooms/"+this.worldId+"/events",{method:"POST",body:{type:"boss-hit",uid:String(this.auth.status().uid||""),bossId,damage:dealt,hp,maxHp:Number(next.maxHp)||1,defeated:next.defeated,shotId:next.lastShotId,at:Date.now()}});return next;
+    if(!this.worldId)return null;bossId=safeKey(bossId);if(!bossId)return null;
+    const result=await this.serverRequest("bossDamage",{worldId:this.worldId,bossId,damage:clamp(Number(damage)||1,1,5000),shotId:safeKey(meta.shotId||"")});
+    return result?.boss||null;
   }
   async sendHit(hit={}){
     if(!this.worldId)return false;const uid=String(this.auth.status().uid||"");const targetUid=safeKey(hit.targetUid);if(!uid||!targetUid)return false;
