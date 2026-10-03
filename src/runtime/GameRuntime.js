@@ -25,6 +25,8 @@ export class GameRuntime {
     this.worldCatalog=null;
     this.shipCatalog=null;
     this.treasureCatalog=null;
+    this.ammoCatalog=null;
+    this.cannonCatalog=null;
     this.pedagogyCurriculum=null;
     this.actionCatalog=null;
     this.actionRuntime=null;
@@ -66,11 +68,13 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,treasureCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,treasureCatalog,ammoCatalog,cannonCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
       this.loadJson(catalogs.treasures||"./src/config/treasure-catalog.json"),
+      this.loadJson(catalogs.ammo||"./src/config/ammo-catalog.json"),
+      this.loadJson(catalogs.cannons||"./src/config/cannon-catalog.json"),
       this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       this.loadJson(catalogs.actions||"./src/config/action-catalog.json")
     ]);
@@ -78,6 +82,8 @@ export class GameRuntime {
     this.worldCatalog=worldCatalog;
     this.shipCatalog=shipCatalog;
     this.treasureCatalog=treasureCatalog;
+    this.ammoCatalog=ammoCatalog;
+    this.cannonCatalog=cannonCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
@@ -781,6 +787,10 @@ export class GameRuntime {
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
       state:restored||{},
+      ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
+      cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
+      shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
+      shopBalances:()=>({gold:Number(this.rewards?.coins||0),rubies:Number(this.accountState?.game?.rubies||0)}),
       resolveShip:(shipId,role="npc")=>{
         const ship=this.shipEntry(shipId);
         if(!ship||ship.available===false)return null;
