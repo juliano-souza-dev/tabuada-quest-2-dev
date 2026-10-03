@@ -5,7 +5,7 @@
   "ships": [
     {
       "id": "pirate-default",
-      "name": "Marujo do Horizonte",
+      "name": "Navio do Marujo",
       "type": "player",
       "available": true,
       "description": "Navio inicial padrão do jogador.",
