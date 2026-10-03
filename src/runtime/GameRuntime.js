@@ -34,6 +34,7 @@ export class GameRuntime {
     this.missionCatalog=null;
     this.pedagogyCurriculum=null;
     this.actionCatalog=null;
+    this.soundCatalog=null;
     this.actionRuntime=null;
     this.sceneRuntime=null;
     this.worldRuntime=null;
@@ -77,7 +78,7 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog,soundCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
@@ -87,7 +88,8 @@ export class GameRuntime {
       this.loadJson(catalogs.cannons||"./src/config/cannon-catalog.json"),
       this.loadJson(catalogs.missions||"./src/config/mission-catalog.json"),
       this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
-      this.loadJson(catalogs.actions||"./src/config/action-catalog.json")
+      this.loadJson(catalogs.actions||"./src/config/action-catalog.json"),
+      this.loadJson(catalogs.sounds||"./src/config/sound-catalog.json")
     ]);
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
@@ -99,6 +101,7 @@ export class GameRuntime {
     this.missionCatalog=missionCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
+    this.soundCatalog=soundCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
     this.ensurePlayerShips();
     this.ensurePlayerCannons();
@@ -226,7 +229,8 @@ export class GameRuntime {
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
       missionCatalog:load(catalogs.missions||"./src/config/mission-catalog.json"),
       pedagogyCurriculum:load(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
-      actionCatalog:load(catalogs.actions||"./src/config/action-catalog.json")
+      actionCatalog:load(catalogs.actions||"./src/config/action-catalog.json"),
+      soundCatalog:load(catalogs.sounds||"./src/config/sound-catalog.json")
     };
 
     for(const [key,value] of Object.entries(next)){
@@ -1429,6 +1433,7 @@ export class GameRuntime {
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
       state:restored||{},
+      soundCatalog:this.soundCatalog&&typeof this.soundCatalog==="object"?clone(this.soundCatalog):{sounds:[]},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
