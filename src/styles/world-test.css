@@ -1328,25 +1328,27 @@
 /* Mobile in-world shop */
 .tq-world-shop-launcher{
   position:fixed;
-  right:max(14px,env(safe-area-inset-right));
-  bottom:max(92px,calc(env(safe-area-inset-bottom) + 84px));
+  right:max(12px,env(safe-area-inset-right));
+  bottom:max(218px,calc(env(safe-area-inset-bottom) + 210px));
   z-index:610;
-  min-width:74px;
-  min-height:58px;
-  display:grid;
-  place-items:center;
-  gap:1px;
-  padding:6px 12px;
-  border:2px solid #f1bd5a;
-  border-radius:17px;
-  background:linear-gradient(180deg,#3f2457ee,#201326f2);
-  color:#ffe8a6;
-  box-shadow:0 8px 22px #0009,inset 0 0 0 2px #7a4a1e;
-  font:900 11px/1 system-ui;
-  text-shadow:0 2px 3px #000;
+  width:108px;
+  height:70px;
+  min-width:0;
+  min-height:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background-color:transparent;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  color:transparent;
+  box-shadow:none;
+  font-size:0;
   touch-action:manipulation;
+  filter:drop-shadow(0 5px 8px #0009);
 }
-.tq-world-shop-launcher span{font-size:24px;line-height:1}
+.tq-world-shop-launcher span,.tq-world-shop-launcher b{display:none}
 .tq-world-host.is-editor .tq-world-shop-launcher{display:none!important}
 .tq-world-shop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));pointer-events:auto}
 .tq-world-shop[hidden]{display:none}
@@ -1423,5 +1425,95 @@
 html.tq-shop-open .tq-world-controls,html.tq-shop-open .tq-world-action,html.tq-shop-open .tq-world-shop-launcher{pointer-events:none}
 @media (orientation:landscape) and (max-height:600px){
   .tq-world-shop__panel{height:96vh;width:auto;max-height:96vh;max-width:none}
-  .tq-world-shop-launcher{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));min-width:68px;min-height:52px}
+}
+
+
+/* Halloween mobile HUD */
+.tq-mobile-hud{position:fixed;inset:0;z-index:609;pointer-events:none}
+.tq-mobile-hud__button{
+  position:absolute;
+  width:108px;
+  height:70px;
+  margin:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background-color:transparent;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+  filter:drop-shadow(0 5px 8px #0009);
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.tq-mobile-hud__button:active{transform:scale(.96)}
+.tq-mobile-hud__button.is-disabled,.tq-mobile-hud__button:disabled{opacity:.42;filter:grayscale(.55) drop-shadow(0 3px 5px #0007)}
+.tq-mobile-hud__button--missions{right:max(128px,calc(env(safe-area-inset-right) + 116px));bottom:max(218px,calc(env(safe-area-inset-bottom) + 210px))}
+.tq-mobile-hud__button--repair{right:max(128px,calc(env(safe-area-inset-right) + 116px));bottom:max(142px,calc(env(safe-area-inset-bottom) + 134px))}
+.tq-mobile-hud__button--ammo{right:max(12px,env(safe-area-inset-right));bottom:max(142px,calc(env(safe-area-inset-bottom) + 134px))}
+.tq-mobile-hud__button--attack,.tq-mobile-hud__button--cancel{right:max(12px,env(safe-area-inset-right));bottom:max(66px,calc(env(safe-area-inset-bottom) + 58px));width:116px;height:74px}
+.tq-mobile-hud__toast{
+  position:absolute;
+  right:max(14px,env(safe-area-inset-right));
+  bottom:max(302px,calc(env(safe-area-inset-bottom) + 294px));
+  max-width:min(260px,70vw);
+  padding:8px 12px;
+  border:1px solid rgba(255,209,102,.65);
+  border-radius:12px;
+  background:rgba(15,8,24,.9);
+  color:#fff0bf;
+  font:800 12px/1.25 system-ui;
+  text-shadow:0 1px 2px #000;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity .16s ease,transform .16s ease;
+  pointer-events:none;
+}
+.tq-mobile-hud__toast.is-visible{opacity:1;transform:translateY(0)}
+.tq-mobile-hud__missions{position:fixed;inset:0;z-index:1250;display:grid;place-items:center;padding:16px;pointer-events:auto}
+.tq-mobile-hud__missions[hidden]{display:none}
+.tq-mobile-hud__missions-scrim{position:absolute;inset:0;border:0;background:rgba(2,7,16,.78);backdrop-filter:blur(5px)}
+.tq-mobile-hud__missions-card{
+  position:relative;
+  width:min(92vw,470px);
+  max-height:min(82vh,720px);
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden;
+  border:2px solid #c78b32;
+  border-radius:22px;
+  background:linear-gradient(180deg,#24132cf7,#100d16f7);
+  box-shadow:0 18px 48px #000c,inset 0 0 0 2px rgba(255,213,106,.12);
+}
+.tq-mobile-hud__missions-card header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid rgba(255,215,132,.22);background:linear-gradient(180deg,rgba(94,35,102,.65),rgba(37,19,48,.35))}
+.tq-mobile-hud__missions-card header>div{display:grid;gap:2px}
+.tq-mobile-hud__missions-card header small{color:#d8aaff;font:900 10px/1 system-ui;letter-spacing:.1em}
+.tq-mobile-hud__missions-card header strong{color:#ffe5a0;font:900 23px/1.05 Georgia,serif;text-shadow:0 2px 4px #000}
+.tq-mobile-hud__missions-card header button{width:42px;height:42px;border:2px solid #e0a84a;border-radius:50%;background:#3a1728;color:#ffd88b;font:900 25px/1 system-ui}
+.tq-mobile-hud__missions-list{display:grid;align-content:start;gap:9px;padding:12px;overflow:auto;overscroll-behavior:contain}
+.tq-mobile-hud__mission{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid rgba(235,180,79,.38);border-radius:14px;background:linear-gradient(180deg,rgba(81,43,49,.82),rgba(30,20,27,.92));box-shadow:inset 0 0 16px rgba(0,0,0,.35)}
+.tq-mobile-hud__mission-number{width:32px;height:32px;display:grid;place-items:center;border:1px solid #e3ae52;border-radius:50%;background:#5a2b18;color:#ffe7a7;font:900 13px/1 system-ui}
+.tq-mobile-hud__mission-copy{display:grid;gap:3px;min-width:0}
+.tq-mobile-hud__mission-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff0c9;font:900 13px/1.15 system-ui}
+.tq-mobile-hud__mission-copy span{color:#c8b8ca;font:700 10px/1.25 system-ui}
+.tq-mobile-hud__mission-reward{color:#ffe4a0;font:900 11px/1 system-ui;white-space:nowrap}
+.tq-mobile-hud__missions-empty{margin:20px;color:#d8c7db;text-align:center;font:700 12px/1.4 system-ui}
+.tq-world-host.is-editor .tq-mobile-hud{display:none!important}
+html.tq-shop-open .tq-mobile-hud,html.tq-missions-open .tq-world-controls,html.tq-missions-open .tq-world-action,html.tq-missions-open .tq-world-shop-launcher,html.tq-missions-open .tq-mobile-hud{pointer-events:none}
+html.tq-missions-open .tq-mobile-hud__missions{pointer-events:auto}
+
+@media (max-width:420px){
+  .tq-world-shop-launcher,.tq-mobile-hud__button{width:96px;height:62px}
+  .tq-mobile-hud__button--missions{right:max(112px,calc(env(safe-area-inset-right) + 104px))}
+  .tq-mobile-hud__button--repair{right:max(112px,calc(env(safe-area-inset-right) + 104px))}
+  .tq-mobile-hud__button--attack,.tq-mobile-hud__button--cancel{width:102px;height:66px}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .tq-world-shop-launcher{right:max(10px,env(safe-area-inset-right));bottom:max(156px,calc(env(safe-area-inset-bottom) + 148px));width:92px;height:58px}
+  .tq-mobile-hud__button{width:92px;height:58px}
+  .tq-mobile-hud__button--missions{right:max(108px,calc(env(safe-area-inset-right) + 100px));bottom:max(156px,calc(env(safe-area-inset-bottom) + 148px))}
+  .tq-mobile-hud__button--repair{right:max(108px,calc(env(safe-area-inset-right) + 100px));bottom:max(94px,calc(env(safe-area-inset-bottom) + 86px))}
+  .tq-mobile-hud__button--ammo{right:max(10px,env(safe-area-inset-right));bottom:max(94px,calc(env(safe-area-inset-bottom) + 86px))}
+  .tq-mobile-hud__button--attack,.tq-mobile-hud__button--cancel{right:max(10px,env(safe-area-inset-right));bottom:max(32px,calc(env(safe-area-inset-bottom) + 24px));width:96px;height:60px}
 }
