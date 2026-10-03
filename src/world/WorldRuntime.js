@@ -4988,7 +4988,18 @@ export class WorldRuntime {
       let entity=this.remotePlayers.get(uid);
       if(!entity){
         entity={id:"multiplayer."+uid,type:"ship",role:"multiplayer",label:String(remote.name||"Pirata"),shipId:String(remote.shipId||""),x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,width:108,height:150,z:31,collision:{active:false,action:"none"},motion:{active:false},effect:{category:"ship",preset:"none"},runtimeMultiplayer:true};
-        const profile=this.resolveShip?.(entity.shipId,"player");if(profile)Object.assign(entity,structuredClone(profile),{id:entity.id,type:"ship",role:"multiplayer",runtimeMultiplayer:true,x:entity.x,y:entity.y,rotation:entity.rotation,label:entity.label,collision:{active:false,action:"none"}});
+        const profile=this.resolveShip?.(entity.shipId,"player");
+        if(profile)Object.assign(entity,structuredClone(profile),{id:entity.id,type:"ship",role:"multiplayer",runtimeMultiplayer:true,x:entity.x,y:entity.y,rotation:entity.rotation,label:entity.label,collision:{active:false,action:"none"}});
+        // A remote player must always be visible, even when its saved/equipped ship id
+        // is not present in the production ship catalog yet.
+        if(!entity.src){
+          const local=this.config.player||{};
+          entity.src=String(local.src||local.sprite?.src||"");
+          entity.sprite=structuredClone(local.sprite||null);
+          entity.spriteMode=local.spriteMode||"combined";
+          entity.width=Math.max(24,Number(local.width)||230);
+          entity.height=Math.max(24,Number(local.height)||230);
+        }
         entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
         if(this.entityLayer)this.renderEntities();
       }
