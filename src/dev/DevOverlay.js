@@ -396,7 +396,7 @@ export class DevOverlay {
         editor.value=this.liveCssStyle?.textContent||localStorage.getItem(this.liveCssStorageKey)||"";
         requestAnimationFrame(()=>editor.focus({preventScroll:true}));
       }
-    }else panel.hidden=true;
+    }else{panel.hidden=true;this.hideCssCompositionPreview()}
   }
 
   applyLiveCss(css,{persist=false}={}){
@@ -464,6 +464,12 @@ export class DevOverlay {
     for(const answer of ["24","20","18","28"]){const button=document.createElement("button");button.type="button";button.className="tq-world-combat__option";button.dataset.tqDevComponent="answer";button.textContent=answer;options.append(button)}
     const hp=runtime.repairHp||runtime.host?.querySelector?.("[data-world-repair-hp]");if(hp)hp.hidden=true;
     const feedback=runtime.challengeFeedback||runtime.host?.querySelector?.("[data-world-challenge-feedback]");if(feedback)feedback.textContent="Prévia DEV — clique na conta ou em uma alternativa para editar.";
+  }
+  hideCssCompositionPreview(){
+    const runtime=this.worldEditor?.runtime||this.runtime;if(!runtime)return;
+    runtime.shopOverlay?.close?.();runtime.shipyardOverlay?.close?.();
+    const wrap=runtime.challengeWrap||runtime.host?.querySelector?.("[data-world-challenge]");
+    if(wrap){wrap.hidden=true;wrap.classList.remove("is-treasure-challenge","is-repair-challenge");wrap.style.removeProperty("--tq-popup-layout")}
   }
   openCompositionAssetPicker(){
     this.assetPickTarget={kind:"css-composition-asset",composition:this.selectedCssComposition};
@@ -654,7 +660,7 @@ export class DevOverlay {
     for(const [key,selector] of Object.entries(panels)){
       if(key===except)continue;
       const panel=this.el?.querySelector(selector);
-      if(panel)panel.hidden=true;
+      if(panel){panel.hidden=true;if(key==="css")this.hideCssCompositionPreview()}
     }
     if(except!=="ships")this.shipEditor?.setVisible(false);
     if(except!=="npcs")this.npcEditor?.setVisible(false);
