@@ -397,12 +397,19 @@ export class WorldRuntime {
       treasureRespawn:typeConfig.respawn===true,treasureRespawnDelayMs:Math.max(1000,Number(typeConfig.respawnDelaySec||30)*1000),
       treasureSpawnAt:performance.now()+Math.max(0,Number(typeConfig.spawnIntervalSec)||0)*1000*(index+1),
       treasurePending:true,treasureRespawnAt:0,
-      motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
-      effect:{category:"treasure",preset:"none"},
+      motion:structuredClone(profile.behavior?.motion||{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8}),
+      effect:structuredClone(profile.behavior?.effect||{category:"treasure",preset:"none"}),
+      waterIntegration:{
+        active:Number(profile.behavior?.immersion||0)>0,
+        immersion:clamp(Number(profile.behavior?.immersion||0),0,.65)
+      },
       collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"collect",message:"Coletar tesouro"}
     };
     entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=0;entity.skewX=0;entity.skewY=0;
-    entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);return entity;
+    entity.motion=normalizeEntityMotion(entity.motion||{},entity.type);
+    entity.effect=normalizeEntityEffect(entity.effect||{},entity);
+    entity.collision=normalizeCollision(entity.collision||{},entity);
+    return entity;
   }
 
   rebuildTreasurePopulation({render=true}={}){
@@ -1353,6 +1360,23 @@ export class WorldRuntime {
       }
 
       this.renderIslandWaterIntegration(entity,{active,immersion,foam,foamWidth,wetness,shadow});
+    }else if(String(entity.type||"")==="treasure"){
+      el.classList.remove("has-water-integration");
+      const raw=entity.waterIntegration&&typeof entity.waterIntegration==="object"?entity.waterIntegration:{};
+      const active=raw.active===true;
+      const immersion=clamp(Number(raw.immersion||0),0,.65);
+      const mask=active&&immersion>0
+        ?(()=>{const solid=Math.max(12,(1-immersion)*100);const fade=Math.min(100,solid+Math.max(8,immersion*24));return "linear-gradient(to bottom,#000 0%,#000 "+solid.toFixed(2)+"%,rgba(0,0,0,.72) "+fade.toFixed(2)+"%,transparent 100%)"})()
+        :"";
+      for(const target of [img,el.querySelector(".tq-world-entity__webgl")]){
+        if(!target)continue;
+        target.style.maskImage=mask;
+        target.style.webkitMaskImage=mask;
+        target.style.maskRepeat=mask?"no-repeat":"";
+        target.style.webkitMaskRepeat=mask?"no-repeat":"";
+        target.style.maskSize=mask?"100% 100%":"";
+        target.style.webkitMaskSize=mask?"100% 100%":"";
+      }
     }else{
       el.classList.remove("has-water-integration");
       if(img){
@@ -4441,6 +4465,32 @@ export class WorldRuntime {
       .some(type=>String(type?.shipId||"")===id||String(type?.npcId||"")===id);
     if(usesNpc){
       this.rebuildNpcPopulation({render:true});
+      changed=true;
+    }
+    return changed;
+  }
+
+  refreshTreasureProfile(treasureId){
+    const id=String(treasureId||"");
+    if(!id||!this.resolveTreasure)return false;
+    let changed=false;
+    for(const entity of this.entities){
+      if(String(entity?.treasureId||"")!==id)continue;
+      const profile=this.resolveTreasure(id);
+      if(!profile)continue;
+      entity.label=String(profile.name||id);
+      entity.src=String(profile.asset||"");
+      entity.width=Math.max(24,Number(profile.width)||88);
+      entity.height=Math.max(24,Number(profile.height)||88);
+      entity.treasureRewards=structuredClone(profile.rewards||{});
+      entity.motion=normalizeEntityMotion(profile.behavior?.motion||{},entity.type);
+      entity.effect=normalizeEntityEffect(profile.behavior?.effect||{},entity);
+      entity.waterIntegration={
+        active:Number(profile.behavior?.immersion||0)>0,
+        immersion:clamp(Number(profile.behavior?.immersion||0),0,.65)
+      };
+      this.applyEntityVisual(entity);
+      this.syncEntityEffectRenderer(entity);
       changed=true;
     }
     return changed;
