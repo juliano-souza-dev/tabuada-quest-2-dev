@@ -660,7 +660,10 @@ export class WorldRuntime {
   }
 
   updateNpcNavigation(entity,dt){
-    if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
+    // NPCs devem refletir a navegação também no modo de edição. Assim o
+    // editor mostra a configuração real; "Congelar no DEV" continua sendo
+    // o controle explícito para mantê-los parados durante o ajuste.
+    if(!["play","edit"].includes(this.mode)||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
     if(entity.devFrozen){
       if(nav){nav.vx=0;nav.vy=0}
