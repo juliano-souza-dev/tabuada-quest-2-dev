@@ -46,6 +46,8 @@ export class GameRuntime {
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerCannons={owned:{},equippedByShip:{}};
     this.playerStateStore=null;
+    this.contentStore=options.contentStore||null;
+    this.contentSource=this.contentStore?.status?.().ready?"canonical":"bootstrap";
     this.multiplayer=null;
     this.multiplayerCleanups=[];
     this.accountState={};
@@ -178,9 +180,64 @@ export class GameRuntime {
   }
 
   async loadJson(url){
+    const canonical=this.contentStore?.json?.(url);
+    if(canonical&&typeof canonical==="object"){
+      this.contentSource="canonical";
+      return clone(canonical);
+    }
+
     const response=await fetch(url,{cache:"no-store"});
     if(!response.ok)throw new Error("Game resource load failed: "+url+" ("+response.status+")");
     return response.json();
+  }
+
+  setContentStore(store){
+    this.contentStore=store||null;
+    this.contentSource=this.contentStore?.status?.().ready?"canonical":"bootstrap";
+    return this;
+  }
+
+  async reloadCanonicalContent(store=this.contentStore){
+    if(store)this.setContentStore(store);
+    if(!this.contentStore?.status?.().ready)return false;
+
+    const catalogs=this.manifest.catalogs||{};
+    const load=path=>{
+      const value=this.contentStore?.json?.(path);
+      return value&&typeof value==="object"?clone(value):null;
+    };
+
+    const manifest=load(this.manifestUrl||"./src/config/game.manifest.json");
+    if(manifest){
+      this.manifest=manifest;
+      this.restoreSession=this.manifest.persistence?.restoreSession!==false;
+    }
+
+    const next={
+      sceneCatalog:load(catalogs.scenes||"./src/config/scene-catalog.json"),
+      worldCatalog:load(catalogs.worlds||"./src/config/world-catalog.json"),
+      shipCatalog:load(catalogs.ships||"./src/config/ship-catalog.json"),
+      npcCatalog:load(catalogs.npcs||"./src/config/npc-catalog.json"),
+      treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
+      ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
+      cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
+      missionCatalog:load(catalogs.missions||"./src/config/mission-catalog.json"),
+      pedagogyCurriculum:load(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
+      actionCatalog:load(catalogs.actions||"./src/config/action-catalog.json")
+    };
+
+    for(const [key,value] of Object.entries(next)){
+      if(value)this[key]=value;
+    }
+    if(next.pedagogyCurriculum)this.pedagogyRuntime.setCurriculum(next.pedagogyCurriculum);
+    this.ensurePlayerShips();
+    this.ensurePlayerCannons();
+    this.contentSource="canonical";
+    globalThis.dispatchEvent?.(new CustomEvent("tq:canonical-content-ready",{detail:{
+      releaseId:this.contentStore.status().releaseId,
+      resources:this.contentStore.status().resources
+    }}));
+    return true;
   }
 
   installNavigationActions(){
