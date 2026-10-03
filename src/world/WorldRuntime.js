@@ -4575,7 +4575,6 @@ export class WorldRuntime {
       .slice(0,maxTargets);
     if(!candidates.length)return false;
 
-    let firedAny=false;
     candidates.forEach((target,index)=>{
       const delay=index*170;
       setTimeout(()=>{
@@ -4587,7 +4586,6 @@ export class WorldRuntime {
           duration
         })===true;
         if(!fired)return;
-        firedAny=true;
         this.audio?.play("cannon-shot");
         if(target.local){
           setTimeout(()=>{
@@ -4599,7 +4597,7 @@ export class WorldRuntime {
         }
       },delay);
     });
-    return true;
+    return candidates.length>0;
   }
 
   updateDirectNavalCombat(time=performance.now()){
@@ -5620,6 +5618,7 @@ export class WorldRuntime {
       this.coopBossLocalDamage.set(bossId,contribution);
       if(state.defeated===true||hp<=0){
         this.notifyCoopBossDefeated(entity);
+        if(Number(state.respawnAt)>0)entity.respawnDelayMs=Math.max(1000,Number(state.respawnAt)-Date.now());
         if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
       }else if(Number(state.spawnId)>Number(entity.bossSpawnCycle||1)){
         entity.bossSpawnCycle=Number(state.spawnId);
@@ -5694,6 +5693,7 @@ export class WorldRuntime {
         }
         if(event.defeated===true){
           this.notifyCoopBossDefeated(entity);
+          if(Number(event.respawnAt)>0)entity.respawnDelayMs=Math.max(1000,Number(event.respawnAt)-Date.now());
           if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
         }
       }
