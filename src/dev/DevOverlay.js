@@ -9,6 +9,7 @@ export class DevOverlay {
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
     this.assetTree=null;this.assetDirectoryPath="assets";this.assetNodeIndex=new Map();this.assetByPath=new Map();this.assetPickTarget=null;
     this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];this.actionCatalog=null;
+    this.gameManifest={schema:"tq.game-manifest",version:1,worldDefaults:{camera:{playZoom:0.4841}}};
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
     this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
@@ -46,7 +47,8 @@ export class DevOverlay {
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
       getCannonCatalog:()=>this.cannonEditor?.getCatalog?.()||this.cannonCatalog,
       getAmmoCatalog:()=>({defaultAmmoId:this.ammoEditor?.catalog?.defaultAmmoId||this.ammoEditor?.all?.()[0]?.id||"",ammo:this.ammoEditor?.all?.()||[]}),
-      getSoundCatalog:()=>this.soundCatalog
+      getSoundCatalog:()=>this.soundCatalog,
+      getWorldDefaults:()=>structuredClone(this.gameManifest?.worldDefaults||{camera:{playZoom:0.4841}})
     });
     this.sceneBeforeWorld=null;this.worldSceneBackButton=null;
     this.localSceneStorageKey="tq.dev.local-scenes:v1";this.localWorldStorageKey="tq.dev.local-worlds:v1";this.sceneGroupStorageKey="tq.dev.scene-groups:v1";
@@ -179,6 +181,7 @@ export class DevOverlay {
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
+    this.gameManifestReady=this.loadGameManifest();
     this.sceneCatalogReady=this.loadSceneCatalog();
     this.worldCatalogReady=this.loadWorldCatalog();
     this.actionCatalogReady=this.loadActionCatalog();
