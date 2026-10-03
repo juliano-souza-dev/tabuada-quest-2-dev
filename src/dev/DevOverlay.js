@@ -151,7 +151,12 @@ export class DevOverlay {
             <label>Largura máxima <input data-challenge-max-width type="range" min="360" max="1080" step="10" value="1080"><output data-challenge-max-width-output>1080px</output></label>
             <label>Posição vertical <input data-challenge-top type="range" min="24" max="42" step=".5" value="33.5"><output data-challenge-top-output>33.5%</output></label>
             <label>Margem lateral <input data-challenge-side type="range" min="18" max="32" step=".5" value="25.5"><output data-challenge-side-output>25.5%</output></label>
+            <label>Posição da conta <input data-challenge-prompt-offset type="range" min="-80" max="80" step="1" value="0"><output data-challenge-prompt-offset-output>0px</output></label>
+            <label>Tamanho da conta <input data-challenge-prompt-size type="range" min="28" max="96" step="1" value="72"><output data-challenge-prompt-size-output>72px</output></label>
+            <label>Posição das opções <input data-challenge-options-offset type="range" min="-80" max="80" step="1" value="0"><output data-challenge-options-offset-output>0px</output></label>
             <label>Altura do slot <input data-challenge-slot-height type="range" min="29" max="90" step="1" value="78"><output data-challenge-slot-height-output>78px</output></label>
+            <label>Espaço entre opções <input data-challenge-option-gap type="range" min="0" max="28" step="1" value="22"><output data-challenge-option-gap-output>22px</output></label>
+            <label>Tamanho das opções <input data-challenge-answer-size type="range" min="18" max="72" step="1" value="58"><output data-challenge-answer-size-output>58px</output></label>
             <label>Fonte da conta <select data-challenge-prompt-font><option value="system-ui,sans-serif">Sistema</option><option value="Georgia,serif">Pirata clássica</option><option value="Trebuchet MS,sans-serif">Aventura</option></select></label>
             <label>Cor da conta <input data-challenge-prompt-color type="color" value="#24101f"></label>
             <label>Cor das respostas <input data-challenge-answer-color type="color" value="#fff3bb"></label>
@@ -424,7 +429,7 @@ export class DevOverlay {
     this.applyLiveCss(css,{persist:true});
   }
 
-  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",slotHeight:"78",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb"}}
+  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",promptOffset:"0",promptSize:"72",optionsOffset:"0",slotHeight:"78",optionGap:"22",answerSize:"58",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb"}}
 
   challengeStyleProfiles(){
     try{const data=JSON.parse(localStorage.getItem(this.challengeStyleStorageKey)||"{}");if(data?.schema==="tq2.dev.challenge-styles"&&data?.profiles)return data.profiles}catch{}
@@ -436,25 +441,25 @@ export class DevOverlay {
   challengeStyleValues(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");
     const value=name=>panel?.querySelector("[data-challenge-"+name+"]")?.value||"";
-    return {kind:value("kind")||"treasure",maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",slotHeight:value("slot-height")||"78",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
+    return {kind:value("kind")||"treasure",maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",promptOffset:value("prompt-offset")||"0",promptSize:value("prompt-size")||"72",optionsOffset:value("options-offset")||"0",slotHeight:value("slot-height")||"78",optionGap:value("option-gap")||"22",answerSize:value("answer-size")||"58",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
   }
 
   loadChallengeProfileIntoControls(kind){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
     const profiles=this.challengeStyleProfiles(),value={...this.defaultChallengeStyle(kind),...(profiles[kind]||{}),kind};
-    const fields={kind:"kind","max-width":"maxWidth",top:"top",side:"side","slot-height":"slotHeight","prompt-font":"font","prompt-color":"promptColor","answer-color":"answerColor"};
+    const fields={kind:"kind","max-width":"maxWidth",top:"top",side:"side","prompt-offset":"promptOffset","prompt-size":"promptSize","options-offset":"optionsOffset","slot-height":"slotHeight","option-gap":"optionGap","answer-size":"answerSize","prompt-font":"font","prompt-color":"promptColor","answer-color":"answerColor"};
     for(const [field,key] of Object.entries(fields)){const input=panel.querySelector("[data-challenge-"+field+"]");if(input)input.value=value[key]}
     this.syncChallengeStyleOutputs();
   }
 
   challengeCss(values=this.challengeStyleValues()){
     const selector=values.kind==="repair"?".tq-world-challenge.is-repair-challenge":".tq-world-challenge.is-treasure-challenge";
-    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important}\n${selector} .tq-world-challenge__prompt{font-family:${values.font}!important;color:${values.promptColor}!important}\n${selector} .tq-world-combat__option{min-height:${values.slotHeight}px!important;color:${values.answerColor}!important}`;
+    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important}\n${selector} .tq-world-challenge__prompt{font-family:${values.font}!important;color:${values.promptColor}!important;font-size:min(5vw,${values.promptSize}px)!important;transform:translateY(${values.promptOffset}px)}\n${selector} .tq-world-combat__options{gap:${values.optionGap}px!important;transform:translateY(${values.optionsOffset}px)}\n${selector} .tq-world-combat__option{min-height:${values.slotHeight}px!important;color:${values.answerColor}!important;font-size:min(4.2vw,${values.answerSize}px)!important}`;
   }
 
   syncChallengeStyleOutputs(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
-    for(const [name,suffix] of [["max-width","px"],["top","%"],["side","%"],["slot-height","px"]]){
+    for(const [name,suffix] of [["max-width","px"],["top","%"],["side","%"],["prompt-offset","px"],["prompt-size","px"],["options-offset","px"],["slot-height","px"],["option-gap","px"],["answer-size","px"]]){
       const input=panel.querySelector("[data-challenge-"+name+"]"),output=panel.querySelector("[data-challenge-"+name+"-output]");
       if(input&&output)output.textContent=input.value+suffix;
     }
