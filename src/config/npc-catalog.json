@@ -19,6 +19,30 @@
         "attackCooldownMs": 900,
         "damage": 1
       }
+    },
+    {
+      "id": "boss-halloween-dreadnought",
+      "name": "Terror do Halloween",
+      "shipId": "ship-halloween-dreadnought",
+      "boss": true,
+      "coopBoss": true,
+      "coopBossId": "boss-halloween-dreadnought",
+      "navigation": {
+        "minSpeed": 80,
+        "speed": 420,
+        "acceleration": 1100,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 5000000,
+        "attitude": "hostile",
+        "attackRangeMode": "max-player-cannon",
+        "attackRange": 1600,
+        "attackCooldownMs": 900,
+        "damage": 5,
+        "maxTargets": 2,
+        "rewardMinDamageRatio": 0.15
+      }
     }
   ]
 }
