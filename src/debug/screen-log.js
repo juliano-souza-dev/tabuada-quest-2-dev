@@ -1,4 +1,4 @@
-(()=>{const q=new URLSearchParams(location.search);if(!q.has("debug")&&!location.hostname.includes("github.io"))return;
+(()=>{const q=new URLSearchParams(location.search);if(q.get("flowtest")==="1")return;if(!q.has("debug")&&!location.hostname.includes("github.io"))return;
 const box=document.createElement("div");box.id="tq-screen-log";
 Object.assign(box.style,{position:"fixed",left:"6px",right:"6px",bottom:"6px",maxHeight:"42vh",zIndex:"2147483647",background:"rgba(0,0,0,.86)",color:"#d7f7ff",font:"11px/1.35 monospace",border:"1px solid #46d9ff",borderRadius:"7px",whiteSpace:"pre-wrap",pointerEvents:"auto",display:"flex",flexDirection:"column",overflow:"hidden"});
 const head=document.createElement("button");head.type="button";head.textContent="TQ DEBUG • abrir";head.style.cssText="display:block;width:100%;flex:0 0 auto;border:0;border-radius:6px;background:rgba(0,0,0,.96);color:#46d9ff;font:700 12px/1.2 monospace;text-align:left;padding:10px;touch-action:manipulation;position:sticky;top:0;z-index:2";
