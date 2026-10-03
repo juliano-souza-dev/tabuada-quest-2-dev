@@ -305,6 +305,7 @@ export class WorldRuntime {
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
     this.onStarterCannonEarned=typeof options.onStarterCannonEarned==="function"?options.onStarterCannonEarned:null;
     this.onStarterAmmoEarned=typeof options.onStarterAmmoEarned==="function"?options.onStarterAmmoEarned:null;
+    this.onAmmoChange=typeof options.onAmmoChange==="function"?options.onAmmoChange:null;
     const defaultCannonId=String(this.cannonCatalog[0]?.id||"");
     const productionCannonIds=Array.isArray(options.playerCannonIds)?options.playerCannonIds.map(String):null;
     const requestedCannonIds=productionCannonIds||(
@@ -3857,6 +3858,7 @@ export class WorldRuntime {
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
     this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1000;
     this.state.ammo.selectedAmmoId=ammoId;
+    this.onAmmoChange?.(structuredClone(this.state.ammo));
     this.onStarterAmmoEarned?.({
       ammoId,
       ammoName:String(ammo.name||"Bola de Canhão"),
@@ -4613,6 +4615,7 @@ export class WorldRuntime {
       },duration);
     }
     if(!firedCount)return false;
+    if(!ammoUnlimited)this.onAmmoChange?.(structuredClone(this.state.ammo));
 
     const id=String(entity.id);
     if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
@@ -4806,6 +4809,7 @@ export class WorldRuntime {
     if(!item||quantity<=0)return false;
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
     this.state.ammo.selectedAmmoId=id;
+    this.onAmmoChange?.(structuredClone(this.state.ammo));
     return true;
   }
 
@@ -4826,6 +4830,7 @@ export class WorldRuntime {
     const next=pool[index]||pool[0];
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
     this.state.ammo.selectedAmmoId=String(next.id||"");
+    this.onAmmoChange?.(structuredClone(this.state.ammo));
     if(this.actionMessage){
       const quantity=next.test?.unlimited===true
         ?"∞"
