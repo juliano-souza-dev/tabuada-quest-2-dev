@@ -650,7 +650,7 @@
     ]
   },
   "camera": {
-    "playZoom": 0.55
+    "playZoom": 0.3
   },
   "editor": {
     "cameraX": 4065.902094123714,
