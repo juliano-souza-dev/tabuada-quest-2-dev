@@ -545,6 +545,19 @@ export class GameRuntime {
       return {ok:false,message:"Navios devem ser comprados uma unidade por vez."};
     }
 
+    if(product.type==="cannon"||product.type==="ammo"){
+      const onboarding=this.accountState?.game?.onboarding||{};
+      const cannonReady=onboarding.starterCannonChallengeCompleted===true;
+      const ammoReady=onboarding.starterAmmoChallengeCompleted===true;
+      if(!cannonReady||!ammoReady){
+        return {
+          ok:false,
+          code:"starter_training_required",
+          message:"Complete primeiro os dois desafios iniciais: conquiste o primeiro canhão e depois a munição ao tentar atirar."
+        };
+      }
+    }
+
     const currency=String(product.currency||"gold").toLowerCase();
     if(currency==="event")return {ok:false,message:"Este item só pode ser obtido durante o evento."};
     const walletKey=["rubies","ruby","gem","gems","diamond","diamonds"].includes(currency)?"rubies":"gold";
@@ -750,17 +763,59 @@ export class GameRuntime {
     }
 
     this.playerCannons.owned[cannonId]=1;
+    const shipId=String(this.playerShips.equippedShip||"");
+    if(shipId){
+      const equipped=this.getShipCannons(shipId);
+      if(equipped.length<this.shipCannonCapacity(shipId)){
+        equipped.push(cannonId);
+        this.playerCannons.equippedByShip[shipId]=equipped;
+      }
+    }
+
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        onboarding:{
+          ...(game.onboarding&&typeof game.onboarding==="object"?game.onboarding:{}),
+          starterCannonChallengeCompleted:true,
+          starterCannonCompletedAt:Date.now()
+        }
+      }
+    };
+
     this.saveState();
     globalThis.dispatchEvent?.(new CustomEvent("tq:cannonearned",{
-      detail:{cannonId,source:"multiplication-rescue",equipped:false}
+      detail:{cannonId,source:"multiplication-rescue",equipped:true,shipId}
     }));
     return {
       ok:true,
       cannonId,
       cannonName:String(cannon.name||"Canhão do Marujo"),
-      equippedCannonIds:[],
-      stored:true
+      equippedCannonIds:this.getShipCannons(shipId),
+      equipped:true,
+      shipId
     };
+  }
+
+  markStarterAmmoChallengeCompleted(){
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        onboarding:{
+          ...(game.onboarding&&typeof game.onboarding==="object"?game.onboarding:{}),
+          starterAmmoChallengeCompleted:true,
+          starterAmmoCompletedAt:Date.now()
+        }
+      }
+    };
+    this.saveState();
+    return true;
   }
 
   async grantShip(id,{equip=false,save=true}={}){
@@ -1378,7 +1433,7 @@ export class GameRuntime {
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
-      onStarterAmmoEarned:()=>{queueMicrotask(()=>this.saveState())},
+      onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
