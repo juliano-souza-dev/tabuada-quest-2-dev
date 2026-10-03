@@ -1329,7 +1329,7 @@
 .tq-world-shop-launcher{
   position:fixed;
   right:max(14px,env(safe-area-inset-right));
-  bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px));
+  bottom:max(92px,calc(env(safe-area-inset-bottom) + 84px));
   z-index:610;
   min-width:74px;
   min-height:58px;
