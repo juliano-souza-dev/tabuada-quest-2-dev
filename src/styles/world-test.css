@@ -187,10 +187,18 @@
   overflow:visible;
 }
 .tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{
-  background:var(--tq-popup-layout,transparent url("../../assets/hud/bau_tesouro_halloween_ui.webp")) center/contain no-repeat;
+  background-color:transparent;
+  background-image:var(--tq-popup-layout,url("../../assets/hud/bau_tesouro_halloween_ui.webp"));
+  background-position:center;
+  background-size:contain;
+  background-repeat:no-repeat;
 }
 .tq-world-challenge.is-repair-challenge .tq-world-challenge__card{
-  background:var(--tq-popup-layout,transparent url("../../assets/hud/conserto_navio_halloween_ui.webp")) center/contain no-repeat;
+  background-color:transparent;
+  background-image:var(--tq-popup-layout,url("../../assets/hud/conserto_navio_halloween_ui.webp"));
+  background-position:center;
+  background-size:contain;
+  background-repeat:no-repeat;
 }
 
 .tq-world-challenge.is-treasure-challenge .tq-world-challenge__card>small,
