@@ -397,7 +397,7 @@ export class WorldRuntime {
       treasureRespawn:typeConfig.respawn===true,treasureRespawnDelayMs:Math.max(1000,Number(typeConfig.respawnDelaySec||30)*1000),
       treasureSpawnAt:performance.now()+Math.max(0,Number(typeConfig.spawnIntervalSec)||0)*1000*(index+1),
       treasurePending:true,treasureRespawnAt:0,
-      motion:{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},
+      motion:normalizeEntityMotion(profile.behavior?.motion||{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},"treasure"),
       effect:{category:"treasure",preset:"none"},
       collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"collect",message:"Coletar tesouro"}
     };
