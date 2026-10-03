@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2515";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2535";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-2450";
 
 const app=document.querySelector("#app");
