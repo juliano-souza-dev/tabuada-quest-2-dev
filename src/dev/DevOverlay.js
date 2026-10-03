@@ -222,6 +222,12 @@ export class DevOverlay {
       this.worldEditor.runtime.refreshShipProfile?.(shipId);
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
     });
+    window.addEventListener("tq:treasureprofilechange",event=>{
+      if(this.workspace!=="world"||!this.worldEditor?.runtime)return;
+      const treasureId=String(event.detail?.treasureId||"");
+      if(treasureId)this.worldEditor.runtime.refreshTreasureProfile?.(treasureId);
+      if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
+    });
     window.addEventListener("tq:npcprofilechange",()=>{
       if(this.workspace!=="world"||!this.worldEditor?.runtime)return;
       const world=this.worldEditor.getWorld();
