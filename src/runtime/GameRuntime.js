@@ -898,13 +898,40 @@ export class GameRuntime {
     const game=base.game&&typeof base.game==="object"?base.game:{};
     const rewardState=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,gold:0,rubies:0,xp:0,claims:[]};
     const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
-    if(claims.includes(claimKey))return false;
-
-    claims.push(claimKey);
     const coins=Math.max(0,Number(configured.coins)||0);
     const gold=Math.max(0,Number(configured.gold ?? configured.coins)||0);
     const rubies=Math.max(0,Number(configured.rubies)||0);
     const xp=Math.max(0,Number(configured.xp)||0);
+    const beforeBalances={
+      gold:Math.max(0,Number(rewardState.gold ?? rewardState.coins)||0),
+      rubies:Math.max(0,Number(rewardState.rubies)||0),
+      xp:Math.max(0,Number(rewardState.xp)||0)
+    };
+    const duplicateClaim=claims.includes(claimKey);
+    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+      stage:"attempt",
+      worldId,
+      entityId:String(cleanEntity.id),
+      claimKey,
+      duplicateClaim,
+      before:clone(beforeBalances),
+      reward:{coins,gold,rubies,xp}
+    }}));
+    if(duplicateClaim){
+      globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+        stage:"blocked-duplicate",
+        worldId,
+        entityId:String(cleanEntity.id),
+        claimKey,
+        duplicateClaim:true,
+        before:clone(beforeBalances),
+        reward:{coins,gold,rubies,xp},
+        claimsCount:claims.length
+      }}));
+      return false;
+    }
+
+    claims.push(claimKey);
     const itemId=String(configured.itemId||"").trim();
     const quantity=Math.max(1,Number(configured.quantity)||1);
     const shipId=String(configured.shipId||"").trim();
@@ -942,11 +969,30 @@ export class GameRuntime {
       rewards:{coins,gold,rubies,xp,itemId,quantity:itemId?quantity:0,shipId},
       balances:clone(balances)
     };
+    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+      stage:"granted",
+      worldId,
+      entityId:String(cleanEntity.id),
+      claimKey,
+      duplicateClaim:false,
+      before:clone(beforeBalances),
+      reward:{coins,gold,rubies,xp},
+      after:clone(balances),
+      claimsCount:claims.length
+    }}));
     // Keep every visible wallet consumer in lockstep with the canonical reward state.
     this.worldRuntime?.shopOverlay?.refreshBalances?.();
     globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
     this.saveState();
-    this.syncCloud("reward-claim");
+    const syncRequested=this.syncCloud("reward-claim");
+    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+      stage:"sync-requested",
+      worldId,
+      entityId:String(cleanEntity.id),
+      claimKey,
+      local:clone(this.getWalletBalances()),
+      syncRequested:Boolean(syncRequested)
+    }}));
     return detail;
   }
 
