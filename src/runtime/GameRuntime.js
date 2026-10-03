@@ -40,7 +40,8 @@ export class GameRuntime {
     this.worldStates={};
     this.flags={};
     this.inventory=[];
-    this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[]};
+    this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
+    this.rewardClaimsInFlight=new Set();
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerCannons={owned:{},equippedByShip:{}};
     this.playerStateStore=null;
@@ -107,6 +108,9 @@ export class GameRuntime {
 
     const save=()=>this.saveState();
     const visibility=()=>{if(document.visibilityState==="hidden")save()};
+    const onlineRewardSync=()=>{
+      this.syncRewardClaimMarkers().catch(error=>console.warn("Reward claim marker sync failed",error));
+    };
     const authReady=event=>{
       const state=event?.detail?.state;
       this.authenticated=event?.detail?.status?.authenticated===true;
@@ -154,11 +158,13 @@ export class GameRuntime {
     },3000);
 
     globalThis.addEventListener?.("pagehide",save);
+    globalThis.addEventListener?.("online",onlineRewardSync);
     globalThis.addEventListener?.("tq:auth-entry-ready",authReady);
     globalThis.addEventListener?.("tq:auth-signed-out",signedOut);
     document.addEventListener?.("visibilitychange",visibility);
     this.cleanups.push(()=>{
       globalThis.removeEventListener?.("pagehide",save);
+      globalThis.removeEventListener?.("online",onlineRewardSync);
       globalThis.removeEventListener?.("tq:auth-entry-ready",authReady);
       globalThis.removeEventListener?.("tq:auth-signed-out",signedOut);
       document.removeEventListener?.("visibilitychange",visibility);
@@ -315,7 +321,31 @@ export class GameRuntime {
     this.authenticated=status?.authenticated===true;
     const state=this.playerStateStore?.load?.();
     if(state)this.importAccountState(state);
+    queueMicrotask(()=>this.syncRewardClaimMarkers().catch(()=>{}));
     return this;
+  }
+
+  async syncRewardClaimMarkers(){
+    const reserve=this.playerStateStore?.reserveRewardClaim;
+    const status=this.playerStateStore?.status?.();
+    if(typeof reserve!=="function"||!status?.authenticated||status?.online===false||globalThis.navigator?.onLine===false)return false;
+    const claims=Array.isArray(this.rewards?.claims)?this.rewards.claims:[];
+    const details=this.rewards?.claimDetails&&typeof this.rewards.claimDetails==="object"?this.rewards.claimDetails:{};
+    let synced=0;
+    for(const claimKey of claims){
+      const detail=details[claimKey];
+      if(!detail||typeof detail!=="object")continue;
+      const result=await this.playerStateStore.reserveRewardClaim(claimKey,{
+        schema:"tq.reward-claim",
+        version:1,
+        rewards:clone(detail.rewards||{}),
+        worldId:String(detail.worldId||""),
+        entityId:String(detail.entityId||""),
+        grantedAt:Number(detail.grantedAt)||0
+      });
+      if(result?.ok||result?.code==="duplicate")synced++;
+    }
+    return synced;
   }
 
   importAccountState(state){
@@ -343,7 +373,8 @@ export class GameRuntime {
       gold:Math.max(0,Number(rewardSource.gold ?? rewardSource.coins)||0),
       rubies:Math.max(0,Number(rewardSource.rubies)||0),
       xp:Math.max(0,Number(rewardSource.xp)||0),
-      claims:Array.isArray(rewardSource.claims)?unique(rewardSource.claims):[]
+      claims:Array.isArray(rewardSource.claims)?unique(rewardSource.claims):[],
+      claimDetails:rewardSource.claimDetails&&typeof rewardSource.claimDetails==="object"?clone(rewardSource.claimDetails):{}
     };
 
     const ships=(
@@ -887,113 +918,199 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
-  handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
+  async handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
-    const configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
+    let configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
     const worldId=String(this.current?.id||"");
     const claimKey=String(explicitClaimKey||worldId+":"+String(cleanEntity.id||""));
-    if(!cleanEntity.id)return false;
+    if(!cleanEntity.id||!claimKey)return false;
 
-    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
-    const game=base.game&&typeof base.game==="object"?base.game:{};
-    const rewardState=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,gold:0,rubies:0,xp:0,claims:[]};
-    const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
-    const coins=Math.max(0,Number(configured.coins)||0);
-    const gold=Math.max(0,Number(configured.gold ?? configured.coins)||0);
-    const rubies=Math.max(0,Number(configured.rubies)||0);
-    const xp=Math.max(0,Number(configured.xp)||0);
-    const beforeBalances={
-      gold:Math.max(0,Number(rewardState.gold ?? rewardState.coins)||0),
-      rubies:Math.max(0,Number(rewardState.rubies)||0),
-      xp:Math.max(0,Number(rewardState.xp)||0)
-    };
-    const duplicateClaim=claims.includes(claimKey);
-    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
-      stage:"attempt",
-      worldId,
-      entityId:String(cleanEntity.id),
-      claimKey,
-      duplicateClaim,
-      before:clone(beforeBalances),
-      reward:{coins,gold,rubies,xp}
-    }}));
-    if(duplicateClaim){
+    const currentClaims=Array.isArray(this.rewards?.claims)?this.rewards.claims:[];
+    if(currentClaims.includes(claimKey)||this.rewardClaimsInFlight.has(claimKey)){
       globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
-        stage:"blocked-duplicate",
+        stage:"blocked-duplicate-local",
         worldId,
         entityId:String(cleanEntity.id),
         claimKey,
-        duplicateClaim:true,
-        before:clone(beforeBalances),
-        reward:{coins,gold,rubies,xp},
-        claimsCount:claims.length
+        duplicateClaim:true
       }}));
       return false;
     }
 
-    claims.push(claimKey);
-    const itemId=String(configured.itemId||"").trim();
-    const quantity=Math.max(1,Number(configured.quantity)||1);
-    const shipId=String(configured.shipId||"").trim();
+    this.rewardClaimsInFlight.add(claimKey);
+    try{
+      const normalizeConfigured=value=>{
+        const source=value&&typeof value==="object"?value:{};
+        const itemId=String(source.itemId||"").trim();
+        return {
+          coins:Math.max(0,Number(source.coins)||0),
+          gold:Math.max(0,Number(source.gold ?? source.coins)||0),
+          rubies:Math.max(0,Number(source.rubies)||0),
+          xp:Math.max(0,Number(source.xp)||0),
+          itemId,
+          quantity:itemId?Math.max(1,Number(source.quantity)||1):0,
+          shipId:String(source.shipId||"").trim()
+        };
+      };
 
-    if(itemId){
-      for(let count=0;count<quantity;count++)this.inventory.push(itemId);
-    }
-    if(shipId){
-      const ship=this.shipEntry(shipId);
-      if(ship&&ship.available!==false&&!this.playerShips.ownedShips.includes(ship.id)){
-        this.playerShips.ownedShips.push(ship.id);
-        this.ensurePlayerShips();
+      let normalized=normalizeConfigured(configured);
+      let authority="local-offline";
+      const storeStatus=this.playerStateStore?.status?.();
+      const canReserve=typeof this.playerStateStore?.reserveRewardClaim==="function"
+        &&storeStatus?.authenticated===true
+        &&storeStatus?.online!==false
+        &&globalThis.navigator?.onLine!==false;
+
+      if(canReserve){
+        const reservation=await this.playerStateStore.reserveRewardClaim(claimKey,{
+          schema:"tq.reward-claim",
+          version:1,
+          rewards:clone(normalized),
+          worldId,
+          entityId:String(cleanEntity.id),
+          grantedAt:Date.now()
+        });
+
+        if(reservation?.ok){
+          authority="firebase-reserved";
+        }else if(reservation?.code==="duplicate"){
+          const existingRewards=reservation?.claim?.payload?.rewards;
+          // Another online device already reserved this exact account reward.
+          // Mirror the authoritative payload locally once so both devices
+          // converge to the same account balance without double-paying it.
+          if(existingRewards&&typeof existingRewards==="object"){
+            normalized=normalizeConfigured(existingRewards);
+            configured=clone(existingRewards);
+            authority="firebase-mirror";
+          }else{
+            globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+              stage:"blocked-duplicate-firebase",
+              worldId,
+              entityId:String(cleanEntity.id),
+              claimKey,
+              duplicateClaim:true
+            }}));
+            return false;
+          }
+        }else{
+          authority="local-fallback";
+        }
       }
-    }
 
-    this.rewards={
-      coins:Number(rewardState.coins||0)+coins,
-      gold:Number(rewardState.gold ?? rewardState.coins ?? 0)+gold,
-      rubies:Number(rewardState.rubies||0)+rubies,
-      xp:Number(rewardState.xp||0)+xp,
-      claims
-    };
-    this.accountState={
-      ...base,
-      game:{
-        ...game,
-        rewards:clone(this.rewards)
+      // A concurrent callback may have completed while the Firebase reservation
+      // was in flight. Re-check before mutating any economy state.
+      if(Array.isArray(this.rewards?.claims)&&this.rewards.claims.includes(claimKey)){
+        globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+          stage:"blocked-duplicate-race",
+          worldId,
+          entityId:String(cleanEntity.id),
+          claimKey,
+          duplicateClaim:true
+        }}));
+        return false;
       }
-    };
 
-    const balances=this.getWalletBalances();
-    const detail={
-      worldId,
-      entityId:String(cleanEntity.id),
-      rewards:{coins,gold,rubies,xp,itemId,quantity:itemId?quantity:0,shipId},
-      balances:clone(balances)
-    };
-    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
-      stage:"granted",
-      worldId,
-      entityId:String(cleanEntity.id),
-      claimKey,
-      duplicateClaim:false,
-      before:clone(beforeBalances),
-      reward:{coins,gold,rubies,xp},
-      after:clone(balances),
-      claimsCount:claims.length
-    }}));
-    // Keep every visible wallet consumer in lockstep with the canonical reward state.
-    this.worldRuntime?.shopOverlay?.refreshBalances?.();
-    globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
-    this.saveState();
-    const syncRequested=this.syncCloud("reward-claim");
-    globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
-      stage:"sync-requested",
-      worldId,
-      entityId:String(cleanEntity.id),
-      claimKey,
-      local:clone(this.getWalletBalances()),
-      syncRequested:Boolean(syncRequested)
-    }}));
-    return detail;
+      const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+      const game=base.game&&typeof base.game==="object"?base.game:{};
+      const rewardState=this.rewards&&typeof this.rewards==="object"
+        ?this.rewards
+        :{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
+      const claims=Array.isArray(rewardState.claims)?[...rewardState.claims]:[];
+      const claimDetails=rewardState.claimDetails&&typeof rewardState.claimDetails==="object"
+        ?clone(rewardState.claimDetails)
+        :{};
+      const beforeBalances={
+        gold:Math.max(0,Number(rewardState.gold ?? rewardState.coins)||0),
+        rubies:Math.max(0,Number(rewardState.rubies)||0),
+        xp:Math.max(0,Number(rewardState.xp)||0)
+      };
+
+      globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+        stage:"attempt",
+        worldId,
+        entityId:String(cleanEntity.id),
+        claimKey,
+        duplicateClaim:false,
+        authority,
+        before:clone(beforeBalances),
+        reward:clone(normalized)
+      }}));
+
+      claims.push(claimKey);
+      const {coins,gold,rubies,xp,itemId,quantity,shipId}=normalized;
+
+      if(itemId){
+        for(let count=0;count<quantity;count++)this.inventory.push(itemId);
+      }
+      if(shipId){
+        const ship=this.shipEntry(shipId);
+        if(ship&&ship.available!==false&&!this.playerShips.ownedShips.includes(ship.id)){
+          this.playerShips.ownedShips.push(ship.id);
+          this.ensurePlayerShips();
+        }
+      }
+
+      claimDetails[claimKey]={
+        worldId,
+        entityId:String(cleanEntity.id),
+        rewards:clone(normalized),
+        grantedAt:Date.now(),
+        authority
+      };
+      this.rewards={
+        coins:Number(rewardState.coins||0)+coins,
+        gold:Number(rewardState.gold ?? rewardState.coins ?? 0)+gold,
+        rubies:Number(rewardState.rubies||0)+rubies,
+        xp:Number(rewardState.xp||0)+xp,
+        claims,
+        claimDetails
+      };
+      this.accountState={
+        ...base,
+        game:{
+          ...game,
+          rewards:clone(this.rewards)
+        }
+      };
+
+      const balances=this.getWalletBalances();
+      const detail={
+        worldId,
+        entityId:String(cleanEntity.id),
+        claimKey,
+        authority,
+        rewards:clone(normalized),
+        balances:clone(balances)
+      };
+      globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+        stage:"granted",
+        worldId,
+        entityId:String(cleanEntity.id),
+        claimKey,
+        authority,
+        duplicateClaim:false,
+        before:clone(beforeBalances),
+        reward:clone(normalized),
+        after:clone(balances),
+        claimsCount:claims.length
+      }}));
+      this.worldRuntime?.shopOverlay?.refreshBalances?.();
+      globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
+      this.saveState();
+      const syncRequested=this.syncCloud("reward-claim");
+      globalThis.dispatchEvent?.(new CustomEvent("tq:rewarddebug",{detail:{
+        stage:"sync-requested",
+        worldId,
+        entityId:String(cleanEntity.id),
+        claimKey,
+        authority,
+        local:clone(this.getWalletBalances()),
+        syncRequested:Boolean(syncRequested)
+      }}));
+      return detail;
+    }finally{
+      this.rewardClaimsInFlight.delete(claimKey);
+    }
   }
 
   handleBossDefeated({bossId,entity,rewards}={}){
@@ -1002,7 +1119,7 @@ export class GameRuntime {
     return this.handleCombatVictory({entity,rewards,claimKey:"boss:"+stableBossId});
   }
 
-  handleTreasureCollected({entity,challenge,rewards}={}){
+  async handleTreasureCollected({entity,challenge,rewards}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
@@ -1044,7 +1161,7 @@ export class GameRuntime {
       ?clone(rewards)
       :(cleanEntity.rewards&&typeof cleanEntity.rewards==="object"?clone(cleanEntity.rewards):{});
     if(cleanEntity.id){
-      this.handleCombatVictory({
+      await this.handleCombatVictory({
         entity:cleanEntity,
         rewards:resolvedRewards,
         claimKey:chestKey
@@ -1304,9 +1421,10 @@ export class GameRuntime {
           gold:Math.max(0,Number(state.rewards.gold ?? state.rewards.coins)||0),
           rubies:Math.max(0,Number(state.rewards.rubies)||0),
           xp:Math.max(0,Number(state.rewards.xp)||0),
-          claims:unique(state.rewards.claims)
+          claims:unique(state.rewards.claims),
+          claimDetails:state.rewards.claimDetails&&typeof state.rewards.claimDetails==="object"?clone(state.rewards.claimDetails):{}
         }
-        :{coins:0,gold:0,rubies:0,xp:0,claims:[]};
+        :{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
       if(state.ships&&typeof state.ships==="object"){
         this.playerShips={
           ownedShips:unique(state.ships.ownedShips),
