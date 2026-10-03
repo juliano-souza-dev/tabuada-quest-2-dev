@@ -256,6 +256,7 @@ export class WorldEditor {
       z:20,
       rotation:0,
       lockAspect:true,
+      assetLogicalType:String(asset.logicalType||"visual"),
       ...extra
     });
     this.persist();

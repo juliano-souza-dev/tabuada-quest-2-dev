@@ -2806,10 +2806,21 @@ export class DevOverlay {
   }
   async loadAssets(){
     try{
-      const r=await fetch("./src/config/asset-tree.json?v=20261003-1600",{cache:"no-store"});
+      const r=await fetch("./src/config/asset-tree.json?v=20261003-1610",{cache:"no-store"});
       const manifest=await r.json();
       this.assetTree=manifest.root||null;
-      this.assetCatalog=manifest.assets||[];
+      const assetsByPath=new Map((Array.isArray(manifest.assets)?manifest.assets:[]).map(asset=>[asset.path,asset]));
+      const collectTreeAssets=node=>{
+        if(!node)return;
+        if(node.type==="image"&&node.path){
+          const path=String(node.path);
+          assetsByPath.set(path,{...(assetsByPath.get(path)||{}),...node,path,name:node.name||path.split("/").pop(),logicalType:path.startsWith("assets/hud/")?"hud":(assetsByPath.get(path)?.logicalType||"visual")});
+          return;
+        }
+        for(const child of node.children||[])collectTreeAssets(child);
+      };
+      collectTreeAssets(this.assetTree);
+      this.assetCatalog=[...assetsByPath.values()];
       this.assetDirectoryPath=this.assetTree?.path||"assets";
       this.assetNodeIndex=new Map();
       this.assetByPath=new Map(this.assetCatalog.map(asset=>[asset.path,asset]));
@@ -3109,7 +3120,7 @@ export class DevOverlay {
     const src="./"+asset.path;
     const stem=asset.name.replace(/\.[^.]+$/,"").replace(/[^a-z0-9]+/gi,"-").replace(/^-|-$/g,"").toLowerCase();
     const size=128,x=(this.runtime.reference.width-size)/2,y=(this.runtime.reference.height-size)/2;
-    const raw={id:`${this.runtime.scene?.id||"scene"}.${stem}`,kind:"image",src,x,y,width:size,height:size,scaleX:1,scaleY:1,rotation:0,skewX:0,skewY:0,z:this.runtime.nodes.size+1,visible:true,locked:false,alt:asset.name};
+    const raw={id:`${this.runtime.scene?.id||"scene"}.${stem}`,kind:"image",src,x,y,width:size,height:size,scaleX:1,scaleY:1,rotation:0,skewX:0,skewY:0,z:this.runtime.nodes.size+1,visible:true,locked:false,alt:asset.name,assetLogicalType:asset.logicalType||"visual"};
 
     const inferred=this.inferCompositionType(raw);
     if(inferred?.autoApply){
