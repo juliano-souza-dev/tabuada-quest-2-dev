@@ -4739,7 +4739,7 @@ export class WorldRuntime {
   }
 
   cleanEntity(entity){
-    const {el,index,anchorX,anchorY,visualX,visualY,visualRotation,...data}=entity;
+    const {el,nameEl,index,anchorX,anchorY,visualX,visualY,visualRotation,...data}=entity;
     return data;
   }
 
