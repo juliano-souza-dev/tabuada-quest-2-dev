@@ -1850,3 +1850,82 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   }
 }
 
+
+
+/* Shop artwork registration pass: coordinates measured against the Halloween frame */
+@media (orientation:portrait) and (max-width:720px){
+  .tq-world-shop__balances{
+    left:15.8%;
+    right:15.8%;
+    top:23.45%;
+    height:3.65%;
+    grid-template-columns:1fr 1fr;
+    column-gap:8.6%;
+  }
+  .tq-world-shop__balance{
+    padding:0 5.5% 0 28%;
+    align-items:center;
+    justify-content:flex-end;
+    font-size:clamp(11px,2.65vw,15px);
+    line-height:1;
+  }
+
+  .tq-world-shop__item-name{
+    left:29.4%;
+    top:7.4%;
+    width:40.2%;
+    height:21.5%;
+    padding:0 2.4%;
+    align-items:center;
+    justify-content:center;
+    font-size:clamp(8px,1.85vw,10px);
+    line-height:1;
+  }
+
+  .tq-world-shop__price{
+    left:71.1%;
+    top:7.4%;
+    width:25.3%;
+    height:21.5%;
+    padding:0 6% 0 34%;
+    align-items:center;
+    justify-content:flex-end;
+  }
+  .tq-world-shop__price b{
+    display:block;
+    min-width:1ch;
+    color:#fff4cf;
+    font-size:clamp(9px,2.05vw,12px);
+    line-height:1;
+  }
+
+  .tq-world-shop__quantity{
+    left:71.2%;
+    top:36.1%;
+    width:25.1%;
+    height:20.8%;
+    grid-template-columns:28.5% 43% 28.5%;
+  }
+  .tq-world-shop__quantity b{
+    align-self:stretch;
+    justify-self:stretch;
+    display:grid;
+    place-items:center;
+    padding:0;
+    font-size:clamp(9px,2vw,12px);
+    line-height:1;
+  }
+
+  .tq-world-shop__buy{
+    left:71%;
+    top:62.8%;
+    width:25.5%;
+    height:22.2%;
+    padding:0;
+    display:grid;
+    place-items:center;
+    font-size:clamp(9px,1.9vw,11px);
+    line-height:1;
+  }
+}
+
