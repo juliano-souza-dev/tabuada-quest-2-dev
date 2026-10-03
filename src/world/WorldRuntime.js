@@ -3617,7 +3617,6 @@ export class WorldRuntime {
     if(this.combatTarget?.id===entity.id)this.clearCombatTarget({hideAction:false});
     this.actionWrap.hidden=true;
     this.updateProgress();
-    this.showGameplayToast(entity.type==="treasure"?"Tesouro coletado":((entity.label||"Item")+" coletado"));
     if(entity.type==="treasure"){
       const rolled=entity.runtimeTreasure?this.rollTreasureRewards(entity):null;
       if(rolled)entity.rewards=rolled;
@@ -3625,6 +3624,17 @@ export class WorldRuntime {
       if(entity.runtimeTreasure&&entity.treasureRespawn===true)entity.treasureRespawnAt=performance.now()+Math.max(1000,Number(entity.treasureRespawnDelayMs)||30000);
     }
     const rewards=entity.rewards&&typeof entity.rewards==="object"?entity.rewards:null;
+    const rewardParts=[];
+    const gold=Math.max(0,Number(rewards?.gold??rewards?.coins)||0);
+    const rubies=Math.max(0,Number(rewards?.rubies)||0);
+    const xp=Math.max(0,Number(rewards?.xp)||0);
+    if(gold)rewardParts.push("+"+gold+" ouro");
+    if(rubies)rewardParts.push("+"+rubies+" rubi"+(rubies===1?"":"s"));
+    if(xp)rewardParts.push("+"+xp+" XP");
+    if(rewards?.itemName||rewards?.itemId)rewardParts.push(String(rewards.itemName||rewards.itemId));
+    if(rewards?.shipName||rewards?.shipId)rewardParts.push(String(rewards.shipName||rewards.shipId));
+    const collectedLabel=entity.type==="treasure"?"Tesouro encontrado":String(entity.label||"Item")+" coletado";
+    this.showGameplayToast(collectedLabel+(rewardParts.length?" · "+rewardParts.join(" · "):""));
     if(rewards&&(Number(rewards.coins)>0||Number(rewards.xp)>0||Number(rewards.gold)>0||Number(rewards.rubies)>0||rewards.itemId||rewards.shipId)){
       this.onRewardCollected?.({
         entity:this.cleanEntity(entity),
