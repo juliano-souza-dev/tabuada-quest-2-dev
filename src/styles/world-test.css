@@ -901,16 +901,15 @@
 /* Nome de NPCs e jogadores remotos; o jogador local não recebe este rótulo. */
 .tq-world-ship-name{
   position:absolute;
-  left:50%;
-  top:calc(100% + 8px);
+  left:0;
+  top:0;
   z-index:32;
   min-width:max-content;
   max-width:180px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-  transform:translateX(-50%) rotate(var(--tq-ship-name-counter-rotation,0deg));
-  transform-origin:center top;
+  transform:translate(-50%,-50%);
   pointer-events:none;
   color:#fff7c8;
   font:900 14px/1 system-ui,sans-serif;

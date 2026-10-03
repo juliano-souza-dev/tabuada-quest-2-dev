@@ -1131,7 +1131,6 @@ export class WorldRuntime {
         name.className="tq-world-ship-name";
         name.textContent=String(entity.label||entity.shipName||"Navio");
         name.setAttribute("aria-hidden","true");
-        el.append(name);
         entity.nameEl=name;
       }else entity.nameEl=null;
 
@@ -1141,6 +1140,7 @@ export class WorldRuntime {
       if(this.collected.has(entity.id))el.hidden=true;
       if(this.editorEnabled&&!entity.runtimeGenerated)this.bindEntityEditing(entity);
       this.entityLayer.append(el);
+      if(entity.nameEl)this.entityLayer.append(entity.nameEl);
       this.syncEntityEffectRenderer(entity);
     }
 
@@ -1348,7 +1348,9 @@ export class WorldRuntime {
     el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg)`;
     if(entity.nameEl){
       entity.nameEl.textContent=String(entity.label||entity.shipName||"Navio");
-      entity.nameEl.style.setProperty("--tq-ship-name-counter-rotation",(-Number(entity.rotation||0))+"deg");
+      entity.nameEl.style.left=(Number(entity.x)||0)+"px";
+      entity.nameEl.style.top=((Number(entity.y)||0)+Math.max(18,Number(entity.height)||96)*.54+10)+"px";
+      entity.nameEl.hidden=el.hidden===true;
     }
     const logicalOnly=el.dataset.renderMode==="logical";
     el.classList.toggle("is-logical-only",logicalOnly);
@@ -4262,6 +4264,7 @@ export class WorldRuntime {
 
     this.navalDestroying.add(id);
     this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído");
+    if(entity.nameEl)entity.nameEl.hidden=true;
     this.navalHostile.delete(id);
     if(this.combatTarget?.id===id)this.clearCombatTarget({hideAction:true});
     if(this.contactEntity?.id===id)this.contactEntity=null;
