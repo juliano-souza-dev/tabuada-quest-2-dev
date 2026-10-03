@@ -52,6 +52,7 @@ export class DevOverlay {
     this.sceneGroupOpen=new Set();
     this.configAreaOpenState=new Set();
     this.liveCssStorageKey="tq.dev.live-css:v1";
+    this.challengeStyleStorageKey="tq.dev.challenge-styles:v1";
     this.liveCssStyle=null;
   }
   mount(){
@@ -140,6 +141,8 @@ export class DevOverlay {
           <div class="tq-live-css__actions">
             <button type="button" data-live-css-shop>Loja</button>
             <button type="button" data-live-css-challenge>Desafio</button>
+            <button type="button" data-challenge-export>Exportar JSON</button>
+            <button type="button" data-challenge-import>Importar JSON</button>
             <button type="button" data-live-css-clear>Limpar</button>
           </div>
           <fieldset class="tq-live-css__challenge" data-challenge-style-controls hidden>
@@ -205,7 +208,11 @@ export class DevOverlay {
     });
     this.el.querySelector("[data-live-css-shop]").addEventListener("click",()=>this.loadShopLiveCssPreset());
     this.el.querySelector("[data-live-css-challenge]").addEventListener("click",()=>this.loadChallengeLiveCssPreset());
-    this.el.querySelectorAll("[data-challenge-style-controls] input,[data-challenge-style-controls] select").forEach(input=>input.addEventListener("input",()=>this.applyChallengeStyleControls()));
+    this.el.querySelector("[data-challenge-export]").addEventListener("click",()=>this.exportChallengeStyles());
+    this.el.querySelector("[data-challenge-import]").addEventListener("click",()=>this.importChallengeStyles());
+    this.el.querySelectorAll("[data-challenge-style-controls] input").forEach(input=>input.addEventListener("input",()=>this.applyChallengeStyleControls()));
+    this.el.querySelector("[data-challenge-kind]").addEventListener("change",event=>{this.loadChallengeProfileIntoControls(event.currentTarget.value);this.applyChallengeStyleControls()});
+    this.el.querySelector("[data-challenge-prompt-font]").addEventListener("change",()=>this.applyChallengeStyleControls());
 
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
@@ -417,10 +424,27 @@ export class DevOverlay {
     this.applyLiveCss(css,{persist:true});
   }
 
+  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",slotHeight:"78",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb"}}
+
+  challengeStyleProfiles(){
+    try{const data=JSON.parse(localStorage.getItem(this.challengeStyleStorageKey)||"{}");if(data?.schema==="tq2.dev.challenge-styles"&&data?.profiles)return data.profiles}catch{}
+    return {treasure:this.defaultChallengeStyle("treasure"),repair:this.defaultChallengeStyle("repair")};
+  }
+
+  saveChallengeStyleProfiles(profiles){try{localStorage.setItem(this.challengeStyleStorageKey,JSON.stringify({schema:"tq2.dev.challenge-styles",version:1,profiles}))}catch{}}
+
   challengeStyleValues(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");
     const value=name=>panel?.querySelector("[data-challenge-"+name+"]")?.value||"";
     return {kind:value("kind")||"treasure",maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",slotHeight:value("slot-height")||"78",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
+  }
+
+  loadChallengeProfileIntoControls(kind){
+    const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
+    const profiles=this.challengeStyleProfiles(),value={...this.defaultChallengeStyle(kind),...(profiles[kind]||{}),kind};
+    const fields={kind:"kind","max-width":"maxWidth",top:"top",side:"side","slot-height":"slotHeight","prompt-font":"font","prompt-color":"promptColor","answer-color":"answerColor"};
+    for(const [field,key] of Object.entries(fields)){const input=panel.querySelector("[data-challenge-"+field+"]");if(input)input.value=value[key]}
+    this.syncChallengeStyleOutputs();
   }
 
   challengeCss(values=this.challengeStyleValues()){
@@ -438,7 +462,8 @@ export class DevOverlay {
 
   applyChallengeStyleControls(){
     this.syncChallengeStyleOutputs();
-    const css=this.challengeCss();
+    const current=this.challengeStyleValues(),profiles=this.challengeStyleProfiles();profiles[current.kind]=current;this.saveChallengeStyleProfiles(profiles);
+    const css=["treasure","repair"].map(kind=>this.challengeCss({...this.defaultChallengeStyle(kind),...(profiles[kind]||{}),kind})).join("\n\n");
     const editor=this.el?.querySelector("[data-live-css-editor]");if(editor)editor.value=css;
     this.applyLiveCss(css,{persist:true});
   }
@@ -446,7 +471,26 @@ export class DevOverlay {
   loadChallengeLiveCssPreset(){
     const controls=this.el?.querySelector("[data-challenge-style-controls]");if(!controls)return;
     controls.hidden=false;
+    this.loadChallengeProfileIntoControls(controls.querySelector("[data-challenge-kind]")?.value||"treasure");
     this.applyChallengeStyleControls();
+  }
+
+  exportChallengeStyles(){
+    const payload={schema:"tq2.dev.challenge-styles",version:1,profiles:this.challengeStyleProfiles()};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="tabuada-quest-desafios.json";link.click();setTimeout(()=>URL.revokeObjectURL(link.href),0);
+  }
+
+  importChallengeStyles(){
+    const raw=window.prompt("Cole o JSON de configuração dos desafios:");if(!raw)return;
+    try{
+      const payload=JSON.parse(raw);
+      if(payload?.schema!=="tq2.dev.challenge-styles"||!payload?.profiles)throw new Error("schema");
+      const profiles={};for(const kind of ["treasure","repair"]){const value=payload.profiles[kind];if(value&&typeof value==="object")profiles[kind]={...this.defaultChallengeStyle(kind),...value,kind}}
+      if(!Object.keys(profiles).length)throw new Error("profiles");
+      this.saveChallengeStyleProfiles({...this.challengeStyleProfiles(),...profiles});
+      const kind=this.el?.querySelector("[data-challenge-kind]")?.value||"treasure";this.loadChallengeProfileIntoControls(kind);this.applyChallengeStyleControls();
+    }catch{window.alert("JSON de desafio inválido. Use um arquivo exportado pelo DEV.")}
   }
 
   closeToolPanels(except=""){
