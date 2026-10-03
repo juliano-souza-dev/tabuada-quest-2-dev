@@ -1,5 +1,5 @@
-const CACHE_NAME="tq-dev-assets-v20261003-3155";
-const DEV_CACHE_RESET_KEY="tq.dev.cache-reset:v20261003-3155";
+const CACHE_NAME="tq-dev-assets-v20261003-2040-galeao";
+const DEV_CACHE_RESET_KEY="tq.dev.cache-reset:v20261003-2040-galeao";
 const MANIFEST_URL="./src/config/asset-tree.json";
 const HASH_KEY="tq.dev.asset-manifest-hash:v1";
 
@@ -77,7 +77,7 @@ async function resetDevWorkersAndCaches(){
 async function registerWorker(){
   if(!("serviceWorker" in navigator))return null;
   try{
-    const registration=await navigator.serviceWorker.register("./dev-sw.js?v=20261003-3155",{scope:"./"});
+    const registration=await navigator.serviceWorker.register("./dev-sw.js?v=20261003-2040-galeao",{scope:"./"});
     await navigator.serviceWorker.ready;
     if(!navigator.serviceWorker.controller){
       await new Promise(resolve=>{
