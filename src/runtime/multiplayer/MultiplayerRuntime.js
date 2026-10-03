@@ -1,6 +1,13 @@
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
 const safeKey=value=>String(value||"").replace(/[.#$\[\]\/]/g,"_").slice(0,96);
-const json=async response=>response.ok?response.json().catch(()=>null):null;
+const json=async response=>{
+  const data=await response.json().catch(()=>null);
+  if(!response.ok){
+    console.error("[TQ Multiplayer] RTDB request failed",response.status,response.statusText,data);
+    throw new Error("RTDB "+response.status+" "+response.statusText);
+  }
+  return data;
+};
 
 export class MultiplayerRuntime extends EventTarget{
   constructor(auth,config={},options={}){
@@ -21,7 +28,8 @@ export class MultiplayerRuntime extends EventTarget{
   async joinWorld(worldId,{getLocalState,shipId="",displayName=""}={}){
     await this.leaveWorld();this.worldId=safeKey(worldId);if(!this.worldId)return false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;this.shipId=String(shipId||"");this.displayName=String(displayName||"");
-    await this.pushPresence(true);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
+    console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);
+    await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
     this.pollTimer=setInterval(()=>this.poll().catch(()=>{}),this.pollMs);await this.poll();return true;
   }
   localPayload(){
