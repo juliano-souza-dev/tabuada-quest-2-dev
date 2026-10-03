@@ -487,7 +487,7 @@ export class GameRuntime {
         if(count>0)owned[String(id)]=count;
       }
     }
-    if(defaultId&&validIds.has(defaultId)&&!Object.values(owned).some(qty=>Number(qty)>0))owned[defaultId]=1;
+    if(this.manifest.player?.grantDefaultCannon===true&&defaultId&&validIds.has(defaultId)&&!Object.values(owned).some(qty=>Number(qty)>0))owned[defaultId]=1;
 
     const equippedByShip={};
     const sourceEquipped=this.playerCannons?.equippedByShip&&typeof this.playerCannons.equippedByShip==="object"
@@ -501,7 +501,7 @@ export class GameRuntime {
 
     const equippedShip=String(this.playerShips.equippedShip||"");
     if(equippedShip&&Array.isArray(equippedByShip[equippedShip])&&equippedByShip[equippedShip].length===0){
-      const candidate=Object.entries(owned).find(([id,qty])=>validIds.has(id)&&Number(qty)>0)?.[0]||defaultId;
+      const candidate=Object.entries(owned).find(([id,qty])=>validIds.has(id)&&Number(qty)>0)?.[0]||"";
       if(candidate&&validIds.has(candidate))equippedByShip[equippedShip]=[candidate];
     }
 
@@ -576,6 +576,32 @@ export class GameRuntime {
     this.playerCannons.owned[cid]=Math.max(0,Number(this.playerCannons.owned[cid])||0)+Math.max(1,Math.floor(Number(quantity)||1));
     if(save)this.saveState();
     return true;
+  }
+
+  grantStarterCannon(){
+    this.ensurePlayerCannons();
+    const cannonId=String(this.cannonCatalog?.defaultCannonId||"cannon-basic");
+    const cannon=this.cannonEntry(cannonId);
+    const shipId=String(this.playerShips.equippedShip||"");
+    if(!cannon||!shipId)return {ok:false};
+
+    const equipped=this.getShipCannons(shipId);
+    if(equipped.length>0){
+      return {ok:true,cannonId:String(equipped[0]),equippedCannonIds:equipped,alreadyEquipped:true};
+    }
+
+    this.playerCannons.owned[cannonId]=Math.max(1,Number(this.playerCannons.owned[cannonId])||0);
+    this.playerCannons.equippedByShip[shipId]=[cannonId];
+    this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:cannonearned",{
+      detail:{shipId,cannonId,source:"multiplication-rescue"}
+    }));
+    return {
+      ok:true,
+      cannonId,
+      cannonName:String(cannon.name||"Canhão do Marujo"),
+      equippedCannonIds:[cannonId]
+    };
   }
 
   async grantShip(id,{equip=false,save=true}={}){
@@ -962,6 +988,7 @@ export class GameRuntime {
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
+      onStarterCannonEarned:()=>this.grantStarterCannon(),
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       shopBalances:()=>this.getWalletBalances(),
