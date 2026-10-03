@@ -22,7 +22,8 @@
     "cannons": "./src/config/cannon-catalog.json",
     "runtimePolicy": "./src/config/runtime-policy.json",
     "missions": "./src/config/mission-catalog.json",
-    "progression": "./src/config/progression-balance.json"
+    "progression": "./src/config/progression-balance.json",
+    "sounds": "./src/config/sound-catalog.json"
   },
   "start": {
     "kind": "scene",
