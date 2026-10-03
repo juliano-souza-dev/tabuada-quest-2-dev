@@ -301,6 +301,7 @@ export class WorldRuntime {
     this.pointerDirections=new Set();
     this.joystick={x:0,y:0,active:false,pointerId:null};
     this.navigationTarget=null;
+    this.treasureTarget=null;
     this.entityEffectRenderers=new Map();
     this.entityEffectOrigins=new Map();
     this.entities=(config.entities||[]).map((entity,index)=>{
@@ -2013,6 +2014,43 @@ export class WorldRuntime {
     }
   }
 
+  clearTreasureTarget(){
+    this.treasureTarget=null;
+  }
+
+  treasureAtWorldPoint(point){
+    if(!point)return null;
+    return [...this.entities].reverse().find(entity=>{
+      if(String(entity?.type||"")!=="treasure")return false;
+      if(this.collected.has(entity.id)||entity.el?.hidden||entity.treasurePending)return false;
+      const halfW=Math.max(20,Number(entity.width||88)/2);
+      const halfH=Math.max(20,Number(entity.height||88)/2);
+      return Math.abs(Number(point.x)-Number(entity.x||0))<=halfW
+        &&Math.abs(Number(point.y)-Number(entity.y||0))<=halfH;
+    })||null;
+  }
+
+  navigateToTreasure(entity){
+    if(!entity||String(entity.type||"")!=="treasure"||this.collected.has(entity.id))return false;
+    this.clearCombatTarget({hideAction:true});
+    this.treasureTarget=entity;
+    const travel=this.getPlayerTravelBounds();
+    const target={
+      x:clamp(Number(entity.x)||0,travel.left,travel.right),
+      y:clamp(Number(entity.y)||0,travel.top,travel.bottom)
+    };
+    this.navigationTarget=target;
+    this.keys.clear();
+    this.pointerDirections.clear();
+    this.resetJoystick();
+    if(this.navTargetEl){
+      this.navTargetEl.hidden=false;
+      this.navTargetEl.style.left=target.x+"px";
+      this.navTargetEl.style.top=target.y+"px";
+    }
+    return true;
+  }
+
   resetJoystick(){
     this.joystick.x=0;
     this.joystick.y=0;
@@ -2050,6 +2088,7 @@ export class WorldRuntime {
       if(!shipDir)return;
       e.preventDefault();
       this.clearNavigationTarget();
+      this.clearTreasureTarget();
       this.keys.add(shipDir);
     };
     const keyup=e=>{
@@ -2101,6 +2140,7 @@ export class WorldRuntime {
       e.preventDefault();
       e.stopPropagation();
       this.clearNavigationTarget();
+      this.clearTreasureTarget();
       this.joystick.active=true;
       this.joystick.pointerId=e.pointerId;
       updateJoystickPoint(e.clientX,e.clientY);
@@ -2122,6 +2162,7 @@ export class WorldRuntime {
       e.stopPropagation();
       const touch=e.changedTouches[0];
       this.clearNavigationTarget();
+      this.clearTreasureTarget();
       this.joystick.active=true;
       this.joystick.pointerId=touch.identifier;
       updateJoystickPoint(touch.clientX,touch.clientY);
@@ -2175,6 +2216,12 @@ export class WorldRuntime {
         marginX:55,
         marginY:70
       });
+      const clickedTreasure=this.treasureAtWorldPoint(clickedWorldPoint);
+      if(clickedTreasure){
+        this.navigateToTreasure(clickedTreasure);
+        return;
+      }
+
       const clickableCombatTarget=[...this.entities].reverse().find(entity=>{
         if(!this.isClickableCombatShip(entity)||entity.el?.hidden)return false;
         const halfW=Math.max(18,Number(entity.width||96)/2);
@@ -2191,6 +2238,7 @@ export class WorldRuntime {
       // not a combat cancellation. Keep the target locked so the player can
       // maneuver and continue firing while it remains in range.
       if(!this.navalAutoFire)this.clearCombatTarget({hideAction:true});
+      this.clearTreasureTarget();
 
       const target=screenPointToWorld(e.clientX,e.clientY,{
         viewportLeft:rect.left,
@@ -2327,6 +2375,7 @@ export class WorldRuntime {
       this.pointerDirections.clear();
       this.resetJoystick();
       this.clearNavigationTarget();
+      this.clearTreasureTarget();
       this.playCameraOffset.x=0;
       this.playCameraOffset.y=0;
       this.playCameraDetached=false;
@@ -2339,6 +2388,7 @@ export class WorldRuntime {
       this.pointerDirections.clear();
       this.resetJoystick();
       this.clearNavigationTarget();
+      this.clearTreasureTarget();
       this.clearPlayerWake();
       this.nearby=null;
       this.clearCombatTarget({hideAction:true});
@@ -3563,6 +3613,7 @@ export class WorldRuntime {
 
   async beginTreasureChallenge(entity){
     if(!entity||this.challengeActive||this.mode!=="play")return;
+    this.treasureTarget=null;
     this.stopForChallenge();
     this.actionWrap.hidden=true;
 
@@ -3606,6 +3657,33 @@ export class WorldRuntime {
     }
 
     if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
+  }
+
+  discardTreasure(entity){
+    if(!entity||this.collected.has(entity.id))return false;
+    this.collected.add(entity.id);
+    if(entity.el)entity.el.hidden=true;
+    this.treasureTarget=null;
+    this.contactEntity=null;
+    this.nearby=null;
+    if(this.actionWrap)this.actionWrap.hidden=true;
+    if(entity.runtimeTreasure&&entity.treasureRespawn===true){
+      entity.treasureRespawnAt=performance.now()+Math.max(1000,Number(entity.treasureRespawnDelayMs)||30000);
+    }
+    this.updateProgress();
+    return true;
+  }
+
+  playTreasureSuccess(entity){
+    const el=entity?.el;
+    if(!el?.animate)return;
+    try{
+      el.animate([
+        {transform:el.style.transform,filter:"brightness(1) drop-shadow(0 0 0 rgba(255,190,60,0))",opacity:1},
+        {transform:el.style.transform+" scale(1.24)",filter:"brightness(1.7) drop-shadow(0 0 22px rgba(255,190,60,.95))",opacity:1,offset:.55},
+        {transform:el.style.transform+" scale(.72)",filter:"brightness(2) drop-shadow(0 0 34px rgba(255,220,100,1))",opacity:.15}
+      ],{duration:620,easing:"cubic-bezier(.2,.8,.2,1)",fill:"forwards"});
+    }catch{}
   }
 
   completeCollection(entity,{challenge=null}={}){
@@ -3713,13 +3791,18 @@ export class WorldRuntime {
 
     if(result.correct===true){
       if(this.challengeFeedback)this.challengeFeedback.textContent="Acertou! Tesouro conquistado.";
-      this.completeCollection(entity,{challenge});
-      this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),650);
+      this.playTreasureSuccess(entity);
+      this.challengeTimer=setTimeout(()=>{
+        this.challengeTimer=0;
+        this.completeCollection(entity,{challenge});
+        this.closeTreasureChallenge();
+      },620);
       return;
     }
 
-    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O baú continua fechado.";
-    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),900);
+    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro desapareceu.";
+    this.discardTreasure(entity);
+    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),700);
   }
 
   entityInteraction(entity){
@@ -3840,6 +3923,16 @@ export class WorldRuntime {
     const collision=normalizeCollision(entity.collision||{},entity);
     const action=inferCollisionAction(entity,collision);
     const interaction=this.entityInteraction(entity);
+
+    if(entity.type==="treasure"&&action==="collect"){
+      if(this.treasureTarget?.id===entity.id){
+        this.treasureTarget=null;
+        this.beginTreasureChallenge(entity);
+      }else{
+        this.actionWrap.hidden=true;
+      }
+      return;
+    }
     if(action==="enter-world"||interaction?.actionId==="enter-region"){
       this.actionWrap.hidden=true;
       if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
@@ -4287,7 +4380,7 @@ export class WorldRuntime {
 
     if(action==="collect"){
       if(entity.type==="treasure"){
-        this.beginTreasureChallenge(entity);
+        if(this.treasureTarget?.id===entity.id)this.beginTreasureChallenge(entity);
         return;
       }
       this.completeCollection(entity);
