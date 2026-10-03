@@ -1474,6 +1474,7 @@ export class GameRuntime {
     this.worldHost.hidden=false;
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
+      globalCamera:clone(this.manifest.worldDefaults?.camera||{}),
       state:restored||{},
       soundCatalog:this.soundCatalog&&typeof this.soundCatalog==="object"?clone(this.soundCatalog):{sounds:[]},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
