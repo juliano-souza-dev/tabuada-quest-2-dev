@@ -555,6 +555,14 @@ export class GameRuntime {
     if(typeof ref==="string"){
       const found=worlds.find(entry=>entry.id===ref||entry.path===ref);
       if(found)return {...found};
+      if(ref==="ocean-prototype"){
+        const fallbackId=String(this.manifest.afterAuth?.id||"r1-enseada-aprendizes");
+        const fallback=worlds.find(entry=>entry.id===fallbackId)||worlds[0];
+        if(fallback){
+          console.warn("[TQ Game] migrated obsolete world id",ref,"->",fallback.id);
+          return {...fallback};
+        }
+      }
       if(isPath(ref))return {id:null,path:ref};
     }
     throw new Error("Unknown world: "+String(ref));
