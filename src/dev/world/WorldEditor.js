@@ -73,6 +73,11 @@ export class WorldEditor {
       console.warn("World draft restore failed",error);
     }
 
+    if(world?.camera&&typeof world.camera==="object"){
+      delete world.camera.playZoom;
+      if(Object.keys(world.camera).length===0)delete world.camera;
+    }
+
     const npcPopulation=world?.npcPopulation&&typeof world.npcPopulation==="object"?world.npcPopulation:null;
     if(npcPopulation&&Array.isArray(npcPopulation.types)){
       let changed=false;
