@@ -6,6 +6,9 @@ import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 const clone=value=>structuredClone(value);
 const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.startsWith("/")||value.endsWith(".json"));
 const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(Boolean))];
+const LEGACY_DEFAULT_SHIP_ID="pirate-default";
+const CURRENT_DEFAULT_SHIP_ID="ship-pirate-galleon-navio";
+const migrateLegacyShipId=id=>String(id||"")===LEGACY_DEFAULT_SHIP_ID?CURRENT_DEFAULT_SHIP_ID:String(id||"");
 
 export class GameRuntime {
   static async load(root,manifestUrl="./src/config/game.manifest.json",options={}){
@@ -632,7 +635,10 @@ export class GameRuntime {
   ensurePlayerShips(){
     const available=this.listAvailableShips();
     const validIds=new Set(available.map(ship=>ship.id));
-    let owned=unique(this.playerShips?.ownedShips).filter(id=>validIds.has(id));
+    let owned=unique(this.playerShips?.ownedShips)
+      .map(migrateLegacyShipId)
+      .filter(id=>validIds.has(id));
+    owned=unique(owned);
     const defaultId=String(
       this.manifest.player?.defaultShipId
       ||this.shipCatalog?.defaultShipId
@@ -644,7 +650,7 @@ export class GameRuntime {
       owned=[defaultId];
     }
 
-    let equipped=this.playerShips?.equippedShip?String(this.playerShips.equippedShip):null;
+    let equipped=this.playerShips?.equippedShip?migrateLegacyShipId(this.playerShips.equippedShip):null;
     if(!equipped||!owned.includes(equipped)||!validIds.has(equipped)){
       equipped=owned[0]||defaultId||null;
     }
@@ -688,7 +694,10 @@ export class GameRuntime {
       ?this.playerCannons.equippedByShip:{};
     for(const shipId of this.playerShips.ownedShips){
       const capacity=this.shipCannonCapacity(shipId);
-      const requested=Array.isArray(sourceEquipped[shipId])?sourceEquipped[shipId].map(String):[];
+      const direct=Array.isArray(sourceEquipped[shipId])?sourceEquipped[shipId]:[];
+      const legacy=shipId===CURRENT_DEFAULT_SHIP_ID&&Array.isArray(sourceEquipped[LEGACY_DEFAULT_SHIP_ID])
+        ?sourceEquipped[LEGACY_DEFAULT_SHIP_ID]:[];
+      const requested=[...direct,...legacy].map(String);
       const equipped=requested.filter(id=>validIds.has(id)).slice(0,capacity);
       equippedByShip[shipId]=equipped;
     }
