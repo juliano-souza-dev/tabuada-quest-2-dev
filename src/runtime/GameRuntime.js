@@ -952,7 +952,7 @@ export class GameRuntime {
     return this.handleCombatVictory({entity,rewards,claimKey:"boss:"+stableBossId});
   }
 
-  handleTreasureCollected({entity,challenge}={}){
+  handleTreasureCollected({entity,challenge,rewards}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
@@ -986,6 +986,20 @@ export class GameRuntime {
         }
       }
     };
+
+    // Treasure rewards must be granted in the same transaction as the chest
+    // completion. WorldRuntime also emits the generic reward callback later;
+    // using the same claim key makes that second path idempotent.
+    const resolvedRewards=rewards&&typeof rewards==="object"
+      ?clone(rewards)
+      :(cleanEntity.rewards&&typeof cleanEntity.rewards==="object"?clone(cleanEntity.rewards):{});
+    if(cleanEntity.id){
+      this.handleCombatVictory({
+        entity:cleanEntity,
+        rewards:resolvedRewards,
+        claimKey:chestKey
+      });
+    }
 
     globalThis.dispatchEvent?.(new CustomEvent("tq:treasurecollected",{
       detail:{
