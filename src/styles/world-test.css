@@ -1376,7 +1376,7 @@
   touch-action:manipulation;
 }
 .tq-world-shop__balances{position:absolute;left:12.5%;right:12.5%;top:18.2%;height:5.3%;display:grid;grid-template-columns:1fr 1fr;gap:5.5%;z-index:4;pointer-events:none}
-.tq-world-shop__balance{display:flex;align-items:center;justify-content:flex-end;padding:0 14% 0 28%;color:#fff4cf;font:900 clamp(11px,2.2vw,17px)/1 system-ui;text-shadow:0 2px 4px #000}
+.tq-world-shop__balance{display:flex;align-items:center;justify-content:flex-end;padding:0 10% 0 25%;color:#fff4cf;font:900 clamp(12px,2.5vw,18px)/1 system-ui;text-shadow:0 2px 4px #000}
 .tq-world-shop__tabs{position:absolute;left:12.1%;right:12.1%;top:25.2%;height:8.7%;display:grid;grid-template-columns:repeat(5,1fr);gap:1.3%;z-index:5}
 .tq-world-shop__tabs button{border:0;background:transparent;border-radius:14px;touch-action:manipulation}
 .tq-world-shop__tabs button.is-active{box-shadow:inset 0 0 0 3px rgba(255,230,137,.78),0 0 14px rgba(117,255,127,.38)}
@@ -1414,7 +1414,7 @@
 .tq-world-shop__item-info{position:absolute;left:31%;top:39%;width:39%;height:45%;margin:0;padding:3% 2.7%;box-sizing:border-box;overflow:hidden;color:#dce6e7;font:700 clamp(8px,1.45vw,11px)/1.25 system-ui;text-shadow:0 1px 2px #000}
 .tq-world-shop__price{position:absolute;left:73.1%;top:8.5%;width:24.3%;height:22%;display:flex;align-items:center;padding-left:31%;box-sizing:border-box;color:#ffeab0}
 .tq-world-shop__price span{display:none}
-.tq-world-shop__price b{font:900 clamp(9px,1.7vw,13px)/1 system-ui;text-shadow:0 2px 3px #000}
+.tq-world-shop__price b{font:900 clamp(10px,1.9vw,14px)/1 system-ui;text-shadow:0 2px 3px #000;white-space:nowrap}
 .tq-world-shop__quantity{position:absolute;left:73%;top:37%;width:24.7%;height:21%;display:grid;grid-template-columns:28% 44% 28%;align-items:stretch}
 .tq-world-shop__quantity button{border:0;background:transparent;color:transparent;touch-action:manipulation}
 .tq-world-shop__quantity b{display:grid;place-items:center;color:#fff4d2;font:900 clamp(9px,1.7vw,13px)/1 system-ui;text-shadow:0 2px 3px #000}
