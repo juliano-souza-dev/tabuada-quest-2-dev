@@ -4365,10 +4365,9 @@ export class WorldRuntime {
     };
   }
 
-  navalProjectileHitsTarget(target,aimPoint,{width=96,height=96,guaranteedDistance=0}={}){
+  navalProjectileHitsTarget(target,aimPoint,{width=96,height=96}={}){
     if(!target||this.collected.has(target.id)||this.navalDestroying.has(target.id))return false;
     const hitRadius=Math.max(24,Math.min(Number(width)||96,Number(height)||96)*.36);
-    if(Number(guaranteedDistance)>0)return true;
     return Math.hypot((Number(target.x)||0)-Number(aimPoint?.x||0),(Number(target.y)||0)-Number(aimPoint?.y||0))<=hitRadius;
   }
 
@@ -4403,12 +4402,11 @@ export class WorldRuntime {
         targetVelocity:entity.npcNavigation,
         projectileSpeed
       });
-      const closeRange=targetDistance<=Math.max(180,Math.min(Number(entity.width)||96,Number(entity.height)||96)*2.5);
       let resolvedImpact=null;
       const resolveImpact=()=>{
         if(resolvedImpact===null){
           resolvedImpact=this.navalProjectileHitsTarget(entity,plan.to,{
-            width:entity.width,height:entity.height,guaranteedDistance:closeRange?targetDistance:0
+            width:entity.width,height:entity.height
           })?"ship":"water";
         }
         return resolvedImpact;
@@ -4514,12 +4512,11 @@ export class WorldRuntime {
     });
     const playerWidth=Number(this.config.player?.width)||108;
     const playerHeight=Number(this.config.player?.height)||150;
-    const closeRange=targetDistance<=Math.max(180,Math.min(playerWidth,playerHeight)*2.5);
     let resolvedImpact=null;
     const resolveImpact=()=>{
       if(resolvedImpact===null){
         resolvedImpact=this.navalProjectileHitsTarget(this.player,plan.to,{
-          width:playerWidth,height:playerHeight,guaranteedDistance:closeRange?targetDistance:0
+          width:playerWidth,height:playerHeight
         })?"ship":"water";
       }
       return resolvedImpact;
