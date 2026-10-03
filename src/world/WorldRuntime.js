@@ -589,6 +589,7 @@ export class WorldRuntime {
       coopBoss:profile.coopBoss===true||profile.boss===true||profile.combat?.boss===true,
       coopBossId:String(profile.coopBossId||npcId||""),
       bossSpawnCycle:1,
+      npcSpawnCycle:1,
       devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
       rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
       npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
@@ -4320,6 +4321,33 @@ export class WorldRuntime {
     this.gameplayToastTimer=setTimeout(()=>{el.classList.add("is-leaving");setTimeout(()=>{el.hidden=true;el.classList.remove("is-leaving")},180)},Math.max(700,Number(duration)||1500));
   }
 
+  rollNpcRewards(entity){
+    const source=entity?.rewards&&typeof entity.rewards==="object"?entity.rewards:{};
+    const result={};
+    const gold=Math.max(0,Math.floor(Number(source.gold??source.coins)||0));
+    if(gold>0)result.gold=gold;
+
+    const rubyRule=source.rubies&&typeof source.rubies==="object"?source.rubies:null;
+    if(rubyRule){
+      const chance=clamp(Number(rubyRule.chance)||0,0,100);
+      if(Math.random()*100<chance){
+        const min=Math.max(0,Math.floor(Number(rubyRule.min)||0));
+        const max=Math.max(min,Math.floor(Number(rubyRule.max)||min));
+        result.rubies=min+Math.floor(Math.random()*(max-min+1));
+      }else{
+        result.rubies=0;
+      }
+    }else if(Number(source.rubies)>0){
+      result.rubies=Math.max(0,Math.floor(Number(source.rubies)||0));
+    }
+
+    if(Number(source.xp)>0)result.xp=Math.max(0,Math.floor(Number(source.xp)||0));
+    if(source.itemId)result.itemId=String(source.itemId);
+    if(source.quantity)result.quantity=Math.max(1,Math.floor(Number(source.quantity)||1));
+    if(source.shipId)result.shipId=String(source.shipId);
+    return result;
+  }
+
   beginNavalDestruction(entity){
     if(!entity?.id||this.collected.has(entity.id))return false;
     const id=String(entity.id);
@@ -4349,6 +4377,21 @@ export class WorldRuntime {
     const size=Math.max(48,Number(entity.width)||96,Number(entity.height)||96);
     this.navalRenderer?.destroyShip?.({at:point,size,duration});
     if(entity.el)entity.el.hidden=true;
+
+    if(entity.runtimeGenerated&&!this.isCoopBoss(entity)){
+      const rewards=this.rollNpcRewards(entity);
+      const spawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1));
+      const claimKey=String(this.config.id||"world")+":"+id+":spawn:"+spawnCycle;
+      this.onRewardCollected?.({
+        entity:this.cleanEntity(entity),
+        rewards:structuredClone(rewards),
+        claimKey
+      });
+      const parts=[];
+      if(Number(rewards.gold)>0)parts.push("+"+Number(rewards.gold)+" ouro");
+      if(Number(rewards.rubies)>0)parts.push("+"+Number(rewards.rubies)+" rubi"+(Number(rewards.rubies)===1?"":"s"));
+      if(parts.length)this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído · "+parts.join(" · "),1900);
+    }
 
     const respawnDelay=entity.runtimeGenerated&&entity.respawn===true
       ?Math.max(0,Number(entity.respawnDelayMs)||0)
@@ -4387,6 +4430,7 @@ export class WorldRuntime {
           ...(entity.collision||{}),active:true,action:"none"
         },entity);
         this.navalHp.set(id,Math.max(1,Math.min(50000000,Number(entity.combat?.hp)||3)));
+        entity.npcSpawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1))+1;
         if(this.isCoopBoss(entity)){
           entity.bossSpawnCycle=Math.max(1,Number(entity.bossSpawnCycle)||1)+1;
           this.coopBossLocalDamage.set(this.coopBossId(entity),0);
