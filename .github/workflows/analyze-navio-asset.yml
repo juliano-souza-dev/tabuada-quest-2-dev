@@ -68,6 +68,12 @@ jobs:
               d.text((x,y),str(idx),fill=(255,255,0,255))
           os.makedirs("analysis",exist_ok=True)
           preview.save("analysis/navio_contact_sheet.png",optimize=True)
+          jpg=Image.new("RGB",preview.size,(235,235,235))
+          jpg.paste(preview,mask=preview.getchannel("A"))
+          if max(jpg.size)>800:
+              sc=800/max(jpg.size)
+              jpg=jpg.resize((round(jpg.width*sc),round(jpg.height*sc)),Image.Resampling.LANCZOS)
+          jpg.save("analysis/navio_contact_sheet.jpg",quality=72,optimize=True)
           meta={
               "source":src,
               "width":w,
@@ -87,7 +93,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add analysis/navio_contact_sheet.png analysis/navio_meta.json
+          git add analysis/navio_contact_sheet.png analysis/navio_contact_sheet.jpg analysis/navio_meta.json
           if git diff --cached --quiet; then
             echo "No analysis changes"
           else
