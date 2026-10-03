@@ -10,6 +10,9 @@ export class DevOverlay {
     this.assetTree=null;this.assetDirectoryPath="assets";this.assetNodeIndex=new Map();this.assetByPath=new Map();this.assetPickTarget=null;
     this.sceneResolver=options.sceneResolver||null;this.sceneCatalog=null;this.localScenes=[];this.actionCatalog=null;
     this.pedagogyRuntime=options.pedagogyRuntime||null;this.onPedagogyResult=typeof options.onPedagogyResult==="function"?options.onPedagogyResult:null;
+    this.onRewardCollected=typeof options.onRewardCollected==="function"?options.onRewardCollected:null;
+    this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
+    this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({
       requestFrameAsset:context=>this.openShipFramePicker(context),
@@ -25,6 +28,9 @@ export class DevOverlay {
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
       onPedagogyResult:this.onPedagogyResult,
+      onRewardCollected:this.onRewardCollected,
+      onShopPurchase:this.onShopPurchase,
+      shopBalances:this.shopBalances,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveNpc:npcId=>this.npcEditor?.resolveForWorld?.(npcId)||null,
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
@@ -228,6 +234,7 @@ export class DevOverlay {
       if(runtime){
         runtime.cannonCatalog=this.cannonCatalog.cannons||[];
         runtime.testCannonIds=(runtime.testCannonIds||[]).filter(id=>runtime.cannonCatalog.some(cannon=>String(cannon.id)===String(id)));
+        runtime.refreshShopCatalogs?.();
       }
       if(this.mode==="config"&&this.workspace==="world")this.renderWorldInspector();
     });
@@ -236,6 +243,7 @@ export class DevOverlay {
       const ammo=this.ammoEditor?.all?.()||[];
       if(runtime){
         runtime.ammoCatalog=structuredClone(ammo);
+        runtime.refreshShopCatalogs?.();
         const selected=String(runtime.state?.ammo?.selectedAmmoId||"");
         if(selected&&!ammo.some(item=>String(item?.id||"")===selected)){
           runtime.state.ammo.selectedAmmoId=String(ammo[0]?.id||"");
@@ -247,7 +255,10 @@ export class DevOverlay {
       const shipId=String(event.detail?.shipId||"");
       this.npcEditor?.repairShipLinks?.({autoAssignSingle:true});
       if(!shipId||this.workspace!=="world"||!this.worldEditor?.runtime)return;
-      this.worldEditor.runtime.refreshShipProfile?.(shipId);
+      const runtime=this.worldEditor.runtime;
+      runtime.shipCatalog=structuredClone(this.shipEditor?.repositoryShips?.()||[]);
+      runtime.refreshShopCatalogs?.();
+      runtime.refreshShipProfile?.(shipId);
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
     });
     window.addEventListener("tq:treasureprofilechange",()=>{

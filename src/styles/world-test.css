@@ -1377,8 +1377,8 @@
   z-index:5;
   touch-action:manipulation;
 }
-.tq-world-shop__balances{position:absolute;left:12.5%;right:12.5%;top:23.2%;height:5.3%;display:grid;grid-template-columns:1fr 1fr;gap:5.5%;z-index:4;pointer-events:none}
-.tq-world-shop__balance{display:flex;align-items:center;justify-content:flex-end;padding:0 10% 0 25%;color:#fff4cf;font:900 clamp(12px,2.5vw,18px)/1 system-ui;text-shadow:0 2px 4px #000}
+.tq-world-shop__balances{position:absolute;left:12.5%;right:12.5%;top:21.5%;height:5.3%;display:grid;grid-template-columns:1fr 1fr;gap:5.5%;z-index:4;pointer-events:none}
+.tq-world-shop__balance{display:flex;align-items:center;justify-content:center;padding:0 8% 0 30%;color:#fff4cf;font:900 clamp(12px,2.5vw,18px)/1 system-ui;text-shadow:0 2px 4px #000;font-variant-numeric:tabular-nums}
 .tq-world-shop__tabs{position:absolute;left:12.1%;right:12.1%;top:29.1%;height:8.7%;display:grid;grid-template-columns:repeat(5,1fr);gap:1.3%;z-index:5}
 .tq-world-shop__tabs button{border:0;background:transparent;border-radius:14px;touch-action:manipulation}
 .tq-world-shop__tabs button.is-active{box-shadow:inset 0 0 0 3px rgba(255,230,137,.78),0 0 14px rgba(117,255,127,.38)}
@@ -1421,7 +1421,14 @@
 .tq-world-shop__quantity b{display:grid;place-items:center;color:#fff4d2;font:900 clamp(9px,1.7vw,13px)/1 system-ui;text-shadow:0 2px 3px #000}
 .tq-world-shop__buy{position:absolute;left:70.2%;top:62%;width:27.3%;height:27%;border:0;background:transparent;color:#f7ffe9;font:900 clamp(8px,1.3vw,10px)/1 system-ui;text-align:center;text-shadow:0 2px 3px #173b16;touch-action:manipulation}
 .tq-world-shop__empty{margin:12% 8%;padding:18px;border:1px solid #c9a45c;border-radius:12px;background:#150e18d9;color:#f4e5bd;text-align:center;font:800 12px/1.4 system-ui}
-.tq-world-shop__feedback{position:absolute;left:16%;right:16%;bottom:5.4%;z-index:6;margin:0;text-align:center;color:#fff0c3;font:800 clamp(9px,1.55vw,12px)/1.2 system-ui;text-shadow:0 2px 4px #000;pointer-events:none}
+.tq-world-shop__feedback{position:absolute;left:11%;right:11%;bottom:11.5%;z-index:20;margin:0;padding:0;box-sizing:border-box;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;text-align:center;color:#fff0c3;font:900 clamp(10px,1.7vw,13px)/1.25 system-ui;text-shadow:0 2px 3px #000;pointer-events:none;opacity:0;transform:translateY(5px);transition:opacity .16s ease,transform .16s ease}
+.tq-world-shop__feedback.is-visible{min-height:38px;padding:7px 8px 7px 12px;border:1px solid #e0ae4b;border-radius:10px;background:linear-gradient(180deg,rgba(18,38,52,.97),rgba(4,14,23,.97));box-shadow:0 4px 14px rgba(0,0,0,.72),inset 0 1px rgba(255,244,204,.28);pointer-events:auto;opacity:1;transform:translateY(0)}
+.tq-world-shop__feedback [data-shop-feedback-message]{min-width:0}
+.tq-world-shop__feedback [data-shop-feedback-close]{width:24px;height:24px;margin-left:7px;border:1px solid rgba(255,244,204,.52);border-radius:50%;padding:0;background:#090f16;color:#fff7de;font:900 17px/1 system-ui;cursor:pointer;touch-action:manipulation}
+.tq-world-shop__feedback [data-shop-feedback-close]:hover{background:#713221}
+.tq-world-shop__feedback[data-state="success"]{color:#d5ffc5;border-color:#80db76;background:linear-gradient(180deg,rgba(20,69,43,.97),rgba(4,28,20,.97))}
+.tq-world-shop__feedback[data-state="error"]{color:#ffe0d2;border-color:#f07b56;background:linear-gradient(180deg,rgba(104,40,25,.98),rgba(47,13,13,.98))}
+.tq-world-shop__feedback[data-state="info"]{color:#fff0c3}
 html.tq-shop-open .tq-world-controls,html.tq-shop-open .tq-world-action,html.tq-shop-open .tq-world-shop-launcher{pointer-events:none}
 @media (orientation:landscape) and (max-height:600px){
   .tq-world-shop__panel{height:96vh;width:auto;max-height:96vh;max-width:none}
@@ -1857,13 +1864,13 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   .tq-world-shop__balances{
     left:15.8%;
     right:15.8%;
-    top:23.45%;
+    top:21.7%;
     height:3.65%;
     grid-template-columns:1fr 1fr;
     column-gap:8.6%;
   }
   .tq-world-shop__balance{
-    padding:0 5.5% 0 28%;
+    padding:0 6% 0 30%;
     align-items:center;
     justify-content:flex-end;
     font-size:clamp(11px,2.65vw,15px);
@@ -1883,27 +1890,31 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   }
 
   .tq-world-shop__price{
-    left:71.1%;
-    top:7.4%;
-    width:25.3%;
-    height:21.5%;
-    padding:0 6% 0 34%;
+    left:70.8%;
+    top:7.3%;
+    width:25.7%;
+    height:22.4%;
+    padding:0 4% 0 29%;
     align-items:center;
-    justify-content:flex-end;
+    justify-content:center;
+    text-align:right;
   }
+  .tq-world-shop__price-label{display:none}
   .tq-world-shop__price b{
     display:block;
-    min-width:1ch;
+    min-width:0;
     color:#fff4cf;
-    font-size:clamp(9px,2.05vw,12px);
+    font-size:clamp(8px,1.75vw,11px);
     line-height:1;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
   }
 
   .tq-world-shop__quantity{
-    left:71.2%;
-    top:36.1%;
-    width:25.1%;
-    height:20.8%;
+    left:70.8%;
+    top:35.7%;
+    width:25.7%;
+    height:21.5%;
     grid-template-columns:28.5% 43% 28.5%;
   }
   .tq-world-shop__quantity b{
@@ -1917,15 +1928,145 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   }
 
   .tq-world-shop__buy{
-    left:71%;
-    top:62.8%;
-    width:25.5%;
-    height:22.2%;
+    left:70.8%;
+    top:62.2%;
+    width:25.7%;
+    height:23.1%;
     padding:0;
     display:grid;
     place-items:center;
     font-size:clamp(9px,1.9vw,11px);
     line-height:1;
   }
+}
+
+/* Shop v2 uses clean art surfaces. Layout is owned by CSS rather than baked
+   compartments in the image, so all item data stays aligned at every size. */
+.tq-world-shop__list{
+  gap:1.35%;
+  padding:.5% 0 3%;
+}
+.tq-world-shop__slot{
+  display:grid;
+  grid-template-columns:25% minmax(0,1fr) 27%;
+  grid-template-rows:30% 31% 39%;
+  column-gap:2.4%;
+  align-items:center;
+  aspect-ratio:3/1;
+  padding:5.4% 5.5%;
+  box-sizing:border-box;
+}
+.tq-world-shop__item-image,
+.tq-world-shop__item-name,
+.tq-world-shop__item-info,
+.tq-world-shop__price,
+.tq-world-shop__quantity,
+.tq-world-shop__buy{
+  position:static;
+  width:auto;
+  height:auto;
+  min-width:0;
+  min-height:0;
+  margin:0;
+  box-sizing:border-box;
+}
+.tq-world-shop__item-image{
+  grid-column:1;
+  grid-row:1 / span 3;
+  height:100%;
+  border:1px solid rgba(255,191,61,.45);
+  border-radius:10%;
+  background:rgba(1,7,13,.46);
+}
+.tq-world-shop__item-image img{max-width:84%;max-height:84%}
+.tq-world-shop__item-name{
+  grid-column:2;
+  grid-row:1;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  padding:0;
+  color:#fff4cf;
+  font:900 clamp(9px,1.5vw,13px)/1.08 system-ui,sans-serif;
+  text-align:left;
+  text-wrap:balance;
+}
+.tq-world-shop__item-info{
+  grid-column:2;
+  grid-row:2 / span 2;
+  display:block;
+  padding:0;
+  color:#d6e0e4;
+  font:700 clamp(8px,1.25vw,11px)/1.25 system-ui,sans-serif;
+  text-align:left;
+}
+.tq-world-shop__price{
+  grid-column:3;
+  grid-row:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 5%;
+  border:1px solid rgba(255,203,75,.7);
+  border-radius:8px;
+  background:linear-gradient(180deg,rgba(93,56,8,.82),rgba(31,20,7,.88));
+  color:#fff2b8;
+  text-align:center;
+}
+.tq-world-shop__price-label{display:none}
+.tq-world-shop__price b{
+  display:block;
+  color:inherit;
+  font:900 clamp(8px,1.25vw,11px)/1 system-ui,sans-serif;
+  white-space:nowrap;
+  text-shadow:0 1px 2px #000;
+}
+.tq-world-shop__quantity{
+  grid-column:3;
+  grid-row:2;
+  display:grid;
+  grid-template-columns:28% 44% 28%;
+  align-items:stretch;
+  border:1px solid rgba(255,203,75,.52);
+  border-radius:7px;
+  overflow:hidden;
+  background:rgba(4,12,17,.78);
+}
+.tq-world-shop__quantity button{
+  border:0;
+  padding:0;
+  color:#fff4cf;
+  background:rgba(107,65,10,.8);
+  font:900 clamp(12px,2vw,18px)/1 system-ui,sans-serif;
+}
+.tq-world-shop__quantity b{
+  display:grid;
+  place-items:center;
+  color:#fff9df;
+  font:900 clamp(9px,1.45vw,13px)/1 system-ui,sans-serif;
+}
+.tq-world-shop__buy{
+  grid-column:3;
+  grid-row:3;
+  display:grid;
+  place-items:center;
+  border:1px solid #ffe37a;
+  border-radius:8px;
+  padding:0;
+  background:linear-gradient(180deg,#46ba52,#126e31);
+  color:#fffde5;
+  font:900 clamp(8px,1.25vw,11px)/1 system-ui,sans-serif;
+  text-shadow:0 1px 2px #164419;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 2px 3px rgba(0,0,0,.45);
+}
+.tq-world-shop__buy:active{transform:translateY(1px)}
+@media (orientation:portrait) and (max-width:720px){
+  .tq-world-shop__list{left:7.8%;right:7.8%;top:39.2%;bottom:10.2%;gap:1.2%;padding:.7% 0 3%}
+  .tq-world-shop__slot{grid-template-columns:25% minmax(0,1fr) 27%;grid-template-rows:30% 31% 39%;padding:5.8% 5.5%}
+  .tq-world-shop__item-name{font-size:clamp(9px,2vw,12px)}
+  .tq-world-shop__item-info{font-size:clamp(8px,1.7vw,10px)}
+  .tq-world-shop__price b{font-size:clamp(8px,1.75vw,10px)}
+  .tq-world-shop__quantity button{font-size:clamp(11px,2.3vw,15px)}
+  .tq-world-shop__buy{font-size:clamp(8px,1.75vw,10px)}
 }
 

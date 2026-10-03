@@ -42,6 +42,10 @@ export class ShopOverlay{
     this.panel=null;
     this.list=null;
     this.feedback=null;
+    this.feedbackMessage=null;
+    this.feedbackClose=null;
+    this.feedbackTimer=0;
+    this.purchaseInFlight=false;
     this.cleanups=[];
   }
 
@@ -75,7 +79,10 @@ export class ShopOverlay{
           <button type="button" data-shop-category="items" aria-label="Itens" disabled></button>
         </nav>
         <div class="tq-world-shop__list" data-shop-list></div>
-        <p class="tq-world-shop__feedback" data-shop-feedback aria-live="polite"></p>
+        <div class="tq-world-shop__feedback" data-shop-feedback aria-live="polite" role="status" aria-atomic="true">
+          <span data-shop-feedback-message></span>
+          <button type="button" data-shop-feedback-close aria-label="Fechar mensagem">×</button>
+        </div>
       </section>`;
 
     root.append(launcher,overlay);
@@ -83,6 +90,8 @@ export class ShopOverlay{
     this.panel=overlay.querySelector(".tq-world-shop__panel");
     this.list=overlay.querySelector("[data-shop-list]");
     this.feedback=overlay.querySelector("[data-shop-feedback]");
+    this.feedbackMessage=overlay.querySelector("[data-shop-feedback-message]");
+    this.feedbackClose=overlay.querySelector("[data-shop-feedback-close]");
 
     const open=()=>this.open();
     launcher.addEventListener("click",open);
@@ -93,6 +102,9 @@ export class ShopOverlay{
       button.addEventListener("click",close);
       this.cleanups.push(()=>button.removeEventListener("click",close));
     });
+    const dismissFeedback=()=>this.dismissFeedback();
+    this.feedbackClose?.addEventListener("click",dismissFeedback);
+    this.cleanups.push(()=>this.feedbackClose?.removeEventListener("click",dismissFeedback));
 
     overlay.querySelectorAll("[data-shop-category]").forEach(button=>{
       const handler=()=>{
@@ -124,9 +136,29 @@ export class ShopOverlay{
 
   close(){
     if(!this.overlay)return;
+    this.dismissFeedback();
     this.overlay.hidden=true;
     this.overlay.classList.remove("is-open");
     document.documentElement.classList.remove("tq-shop-open");
+  }
+
+  setFeedback(message,type="info"){
+    this.dismissFeedback();
+    const text=String(message||"");
+    if(!this.feedback||!this.feedbackMessage||!text)return;
+    this.feedbackMessage.textContent=text;
+    this.feedback.dataset.state=type;
+    this.feedback.classList.add("is-visible");
+    this.feedbackTimer=globalThis.setTimeout?.(()=>this.dismissFeedback(),4500)||0;
+  }
+
+  dismissFeedback(){
+    if(this.feedbackTimer){globalThis.clearTimeout?.(this.feedbackTimer);this.feedbackTimer=0}
+    if(this.feedbackMessage)this.feedbackMessage.textContent="";
+    if(this.feedback){
+      this.feedback.dataset.state="";
+      this.feedback.classList.remove("is-visible");
+    }
   }
 
   refreshBalances(){
@@ -137,35 +169,87 @@ export class ShopOverlay{
     if(rubies)rubies.textContent=money(balances.rubies);
   }
 
+  setCatalogs({ammoCatalog,cannonCatalog,shipCatalog}={}){
+    if(Array.isArray(ammoCatalog))this.catalogs.ammo=normalizeItems(ammoCatalog,"ammo");
+    if(Array.isArray(cannonCatalog))this.catalogs.cannons=normalizeItems(cannonCatalog,"cannon");
+    if(Array.isArray(shipCatalog))this.catalogs.ships=normalizeItems(shipCatalog,"ship");
+    if(this.overlay&&!this.overlay.hidden)this.render();
+    return this;
+  }
+
   quantityFor(id){
     return clamp(Math.floor(Number(this.quantities.get(id))||1),1,99);
+  }
+
+  priceLabel(item,quantity=1){
+    const total=Math.max(0,Number(item?.price)||0)*Math.max(1,Math.floor(Number(quantity)||1));
+    const currency=String(item?.currency||"gold").toLowerCase();
+    if(currency==="rubies"||currency==="ruby"||currency==="gem"||currency==="diamonds"){
+      return money(total)+" rubi"+(total===1?"":"s");
+    }
+    if(currency==="event")return "Evento";
+    return money(total)+" ouro";
+  }
+
+  refreshItemPrice(id){
+    const item=(this.catalogs[this.category]||[]).find(candidate=>candidate.id===id);
+    const price=this.list?.querySelector(`[data-shop-price="${CSS.escape(id)}"]`);
+    if(!item||!price)return;
+    const quantity=this.quantityFor(id);
+    const label=this.priceLabel(item,quantity);
+    price.textContent=label;
+    price.parentElement?.setAttribute("aria-label",`Preço total: ${label}. Quantidade: ${quantity}.`);
   }
 
   changeQuantity(id,delta){
     this.quantities.set(id,clamp(this.quantityFor(id)+Number(delta||0),1,99));
     const value=this.list?.querySelector(`[data-shop-quantity="${CSS.escape(id)}"]`);
     if(value)value.textContent=String(this.quantityFor(id));
+    this.refreshItemPrice(id);
   }
 
   async purchase(item){
     const quantity=this.quantityFor(item.id);
-    if(this.feedback)this.feedback.textContent="";
+    if(this.purchaseInFlight)return;
+    this.setFeedback("");
     if(!item.purchasable){
-      if(this.feedback)this.feedback.textContent="Este item não está disponível para compra.";
+      this.setFeedback("Este item não está disponível para compra.","error");
       return;
     }
+    const currency=String(item.currency||"gold").toLowerCase();
+    if(currency==="event"){
+      this.setFeedback("Este item só pode ser obtido durante o evento.","error");
+      return;
+    }
+    const walletKey=["rubies","ruby","gem","gems","diamond","diamonds"].includes(currency)?"rubies":"gold";
+    const total=Math.max(0,Math.floor(Number(item.price)||0))*quantity;
+    const balances=this.getBalances()||{};
+    const available=Math.max(0,Number(balances[walletKey])||0);
+    if(available<total){
+      const currencyName=walletKey==="rubies"?"rubis":"ouro";
+      this.setFeedback(`Saldo insuficiente: são necessários ${money(total)} ${currencyName}.`,"error");
+      return;
+    }
+    if(!this.onPurchase){
+      this.setFeedback("A compra não está disponível agora. Tente novamente.","error");
+      return;
+    }
+    const buyButton=this.list?.querySelector(`[data-shop-price="${CSS.escape(item.id)}"]`)?.closest(".tq-world-shop__slot")?.querySelector("[data-buy]");
+    this.purchaseInFlight=true;
+    if(buyButton){buyButton.disabled=true;buyButton.setAttribute("aria-busy","true")}
     try{
-      if(this.onPurchase){
-        const result=await this.onPurchase({item:{...item},quantity});
-        if(result?.ok===false)throw new Error(result.message||"Compra não concluída.");
-        if(this.feedback)this.feedback.textContent=result?.message||`${quantity}× ${item.name} adquirido.`;
-      }else{
-        globalThis.dispatchEvent?.(new CustomEvent("tq:shop-purchase-request",{detail:{item:{...item},quantity}}));
-        if(this.feedback)this.feedback.textContent=`${quantity}× ${item.name} selecionado para compra.`;
+      const result=await this.onPurchase({item:{...item},quantity});
+      if(result?.ok!==true){
+        this.setFeedback(result?.message||"Compra não concluída. Nenhum item foi adicionado.","error");
+        return;
       }
+      this.setFeedback(result.message||`${quantity}× ${item.name} adquirido.`,"success");
       this.refreshBalances();
     }catch(error){
-      if(this.feedback)this.feedback.textContent=String(error?.message||error||"Compra não concluída.");
+      this.setFeedback(String(error?.message||error||"Compra não concluída."),"error");
+    }finally{
+      this.purchaseInFlight=false;
+      if(buyButton){buyButton.disabled=false;buyButton.removeAttribute("aria-busy")}
     }
   }
 
@@ -189,7 +273,7 @@ export class ShopOverlay{
         <div class="tq-world-shop__item-image">${image}</div>
         <strong class="tq-world-shop__item-name"></strong>
         <p class="tq-world-shop__item-info"></p>
-        <div class="tq-world-shop__price" data-currency="${item.currency}"><span></span><b></b></div>
+        <div class="tq-world-shop__price" data-currency="${item.currency}"><span class="tq-world-shop__price-label">Preço</span><b data-shop-price="${item.id}"></b></div>
         <div class="tq-world-shop__quantity">
           <button type="button" data-dec aria-label="Diminuir quantidade">−</button>
           <b data-shop-quantity="${item.id}">${this.quantityFor(item.id)}</b>
@@ -198,16 +282,11 @@ export class ShopOverlay{
         <button type="button" class="tq-world-shop__buy" data-buy>Comprar</button>`;
       row.querySelector(".tq-world-shop__item-name").textContent=item.name;
       row.querySelector(".tq-world-shop__item-info").textContent=item.description;
-      const priceLabel=item.currency==="rubies"||item.currency==="ruby"||item.currency==="gem"||item.currency==="diamonds"
-        ? "💎 "+money(item.price)
-        : item.currency==="event"
-          ? "Evento"
-          : money(item.price);
-      row.querySelector(".tq-world-shop__price b").textContent=priceLabel;
       row.querySelector("[data-dec]").addEventListener("click",()=>this.changeQuantity(item.id,-1));
       row.querySelector("[data-inc]").addEventListener("click",()=>this.changeQuantity(item.id,1));
       row.querySelector("[data-buy]").addEventListener("click",()=>this.purchase(item));
       this.list.append(row);
+      this.refreshItemPrice(item.id);
     }
   }
 
@@ -218,6 +297,9 @@ export class ShopOverlay{
     this.overlay=null;
     this.panel=null;
     this.list=null;
+    this.feedback=null;
+    this.feedbackMessage=null;
+    this.feedbackClose=null;
     this.root=null;
   }
 }

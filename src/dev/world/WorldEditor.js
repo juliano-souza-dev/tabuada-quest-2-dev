@@ -1,11 +1,14 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1222";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
     this.onPedagogyResult=typeof onPedagogyResult==="function"?onPedagogyResult:null;
+    this.onRewardCollected=typeof onRewardCollected==="function"?onRewardCollected:null;
+    this.onShopPurchase=typeof onShopPurchase==="function"?onShopPurchase:null;
+    this.shopBalances=typeof shopBalances==="function"?shopBalances:()=>({gold:0,rubies:0});
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.resolveNpc=typeof resolveNpc==="function"?resolveNpc:null;
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
@@ -109,6 +112,8 @@ export class WorldEditor {
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,
+      shopBalances:()=>this.shopBalances(),
+      onShopPurchase:request=>this.onShopPurchase?.(request),
       soundCatalog:this.getSoundCatalog(),
       resolveShip:this.resolveShip,
       resolveNpc:this.resolveNpc,
@@ -132,7 +137,10 @@ export class WorldEditor {
         window.dispatchEvent(new CustomEvent("tq:combatvictory",{detail:payload}));
       },
       onRewardCollected:payload=>{
-        window.dispatchEvent(new CustomEvent("tq:rewardcollected",{detail:payload}));
+        const detail={...payload,worldId:String(world.id||"")};
+        this.onRewardCollected?.(detail);
+        this.runtime?.shopOverlay?.refreshBalances?.();
+        window.dispatchEvent(new CustomEvent("tq:rewardcollected",{detail}));
       },
       onEnterScene:(entity,state)=>{
         window.dispatchEvent(new CustomEvent("tq:worldenterscene",{detail:{entity,state}}));

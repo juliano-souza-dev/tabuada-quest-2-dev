@@ -424,6 +424,55 @@ export class GameRuntime {
     };
   }
 
+  async purchaseShopItem({item,quantity}={}, {worldId=this.current?.id}={}){
+    const product=item&&typeof item==="object"?item:null;
+    const amount=Math.max(1,Math.floor(Number(quantity)||1));
+    if(!product?.id||!["ammo","cannon","ship"].includes(String(product.type||""))){
+      return {ok:false,message:"Item inválido para compra."};
+    }
+    if(String(product.type)==="ship"&&amount!==1){
+      return {ok:false,message:"Navios devem ser comprados uma unidade por vez."};
+    }
+
+    const currency=String(product.currency||"gold").toLowerCase();
+    if(currency==="event")return {ok:false,message:"Este item só pode ser obtido durante o evento."};
+    const walletKey=["rubies","ruby","gem","gems","diamond","diamonds"].includes(currency)?"rubies":"gold";
+    const unitPrice=Math.max(0,Math.floor(Number(product.price)||0));
+    const total=unitPrice*amount;
+    const balances=this.getWalletBalances();
+    const available=Math.max(0,Number(balances[walletKey])||0);
+    const currencyName=walletKey==="rubies"?"rubis":"ouro";
+    if(available<total){
+      return {ok:false,message:`Saldo insuficiente: são necessários ${total.toLocaleString("pt-BR")} ${currencyName}.`};
+    }
+
+    if(product.type==="ship"&&this.playerShips.ownedShips.includes(String(product.id))){
+      return {ok:false,message:"Você já possui este navio."};
+    }
+
+    if(product.type==="ammo"){
+      const world=this.worldRuntime;
+      if(!world?.state)return {ok:false,message:"A munição só pode ser comprada dentro de uma região."};
+      world.state.ammo=world.state.ammo&&typeof world.state.ammo==="object"?world.state.ammo:{stock:{},selectedAmmoId:""};
+      world.state.ammo.stock=world.state.ammo.stock&&typeof world.state.ammo.stock==="object"?world.state.ammo.stock:{};
+      const id=String(product.id);
+      world.state.ammo.stock[id]=Math.max(0,Number(world.state.ammo.stock[id])||0)+amount;
+      if(!world.state.ammo.selectedAmmoId)world.state.ammo.selectedAmmoId=id;
+    }else if(product.type==="cannon"){
+      if(!this.grantCannon(String(product.id),amount,{save:false}))return {ok:false,message:"Não foi possível adicionar o canhão ao inventário."};
+    }else if(!(await this.grantShip(String(product.id),{save:false}))){
+      return {ok:false,message:"Não foi possível adicionar o navio ao inventário."};
+    }
+
+    this.rewards={...this.rewards,[walletKey]:Math.max(0,Number(this.rewards?.[walletKey])||0)-total};
+    if(walletKey==="gold")this.rewards.coins=this.rewards.gold;
+    if(worldId&&this.worldRuntime?.getState)this.worldStates[worldId]=clone(this.worldRuntime.getState());
+    this.saveState();
+    this.syncCloud("shop-purchase");
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{item:clone(product),quantity:amount,total,currency:walletKey}}));
+    return {ok:true,message:`Compra realizada: ${amount}× ${product.name||product.id}.`};
+  }
+
   listAvailableShips(){
     return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[])
       .filter(ship=>ship.available!==false)
@@ -993,6 +1042,7 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       shopBalances:()=>this.getWalletBalances(),
+      onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       resolveShip:(shipId,role="npc")=>{
         const ship=this.shipEntry(shipId);
         if(!ship||ship.available===false)return null;
@@ -1124,8 +1174,14 @@ export class GameRuntime {
       this.flags=state.flags&&typeof state.flags==="object"?clone(state.flags):{};
       this.inventory=Array.isArray(state.inventory)?clone(state.inventory):[];
       this.rewards=state.rewards&&typeof state.rewards==="object"
-        ?{coins:Math.max(0,Number(state.rewards.coins)||0),xp:Math.max(0,Number(state.rewards.xp)||0),claims:unique(state.rewards.claims)}
-        :{coins:0,xp:0,claims:[]};
+        ?{
+          coins:Math.max(0,Number(state.rewards.coins)||0),
+          gold:Math.max(0,Number(state.rewards.gold ?? state.rewards.coins)||0),
+          rubies:Math.max(0,Number(state.rewards.rubies)||0),
+          xp:Math.max(0,Number(state.rewards.xp)||0),
+          claims:unique(state.rewards.claims)
+        }
+        :{coins:0,gold:0,rubies:0,xp:0,claims:[]};
       if(state.ships&&typeof state.ships==="object"){
         this.playerShips={
           ownedShips:unique(state.ships.ownedShips),

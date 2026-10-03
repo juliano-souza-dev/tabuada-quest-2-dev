@@ -174,11 +174,14 @@ export class WorldRuntime {
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
+    this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
+    this.shipCatalog=Array.isArray(options.shipCatalog)?structuredClone(options.shipCatalog):[];
     this.shopOverlay=new ShopOverlay({
       ammoCatalog:Array.isArray(options.ammoCatalog)?options.ammoCatalog:[],
       cannonCatalog:Array.isArray(options.cannonCatalog)?options.cannonCatalog:[],
-      shipCatalog:Array.isArray(options.shipCatalog)?options.shipCatalog:[],
-      getBalances:()=>this.shopBalances()
+      shipCatalog:this.shipCatalog,
+      getBalances:()=>this.shopBalances(),
+      onPurchase:request=>this.onShopPurchase?.(request)
     });
     const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
     this.mobileHud=new MobileHudOverlay({
@@ -4512,6 +4515,14 @@ export class WorldRuntime {
         state.nextShotAt=Number(time)+180;
       }
     }
+  }
+
+  refreshShopCatalogs(){
+    this.shopOverlay?.setCatalogs?.({
+      ammoCatalog:this.ammoCatalog,
+      cannonCatalog:this.cannonCatalog,
+      shipCatalog:this.shipCatalog
+    });
   }
 
   selectPlayerAmmo(ammoId){
