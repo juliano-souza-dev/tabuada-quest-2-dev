@@ -202,7 +202,7 @@ export class ShopOverlay{
         ? "💎 "+money(item.price)
         : item.currency==="event"
           ? "Evento"
-          : "🪙 "+money(item.price);
+          : money(item.price);
       row.querySelector(".tq-world-shop__price b").textContent=priceLabel;
       row.querySelector("[data-dec]").addEventListener("click",()=>this.changeQuantity(item.id,-1));
       row.querySelector("[data-inc]").addEventListener("click",()=>this.changeQuantity(item.id,1));
