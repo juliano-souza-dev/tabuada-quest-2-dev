@@ -924,10 +924,10 @@ export class WorldRuntime {
       </div>`;
 
     this.root.append(this.host);
-    if(!this.editorEnabled){
-      this.shopOverlay?.mount?.(this.host);
-      this.mobileHud?.mount?.(this.host);
-    }
+    // Mount the production HUD in every runtime. In DEV it stays hidden while
+    // editing and becomes identical to production as soon as mode === "play".
+    this.shopOverlay?.mount?.(this.host);
+    this.mobileHud?.mount?.(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
     this.oceanRenderer=null;
