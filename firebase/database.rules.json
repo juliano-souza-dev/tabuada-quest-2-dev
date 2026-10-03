@@ -11,18 +11,14 @@
             }
           },
           "events": {
-            ".indexOn": [
-              "at"
-            ],
+            ".indexOn": ["at"],
             "$eventId": {
-              ".write": "auth != null && newData.child('uid').val() === auth.uid",
-              ".validate": "newData.hasChildren(['type','uid','at']) && (newData.child('type').val() === 'shot' || newData.child('type').val() === 'boss-hit')"
+              ".write": false
             }
           },
           "bosses": {
             "$bossId": {
-              ".write": "auth != null",
-              ".validate": "newData.val() == null || (newData.hasChildren(['bossId','maxHp','hp','defeated','updatedAt']) && newData.child('hp').isNumber() && newData.child('hp').val() >= 0 && newData.child('hp').val() <= newData.child('maxHp').val())"
+              ".write": false
             }
           }
         }
