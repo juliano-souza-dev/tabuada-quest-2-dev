@@ -62,6 +62,13 @@ const normalizeNpcPopulation=input=>{
       npcId:String(item?.npcId||item?.shipId||""),
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
+      enabled:item?.enabled!==false,
+      spawn:{
+        mode:["random","random-spaced"].includes(String(item?.spawn?.mode))?String(item.spawn.mode):String(spread.mode||"random-spaced"),
+        margin:clamp(Number(item?.spawn?.margin??spread.margin??320),0,2000),
+        minDistance:clamp(Number(item?.spawn?.minDistance??spread.minDistance??360),0,1800),
+        seed:Math.max(0,Math.floor(Number(item?.spawn?.seed)||0))
+      },
       hp:clamp(Math.floor(Number(item?.hp)||3),1,950000),
       respawn:item?.respawn===true,
       devFrozen:item?.devFrozen===true,
@@ -628,13 +635,16 @@ export class WorldRuntime {
       ];
       let total=0;
       for(const typeConfig of population.types){
+        if(typeConfig.enabled===false)continue;
+        const typePopulation={...population,spread:{...population.spread,...(typeConfig.spawn||{})}};
+        const typeRandom=typeConfig.spawn?.seed>0?createSeededRandom(hashString(this.config.id||"world")^Number(typeConfig.spawn.seed)):random;
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
           const entity=this.createGeneratedNpc({
             shipId:typeConfig.shipId||typeConfig.npcId,
             index:total,
             typeConfig,
-            population,
-            random,
+            population:typePopulation,
+            random:typeRandom,
             occupied
           });
           if(!entity)continue;
