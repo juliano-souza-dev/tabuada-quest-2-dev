@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-1202";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-1218";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-1210";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
@@ -989,6 +989,7 @@ export class GameRuntime {
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
+      onStarterAmmoEarned:()=>{queueMicrotask(()=>this.saveState())},
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       shopBalances:()=>this.getWalletBalances(),
@@ -1007,14 +1008,14 @@ export class GameRuntime {
         return treasure?clone(treasure):null;
       },
       createPedagogyChallenge:({entity})=>{
-        const starterCannon=entity?.type==="cannon-rescue";
+        const starterRescue=entity?.type==="cannon-rescue"||entity?.type==="ammo-rescue";
         return this.pedagogyRuntime.createChallenge({
-          kind:entity?.type==="treasure"?"treasure":(starterCannon?"combat":"world-interaction"),
+          kind:entity?.type==="treasure"?"treasure":(starterRescue?"combat":"world-interaction"),
           worldId,
           entityId:entity?.id,
           entityType:entity?.type,
-          minimumFactor:starterCannon?2:1,
-          minimumProduct:starterCannon?6:1
+          minimumFactor:starterRescue?2:1,
+          minimumProduct:starterRescue?6:1
         });
       },
       onPedagogyResult:result=>this.recordPedagogyResult({
