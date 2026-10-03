@@ -1,5 +1,5 @@
-const CACHE_NAME="tq-dev-assets-v20261003-2655";
-const DEV_CACHE_RESET_KEY="tq.dev.cache-reset:v20261003-2655";
+const CACHE_NAME="tq-dev-assets-v20261003-2715";
+const DEV_CACHE_RESET_KEY="tq.dev.cache-reset:v20261003-2715";
 const MANIFEST_URL="./src/config/asset-tree.json";
 const HASH_KEY="tq.dev.asset-manifest-hash:v1";
 
