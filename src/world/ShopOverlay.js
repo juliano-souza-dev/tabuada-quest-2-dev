@@ -118,8 +118,19 @@ export class ShopOverlay{
     });
 
     const onKey=event=>{if(event.key==="Escape"&&!overlay.hidden)this.close()};
+    const onWalletChange=()=>{
+      this.refreshBalances();
+      if(this.overlay&&!this.overlay.hidden)this.render();
+    };
     globalThis.addEventListener?.("keydown",onKey);
-    this.cleanups.push(()=>globalThis.removeEventListener?.("keydown",onKey));
+    globalThis.addEventListener?.("tq:rewardgranted",onWalletChange);
+    globalThis.addEventListener?.("tq:shoppurchase",onWalletChange);
+    this.cleanups.push(
+      ()=>globalThis.removeEventListener?.("keydown",onKey),
+      ()=>globalThis.removeEventListener?.("tq:rewardgranted",onWalletChange),
+      ()=>globalThis.removeEventListener?.("tq:shoppurchase",onWalletChange)
+    );
+    this.refreshBalances();
     this.render();
     return this;
   }
@@ -255,6 +266,7 @@ export class ShopOverlay{
 
   render(){
     if(!this.list)return;
+    this.refreshBalances();
     const items=this.catalogs[this.category]||[];
     this.list.innerHTML="";
     if(!items.length){
