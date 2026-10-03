@@ -583,8 +583,9 @@ export class GameRuntime {
 
     if(product.type==="cannon"||product.type==="ammo"){
       const onboarding=this.accountState?.game?.onboarding||{};
-      const cannonReady=onboarding.starterCannonChallengeCompleted===true;
-      const ammoReady=onboarding.starterAmmoChallengeCompleted===true;
+      const configuredStarterLoadout=Boolean(this.manifest.player?.startingLoadout);
+      const cannonReady=configuredStarterLoadout||onboarding.starterCannonChallengeCompleted===true;
+      const ammoReady=configuredStarterLoadout||onboarding.starterAmmoChallengeCompleted===true;
       if(!cannonReady||!ammoReady){
         return {
           ok:false,
@@ -611,13 +612,11 @@ export class GameRuntime {
     }
 
     if(product.type==="ammo"){
-      const world=this.worldRuntime;
-      if(!world?.state)return {ok:false,message:"A munição só pode ser comprada dentro de uma região."};
-      world.state.ammo=world.state.ammo&&typeof world.state.ammo==="object"?world.state.ammo:{stock:{},selectedAmmoId:""};
-      world.state.ammo.stock=world.state.ammo.stock&&typeof world.state.ammo.stock==="object"?world.state.ammo.stock:{};
+      this.ensurePlayerAmmo();
       const id=String(product.id);
-      world.state.ammo.stock[id]=Math.max(0,Number(world.state.ammo.stock[id])||0)+amount;
-      if(!world.state.ammo.selectedAmmoId)world.state.ammo.selectedAmmoId=id;
+      this.playerAmmo.stock[id]=Math.max(0,Number(this.playerAmmo.stock[id])||0)+amount;
+      if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
+      if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
     }else if(product.type==="cannon"){
       if(!this.grantCannon(String(product.id),amount,{save:false}))return {ok:false,message:"Não foi possível adicionar o canhão ao inventário."};
     }else if(!(await this.grantShip(String(product.id),{save:false}))){
@@ -1140,7 +1139,13 @@ export class GameRuntime {
   captureCurrentState(){
     if(this.current?.kind==="world"&&this.worldRuntime){
       const id=this.current.id||this.worldRuntime.config?.id;
-      if(id)this.worldStates[id]=this.worldRuntime.getState();
+      const state=this.worldRuntime.getState();
+      if(state?.ammo){
+        this.playerAmmo=normalizeGlobalAmmo(state.ammo);
+        this.ensurePlayerAmmo({migrateWorldStates:false});
+        delete state.ammo;
+      }
+      if(id)this.worldStates[id]=state;
     }
   }
 
@@ -1532,6 +1537,8 @@ export class GameRuntime {
     const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
+    this.ensurePlayerAmmo();
+    this.ensureStarterLoadout();
 
     // Reconcile legacy reward claims with world collection state.
     //
@@ -1579,6 +1586,7 @@ export class GameRuntime {
       reconciledTreasureClaims++;
     }
     restored.collected=[...collected];
+    restored.ammo=clone(this.playerAmmo);
     if(reconciledTreasureClaims>0){
       this.worldStates[worldId]=clone(restored);
       console.info("[TQ rewards] reconciled claimed treasures into world state",{
