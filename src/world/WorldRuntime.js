@@ -2061,7 +2061,9 @@ export class WorldRuntime {
 
   navigateToTreasure(entity){
     if(!entity||String(entity.type||"")!=="treasure"||this.collected.has(entity.id))return false;
-    this.clearCombatTarget({hideAction:true});
+    // A coleta nunca pode substituir uma batalha que já tem alvo travado.
+    // O jogador precisa encerrar a distância do alvo ou selecionar outro navio.
+    if(this.combatTarget||this.navalAutoFire||this.combatActive)return false;
     this.treasureTarget=entity;
     const travel=this.getPlayerTravelBounds();
     const target={
@@ -2247,6 +2249,9 @@ export class WorldRuntime {
       });
       const clickedTreasure=this.treasureAtWorldPoint(clickedWorldPoint);
       if(clickedTreasure){
+        // Durante combate, tesouros não recebem foco, não iniciam navegação e
+        // tampouco podem abrir a continha de coleta.
+        if(this.combatTarget||this.navalAutoFire||this.combatActive)return;
         this.navigateToTreasure(clickedTreasure);
         return;
       }
@@ -2263,10 +2268,8 @@ export class WorldRuntime {
         return;
       }
       if(e.target?.closest?.('[data-combat-clickable="true"]'))return;
-      // While auto-fire is armed, clicking the ocean is a navigation command,
-      // not a combat cancellation. Keep the target locked so the player can
-      // maneuver and continue firing while it remains in range.
-      if(!this.navalAutoFire)this.clearCombatTarget({hideAction:true});
+      // O oceano só muda a rota. Um alvo naval fica travado até o jogador
+      // selecionar outro navio ou ele efetivamente sair do alcance.
       this.clearTreasureTarget();
 
       const target=screenPointToWorld(e.clientX,e.clientY,{
@@ -4088,35 +4091,41 @@ export class WorldRuntime {
     if(this.combatTarget){
       if(this.isClickableCombatShip(this.combatTarget)){
         const entity=this.combatTarget;
-        this.nearby=entity;
-        const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
-        const safeAsset=asset.replace(/["\\]/g,"");
-        this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
-        this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
-        const hp=this.navalHpState(entity);
-        const playerStats=this.playerNavalCombatStats();
-        const distanceToTarget=Math.round(this.navalTargetDistance(entity));
-        const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
-        if(this.navalPlayerHp<=0){
-          if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
-          if(this.actionButton){
-            this.actionButton.textContent="☠ Navio derrotado";
-            this.actionButton.disabled=true;
+        // Um alvo naval só é liberado automaticamente quando deixa o alcance
+        // efetivo dos canhões. Clique no mar e em tesouros não o cancelam.
+        if(!this.isNavalTargetInRange(entity)){
+          this.clearCombatTarget({hideAction:true});
+        }else{
+          this.nearby=entity;
+          const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
+          const safeAsset=asset.replace(/["\\]/g,"");
+          this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
+          this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
+          const hp=this.navalHpState(entity);
+          const playerStats=this.playerNavalCombatStats();
+          const distanceToTarget=Math.round(this.navalTargetDistance(entity));
+          const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+          if(this.navalPlayerHp<=0){
+            if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
+            if(this.actionButton){
+              this.actionButton.textContent="☠ Navio derrotado";
+              this.actionButton.disabled=true;
+            }
+            this.actionWrap.hidden=false;
+            return;
           }
+          if(this.actionButton)this.actionButton.disabled=false;
+          if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
+            ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
+            :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
+          if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
+            ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+            :"⚔ Atacar";
           this.actionWrap.hidden=false;
           return;
         }
-        if(this.actionButton)this.actionButton.disabled=false;
-        if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
-          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
-          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
-        if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
-          ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
-          :"⚔ Atacar";
-        this.actionWrap.hidden=false;
-        return;
       }
-      this.clearCombatTarget({hideAction:true});
+      if(this.combatTarget)this.clearCombatTarget({hideAction:true});
     }
 
     let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
