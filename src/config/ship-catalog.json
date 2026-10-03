@@ -602,7 +602,7 @@
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
-      "asset": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+      "asset": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
       "navigation": {
         "width": 230,
         "height": 230,
@@ -616,13 +616,13 @@
         "periodMs": 3600,
         "wake": true,
         "shadow": true,
-        "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+        "src": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
         "sprite": {
-          "src": "./assets/ships/navio_halloween_sprite_sheet_hq.webp",
+          "src": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
           "columns": 4,
-          "rows": 12,
+          "rows": 4,
           "imageWidth": 1600,
-          "imageHeight": 4800,
+          "imageHeight": 1600,
           "cellWidth": 400,
           "cellHeight": 400,
           "regions": {
@@ -633,113 +633,113 @@
               "height": 400
             },
             "nne": {
-              "x": 1200,
+              "x": 400,
               "y": 0,
               "width": 400,
               "height": 400
             },
             "ne": {
               "x": 800,
-              "y": 400,
+              "y": 0,
               "width": 400,
               "height": 400
             },
             "ene": {
-              "x": 400,
-              "y": 800,
+              "x": 1200,
+              "y": 0,
               "width": 400,
               "height": 400
             },
             "e": {
               "x": 0,
-              "y": 1200,
+              "y": 400,
               "width": 400,
               "height": 400
             },
             "ese": {
-              "x": 1200,
-              "y": 1200,
+              "x": 400,
+              "y": 400,
               "width": 400,
               "height": 400
             },
             "se": {
               "x": 800,
-              "y": 1600,
+              "y": 400,
               "width": 400,
               "height": 400
             },
             "sse": {
-              "x": 400,
-              "y": 2000,
+              "x": 1200,
+              "y": 400,
               "width": 400,
               "height": 400
             },
             "s": {
               "x": 0,
-              "y": 2400,
+              "y": 800,
               "width": 400,
               "height": 400
             },
             "ssw": {
-              "x": 1200,
-              "y": 2400,
+              "x": 400,
+              "y": 800,
               "width": 400,
               "height": 400
             },
             "sw": {
               "x": 800,
-              "y": 2800,
+              "y": 800,
               "width": 400,
               "height": 400
             },
             "wsw": {
-              "x": 400,
-              "y": 3200,
+              "x": 1200,
+              "y": 800,
               "width": 400,
               "height": 400
             },
             "w": {
               "x": 0,
-              "y": 3600,
+              "y": 1200,
               "width": 400,
               "height": 400
             },
             "wnw": {
-              "x": 1200,
-              "y": 3600,
+              "x": 400,
+              "y": 1200,
               "width": 400,
               "height": 400
             },
             "nw": {
               "x": 800,
-              "y": 4000,
+              "y": 1200,
               "width": 400,
               "height": 400
             },
             "nnw": {
-              "x": 400,
-              "y": 4400,
+              "x": 1200,
+              "y": 1200,
               "width": 400,
               "height": 400
             }
           },
           "directionFrames": {
             "n": 0,
-            "nne": 3,
-            "ne": 6,
-            "ene": 9,
-            "e": 12,
-            "ese": 15,
-            "se": 18,
-            "sse": 21,
-            "s": 24,
-            "ssw": 27,
-            "sw": 30,
-            "wsw": 33,
-            "w": 36,
-            "wnw": 39,
-            "nw": 42,
-            "nnw": 45
+            "nne": 1,
+            "ne": 2,
+            "ene": 3,
+            "e": 4,
+            "ese": 5,
+            "se": 6,
+            "sse": 7,
+            "s": 8,
+            "ssw": 9,
+            "sw": 10,
+            "wsw": 11,
+            "w": 12,
+            "wnw": 13,
+            "nw": 14,
+            "nnw": 15
           },
           "initialDirection": "n",
           "autoFrameExact": true
