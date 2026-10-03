@@ -13,5 +13,14 @@
     "pollMs": 250,
     "root": "multiplayer/rooms",
     "websocketURL": "wss://talked-gazette-harris-merchandise.trycloudflare.com"
+  },
+  "gameContent": {
+    "enabled": true,
+    "canonical": "firestore",
+    "pointerDocument": "gameConfig/current",
+    "releaseCollection": "gameReleases",
+    "requireAuthenticatedSession": true,
+    "allowOfflineCachedRelease": true,
+    "runtimeJsonFallbackInProduction": false
   }
 }
