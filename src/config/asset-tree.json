@@ -873,6 +873,27 @@
       },
       {
         "type": "directory",
+        "name": "hud",
+        "path": "assets/hud",
+        "children": [
+          {"type":"image","name":"bau_tesouro_halloween_ui.webp","path":"assets/hud/bau_tesouro_halloween_ui.webp"},
+          {"type":"image","name":"bau_tesouro_padrao_ui.webp","path":"assets/hud/bau_tesouro_padrao_ui.webp"},
+          {"type":"image","name":"conserto_navio_halloween_ui.webp","path":"assets/hud/conserto_navio_halloween_ui.webp"},
+          {"type":"image","name":"conserto_navio_padrao_ui.webp","path":"assets/hud/conserto_navio_padrao_ui.webp"},
+          {"type":"image","name":"halloween_hud_btn_cancelar_ataque.webp","path":"assets/hud/halloween_hud_btn_cancelar_ataque.webp"},
+          {"type":"image","name":"halloween_hud_btn_consertar_navio.webp","path":"assets/hud/halloween_hud_btn_consertar_navio.webp"},
+          {"type":"image","name":"halloween_hud_btn_iniciar_ataque.webp","path":"assets/hud/halloween_hud_btn_iniciar_ataque.webp"},
+          {"type":"image","name":"halloween_hud_btn_trocar_municao.webp","path":"assets/hud/halloween_hud_btn_trocar_municao.webp"},
+          {"type":"image","name":"halloween_hud_loja.webp","path":"assets/hud/halloween_hud_loja.webp"},
+          {"type":"image","name":"halloween_hud_missoes.webp","path":"assets/hud/halloween_hud_missoes.webp"},
+          {"type":"image","name":"moldura_de_loja_pirata_halloween_200kb-1.webp","path":"assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp"},
+          {"type":"image","name":"moldura_de_loja_pirata_halloween_v2.png","path":"assets/hud/moldura_de_loja_pirata_halloween_v2.png"},
+          {"type":"image","name":"painel_de_loja_pirata_de_halloween_200kb.webp","path":"assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp"},
+          {"type":"image","name":"painel_de_loja_pirata_halloween_v2.png","path":"assets/hud/painel_de_loja_pirata_halloween_v2.png"}
+        ]
+      },
+      {
+        "type": "directory",
         "name": "ui",
         "path": "assets/ui",
         "children": [
