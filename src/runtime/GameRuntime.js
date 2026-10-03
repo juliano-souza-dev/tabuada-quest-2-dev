@@ -42,6 +42,7 @@ export class GameRuntime {
     this.inventory=[];
     this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[]};
     this.playerShips={ownedShips:[],equippedShip:null};
+    this.playerCannons={owned:{},equippedByShip:{}};
     this.playerStateStore=null;
     this.multiplayer=null;
     this.multiplayerCleanups=[];
@@ -91,6 +92,7 @@ export class GameRuntime {
     this.actionCatalog=actionCatalog;
     this.pedagogyRuntime.setCurriculum(pedagogyCurriculum);
     this.ensurePlayerShips();
+    this.ensurePlayerCannons();
 
     this.sceneRuntime=new SceneRuntime(
       this.sceneHost,
@@ -353,7 +355,17 @@ export class GameRuntime {
       ownedShips:unique(ships.ownedShips),
       equippedShip:ships.equippedShip?String(ships.equippedShip):null
     };
+    const cannons=(
+      game.cannons&&typeof game.cannons==="object"?game.cannons:
+      state.cannons&&typeof state.cannons==="object"?state.cannons:
+      {}
+    );
+    this.playerCannons={
+      owned:cannons.owned&&typeof cannons.owned==="object"?clone(cannons.owned):{},
+      equippedByShip:cannons.equippedByShip&&typeof cannons.equippedByShip==="object"?clone(cannons.equippedByShip):{}
+    };
     this.ensurePlayerShips();
+    this.ensurePlayerCannons();
     this.writeSessionState();
     return true;
   }
@@ -369,6 +381,7 @@ export class GameRuntime {
           ownedShips:[...this.playerShips.ownedShips],
           equippedShip:this.playerShips.equippedShip
         },
+        cannons:clone(this.playerCannons),
         rewards:clone(this.rewards)
       }
     };
@@ -451,6 +464,120 @@ export class GameRuntime {
     return this.playerShips.equippedShip?clone(this.shipEntry(this.playerShips.equippedShip)):null;
   }
 
+  cannonEntry(id){
+    return (Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
+      .find(cannon=>String(cannon?.id||"")===String(id||""))||null;
+  }
+
+  shipCannonCapacity(shipId){
+    const ship=this.shipEntry(String(shipId||""));
+    return Math.max(1,Math.floor(Number(ship?.combat?.cannonSlots)||1));
+  }
+
+  ensurePlayerCannons(){
+    const validCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
+      .filter(item=>item?.available!==false);
+    const validIds=new Set(validCannons.map(item=>String(item.id)));
+    const defaultId=String(this.cannonCatalog?.defaultCannonId||validCannons[0]?.id||"");
+    const owned={};
+    const sourceOwned=this.playerCannons?.owned&&typeof this.playerCannons.owned==="object"?this.playerCannons.owned:{};
+    for(const [id,qty] of Object.entries(sourceOwned)){
+      if(validIds.has(String(id))){
+        const count=Math.max(0,Math.floor(Number(qty)||0));
+        if(count>0)owned[String(id)]=count;
+      }
+    }
+    if(defaultId&&validIds.has(defaultId)&&!Object.values(owned).some(qty=>Number(qty)>0))owned[defaultId]=1;
+
+    const equippedByShip={};
+    const sourceEquipped=this.playerCannons?.equippedByShip&&typeof this.playerCannons.equippedByShip==="object"
+      ?this.playerCannons.equippedByShip:{};
+    for(const shipId of this.playerShips.ownedShips){
+      const capacity=this.shipCannonCapacity(shipId);
+      const requested=Array.isArray(sourceEquipped[shipId])?sourceEquipped[shipId].map(String):[];
+      const equipped=requested.filter(id=>validIds.has(id)).slice(0,capacity);
+      equippedByShip[shipId]=equipped;
+    }
+
+    const equippedShip=String(this.playerShips.equippedShip||"");
+    if(equippedShip&&Array.isArray(equippedByShip[equippedShip])&&equippedByShip[equippedShip].length===0){
+      const candidate=Object.entries(owned).find(([id,qty])=>validIds.has(id)&&Number(qty)>0)?.[0]||defaultId;
+      if(candidate&&validIds.has(candidate))equippedByShip[equippedShip]=[candidate];
+    }
+
+    // Owned is total inventory including equipped units. Ensure counts cover all equipped copies.
+    const equippedCounts={};
+    for(const ids of Object.values(equippedByShip)){
+      for(const id of ids)equippedCounts[id]=(equippedCounts[id]||0)+1;
+    }
+    for(const [id,count] of Object.entries(equippedCounts)){
+      owned[id]=Math.max(Number(owned[id])||0,count);
+    }
+
+    this.playerCannons={owned,equippedByShip};
+    return this.playerCannons;
+  }
+
+  getShipCannons(shipId=this.playerShips.equippedShip){
+    this.ensurePlayerCannons();
+    const id=String(shipId||"");
+    return [...(Array.isArray(this.playerCannons.equippedByShip[id])?this.playerCannons.equippedByShip[id]:[])];
+  }
+
+  getCannonStorage(){
+    this.ensurePlayerCannons();
+    const equippedCounts={};
+    for(const ids of Object.values(this.playerCannons.equippedByShip||{})){
+      for(const id of ids||[])equippedCounts[id]=(equippedCounts[id]||0)+1;
+    }
+    const result={};
+    for(const [id,total] of Object.entries(this.playerCannons.owned||{})){
+      result[id]=Math.max(0,Math.floor(Number(total)||0)-Math.floor(Number(equippedCounts[id])||0));
+    }
+    return result;
+  }
+
+  equipCannonToShip(cannonId,shipId=this.playerShips.equippedShip,{save=true}={}){
+    this.ensurePlayerCannons();
+    const cid=String(cannonId||"");
+    const sid=String(shipId||"");
+    if(!cid||!sid||!this.playerShips.ownedShips.includes(sid)||!this.cannonEntry(cid))return {ok:false,code:"invalid"};
+    const equipped=this.getShipCannons(sid);
+    const capacity=this.shipCannonCapacity(sid);
+    if(equipped.length>=capacity)return {ok:false,code:"ship_full",message:"O navio já está com todos os espaços de canhão ocupados."};
+    const storage=this.getCannonStorage();
+    if((Number(storage[cid])||0)<=0)return {ok:false,code:"not_in_storage",message:"Esse canhão não está disponível no estaleiro."};
+    equipped.push(cid);
+    this.playerCannons.equippedByShip[sid]=equipped;
+    if(save)this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:cannonequipped",{detail:{shipId:sid,cannonId:cid}}));
+    return {ok:true};
+  }
+
+  removeCannonFromShip(cannonId,shipId=this.playerShips.equippedShip,{save=true}={}){
+    this.ensurePlayerCannons();
+    const cid=String(cannonId||"");
+    const sid=String(shipId||"");
+    const equipped=this.getShipCannons(sid);
+    const index=equipped.indexOf(cid);
+    if(index<0)return {ok:false,code:"not_equipped"};
+    if(equipped.length<=1)return {ok:false,code:"last_cannon",message:"O navio precisa ter pelo menos 1 canhão equipado."};
+    equipped.splice(index,1);
+    this.playerCannons.equippedByShip[sid]=equipped;
+    if(save)this.saveState();
+    globalThis.dispatchEvent?.(new CustomEvent("tq:cannonremoved",{detail:{shipId:sid,cannonId:cid}}));
+    return {ok:true};
+  }
+
+  grantCannon(cannonId,quantity=1,{save=true}={}){
+    this.ensurePlayerCannons();
+    const cid=String(cannonId||"");
+    if(!this.cannonEntry(cid))return false;
+    this.playerCannons.owned[cid]=Math.max(0,Number(this.playerCannons.owned[cid])||0)+Math.max(1,Math.floor(Number(quantity)||1));
+    if(save)this.saveState();
+    return true;
+  }
+
   async grantShip(id,{equip=false,save=true}={}){
     const ship=this.shipEntry(String(id||""));
     if(!ship||ship.available===false)return false;
@@ -466,6 +593,14 @@ export class GameRuntime {
     const shipId=String(id||"");
     const ship=this.shipEntry(shipId);
     if(!ship||ship.available===false||!this.playerShips.ownedShips.includes(shipId))return false;
+    this.ensurePlayerCannons();
+    if(this.getShipCannons(shipId).length<1){
+      const storage=this.getCannonStorage();
+      const candidate=Object.entries(storage).find(([,qty])=>Number(qty)>0)?.[0];
+      if(!candidate)return false;
+      const equipped=this.equipCannonToShip(candidate,shipId,{save:false});
+      if(!equipped.ok)return false;
+    }
     if(this.playerShips.equippedShip===shipId)return true;
 
     this.playerShips.equippedShip=shipId;
@@ -826,6 +961,7 @@ export class GameRuntime {
       state:restored||{},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
+      playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       shopBalances:()=>this.getWalletBalances(),
@@ -963,7 +1099,14 @@ export class GameRuntime {
           equippedShip:state.ships.equippedShip?String(state.ships.equippedShip):null
         };
       }
+      if(state.cannons&&typeof state.cannons==="object"){
+        this.playerCannons={
+          owned:state.cannons.owned&&typeof state.cannons.owned==="object"?clone(state.cannons.owned):{},
+          equippedByShip:state.cannons.equippedByShip&&typeof state.cannons.equippedByShip==="object"?clone(state.cannons.equippedByShip):{}
+        };
+      }
       this.ensurePlayerShips();
+      this.ensurePlayerCannons();
       return true;
     }catch{
       return false;
@@ -977,7 +1120,8 @@ export class GameRuntime {
         ships:{
           ownedShips:[...this.playerShips.ownedShips],
           equippedShip:this.playerShips.equippedShip
-        }
+        },
+        cannons:clone(this.playerCannons)
       };
       localStorage.setItem(this.persistenceKey,JSON.stringify(state));
       return true;
