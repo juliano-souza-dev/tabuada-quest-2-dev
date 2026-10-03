@@ -1086,6 +1086,28 @@ export class DevOverlay {
       .slice(0,64)||"oceano";
   }
 
+  async loadGameManifest(){
+    try{
+      const response=await fetch("./src/config/game.manifest.json?v=20261003-global-camera",{cache:"no-store"});
+      if(!response.ok)throw new Error("HTTP "+response.status);
+      const manifest=await response.json();
+      this.gameManifest={
+        ...manifest,
+        worldDefaults:{
+          ...(manifest.worldDefaults||{}),
+          camera:{
+            ...(manifest.worldDefaults?.camera||{}),
+            playZoom:Number(manifest.worldDefaults?.camera?.playZoom??0.4841)
+          }
+        }
+      };
+    }catch(error){
+      console.warn("Game manifest load failed",error);
+      this.gameManifest={schema:"tq.game-manifest",version:1,worldDefaults:{camera:{playZoom:0.4841}}};
+    }
+    return this.gameManifest;
+  }
+
   async loadWorldCatalog(){
     try{
       const response=await fetch("./src/config/world-catalog.json?v=20261003-0447",{cache:"no-store"});
