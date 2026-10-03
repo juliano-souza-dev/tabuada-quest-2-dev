@@ -454,7 +454,7 @@
       "npcBehavior": "stationary",
       "combat": {
         "hp": 5000000,
-        "attackRange": 1300,
+        "attackRange": 900,
         "attackCooldownMs": 1300,
         "damage": 4
       },
