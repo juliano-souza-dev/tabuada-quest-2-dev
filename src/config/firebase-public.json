@@ -9,9 +9,9 @@
   "multiplayer": {
     "enabled": true,
     "maxPlayersPerRoom": 5,
-    "snapshotHz": 5,
+    "snapshotHz": 20,
     "pollMs": 250,
-    "root": "multiplayer/rooms"
-  },
-  "functionsBaseURL": "https://southamerica-east1-tabuadaquest2.cloudfunctions.net"
+    "root": "multiplayer/rooms",
+    "websocketURL": "ws://127.0.0.1:8080"
+  }
 }
