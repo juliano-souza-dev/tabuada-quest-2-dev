@@ -326,7 +326,7 @@ export class WorldRuntime {
       y:Number(config.editor?.cameraY??this.player.y)
     };
     this.zoom=Number(config.editor?.zoom??0.58);
-    this.playZoom=clamp(Number(config.camera?.playZoom??1),.30,1.4);
+    this.playZoom=clamp(Number(config.camera?.playZoom??0.4841),.30,1.4);
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
