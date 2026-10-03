@@ -196,7 +196,12 @@ export class ShopOverlay{
         <button type="button" class="tq-world-shop__buy" data-buy>Comprar</button>`;
       row.querySelector(".tq-world-shop__item-name").textContent=item.name;
       row.querySelector(".tq-world-shop__item-info").textContent=item.description;
-      row.querySelector(".tq-world-shop__price b").textContent=money(item.price);
+      const priceLabel=item.currency==="rubies"||item.currency==="ruby"||item.currency==="gem"||item.currency==="diamonds"
+        ? "💎 "+money(item.price)
+        : item.currency==="event"
+          ? "Evento"
+          : "🪙 "+money(item.price);
+      row.querySelector(".tq-world-shop__price b").textContent=priceLabel;
       row.querySelector("[data-dec]").addEventListener("click",()=>this.changeQuantity(item.id,-1));
       row.querySelector("[data-inc]").addEventListener("click",()=>this.changeQuantity(item.id,1));
       row.querySelector("[data-buy]").addEventListener("click",()=>this.purchase(item));
