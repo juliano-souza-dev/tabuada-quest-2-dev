@@ -1,7 +1,7 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1840";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
@@ -13,6 +13,7 @@ export class WorldEditor {
     this.onEquipShip=typeof onEquipShip==="function"?onEquipShip:null;
     this.onEquipCannon=typeof onEquipCannon==="function"?onEquipCannon:null;
     this.onRemoveCannon=typeof onRemoveCannon==="function"?onRemoveCannon:null;
+    this.onStarterCannonEarned=typeof onStarterCannonEarned==="function"?onStarterCannonEarned:null;
     this.resolveShip=typeof resolveShip==="function"?resolveShip:null;
     this.resolveNpc=typeof resolveNpc==="function"?resolveNpc:null;
     this.resolveTreasure=typeof resolveTreasure==="function"?resolveTreasure:null;
@@ -104,6 +105,8 @@ export class WorldEditor {
     const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
     const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(world.test?.cannonIds)?world.test.cannonIds.map(String):[];
+    const yardState=this.getShipyardState?.()||{};
+    const equippedCannonIds=(yardState.ships||[]).find(ship=>ship?.equipped)?.cannons?.map(cannon=>String(cannon?.id||cannon))||[];
     const ammoCatalog=this.getAmmoCatalog()||{};
     const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
     const defaultAmmoId=String(ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
@@ -112,7 +115,7 @@ export class WorldEditor {
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
       cannonCatalog:availableCannons,
-      testCannonIds:requestedCannonIds.length?requestedCannonIds:[defaultCannonId],
+      testCannonIds:requestedCannonIds.length?requestedCannonIds:equippedCannonIds,
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,
@@ -122,6 +125,7 @@ export class WorldEditor {
       onEquipShip:id=>this.onEquipShip?.(id),
       onEquipCannon:id=>this.onEquipCannon?.(id),
       onRemoveCannon:(cannonId,shipId)=>this.onRemoveCannon?.(cannonId,shipId),
+      onStarterCannonEarned:()=>this.onStarterCannonEarned?.(),
       soundCatalog:this.getSoundCatalog(),
       resolveShip:this.resolveShip,
       resolveNpc:this.resolveNpc,

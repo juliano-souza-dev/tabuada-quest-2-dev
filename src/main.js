@@ -3,7 +3,7 @@ import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-0217";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
-import { DevOverlay } from "./dev/DevOverlay.js?v=20261003-1830";
+import { DevOverlay } from "./dev/DevOverlay.js?v=20261003-1900";
 import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261002-1007";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20260930-1851";
 
@@ -241,6 +241,19 @@ if(worldTest){
     devPlayerState.save({...current,game:{...current.game,devInventory:{...inventory,cannons:storage},devShipyard:{...yard,mountedCannons:mounted, equippedShip:active.id}}},{sync:false});
     return {ok:true,message:"Canhão instalado no navio ativo."};
   };
+  const grantDevStarterCannon=()=>{
+    const catalog=devShipyardCatalog();
+    const cannonId=String(catalog.cannons.find(item=>item?.available!==false)?.id||"");
+    if(!cannonId)return {ok:false,message:"Nenhum canhão publicado está disponível."};
+    const {current,game,inventory}=readDevShipyard();
+    const cannons={...(inventory.cannons||{}),[cannonId]:Math.max(0,Number(inventory.cannons?.[cannonId])||0)+1};
+    devPlayerState.save({...current,game:{...game,devInventory:{...inventory,cannons}}},{sync:false});
+    const equipped=equipDevCannon(cannonId);
+    if(!equipped.ok)return equipped;
+    const active=getDevShipyardState().ships.find(ship=>ship.equipped);
+    const equippedCannonIds=(active?.cannons||[]).map(cannon=>String(cannon?.id||cannon));
+    return {ok:true,cannonId,cannonName:catalog.cannons.find(item=>String(item?.id||"")===cannonId)?.name||cannonId,equippedCannonIds};
+  };
   const removeDevCannon=(id,shipId)=>{
     const {current,game,inventory,yard}=readDevShipyard();
     const installed=[...(yard.mountedCannons?.[shipId]||[])];
@@ -266,6 +279,7 @@ if(worldTest){
     onEquipShip:equipDevShip,
     onEquipCannon:equipDevCannon,
     onRemoveCannon:removeDevCannon,
+    onStarterCannonEarned:grantDevStarterCannon,
     shopBalances:()=>{
       const rewards=devPlayerState.load()?.game?.rewards||{};
       return {

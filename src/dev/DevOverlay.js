@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261003-1222";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261003-1900";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1915";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1923";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-2118";
@@ -17,6 +17,7 @@ export class DevOverlay {
     this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
     this.onRemoveCannon=typeof options.onRemoveCannon==="function"?options.onRemoveCannon:null;
+    this.onStarterCannonEarned=typeof options.onStarterCannonEarned==="function"?options.onStarterCannonEarned:null;
     this.workspace="scene";this.worldCatalog=null;this.localWorlds=[];
     this.shipEditor=new ShipEditor({
       requestFrameAsset:context=>this.openShipFramePicker(context),
@@ -39,6 +40,7 @@ export class DevOverlay {
       onEquipShip:this.onEquipShip,
       onEquipCannon:this.onEquipCannon,
       onRemoveCannon:this.onRemoveCannon,
+      onStarterCannonEarned:this.onStarterCannonEarned,
       resolveShip:(shipId,role)=>this.resolveWorldShipProfile(shipId,role),
       resolveNpc:npcId=>this.npcEditor?.resolveForWorld?.(npcId)||null,
       resolveTreasure:treasureId=>this.treasureEditor?.resolve?.(treasureId)||null,
