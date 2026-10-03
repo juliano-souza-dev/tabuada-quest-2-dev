@@ -12,7 +12,7 @@
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
-      "asset": "./assets/ships/pirate_spritesheet_4x4_compressed.webp",
+      "asset": "./assets/ships/default_ship_galleon.webp",
       "acquisition": {
         "starter": true,
         "shop": false,
@@ -31,9 +31,9 @@
         "periodMs": 3600,
         "wake": true,
         "shadow": true,
-        "src": "./assets/ships/pirate_spritesheet_4x4_compressed.webp",
+        "src": "./assets/ships/default_ship_galleon.webp",
         "sprite": {
-          "src": "./assets/ships/pirate_spritesheet_4x4_compressed.webp",
+          "src": "./assets/ships/default_ship_galleon.webp",
           "columns": 4,
           "rows": 4,
           "imageWidth": 1600,
