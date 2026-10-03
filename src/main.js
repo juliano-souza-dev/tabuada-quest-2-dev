@@ -3,7 +3,7 @@ import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20261003-2024-auto-target";
-import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261003-2024-auto-target";
+import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261003-2046-fire-key";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20261003-2655";
 
 const app=document.querySelector("#app");
