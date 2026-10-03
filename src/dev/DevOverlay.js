@@ -1161,7 +1161,7 @@ export class DevOverlay {
         .map(([value,label])=>'<option value="'+value+'" '+(environmentPreset===value?'selected':'')+'>'+label+'</option>').join("");
       const backgroundOptions=this.worldBackgroundOptions(ocean.background);
       const number=(key,label,min,max,step="1")=>'<label class="tq-world-field"><span>'+label+'</span><input data-ocean-prop="'+key+'" type="number" min="'+min+'" max="'+max+'" step="'+step+'" value="'+this.escapeHtml(ocean[key]??"")+'"></label>';
-      const cameraPlayZoom=Math.max(.55,Math.min(1.4,Number(world.camera?.playZoom??1)));
+      const cameraPlayZoom=Math.max(.30,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
       const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"");
       const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
@@ -1365,9 +1365,9 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(2)+'x</output></span>'+
-              '<input data-world-camera-prop="playZoom" type="range" min="0.55" max="1.40" step="0.01" value="'+cameraPlayZoom+'">'+
+              '<input data-world-camera-prop="playZoom" type="range" min="0.30" max="1.40" step="0.01" value="'+cameraPlayZoom+'">'+
             '</label>'+
-            '<div class="tq-world-camera-scale"><small>0.55x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
+            '<div class="tq-world-camera-scale"><small>0.30x · mais longe</small><small>1.00x · padrão</small><small>1.40x · mais perto</small></div>'+
             '<small class="tq-world-editor-note">Esse valor é salvo neste oceano. Afeta somente o enquadramento visual no Play, sem mudar velocidade, física ou colisões.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Minimapa</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
