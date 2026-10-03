@@ -1770,3 +1770,83 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
 .tq-world-gameplay-toast{position:fixed;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 72px));z-index:690;transform:translateX(-50%);max-width:min(78vw,360px);padding:7px 12px;border-radius:999px;background:transparent;border:0;box-shadow:none;color:#fff;font:700 13px/1.25 system-ui,-apple-system,sans-serif;text-align:center;pointer-events:none;backdrop-filter:blur(5px);animation:tqGameplayToastIn .18s ease-out both}
 .tq-world-gameplay-toast.is-leaving{opacity:0;transform:translate(-50%,-5px);transition:opacity .18s ease,transform .18s ease}
 @keyframes tqGameplayToastIn{from{opacity:0;transform:translate(-50%,-5px)}to{opacity:1;transform:translate(-50%,0)}}
+
+
+/* Shop mobile calibration 2026-10-03: taller item cards + readable content */
+@media (orientation:portrait) and (max-width:720px){
+  .tq-world-shop__list{
+    left:7.4%;
+    right:7.4%;
+    top:39.1%;
+    bottom:10.6%;
+    gap:.65%;
+    padding:.25% 0 4%;
+  }
+  .tq-world-shop__slot{
+    width:100%;
+    aspect-ratio:2.68/1;
+    min-height:0;
+    background-size:100% 100%;
+  }
+  .tq-world-shop__item-image{
+    left:3.2%;
+    top:8.5%;
+    width:24.8%;
+    height:81%;
+  }
+  .tq-world-shop__item-image img{
+    max-width:92%;
+    max-height:92%;
+  }
+  .tq-world-shop__item-name{
+    left:29.2%;
+    top:8.2%;
+    width:40.5%;
+    height:26%;
+    padding:0 2%;
+    font-size:clamp(9px,2.15vw,12px);
+    line-height:1.02;
+  }
+  .tq-world-shop__item-info{
+    left:29.2%;
+    top:39%;
+    width:40.5%;
+    height:44%;
+    padding:2.5% 2.4%;
+    font-size:clamp(8px,1.8vw,11px);
+    line-height:1.18;
+  }
+  .tq-world-shop__price{
+    left:70.5%;
+    top:8.5%;
+    width:26.6%;
+    height:23%;
+    padding:0 8% 0 31%;
+  }
+  .tq-world-shop__price b{
+    font-size:clamp(9px,2vw,12px);
+  }
+  .tq-world-shop__quantity{
+    left:70.3%;
+    top:36.5%;
+    width:27%;
+    height:23%;
+  }
+  .tq-world-shop__quantity b{
+    font-size:clamp(10px,2.25vw,13px);
+  }
+  .tq-world-shop__buy{
+    left:70.3%;
+    top:62%;
+    width:27%;
+    height:27.5%;
+    font-size:clamp(9px,2vw,12px);
+  }
+  .tq-world-shop__feedback{
+    left:18%;
+    right:18%;
+    bottom:7.1%;
+    font-size:clamp(9px,1.8vw,11px);
+  }
+}
+
