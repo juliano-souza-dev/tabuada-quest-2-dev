@@ -114,7 +114,6 @@ if(flowTest){
     console.warn("[TQ Game] flow-test world override ignored",error);
   }
 
-if(flowTest){
   services=createLocalFlowTestServices();
   game.attachPlayerStateStore(services.playerState);
   game.attachMultiplayer?.(null);
@@ -127,7 +126,6 @@ if(flowTest){
     state:services.playerState.load()
   };
   globalThis.dispatchEvent?.(new CustomEvent("tq:auth-entry-ready",{detail}));
-  }
 }else{
   services=await installAuthRuntime(game,{
     configUrl:"./src/config/firebase-public.json?v=20260930-1851"
