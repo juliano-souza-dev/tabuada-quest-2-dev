@@ -29,6 +29,13 @@
       "src": "./assets/sound/ocean_water.mp3",
       "volume": 0.28,
       "loop": true
+    },
+    {
+      "id": "treasure-success",
+      "event": "treasure-success",
+      "src": "./assets/sound/sound_game_coins_win.wav",
+      "volume": 0.9,
+      "loop": false
     }
   ]
 }
