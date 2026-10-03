@@ -1,6 +1,7 @@
 import { GameAudio } from "./GameAudio.js?v=20261002-1740";
 import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20261001-1512";
 import { WORLD_ENVIRONMENT_PRESETS, environmentPreset } from "./WorldEnvironmentPresets.mjs?v=20261001-0850";
+import { computeWorldWeatherCycle } from "./WorldWeatherCycle.mjs?v=20261003-2000";
 import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
 import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1912";
 import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=20260930-1912";
@@ -168,6 +169,8 @@ export class WorldRuntime {
     this.audio=new GameAudio(options.soundCatalog||{sounds:[]});
     this.depthMaskEditId=null;
     this.mode=this.editorEnabled?"edit":"play";
+    this.environmentCycleStartedAt=performance.now();
+    this.environmentCycleSignature="";
     this.onEnterScene=options.onEnterScene||null;
     this.onEnterWorld=options.onEnterWorld||null;
     this.onSelectionChange=options.onSelectionChange||null;
@@ -4971,14 +4974,17 @@ export class WorldRuntime {
     return this.getPlayerConfig();
   }
 
-  environmentConfig(){
+  environmentConfig(time=performance.now()){
     const id=String(this.config.environment?.preset||"day");
     const preset=WORLD_ENVIRONMENT_PRESETS[id]?id:"day";
     const env=this.config.environment||{};
     const clouds=env.clouds&&typeof env.clouds==="object"?env.clouds:{};
+    const elapsed=Math.max(0,(Number(time)||0)-Number(this.environmentCycleStartedAt||0));
+    const cycle=computeWorldWeatherCycle(env.cycle||{},elapsed);
     return {
       preset,
-      weather:String(env.weather||environmentPreset(preset).weather||"none"),
+      weather:String(cycle.active?cycle.weather:(env.weather||environmentPreset(preset).weather||"none")),
+      cycle,
       clouds:{
         active:clouds.active!==false,
         density:clamp(Number(clouds.density??.5),0,1),
@@ -4991,8 +4997,22 @@ export class WorldRuntime {
     };
   }
 
-  applyEnvironmentVisual(){
-    const env=this.environmentConfig();
+  updateEnvironmentCycle(time=performance.now()){
+    const env=this.environmentConfig(time);
+    const signature=env.cycle?.active
+      ?env.cycle.phase+"|"+env.weather
+      :"static|"+env.weather;
+    if(signature===this.environmentCycleSignature)return false;
+    this.environmentCycleSignature=signature;
+    this.applyEnvironmentVisual(time);
+    return true;
+  }
+
+  applyEnvironmentVisual(time=performance.now()){
+    const env=this.environmentConfig(time);
+    this.environmentCycleSignature=env.cycle?.active
+      ?env.cycle.phase+"|"+env.weather
+      :"static|"+env.weather;
     if(this.combatArena){
       this.combatArena.className="tq-world-combat__arena tq-world-combat__arena--"+env.preset;
       this.combatArena.dataset.environment=env.preset;
@@ -5043,20 +5063,23 @@ export class WorldRuntime {
       }
     }
     if(!this.weatherEl)return;
-    const weather=["rain","snow","halloween"].includes(env.weather)?env.weather:"none";
+    const weather=["rain","snow","halloween","halloween-rain"].includes(env.weather)?env.weather:"none";
     if(this.weatherEl.dataset.weather===weather)return;
     this.weatherEl.dataset.weather=weather;
     this.weatherEl.className="tq-world-weather tq-world-weather--"+weather;
     this.weatherEl.replaceChildren();
-    const count=weather==="rain"?42:weather==="snow"?34:weather==="halloween"?16:0;
-    for(let i=0;i<count;i++){
+    const kinds=weather==="halloween-rain"
+      ?[...Array(42).fill("rain"),...Array(16).fill("halloween")]
+      :Array(weather==="rain"?42:weather==="snow"?34:weather==="halloween"?16:0).fill(weather);
+    kinds.forEach((kind,i)=>{
       const p=document.createElement("i");
+      p.dataset.weatherKind=kind;
       p.style.setProperty("--i",String(i));
       p.style.setProperty("--x",((i*37)%101)+"%");
       p.style.setProperty("--delay",(-((i*173)%2400))+"ms");
-      p.style.setProperty("--dur",(weather==="rain"?(700+(i%7)*70):weather==="snow"?(3600+(i%9)*260):(4200+(i%8)*340))+"ms");
+      p.style.setProperty("--dur",(kind==="rain"?(700+(i%7)*70):kind==="snow"?(3600+(i%9)*260):(4200+(i%8)*340))+"ms");
       this.weatherEl.append(p);
-    }
+    });
   }
 
   applyEnvironmentPreset(id="day"){
@@ -5101,6 +5124,8 @@ export class WorldRuntime {
         ...(this.config.environment||{}),
         ...structuredClone(patch.environment)
       };
+      this.environmentCycleStartedAt=performance.now();
+      this.environmentCycleSignature="";
       this.applyEnvironmentVisual();
     }
     if(patch.minimap&&typeof patch.minimap==="object"){
@@ -5792,6 +5817,7 @@ export class WorldRuntime {
     this.updateTreasurePopulation(time);
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
+    this.updateEnvironmentCycle(time);
     if(this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
       this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
