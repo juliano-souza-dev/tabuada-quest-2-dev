@@ -34,7 +34,8 @@
   },
   "player": {
     "defaultShipId": "pirate-default",
-    "grantDefaultShip": true
+    "grantDefaultShip": true,
+    "grantDefaultCannon": false
   },
   "afterAuth": {
     "kind": "world",
