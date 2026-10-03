@@ -1,4 +1,4 @@
-import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261003-2715";
+import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261003-3155";
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
