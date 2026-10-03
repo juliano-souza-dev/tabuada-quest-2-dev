@@ -1,6 +1,6 @@
 {
   "schema": "tq.treasure-catalog",
-  "version": 2,
+  "version": 1,
   "treasures": [
     {
       "id": "tesouro-ouro",
@@ -18,23 +18,6 @@
           "min": 1,
           "max": 2,
           "chance": 8
-        }
-      },
-      "behavior": {
-        "preset": "floating",
-        "immersion": 0.08,
-        "motion": {
-          "active": true,
-          "preset": "calm",
-          "speed": 38,
-          "heave": 24,
-          "pitch": 12,
-          "roll": 10,
-          "sway": 8
-        },
-        "effect": {
-          "category": "treasure",
-          "preset": "none"
         }
       }
     },
@@ -55,23 +38,6 @@
           "max": 5,
           "chance": 70
         }
-      },
-      "behavior": {
-        "preset": "glowing",
-        "immersion": 0.06,
-        "motion": {
-          "active": true,
-          "preset": "calm",
-          "speed": 34,
-          "heave": 18,
-          "pitch": 8,
-          "roll": 7,
-          "sway": 5
-        },
-        "effect": {
-          "category": "treasure",
-          "preset": "treasure-glint"
-        }
       }
     },
     {
@@ -90,23 +56,6 @@
           "min": 1,
           "max": 2,
           "chance": 8
-        }
-      },
-      "behavior": {
-        "preset": "glowing",
-        "immersion": 0.06,
-        "motion": {
-          "active": true,
-          "preset": "calm",
-          "speed": 34,
-          "heave": 18,
-          "pitch": 8,
-          "roll": 7,
-          "sway": 5
-        },
-        "effect": {
-          "category": "treasure",
-          "preset": "treasure-glint"
         }
       }
     }
