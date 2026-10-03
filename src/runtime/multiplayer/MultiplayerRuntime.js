@@ -30,7 +30,7 @@ export class MultiplayerRuntime extends EventTarget{
     if(!this.socketUrl||!this.worldId||typeof WebSocket==="undefined")return false;
     try{this.socket?.close()}catch{}
     console.info("[TQ WS] connecting",this.socketUrl,this.worldId);const ws=new WebSocket(this.socketUrl);this.socket=ws;this.socketReady=false;
-    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;console.info("[TQ WS] open",this.worldId);const st=this.auth.status();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
+    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;console.info("[TQ WS] open",this.worldId);const st=this.auth.status(),local=this.localPayload();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId,x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
     ws.addEventListener("message",event=>{if(ws!==this.socket)return;let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==="snapshot"){const uid=String(this.auth.status().uid||"");console.info("[TQ WS] snapshot","players="+(Array.isArray(data.players)?data.players.length:0),"bosses="+Object.keys(data.bosses||{}).length);this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:(data.players||[]).filter(p=>p.uid!==uid)}}));this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:data.bosses||{}}}));}
       else if(data.type==="boss.state"&&data.boss)this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
@@ -46,18 +46,22 @@ export class MultiplayerRuntime extends EventTarget{
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;this.shipId=String(shipId||"");this.displayName=String(displayName||"");
     console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);
     this.connectSocket();
-    await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
+    await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushRealtimeState(),Math.round(1000/this.snapshotHz));
     this.pollTimer=setInterval(()=>this.pollPlayers().catch(()=>{}),this.pollMs);await this.poll();return true;
   }
   localPayload(){
     const state=this.getLocalState?.()||{};const p=state.player||{};const status=this.auth.status();
     return {uid:status.uid,name:this.displayName||status.displayName||"Pirata",shipId:this.shipId,x:Number(p.x)||0,y:Number(p.y)||0,rotation:Number(p.rotation)||0,direction:String(p.direction||"n"),hp:Math.max(0,Number(state.navalPlayerHp)||0),updatedAt:Date.now(),online:true};
   }
+  pushRealtimeState(){
+    if(!this.worldId||!this.socketReady)return false;const local=this.localPayload();
+    return this.socketSend({type:"state",x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp});
+  }
   async pushPresence(force=false){
     if(!this.worldId||this.pushInFlight)return false;const now=Date.now();if(!force&&now-this.lastPush<80)return false;
     const uid=safeKey(this.auth.status().uid);if(!uid)return false;
     const local=this.localPayload();
-    this.socketSend({type:"state",x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp});
+    this.pushRealtimeState();
     this.pushInFlight=true;
     try{
       await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"PUT",body:this.localPayload()});
