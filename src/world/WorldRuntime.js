@@ -285,7 +285,7 @@ export class WorldRuntime {
       y:Number(config.editor?.cameraY??this.player.y)
     };
     this.zoom=Number(config.editor?.zoom??0.58);
-    this.playZoom=clamp(Number(config.camera?.playZoom??1),.55,1.4);
+    this.playZoom=clamp(Number(config.camera?.playZoom??1),.30,1.4);
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
@@ -4509,7 +4509,7 @@ export class WorldRuntime {
         ...structuredClone(patch.camera)
       };
       if(patch.camera.playZoom!==undefined){
-        this.playZoom=clamp(Number(patch.camera.playZoom)||1,.55,1.4);
+        this.playZoom=clamp(Number(patch.camera.playZoom)||1,.30,1.4);
         this.config.camera.playZoom=this.playZoom;
         if(this.mode==="play")this.zoom=this.playZoom;
       }
