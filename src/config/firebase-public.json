@@ -12,6 +12,6 @@
     "snapshotHz": 20,
     "pollMs": 250,
     "root": "multiplayer/rooms",
-    "websocketURL": "ws://127.0.0.1:8080"
+    "websocketURL": "wss://talked-gazette-harris-merchandise.trycloudflare.com"
   }
 }
