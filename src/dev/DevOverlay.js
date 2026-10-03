@@ -163,6 +163,8 @@ export class DevOverlay {
             <div class="tq-live-css__component" data-challenge-component-controls>
               <strong data-challenge-component-title>Conta</strong>
               <label class="tq-live-css__component-preview">Texto da conta <input data-challenge-component-text type="text" value="4 × 6 = ?" maxlength="32"></label>
+              <label class="tq-live-css__component-answer-index" hidden>Alternativa <select data-challenge-answer-index><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select></label>
+              <label class="tq-live-css__component-answer-text" hidden>Texto da alternativa <input data-challenge-answer-text type="text" value="24" maxlength="16"></label>
               <label>Display <select data-challenge-component-display><option value="block">Exibir</option><option value="none">Ocultar</option></select></label>
               <label>Deslocamento X <input data-challenge-component-x type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-x-output>0px</output></label>
               <label>Deslocamento Y <input data-challenge-component-y type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-y-output>0px</output></label>
@@ -245,6 +247,8 @@ export class DevOverlay {
     this.el.querySelector("[data-challenge-component]").addEventListener("change",()=>this.loadChallengeComponentControls());
     this.el.querySelector("[data-challenge-component-display]").addEventListener("change",()=>this.applyChallengeStyleControls());
     this.el.querySelector("[data-challenge-component-text]").addEventListener("input",()=>this.applyChallengeStyleControls());
+    this.el.querySelector("[data-challenge-answer-index]").addEventListener("change",()=>this.loadChallengeComponentControls());
+    this.el.querySelector("[data-challenge-answer-text]").addEventListener("input",()=>this.applyChallengeStyleControls());
     this.bindChallengeCanvasSelection();
 
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
@@ -511,11 +515,11 @@ export class DevOverlay {
     this.applyLiveCss(css,{persist:true});
   }
 
-  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",promptOffset:"0",promptSize:"72",optionsOffset:"0",slotHeight:"78",optionGap:"22",answerSize:"58",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb",components:{layout:{display:"block",x:"0",y:"0",scale:"100"},prompt:{display:"block",x:"0",y:"0",scale:"100",text:"4 × 6 = ?"},options:{display:"block",x:"0",y:"0",scale:"100"},answer:{display:"block",x:"0",y:"0",scale:"100"}}}}
+  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",promptOffset:"0",promptSize:"72",optionsOffset:"0",slotHeight:"78",optionGap:"22",answerSize:"58",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb",components:{layout:{display:"block",x:"0",y:"0",scale:"100"},prompt:{display:"block",x:"0",y:"0",scale:"100",text:"4 × 6 = ?"},options:{display:"block",x:"0",y:"0",scale:"100"},answer:{display:"block",x:"0",y:"0",scale:"100",items:[{display:"block",x:"0",y:"0",scale:"100",text:"24"},{display:"block",x:"0",y:"0",scale:"100",text:"20"},{display:"block",x:"0",y:"0",scale:"100",text:"18"},{display:"block",x:"0",y:"0",scale:"100",text:"28"}]}}}}
 
   normalizeChallengeStyle(value,kind){
     const base=this.defaultChallengeStyle(kind),source=value&&typeof value==="object"?value:{};
-    const components={};for(const key of Object.keys(base.components))components[key]={...base.components[key],...(source.components?.[key]||{})};
+    const components={};for(const key of Object.keys(base.components))components[key]={...base.components[key],...(source.components?.[key]||{})};components.answer.items=base.components.answer.items.map((item,index)=>({...item,...(source.components?.answer?.items?.[index]||{})}));
     return {...base,...source,kind,components};
   }
 
@@ -529,9 +533,10 @@ export class DevOverlay {
   challengeStyleValues(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");
     const value=name=>panel?.querySelector("[data-challenge-"+name+"]")?.value||"";
-    const kind=value("kind")||"treasure",selected=value("component")||"prompt";
+    const kind=value("kind")||"treasure",selected=value("component")||"prompt",answerIndex=Math.max(0,Math.min(3,Number(value("answer-index")||0)));
     const base=this.normalizeChallengeStyle(this.challengeStyleProfiles()[kind],kind);
     base.components[selected]={...base.components[selected],display:value("component-display")||"block",x:value("component-x")||"0",y:value("component-y")||"0",scale:value("component-scale")||"100",...(selected==="prompt"?{text:value("component-text")||"4 × 6 = ?"}:{})};
+    if(selected==="answer")base.components.answer.items[answerIndex]={display:value("component-display")||"block",x:value("component-x")||"0",y:value("component-y")||"0",scale:value("component-scale")||"100",text:value("answer-text")||""};
     return {...base,kind,maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",promptOffset:value("prompt-offset")||"0",promptSize:value("prompt-size")||"72",optionsOffset:value("options-offset")||"0",slotHeight:value("slot-height")||"78",optionGap:value("option-gap")||"22",answerSize:value("answer-size")||"58",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
   }
 
@@ -549,18 +554,21 @@ export class DevOverlay {
     const kind=panel.querySelector("[data-challenge-kind]")?.value||"treasure";
     const selected=panel.querySelector("[data-challenge-component]")?.value||"prompt";
     const value=style||this.normalizeChallengeStyle(this.challengeStyleProfiles()[kind],kind);
-    const component=value.components?.[selected]||this.defaultChallengeStyle(kind).components[selected];
+    const answerIndex=Math.max(0,Math.min(3,Number(panel.querySelector("[data-challenge-answer-index]")?.value||0)));const component=selected==="answer"?value.components.answer.items[answerIndex]:(value.components?.[selected]||this.defaultChallengeStyle(kind).components[selected]);
     const labels={layout:"Moldura",prompt:"Conta",options:"Grupo de alternativas",answer:"Alternativas"};
     const title=panel.querySelector("[data-challenge-component-title]");if(title)title.textContent=labels[selected]||selected;
     for(const [field,key] of Object.entries({"component-display":"display","component-x":"x","component-y":"y","component-scale":"scale","component-text":"text"})){const input=panel.querySelector("[data-challenge-"+field+"]");if(input)input.value=component[key]||""}
     const previewField=panel.querySelector("[data-challenge-component-text]");if(previewField)previewField.closest("label").hidden=selected!=="prompt";
+    const answerIndexField=panel.querySelector("[data-challenge-answer-index]");if(answerIndexField)answerIndexField.closest("label").hidden=selected!=="answer";
+    const answerTextField=panel.querySelector("[data-challenge-answer-text]");if(answerTextField){answerTextField.closest("label").hidden=selected!=="answer";answerTextField.value=component.text||""}
     this.syncChallengeStyleOutputs();
   }
 
   challengeCss(values=this.challengeStyleValues()){
     const selector=values.kind==="repair"?".tq-world-challenge.is-repair-challenge":".tq-world-challenge.is-treasure-challenge";
     const c=values.components||this.defaultChallengeStyle(values.kind).components,unit=item=>`translate(${item.x}px,${item.y}px) scale(${Number(item.scale||100)/100})`;
-    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{display:${c.layout.display}!important;width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important;transform:${unit(c.layout)}!important}\n${selector} .tq-world-challenge__prompt{display:${c.prompt.display}!important;width:max-content!important;min-width:max-content!important;white-space:nowrap!important;font-family:${values.font}!important;color:${values.promptColor}!important;font-size:min(5vw,${values.promptSize}px)!important;transform:translate(${c.prompt.x}px,calc(${values.promptOffset}px + ${c.prompt.y}px)) scale(${Number(c.prompt.scale||100)/100})!important}\n${selector} .tq-world-combat__options{display:${c.options.display==="none"?"none":"grid"}!important;gap:${values.optionGap}px!important;transform:translate(${c.options.x}px,calc(${values.optionsOffset}px + ${c.options.y}px)) scale(${Number(c.options.scale||100)/100})!important}\n${selector} .tq-world-combat__option{display:${c.answer.display}!important;min-height:${values.slotHeight}px!important;color:${values.answerColor}!important;font-size:min(4.2vw,${values.answerSize}px)!important;transform:${unit(c.answer)}!important}`;
+    const itemCss=c.answer.items.map((item,index)=>`${selector} .tq-world-combat__option:nth-child(${index+1}){display:${item.display}!important;transform:${unit(item)}!important}`).join("\n");
+    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{display:${c.layout.display}!important;width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important;transform:${unit(c.layout)}!important}\n${selector} .tq-world-challenge__prompt{display:${c.prompt.display}!important;width:max-content!important;min-width:max-content!important;white-space:nowrap!important;font-family:${values.font}!important;color:${values.promptColor}!important;font-size:min(5vw,${values.promptSize}px)!important;transform:translate(${c.prompt.x}px,calc(${values.promptOffset}px + ${c.prompt.y}px)) scale(${Number(c.prompt.scale||100)/100})!important}\n${selector} .tq-world-combat__options{display:${c.options.display==="none"?"none":"grid"}!important;gap:${values.optionGap}px!important;transform:translate(${c.options.x}px,calc(${values.optionsOffset}px + ${c.options.y}px)) scale(${Number(c.options.scale||100)/100})!important}\n${selector} .tq-world-combat__option{min-height:${values.slotHeight}px!important;color:${values.answerColor}!important;font-size:min(4.2vw,${values.answerSize}px)!important}\n${itemCss}`;
   }
 
   syncChallengeStyleOutputs(){
@@ -576,6 +584,7 @@ export class DevOverlay {
     const current=this.challengeStyleValues(),profiles=this.challengeStyleProfiles();profiles[current.kind]=current;this.saveChallengeStyleProfiles(profiles);
     const runtime=this.worldEditor?.runtime||this.runtime;
     if(runtime?.challengePrompt&&runtime.challengeWrap?.hidden===false)runtime.challengePrompt.textContent=current.components?.prompt?.text||"4 × 6 = ?";
+    if(runtime?.repairOptions&&runtime.challengeWrap?.hidden===false)runtime.repairOptions.querySelectorAll("button").forEach((button,index)=>{button.textContent=current.components?.answer?.items?.[index]?.text||""});
     const css=["treasure","repair"].map(kind=>this.challengeCss({...this.defaultChallengeStyle(kind),...(profiles[kind]||{}),kind})).join("\n\n");
     const editor=this.el?.querySelector("[data-live-css-editor]");if(editor)editor.value=css;
     this.applyLiveCss(css,{persist:true});
@@ -609,19 +618,19 @@ export class DevOverlay {
   bindChallengeCanvasSelection(){
     let drag=null;
     const host=()=>this.worldEditor?.runtime?.host||this.runtime?.host||this.root;
-    const select=component=>{
+    const select=(component,node=null)=>{
       const challenge=host()?.querySelector?.("[data-world-challenge]");
       const kind=challenge?.classList.contains("is-repair-challenge")?"repair":"treasure";
       this.toggleLiveCss(true);this.loadChallengeLiveCssPreset();
       const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
       const kindInput=panel.querySelector("[data-challenge-kind]");if(kindInput&&kindInput.value!==kind){kindInput.value=kind;this.loadChallengeProfileIntoControls(kind)}
-      const componentInput=panel.querySelector("[data-challenge-component]");if(componentInput){componentInput.value=component;this.loadChallengeComponentControls()}
+      const componentInput=panel.querySelector("[data-challenge-component]");if(componentInput){componentInput.value=component;const answerIndex=panel.querySelector("[data-challenge-answer-index]");if(component==="answer"&&answerIndex){answerIndex.value=String([...node.parentElement.children].indexOf(node))}this.loadChallengeComponentControls()}
       host()?.querySelectorAll?.("[data-tq-dev-component]").forEach(node=>node.classList.toggle("is-dev-selected",node.dataset.tqDevComponent===component));
     };
     host()?.addEventListener?.("pointerdown",event=>{
       if(this.mode!=="edit")return;
       const node=event.target.closest?.("[data-tq-dev-component]");if(!node)return;
-      event.preventDefault();event.stopPropagation();select(node.dataset.tqDevComponent);
+      event.preventDefault();event.stopPropagation();select(node.dataset.tqDevComponent,node);
       drag={x:event.clientX,y:event.clientY};try{node.setPointerCapture(event.pointerId)}catch{}
     },true);
     host()?.addEventListener?.("pointermove",event=>{
