@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2005-weather";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2020-flowfix";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-2450";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
