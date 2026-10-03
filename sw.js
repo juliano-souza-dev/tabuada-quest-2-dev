@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-v20261003-1054";
+const CACHE_NAME="tq-pwa-runtime-v20261003-1112";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
