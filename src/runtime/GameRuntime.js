@@ -1,6 +1,6 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-1202";
-import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261001-0854";
+import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-1210";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
 const clone=value=>structuredClone(value);
@@ -1006,12 +1006,17 @@ export class GameRuntime {
         const treasure=this.treasureEntry(String(treasureId||""));
         return treasure?clone(treasure):null;
       },
-      createPedagogyChallenge:({entity})=>this.pedagogyRuntime.createChallenge({
-        kind:entity?.type==="treasure"?"treasure":"world-interaction",
-        worldId,
-        entityId:entity?.id,
-        entityType:entity?.type
-      }),
+      createPedagogyChallenge:({entity})=>{
+        const starterCannon=entity?.type==="cannon-rescue";
+        return this.pedagogyRuntime.createChallenge({
+          kind:entity?.type==="treasure"?"treasure":(starterCannon?"combat":"world-interaction"),
+          worldId,
+          entityId:entity?.id,
+          entityType:entity?.type,
+          minimumFactor:starterCannon?2:1,
+          minimumProduct:starterCannon?6:1
+        });
+      },
       onPedagogyResult:result=>this.recordPedagogyResult({
         ...result,
         worldId
