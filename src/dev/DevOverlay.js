@@ -45,6 +45,7 @@ export class DevOverlay {
         <button data-drag class="tq-dev__drag" aria-label="Arrastar ferramentas" title="Arrastar">⠿</button>
         <button data-mode="edit" class="active">✥ <span>Editar</span></button>
         <button data-mode="config">⚙ <span>Config</span></button>
+        <button data-flow-test title="Abrir este fluxo no runtime real de produção">🧪 <span>Testar fluxo</span></button>
         <button data-mode="play">▶ <span>Play</span></button>
         <button data-export title="Exportar configuração global completa">⇩ <span>JSON Global</span></button>
         <button data-mold>▣ <span>Molde</span></button>
@@ -119,6 +120,7 @@ export class DevOverlay {
       </section>`;
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
+    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
@@ -3280,6 +3282,15 @@ export class DevOverlay {
     a.href=url;a.download=id+".scene.json";document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),0);
   }
+  testProductionFlow(){
+    const currentWorld=this.workspace==="world"?String(this.worldEditor?.getWorld?.()?.id||""):"";
+    const params=new URLSearchParams();
+    if(currentWorld)params.set("start","world:"+currentWorld);
+    params.set("devtools","1");
+    const url="./game.html"+(params.toString()?"?"+params.toString():"");
+    window.open(url,"tq-production-flow");
+  }
+
   setMode(mode){
     this.mode=mode;
     if(this.workspace==="world")this.worldEditor?.setMode(mode);
