@@ -10,7 +10,7 @@ import { directionForHeading, resolveDirectionalSource, directionalRegionStyle }
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261003-1118";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1202";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1222";
 import {
   normalizeCollision,
   inferCollisionAction,
