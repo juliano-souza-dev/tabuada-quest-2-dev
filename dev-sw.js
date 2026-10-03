@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-v20261002-2048";
+const CACHE_NAME="tq-dev-assets-v20261003-2655";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
