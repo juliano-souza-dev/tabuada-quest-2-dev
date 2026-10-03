@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261003-2035-region-gate";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261003-2055-global-camera";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
