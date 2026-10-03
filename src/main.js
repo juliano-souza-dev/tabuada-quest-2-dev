@@ -1,7 +1,6 @@
 import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261001-1934";
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-2450";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20261003-2535";
 import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261002-1007";
@@ -43,10 +42,33 @@ if(worldTest){
   const resolved=continuityScene?{scene:continuityScene}:resolver.resolve("login");
 
   const runtime=new SceneRuntime(app,{width:390,height:844},{editorEnabled:true});
-  const services=await installAuthRuntime(runtime,{
-    configUrl:"./src/config/firebase-public.json?v=20260930-1851"
-  });
   const devPlayerState=createDevPlayerState();
+  const devAuth={
+    status:()=>Object.freeze({
+      configured:false,
+      authenticated:true,
+      busy:false,
+      uid:DEV_PLAYER_UID,
+      email:"",
+      displayName:"Jogador DEV",
+      online:false,
+      developer:true,
+      localOnly:true
+    })
+  };
+  const services={
+    auth:devAuth,
+    playerState:devPlayerState,
+    getStatus:()=>Object.freeze({
+      ...devPlayerState.status(),
+      auth:devAuth.status(),
+      content:{source:"local-json",ready:true,developer:true}
+    })
+  };
+  runtime.registerAction("auth.google.signIn",()=>true,{label:"Sessão local DEV"});
+  runtime.registerAction("auth.restore",()=>true,{label:"Restaurar estado local DEV"});
+  runtime.registerAction("auth.signOut",()=>true,{label:"DEV local"});
+
   const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
   const pedagogyCurriculum=await pedagogyResponse.json();
@@ -299,7 +321,8 @@ if(worldTest){
     dev,
     auth:services.auth,
     playerState:devPlayerState,
-    firebasePlayerState:services.playerState,
+    firebasePlayerState:null,
+    persistenceMode:"local-only",
     pedagogyRuntime,
     pedagogyCurriculum,
     getAccessStatus:services.getStatus,
