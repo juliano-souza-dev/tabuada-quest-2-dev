@@ -301,7 +301,7 @@ export class NavalCombatWebGLRenderer{
     return {src,ready:entry?.ready===true,failed:entry?.failed===true};
   }
 
-  fire({from,to,duration=620,startTime=performance.now(),onImpact=null,ammo=null,impactKind="ship"}={}){
+  fire({from,to,duration=620,startTime=performance.now(),onImpact=null,resolveImpactKind=null,ammo=null,impactKind="ship"}={}){
     if(!this.init())return false;
     if(!from||!to)return false;
     const normalizedAmmo=ammo&&typeof ammo==="object"?ammo:{};
@@ -315,7 +315,8 @@ export class NavalCombatWebGLRenderer{
       impactKind:impactKind==="water"?"water":"ship",
       ammo:normalizedAmmo,
       fx,
-      onImpact:typeof onImpact==="function"?onImpact:null
+      onImpact:typeof onImpact==="function"?onImpact:null,
+      resolveImpactKind:typeof resolveImpactKind==="function"?resolveImpactKind:null
     };
     this.shots.push(shot);
     if(fx.muzzle.enabled){
@@ -356,6 +357,11 @@ export class NavalCombatWebGLRenderer{
       const elapsed=now-shot.startTime;
       if(elapsed>=shot.duration&&!shot.impactSpawned){
         shot.impactSpawned=true;
+        // Resolve no instante do impacto: o efeito visual e a regra de dano
+        // passam a usar o mesmo resultado (casco ou água).
+        if(shot.resolveImpactKind){
+          shot.impactKind=shot.resolveImpactKind()==="ship"?"ship":"water";
+        }
         const section=shot.impactKind==="water"?shot.fx.impactWater:shot.fx.impactShip;
         if(section.enabled){
           const piercing=shot.impactKind!=="water"&&String(shot.fx?.preset||"")==="piercing";
@@ -370,7 +376,7 @@ export class NavalCombatWebGLRenderer{
             seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
           });
         }
-        try{shot.onImpact?.()}catch(error){
+        try{shot.onImpact?.(shot.impactKind)}catch(error){
           console.warn("[TabuadaQuest] Naval impact callback failed:",error);
         }
       }
