@@ -222,7 +222,11 @@ export class DevOverlay {
       this.worldEditor.runtime.refreshShipProfile?.(shipId);
       if(this.mode==="config"&&!this.selected)this.renderWorldInspector();
     });
-    window.addEventListener("tq:treasureprofilechange",()=>{\n      const runtime=this.worldEditor?.runtime;\n      if(this.workspace==="world"&&runtime)runtime.rebuildTreasurePopulation?.({render:true});\n    });\n    window.addEventListener("tq:npcprofilechange",()=>{
+    window.addEventListener("tq:treasureprofilechange",()=>{
+      const runtime=this.worldEditor?.runtime;
+      if(this.workspace==="world"&&runtime)runtime.rebuildTreasurePopulation?.({render:true});
+    });
+    window.addEventListener("tq:npcprofilechange",()=>{
       if(this.workspace!=="world"||!this.worldEditor?.runtime)return;
       const world=this.worldEditor.getWorld();
       const population=world?.npcPopulation&&typeof world.npcPopulation==="object"
