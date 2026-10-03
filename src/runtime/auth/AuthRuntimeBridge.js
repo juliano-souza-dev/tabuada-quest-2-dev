@@ -1,4 +1,4 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261002-2103";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261003-0201";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20260930-0018";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20260930-0018";
 
