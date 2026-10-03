@@ -435,6 +435,8 @@ export class DevOverlay {
     const panel=this.el?.querySelector("[data-live-css-catalog-panel]");if(!panel)return;
     panel.querySelectorAll("[data-css-composition]").forEach(button=>button.classList.toggle("is-active",button.dataset.cssComposition===this.selectedCssComposition));
     const input=panel.querySelector("[data-css-composition-asset]");if(input)input.value=this.compositionAssets()[this.selectedCssComposition]||"";
+    const challengeControls=this.el?.querySelector("[data-challenge-style-controls]");
+    if(challengeControls)challengeControls.hidden=!(["treasure","repair"].includes(this.selectedCssComposition));
     if(this.selectedCssComposition==="shop")this.loadShopLiveCssPreset();
     if(this.selectedCssComposition==="treasure"||this.selectedCssComposition==="repair"){this.loadChallengeLiveCssPreset();const kindInput=this.el.querySelector("[data-challenge-kind]");if(kindInput){kindInput.value=this.selectedCssComposition;this.loadChallengeProfileIntoControls(this.selectedCssComposition);this.applyChallengeStyleControls()}}
     this.previewCssComposition(this.selectedCssComposition);
@@ -442,9 +444,10 @@ export class DevOverlay {
   previewCssComposition(kind){
     const runtime=this.worldEditor?.runtime||this.runtime;if(!runtime)return;
     runtime.shopOverlay?.close?.();runtime.shipyardOverlay?.close?.();
+    const wrap=runtime.challengeWrap||runtime.host?.querySelector?.("[data-world-challenge]");
+    if(wrap)wrap.hidden=true;
     if(kind==="shop"){runtime.shopOverlay?.open?.();return}
     if(kind==="shipyard"){runtime.shipyardOverlay?.open?.();return}
-    const wrap=runtime.challengeWrap||runtime.host?.querySelector?.("[data-world-challenge]");
     const prompt=runtime.challengePrompt||runtime.host?.querySelector?.("[data-world-challenge-prompt]");
     const options=runtime.repairOptions||runtime.host?.querySelector?.("[data-world-repair-options]");
     if(!wrap||!prompt||!options)return;
