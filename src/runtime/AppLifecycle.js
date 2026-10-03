@@ -175,10 +175,12 @@ export function installAppLifecycle({dev=null,runtime=null}={}){
     }
   });
 
-  registerPWA().then(result=>{
-    registration=result;
-    setTimeout(()=>checkForUpdate(true),1200);
-  });
+  if(!dev){
+    registerPWA().then(result=>{
+      registration=result;
+      setTimeout(()=>checkForUpdate(true),1200);
+    });
+  }
 
   const interval=setInterval(()=>checkForUpdate(),UPDATE_INTERVAL);
 
