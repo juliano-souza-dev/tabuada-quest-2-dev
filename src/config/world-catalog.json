@@ -1,6 +1,6 @@
 {
   "schema": "tq.world-catalog",
-  "version": 5,
+  "version": 6,
   "worlds": [
     {
       "id": "r1-enseada-aprendizes",
@@ -93,6 +93,14 @@
       "region": 0,
       "event": "halloween",
       "path": "./src/world/evento-halloween-mar-das-almas.world.json"
+    },
+    {
+      "id": "evento-halloween-baia-assombrada",
+      "name": "🎃 Baía Assombrada",
+      "type": "ocean",
+      "region": 0,
+      "event": "halloween",
+      "path": "./src/world/evento-halloween-baia-assombrada.world.json"
     }
   ]
 }
