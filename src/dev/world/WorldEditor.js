@@ -1,7 +1,7 @@
 import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-2035-region-gate";
 
 export class WorldEditor {
-  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
+  constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog,getWorldDefaults}={}){
     this.root=root;
     this.sceneRuntime=sceneRuntime||null;
     this.pedagogyRuntime=pedagogyRuntime||null;
@@ -20,6 +20,7 @@ export class WorldEditor {
     this.getCannonCatalog=typeof getCannonCatalog==="function"?getCannonCatalog:()=>({defaultCannonId:"cannon-basic",cannons:[]});
     this.getAmmoCatalog=typeof getAmmoCatalog==="function"?getAmmoCatalog:()=>({defaultAmmoId:"cannonball-standard",ammo:[]});
     this.getSoundCatalog=typeof getSoundCatalog==="function"?getSoundCatalog:()=>({sounds:[]});
+    this.getWorldDefaults=typeof getWorldDefaults==="function"?getWorldDefaults:()=>({camera:{playZoom:0.4841}});
     this.runtime=null;
     this.entry=null;
     this.sourceWorld=null;
@@ -115,6 +116,7 @@ export class WorldEditor {
     const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??10000)||0));
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
+      globalCamera:structuredClone(this.getWorldDefaults()?.camera||{}),
       cannonCatalog:availableCannons,
       // O estaleiro é a fonte do loadout quando há um navio ativo. Assim,
       // inclusive um navio sem canhões inicia sem poder disparar.
