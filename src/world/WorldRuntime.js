@@ -8,7 +8,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261003-1935";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261003-1118";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-1910";
@@ -4346,51 +4346,6 @@ export class WorldRuntime {
     }
   }
 
-  navalProjectilePlan({from,target,targetVelocity={x:0,y:0},projectileSpeed=620}={}){
-    const origin={x:Number(from?.x)||0,y:Number(from?.y)||0};
-    const destination={x:Number(target?.x)||0,y:Number(target?.y)||0};
-    const velocity={x:Number(targetVelocity?.x)||0,y:Number(targetVelocity?.y)||0};
-    const speed=Math.max(120,Number(projectileSpeed)||620);
-    const dx=destination.x-origin.x,dy=destination.y-origin.y;
-    const a=velocity.x*velocity.x+velocity.y*velocity.y-speed*speed;
-    const b=2*(dx*velocity.x+dy*velocity.y);
-    const c=dx*dx+dy*dy;
-    const discriminant=b*b-4*a*c;
-    let seconds=Math.sqrt(c)/speed;
-    if(discriminant>=0&&Math.abs(a)>.0001){
-      const root=Math.sqrt(discriminant);
-      const candidates=[(-b-root)/(2*a),(-b+root)/(2*a)].filter(value=>Number.isFinite(value)&&value>0);
-      if(candidates.length)seconds=Math.min(...candidates);
-    }else if(Math.abs(b)>.0001){
-      const linear=-c/b;
-      if(Number.isFinite(linear)&&linear>0)seconds=linear;
-    }
-    seconds=clamp(seconds,.12,2.2);
-    return {
-      to:{x:destination.x+velocity.x*seconds,y:destination.y+velocity.y*seconds},
-      duration:Math.round(seconds*1000)
-    };
-  }
-
-  navalProjectileHitsTarget(target,aimPoint,{width=96,height=96}={}){
-    if(!target||this.collected.has(target.id)||this.navalDestroying.has(target.id))return false;
-    // O casco é uma elipse orientada, não um ponto no centro do sprite. Isso
-    // permite que a bola atinja qualquer parte visível do navio.
-    const hull={
-      ...target,
-      type:String(target.type||"ship"),
-      width:Number(width)||96,
-      height:Number(height)||96,
-      visualX:Number(target.x)||0,
-      visualY:Number(target.y)||0,
-      visualRotation:Number(target.rotation)||0
-    };
-    const collision=normalizeCollision(target.collision||{
-      active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"combat"
-    },hull);
-    return resolveCircleVsEntity(aimPoint,16,hull,collision).collided;
-  }
-
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     const targetDistance=this.navalTargetDistance(entity);
@@ -4416,37 +4371,12 @@ export class WorldRuntime {
     for(const cannon of eligible){
       if(ammoRemaining<=0)break;
       const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-      const plan=this.navalProjectilePlan({
-        from:this.player,
-        target:entity,
-        targetVelocity:entity.npcNavigation,
-        projectileSpeed
-      });
-      let resolvedImpact=null;
-      const resolveImpact=()=>{
-        if(resolvedImpact===null){
-          resolvedImpact=this.navalProjectileHitsTarget(entity,plan.to,{
-            width:entity.width,height:entity.height
-          })?"ship":"water";
-        }
-        return resolvedImpact;
-      };
+      const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
       const fired=this.navalRenderer?.fire?.({
         from:{x:this.player.x,y:this.player.y},
-        to:plan.to,
-        duration:plan.duration,
-        ammo,
-        resolveImpactKind:resolveImpact,
-        onImpact:impactKind=>{
-          if(impactKind!=="ship"||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-          this.audio?.play("cannon-impact-ship");
-          const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
-          const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
-          if(coopBoss){
-            const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-            this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
-          }else this.applyDirectNavalDamage(entity,shotDamage);
-        }
+        to:{x:entity.x,y:entity.y},
+        duration,
+        ammo
       })===true;
       if(!fired)continue;
       this.audio?.play("cannon-shot");
@@ -4461,6 +4391,22 @@ export class WorldRuntime {
         const bossHp=this.navalHpState(entity);
         this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max}).catch?.(()=>{});
       }
+      setTimeout(()=>{
+        if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
+        const remainingDistance=Math.hypot(
+          Number(entity.x||0)-Number(this.player?.x||0),
+          Number(entity.y||0)-Number(this.player?.y||0)
+        );
+        if(coopBoss||remainingDistance<=Math.max(1,Number(cannon.range)||900)){
+          this.audio?.play("cannon-impact-ship");
+          const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+          const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
+          if(coopBoss){
+            const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+            this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
+          }else this.applyDirectNavalDamage(entity,shotDamage);
+        }
+      },duration);
     }
     if(!firedCount)return false;
 
@@ -4522,40 +4468,21 @@ export class WorldRuntime {
   fireNpcNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0||entity.devFrozen)return false;
     const stats=this.entityNavalCombatStats(entity);
-    const targetDistance=this.navalTargetDistance(entity);
-    if(targetDistance>stats.attackRange)return false;
-    const plan=this.navalProjectilePlan({
-      from:entity,
-      target:this.player,
-      targetVelocity:this.player,
-      projectileSpeed:620
-    });
-    const playerWidth=Number(this.config.player?.width)||108;
-    const playerHeight=Number(this.config.player?.height)||150;
-    let resolvedImpact=null;
-    const resolveImpact=()=>{
-      if(resolvedImpact===null){
-        resolvedImpact=this.navalProjectileHitsTarget(this.player,plan.to,{
-          width:playerWidth,height:playerHeight
-        })?"ship":"water";
-      }
-      return resolvedImpact;
-    };
+    if(this.navalTargetDistance(entity)>stats.attackRange)return false;
+    const duration=620;
     const fired=this.navalRenderer?.fire?.({
       from:{x:entity.x,y:entity.y},
-      to:plan.to,
-      duration:plan.duration,
-      resolveImpactKind:resolveImpact,
-      onImpact:impactKind=>{
-        if(impactKind!=="ship")return;
-        if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
-          this.audio?.play("cannon-impact-ship");
-          this.applyDirectPlayerNavalDamage(stats.damage,entity);
-        }
-      }
+      to:{x:this.player.x,y:this.player.y},
+      duration
     })===true;
     if(!fired)return false;
     this.audio?.play("cannon-shot");
+    setTimeout(()=>{
+      if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
+        this.audio?.play("cannon-impact-ship");
+        this.applyDirectPlayerNavalDamage(stats.damage,entity);
+      }
+    },duration);
     return true;
   }
 
