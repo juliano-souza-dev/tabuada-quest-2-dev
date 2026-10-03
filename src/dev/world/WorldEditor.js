@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-2030";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-2040";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
@@ -106,7 +106,8 @@ export class WorldEditor {
     const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(world.test?.cannonIds)?world.test.cannonIds.map(String):[];
     const yardState=this.getShipyardState?.()||{};
-    const equippedCannonIds=(yardState.ships||[]).find(ship=>ship?.equipped)?.cannons?.map(cannon=>String(cannon?.id||cannon))||[];
+    const equippedShip=(yardState.ships||[]).find(ship=>ship?.equipped);
+    const equippedCannonIds=equippedShip?.cannons?.map(cannon=>String(cannon?.id||cannon))||[];
     const ammoCatalog=this.getAmmoCatalog()||{};
     const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
     const defaultAmmoId=String(ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
@@ -115,7 +116,9 @@ export class WorldEditor {
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
       cannonCatalog:availableCannons,
-      testCannonIds:requestedCannonIds.length?requestedCannonIds:equippedCannonIds,
+      // O estaleiro é a fonte do loadout quando há um navio ativo. Assim,
+      // inclusive um navio sem canhões inicia sem poder disparar.
+      testCannonIds:equippedShip?equippedCannonIds:requestedCannonIds,
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,

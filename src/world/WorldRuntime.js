@@ -197,9 +197,9 @@ export class WorldRuntime {
     });
     this.shipyardOverlay=new ShipyardOverlay({
       getState:()=>this.getShipyardState?.()||{},
-      onEquipShip:id=>this.onEquipShip?.(id),
-      onEquipCannon:id=>this.onEquipCannon?.(id),
-      onRemoveCannon:(cannonId,shipId)=>this.onRemoveCannon?.(cannonId,shipId)
+      onEquipShip:async id=>this.syncShipyardAction(this.onEquipShip,id),
+      onEquipCannon:async id=>this.syncShipyardAction(this.onEquipCannon,id),
+      onRemoveCannon:async (cannonId,shipId)=>this.syncShipyardAction(this.onRemoveCannon,cannonId,shipId)
     });
     const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
     this.mobileHud=new MobileHudOverlay({
@@ -1239,10 +1239,28 @@ export class WorldRuntime {
     };
   }
 
+  syncEquippedCannonsFromShipyard(){
+    const yard=this.getShipyardState?.()||{};
+    const active=(Array.isArray(yard.ships)?yard.ships:[]).find(ship=>ship?.equipped===true);
+    const ids=(Array.isArray(active?.cannons)?active.cannons:[])
+      .map(cannon=>String(cannon?.id||cannon||""))
+      .filter(id=>id&&this.cannonCatalog.some(cannon=>String(cannon?.id||"")===id));
+    this.testCannonIds=ids;
+    if(!ids.length)this.stopNavalAutoFire({keepTarget:false});
+    return ids;
+  }
+
+  async syncShipyardAction(action,...args){
+    if(typeof action!=="function")return {ok:false,message:"Ação do estaleiro indisponível."};
+    const result=await action(...args);
+    if(result!==false&&result?.ok!==false)this.syncEquippedCannonsFromShipyard();
+    return result;
+  }
+
   playerCannonsInRange(entity){
     if(!this.isClickableCombatShip(entity))return [];
     const distance=this.navalTargetDistance(entity);
-    const cannons=(this.testCannonIds?.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
+    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     if(!cannons.length)return [];
@@ -1250,7 +1268,7 @@ export class WorldRuntime {
   }
 
   playerEffectiveCannonRange(){
-    const cannons=(this.testCannonIds?.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
+    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     return cannons.length
@@ -4379,7 +4397,7 @@ export class WorldRuntime {
     const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
       ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
     const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,999);
-    const cannons=(this.testCannonIds.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
+    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
     if(!cannons.length)return false;
