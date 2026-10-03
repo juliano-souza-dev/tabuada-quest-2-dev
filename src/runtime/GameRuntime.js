@@ -9,9 +9,12 @@ const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(
 
 export class GameRuntime {
   static async load(root,manifestUrl="./src/config/game.manifest.json",options={}){
-    const response=await fetch(manifestUrl,{cache:"no-store"});
-    if(!response.ok)throw new Error("Game manifest load failed: "+response.status);
-    const manifest=await response.json();
+    let manifest=options.contentStore?.json?.(manifestUrl)||null;
+    if(!manifest){
+      const response=await fetch(manifestUrl,{cache:"no-store"});
+      if(!response.ok)throw new Error("Game manifest load failed: "+response.status);
+      manifest=await response.json();
+    }
     const runtime=new GameRuntime(root,manifest,{...options,manifestUrl});
     await runtime.init();
     return runtime;
