@@ -34,7 +34,7 @@
     "sessionKey": "tq.game.runtime:v1"
   },
   "player": {
-    "defaultShipId": "pirate-default",
+    "defaultShipId": "ship-pirate-galleon-navio",
     "grantDefaultShip": true,
     "grantDefaultCannon": false
   },
