@@ -602,8 +602,8 @@
     "height": 8000
   },
   "environment": {
-    "preset": "calm",
-    "weather": "none",
+    "preset": "halloween",
+    "weather": "halloween",
     "clouds": {
       "active": true,
       "density": 0.55,
@@ -620,6 +620,13 @@
         "intensity": 0.1
       },
       "pumpkinGlow": true
+    },
+    "cycle": {
+      "active": true,
+      "normalDurationMs": 720000,
+      "rainDurationMs": 180000,
+      "normalWeather": "halloween",
+      "rainWeather": "halloween-rain"
     }
   },
   "test": {
