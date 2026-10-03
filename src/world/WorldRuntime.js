@@ -3828,6 +3828,19 @@ export class WorldRuntime {
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
 
+    const yard=this.getShipyardState?.()||{};
+    const storedTotal=Object.values(yard.storage&&typeof yard.storage==="object"?yard.storage:{})
+      .reduce((sum,value)=>sum+Math.max(0,Math.floor(Number(value)||0)),0);
+    const installedTotal=(Array.isArray(yard.ships)?yard.ships:[])
+      .reduce((sum,ship)=>sum+(Array.isArray(ship?.cannons)?ship.cannons.length:0),0);
+    if(storedTotal+installedTotal>0){
+      this.stopNavalAutoFire({keepTarget:true});
+      if(this.actionMessage)this.actionMessage.textContent="Você possui canhão, mas nenhum está equipado neste navio.";
+      this.showGameplayToast("⚓ Equipe um canhão no estaleiro");
+      this.shipyardOverlay?.open?.();
+      return false;
+    }
+
     this.stopNavalAutoFire({keepTarget:true});
     this.stopForChallenge();
     if(this.actionWrap)this.actionWrap.hidden=true;
@@ -3901,20 +3914,27 @@ export class WorldRuntime {
     }
 
     const granted=this.onStarterCannonEarned?.()||{ok:false};
-    const ids=Array.isArray(granted?.equippedCannonIds)
-      ?granted.equippedCannonIds.map(String)
-      :(granted?.cannonId?[String(granted.cannonId)]:[]);
-    this.testCannonIds=ids.filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-    if(!this.testCannonIds.length){
+    if(granted?.ok===false){
       if(this.challengeFeedback)this.challengeFeedback.textContent=
-        "Acertou, mas não foi possível equipar o canhão. Tente novamente.";
+        "Acertou, mas não foi possível conceder o canhão. Tente novamente.";
       return false;
     }
 
-    const name=String(granted?.cannonName||this.cannonCatalog.find(item=>String(item?.id||"")===this.testCannonIds[0])?.name||"Canhão do Marujo");
-    if(this.challengeFeedback)this.challengeFeedback.textContent="Acertou! "+name+" recebido e equipado.";
-    this.showGameplayToast("🎁 "+name+" recebido e equipado");
-    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
+    // Equipment is explicit. Winning a cannon adds it to inventory/storage only.
+    // The combat runtime must never infer an equipped cannon from ownership.
+    this.syncEquippedCannonsFromShipyard();
+    const name=String(granted?.cannonName||"Canhão do Marujo");
+    if(this.challengeFeedback)this.challengeFeedback.textContent=
+      granted?.alreadyOwned
+        ?"Você já possui um canhão. Equipe-o no estaleiro."
+        :"Acertou! "+name+" recebido. Agora equipe-o no estaleiro.";
+    this.showGameplayToast(granted?.alreadyOwned
+      ?"⚓ Equipe seu canhão no estaleiro"
+      :"🎁 "+name+" enviado ao depósito");
+    this.challengeTimer=setTimeout(()=>{
+      this.closeTreasureChallenge();
+      this.shipyardOverlay?.open?.();
+    },850);
     return true;
   }
 
