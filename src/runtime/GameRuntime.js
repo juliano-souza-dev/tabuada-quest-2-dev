@@ -26,6 +26,7 @@ export class GameRuntime {
     this.manifestUrl=options.manifestUrl||"";
     this.sceneCatalog=null;
     this.worldCatalog=null;
+    this.worldOverrides=new Map();
     this.shipCatalog=null;
     this.npcCatalog=null;
     this.treasureCatalog=null;
@@ -957,6 +958,25 @@ export class GameRuntime {
     throw new Error("Unknown scene: "+String(ref));
   }
 
+  setWorldOverride(world={}){
+    const snapshot=world&&typeof world==="object"?clone(world):null;
+    const id=String(snapshot?.id||"").trim();
+    if(!id)return false;
+    this.worldOverrides.set(id,snapshot);
+    if(!this.worldCatalog||typeof this.worldCatalog!=="object")this.worldCatalog={worlds:[]};
+    if(!Array.isArray(this.worldCatalog.worlds))this.worldCatalog.worlds=[];
+    if(!this.worldCatalog.worlds.some(entry=>String(entry?.id||"")===id)){
+      this.worldCatalog.worlds.push({
+        id,
+        name:String(snapshot.name||id),
+        type:String(snapshot.type||"ocean"),
+        path:null,
+        flowTestOverride:true
+      });
+    }
+    return true;
+  }
+
   worldEntry(ref){
     if(ref&&typeof ref==="object"){
       if(ref.path)return {...ref};
@@ -964,6 +984,7 @@ export class GameRuntime {
     }
     const worlds=Array.isArray(this.worldCatalog?.worlds)?this.worldCatalog.worlds:[];
     if(typeof ref==="string"){
+      if(this.worldOverrides.has(ref))return {id:ref,path:null,flowTestOverride:true};
       const found=worlds.find(entry=>entry.id===ref||entry.path===ref);
       if(found)return {...found};
       if(ref==="ocean-prototype"){
@@ -1361,14 +1382,19 @@ export class GameRuntime {
     }
 
     let sourceWorld;
-    try{
-      sourceWorld=await this.loadJson(entry.path);
-    }catch(error){
-      const fallback=entry.id&&this.worldEntry(entry.id);
-      if(!fallback?.path||fallback.path===entry.path)throw error;
-      console.warn("[TQ Game] stale world path recovered",entry.path,"->",fallback.path);
-      sourceWorld=await this.loadJson(fallback.path);
-      entry.path=fallback.path;
+    const overriddenWorld=entry.id?this.worldOverrides.get(String(entry.id)):null;
+    if(overriddenWorld){
+      sourceWorld=clone(overriddenWorld);
+    }else{
+      try{
+        sourceWorld=await this.loadJson(entry.path);
+      }catch(error){
+        const fallback=entry.id&&this.worldEntry(entry.id);
+        if(!fallback?.path||fallback.path===entry.path)throw error;
+        console.warn("[TQ Game] stale world path recovered",entry.path,"->",fallback.path);
+        sourceWorld=await this.loadJson(fallback.path);
+        entry.path=fallback.path;
+      }
     }
     const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
