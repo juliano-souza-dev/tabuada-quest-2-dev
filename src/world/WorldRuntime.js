@@ -1882,8 +1882,14 @@ export class WorldRuntime {
 
     const touchStart=event=>{
       if(pan)return;
-      if(isBlockedTarget(event.target))return;
-      const touch=event.touches?.[0];
+      // Keep HUD controls (especially the mobile joystick) independent from camera panning.
+      // A second finger on the world may pan the camera while the first keeps steering.
+      const touches=[...(event.changedTouches||[])];
+      const touch=touches.find(item=>{
+        const target=document.elementFromPoint?.(item.clientX,item.clientY)||event.target;
+        return !isBlockedTarget(target);
+      });
+      if(!touch)return;
       if(!touch)return;
       touchPan=touch.identifier;
       beginPan(touch.clientX,touch.clientY,"touch:"+touch.identifier);
