@@ -21,9 +21,10 @@ const showBootError=error=>{
   const span=app.querySelector("span");if(span)span.textContent=String(error?.message||error);
 };
 let game;
+let services;
 try{
 game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261001-1848");
-const services=await installAuthRuntime(game,{
+services=await installAuthRuntime(game,{
   configUrl:"./src/config/firebase-public.json?v=20260930-1851"
 });
 game.attachPlayerStateStore(services.playerState);
