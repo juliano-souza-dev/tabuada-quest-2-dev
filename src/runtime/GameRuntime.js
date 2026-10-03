@@ -746,7 +746,16 @@ export class GameRuntime {
       this.worldRuntime=null;
     }
 
-    const sourceWorld=await this.loadJson(entry.path);
+    let sourceWorld;
+    try{
+      sourceWorld=await this.loadJson(entry.path);
+    }catch(error){
+      const fallback=entry.id&&this.worldEntry(entry.id);
+      if(!fallback?.path||fallback.path===entry.path)throw error;
+      console.warn("[TQ Game] stale world path recovered",entry.path,"->",fallback.path);
+      sourceWorld=await this.loadJson(fallback.path);
+      entry.path=fallback.path;
+    }
     const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
