@@ -5028,13 +5028,16 @@ export class WorldRuntime {
         if(this.entityLayer)this.renderEntities();
       }
       const now=performance.now(),targetX=Number(remote.x)||0,targetY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
-      const prev=entity.netTo||{x:entity.x,y:entity.y,rotation:entity.rotation,at:now-250};
-      const sampleMs=clamp(now-Number(entity.netSampleAt||now-250),120,600);
-      const vx=(targetX-Number(prev.x||targetX))/Math.max(.001,sampleMs/1000);
-      const vy=(targetY-Number(prev.y||targetY))/Math.max(.001,sampleMs/1000);
-      const lead=Math.min(.18,sampleMs/1000*.65);
-      entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-      entity.netTo={x:targetX+vx*lead,y:targetY+vy*lead,rotation:targetRotation,at:now+Math.max(90,sampleMs*.72)};
+      const sampleMs=clamp(now-Number(entity.netSampleAt||now-100),70,180);
+      const dx=targetX-Number(entity.x||0),dy=targetY-Number(entity.y||0);
+      const distance=Math.hypot(dx,dy);
+      if(distance>900){
+        entity.x=targetX;entity.y=targetY;entity.rotation=targetRotation;
+        entity.netFrom=null;entity.netTo=null;
+      }else{
+        entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
+        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(75,sampleMs*1.15)};
+      }
       entity.netSampleAt=now;
       entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");
     }
