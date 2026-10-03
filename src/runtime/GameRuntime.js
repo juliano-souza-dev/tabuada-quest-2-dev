@@ -272,7 +272,6 @@ export class GameRuntime {
     if(!this.playerStateStore)return false;
     try{
       this.captureCurrentState();
-      this.writeSessionState();
       const account=this.exportAccountState();
       this.accountState=clone(account);
       this.playerStateStore.save(account,{sync:true});
@@ -326,6 +325,15 @@ export class GameRuntime {
     this.playerStateStore=store||null;
     const status=this.playerStateStore?.status?.();
     this.authenticated=status?.authenticated===true;
+
+    // Legacy tq.game.runtime localStorage was a second source of truth and could
+    // diverge from the authenticated account. PlayerStateStore is now the only
+    // account persistence path: Firebase when online, account-scoped cache offline.
+    if(this.playerStateStore){
+      try{localStorage.removeItem(this.persistenceKey)}catch{}
+      this.localRestored=false;
+    }
+
     const state=this.playerStateStore?.load?.();
     if(state)this.importAccountState(state);
     queueMicrotask(()=>this.syncRewardClaimMarkers().catch(()=>{}));
@@ -364,7 +372,7 @@ export class GameRuntime {
       ?game.runtime
       :(state.schema==="tq.game-state"?state:null);
 
-    if(runtime&&!this.localRestored){
+    if(runtime){
       this.current=runtime.current?clone(runtime.current):this.current;
       this.history=Array.isArray(runtime.history)?clone(runtime.history):this.history;
       this.worldStates=runtime.worldStates&&typeof runtime.worldStates==="object"?clone(runtime.worldStates):this.worldStates;
@@ -404,7 +412,6 @@ export class GameRuntime {
     };
     this.ensurePlayerShips();
     this.ensurePlayerCannons();
-    this.writeSessionState();
     return true;
   }
 
@@ -1484,10 +1491,20 @@ export class GameRuntime {
   saveState(){
     try{
       this.captureCurrentState();
+
+      if(this.playerStateStore){
+        const account=this.exportAccountState();
+        this.accountState=clone(account);
+        this.playerStateStore.save(account,{sync:true});
+        return true;
+      }
+
+      // Fallback only for runtimes without an authenticated PlayerStateStore
+      // (DEV/editor/local harness). Production player state never uses this path.
       this.writeSessionState();
       return true;
     }catch(error){
-      console.warn("GameRuntime local state save failed",error);
+      console.warn("GameRuntime state save failed",error);
       return false;
     }
   }
