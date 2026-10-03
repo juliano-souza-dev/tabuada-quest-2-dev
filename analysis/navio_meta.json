@@ -1,0 +1,269 @@
+{
+  "source": "assets/ships/navio.webp",
+  "width": 1600,
+  "height": 1600,
+  "mode": "RGBA",
+  "has_alpha": true,
+  "columns": 4,
+  "rows": 4,
+  "cell_width": 400,
+  "cell_height": 400,
+  "frames": [
+    {
+      "frame": 0,
+      "row": 0,
+      "col": 0,
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        100,
+        40,
+        299,
+        359
+      ],
+      "opaque_ratio": 0.260781
+    },
+    {
+      "frame": 1,
+      "row": 0,
+      "col": 1,
+      "x": 400,
+      "y": 0,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        63,
+        39,
+        338,
+        361
+      ],
+      "opaque_ratio": 0.353194
+    },
+    {
+      "frame": 2,
+      "row": 0,
+      "col": 2,
+      "x": 800,
+      "y": 0,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        58,
+        44,
+        341,
+        355
+      ],
+      "opaque_ratio": 0.3541
+    },
+    {
+      "frame": 3,
+      "row": 0,
+      "col": 3,
+      "x": 1200,
+      "y": 0,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        26,
+        48,
+        374,
+        352
+      ],
+      "opaque_ratio": 0.39055
+    },
+    {
+      "frame": 4,
+      "row": 1,
+      "col": 0,
+      "x": 0,
+      "y": 400,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        20,
+        39,
+        380,
+        360
+      ],
+      "opaque_ratio": 0.427969
+    },
+    {
+      "frame": 5,
+      "row": 1,
+      "col": 1,
+      "x": 400,
+      "y": 400,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        38,
+        44,
+        361,
+        355
+      ],
+      "opaque_ratio": 0.378575
+    },
+    {
+      "frame": 6,
+      "row": 1,
+      "col": 2,
+      "x": 800,
+      "y": 400,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        50,
+        41,
+        350,
+        359
+      ],
+      "opaque_ratio": 0.33405
+    },
+    {
+      "frame": 7,
+      "row": 1,
+      "col": 3,
+      "x": 1200,
+      "y": 400,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        99,
+        26,
+        301,
+        374
+      ],
+      "opaque_ratio": 0.27745
+    },
+    {
+      "frame": 8,
+      "row": 2,
+      "col": 0,
+      "x": 0,
+      "y": 800,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        104,
+        27,
+        296,
+        372
+      ],
+      "opaque_ratio": 0.254994
+    },
+    {
+      "frame": 9,
+      "row": 2,
+      "col": 1,
+      "x": 400,
+      "y": 800,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        99,
+        26,
+        301,
+        374
+      ],
+      "opaque_ratio": 0.27745
+    },
+    {
+      "frame": 10,
+      "row": 2,
+      "col": 2,
+      "x": 800,
+      "y": 800,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        50,
+        41,
+        350,
+        359
+      ],
+      "opaque_ratio": 0.33405
+    },
+    {
+      "frame": 11,
+      "row": 2,
+      "col": 3,
+      "x": 1200,
+      "y": 800,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        32,
+        49,
+        367,
+        350
+      ],
+      "opaque_ratio": 0.379444
+    },
+    {
+      "frame": 12,
+      "row": 3,
+      "col": 0,
+      "x": 0,
+      "y": 1200,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        33,
+        50,
+        367,
+        350
+      ],
+      "opaque_ratio": 0.372713
+    },
+    {
+      "frame": 13,
+      "row": 3,
+      "col": 1,
+      "x": 400,
+      "y": 1200,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        46,
+        40,
+        353,
+        360
+      ],
+      "opaque_ratio": 0.369862
+    },
+    {
+      "frame": 14,
+      "row": 3,
+      "col": 2,
+      "x": 800,
+      "y": 1200,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        59,
+        38,
+        340,
+        362
+      ],
+      "opaque_ratio": 0.361044
+    },
+    {
+      "frame": 15,
+      "row": 3,
+      "col": 3,
+      "x": 1200,
+      "y": 1200,
+      "width": 400,
+      "height": 400,
+      "alpha_bbox": [
+        62,
+        39,
+        337,
+        361
+      ],
+      "opaque_ratio": 0.353194
+    }
+  ]
+}
