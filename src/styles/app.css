@@ -253,10 +253,9 @@
   .tq-dev__panel{
     left:8px;
     right:8px;
-    top:auto;
+    top:64px;
     bottom:8px;
     width:auto;
-    max-height:min(58dvh,520px);
     border-radius:14px;
   }
 }
