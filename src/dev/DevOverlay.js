@@ -3647,7 +3647,20 @@ export class DevOverlay {
     setTimeout(()=>URL.revokeObjectURL(url),0);
   }
   testProductionFlow(){
-    const currentWorld=this.workspace==="world"?String(this.worldEditor?.getWorld?.()?.id||""):"";
+    const worldSnapshot=this.workspace==="world"?this.worldEditor?.getWorld?.():null;
+    const currentWorld=String(worldSnapshot?.id||"");
+    try{
+      if(worldSnapshot&&currentWorld){
+        localStorage.setItem("tq.flowtest.world.override.v1",JSON.stringify({
+          savedAt:Date.now(),
+          world:structuredClone(worldSnapshot)
+        }));
+      }else{
+        localStorage.removeItem("tq.flowtest.world.override.v1");
+      }
+    }catch(error){
+      console.warn("[TabuadaQuest] Flow-test world snapshot failed",error);
+    }
     const params=new URLSearchParams();
     if(currentWorld)params.set("start","world:"+currentWorld);
     params.set("flowtest","1");
