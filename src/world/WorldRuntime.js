@@ -3824,9 +3824,9 @@ export class WorldRuntime {
       return;
     }
 
-    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro desapareceu.";
-    this.discardTreasure(entity);
-    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),700);
+    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro continua aqui.";
+    this.showGameplayToast("Não conseguiu pegar o tesouro",1500);
+    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),900);
   }
 
   entityInteraction(entity){
