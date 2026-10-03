@@ -207,7 +207,12 @@ export class PedagogyRuntime {
 
   createChallenge(context={}){
     const selection=this.allowedFacts(context);
-    const facts=selection.facts;
+    const minimumFactor=Math.max(1,finiteInteger(context.minimumFactor)??1);
+    const minimumProduct=Math.max(1,finiteInteger(context.minimumProduct)??1);
+    const facts=selection.facts.filter(fact=>
+      Math.min(Number(fact.a)||0,Number(fact.b)||0)>=minimumFactor
+      &&(Number(fact.a)||0)*(Number(fact.b)||0)>=minimumProduct
+    );
     if(!facts.length){
       return {
         available:false,
