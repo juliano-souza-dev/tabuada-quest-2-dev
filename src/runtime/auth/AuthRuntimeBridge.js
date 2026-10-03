@@ -1,6 +1,6 @@
 import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261003-0223";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20260930-0018";
-import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20260930-0018";
+import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261003-2350";
 
 export async function installAuthRuntime(runtime,{configUrl="./src/config/firebase-public.json"}={}){
   const response=await fetch(configUrl,{cache:"no-store"});
