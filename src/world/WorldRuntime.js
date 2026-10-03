@@ -2961,6 +2961,11 @@ export class WorldRuntime {
       entity.el.style.top=entity.visualY+"px";
       entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
       entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
+      if(entity.nameEl){
+        entity.nameEl.style.left=entity.visualX+"px";
+        entity.nameEl.style.top=(entity.visualY+Math.max(18,Number(entity.height)||96)*Math.abs(scaleY)*.54+10)+"px";
+        entity.nameEl.hidden=entity.el.hidden===true;
+      }
       if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
       const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
