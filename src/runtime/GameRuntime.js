@@ -24,6 +24,7 @@ export class GameRuntime {
     this.sceneCatalog=null;
     this.worldCatalog=null;
     this.shipCatalog=null;
+    this.npcCatalog=null;
     this.treasureCatalog=null;
     this.ammoCatalog=null;
     this.cannonCatalog=null;
@@ -71,10 +72,11 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
+      this.loadJson(catalogs.npcs||"./src/config/npc-catalog.json"),
       this.loadJson(catalogs.treasures||"./src/config/treasure-catalog.json"),
       this.loadJson(catalogs.ammo||"./src/config/ammo-catalog.json"),
       this.loadJson(catalogs.cannons||"./src/config/cannon-catalog.json"),
@@ -85,6 +87,7 @@ export class GameRuntime {
     this.sceneCatalog=sceneCatalog;
     this.worldCatalog=worldCatalog;
     this.shipCatalog=shipCatalog;
+    this.npcCatalog=npcCatalog;
     this.treasureCatalog=treasureCatalog;
     this.ammoCatalog=ammoCatalog;
     this.cannonCatalog=cannonCatalog;
@@ -424,6 +427,11 @@ export class GameRuntime {
 
   shipEntry(id){
     return (Array.isArray(this.shipCatalog?.ships)?this.shipCatalog.ships:[]).find(ship=>ship.id===id)||null;
+  }
+
+  npcEntry(id){
+    return (Array.isArray(this.npcCatalog?.npcs)?this.npcCatalog.npcs:[])
+      .find(npc=>String(npc?.id||"")===String(id||""))||null;
   }
 
   treasureEntry(id){
@@ -1309,6 +1317,10 @@ export class GameRuntime {
           shipName:ship.name||ship.id,
           name:ship.name||ship.id
         };
+      },
+      resolveNpc:npcId=>{
+        const npc=this.npcEntry(String(npcId||""));
+        return npc?clone(npc):null;
       },
       resolveTreasure:treasureId=>{
         const treasure=this.treasureEntry(String(treasureId||""));
