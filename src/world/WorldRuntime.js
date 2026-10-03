@@ -5003,8 +5003,15 @@ export class WorldRuntime {
         entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
         if(this.entityLayer)this.renderEntities();
       }
-      entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:performance.now()};
-      entity.netTo={x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,at:performance.now()+Math.max(120,1000/5)};
+      const now=performance.now(),targetX=Number(remote.x)||0,targetY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
+      const prev=entity.netTo||{x:entity.x,y:entity.y,rotation:entity.rotation,at:now-250};
+      const sampleMs=clamp(now-Number(entity.netSampleAt||now-250),120,600);
+      const vx=(targetX-Number(prev.x||targetX))/Math.max(.001,sampleMs/1000);
+      const vy=(targetY-Number(prev.y||targetY))/Math.max(.001,sampleMs/1000);
+      const lead=Math.min(.18,sampleMs/1000*.65);
+      entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
+      entity.netTo={x:targetX+vx*lead,y:targetY+vy*lead,rotation:targetRotation,at:now+Math.max(90,sampleMs*.72)};
+      entity.netSampleAt=now;
       entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");
     }
     for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
