@@ -182,6 +182,7 @@ export class WorldRuntime {
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
+    this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
     this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
@@ -225,6 +226,7 @@ export class WorldRuntime {
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
           repairAvailable:this.navalHostile.size===0&&!this.combatTarget&&!this.navalAutoFire,
+          missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           target:{
