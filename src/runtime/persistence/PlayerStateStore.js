@@ -3,6 +3,26 @@ function parsePayload(raw){
   try{return JSON.parse(raw)}catch{return null}
 }
 
+const hashClaimKey=value=>{
+  const text=String(value||"");
+  let h1=0x811c9dc5,h2=0x9e3779b9;
+  for(let i=0;i<text.length;i++){
+    const code=text.charCodeAt(i);
+    h1=Math.imul(h1^code,0x01000193)>>>0;
+    h2=Math.imul(h2^(code+i),0x85ebca6b)>>>0;
+  }
+  return h1.toString(36)+"-"+h2.toString(36)+"-"+text.length.toString(36);
+};
+
+const parseClaimDocument=document=>{
+  const fields=document?.fields||{};
+  return {
+    claimKey:String(fields.claimKey?.stringValue||""),
+    payload:parsePayload(String(fields.payload?.stringValue||""))||{},
+    createdAt:String(fields.createdAt?.timestampValue||"")
+  };
+};
+
 export class PlayerStateStore extends EventTarget {
   constructor(auth, config, options={}){
     super();
@@ -97,6 +117,76 @@ export class PlayerStateStore extends EventTarget {
       +"/databases/(default)/documents/players/"
       +encodeURIComponent(String(uid||""))
       +"/state/current";
+  }
+
+  rewardClaimsCollectionUrl(uid){
+    return "https://firestore.googleapis.com/v1/projects/"
+      +encodeURIComponent(this.config.projectId)
+      +"/databases/(default)/documents/players/"
+      +encodeURIComponent(String(uid||""))
+      +"/rewardClaims";
+  }
+
+  rewardClaimUrl(uid,claimKey){
+    return this.rewardClaimsCollectionUrl(uid)+"/"+encodeURIComponent(hashClaimKey(claimKey));
+  }
+
+  async reserveRewardClaim(claimKey,payload={}){
+    const auth=this.auth.status();
+    const key=String(claimKey||"").trim();
+    if(!key)return {ok:false,code:"invalid_claim",claim:null};
+    if(!auth.authenticated||!auth.uid)return {ok:false,code:"auth_required",claim:null};
+    if(globalThis.navigator?.onLine===false)return {ok:false,code:"offline",claim:null};
+
+    try{
+      const token=await this.auth.ensureFreshToken();
+      if(!token)return {ok:false,code:"auth_required",claim:null};
+
+      const documentId=hashClaimKey(key);
+      const response=await fetch(
+        this.rewardClaimsCollectionUrl(auth.uid)+"?documentId="+encodeURIComponent(documentId),
+        {
+          method:"POST",
+          headers:{
+            Authorization:"Bearer "+token,
+            "Content-Type":"application/json"
+          },
+          body:JSON.stringify({
+            fields:{
+              claimKey:{stringValue:key},
+              payload:{stringValue:JSON.stringify(payload&&typeof payload==="object"?payload:{})},
+              createdAt:{timestampValue:new Date().toISOString()}
+            }
+          })
+        }
+      );
+
+      if(response.ok){
+        const document=await response.json().catch(()=>null);
+        const claim=parseClaimDocument(document);
+        const result={ok:true,code:"reserved",claim};
+        this.emit("reward-claim",result);
+        return result;
+      }
+
+      if(response.status===409){
+        const existing=await fetch(this.rewardClaimUrl(auth.uid,key),{
+          headers:{Authorization:"Bearer "+token}
+        });
+        const document=existing.ok?await existing.json().catch(()=>null):null;
+        const result={ok:false,code:"duplicate",claim:parseClaimDocument(document)};
+        this.emit("reward-claim",result);
+        return result;
+      }
+
+      const result={ok:false,code:"claim_unavailable",claim:null,status:response.status};
+      this.emit("reward-claim",result);
+      return result;
+    }catch{
+      const result={ok:false,code:"claim_unavailable",claim:null};
+      this.emit("reward-claim",result);
+      return result;
+    }
   }
 
   async fetchRemote(){
