@@ -897,13 +897,13 @@ export class WorldRuntime {
       </div>
       <div class="tq-world-gameplay-toast" data-world-gameplay-toast role="status" aria-live="polite" hidden></div>
       <div class="tq-world-challenge" data-world-challenge hidden>
-        <section class="tq-world-challenge__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
+        <section class="tq-world-challenge__card" data-tq-dev-component="layout" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
           <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
           <small data-world-challenge-kicker>BAÚ DO TESOURO</small>
           <h2 id="tq-world-challenge-title" data-world-challenge-title>Resolva para recolher</h2>
-          <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
+          <strong class="tq-world-challenge__prompt" data-tq-dev-component="prompt" data-world-challenge-prompt></strong>
           <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
-          <div class="tq-world-combat__options" data-world-repair-options aria-label="Escolha a resposta"></div>
+          <div class="tq-world-combat__options" data-tq-dev-component="options" data-world-repair-options aria-label="Escolha a resposta"></div>
           <p class="tq-world-challenge__feedback" data-world-challenge-feedback aria-live="polite"></p>
         </section>
       </div>
@@ -3537,6 +3537,7 @@ export class WorldRuntime {
           const button=document.createElement("button");
           button.type="button";
           button.className="tq-world-combat__option";
+          button.dataset.tqDevComponent="answer";
           button.dataset.repairAnswer=String(value);
           button.textContent=String(value);
           this.repairOptions.append(button);
@@ -3676,6 +3677,7 @@ export class WorldRuntime {
           const button=document.createElement("button");
           button.type="button";
           button.className="tq-world-combat__option";
+          button.dataset.tqDevComponent="answer";
           button.dataset.repairAnswer=String(value);
           button.textContent=String(value);
           this.repairOptions.append(button);
@@ -3777,6 +3779,7 @@ export class WorldRuntime {
           const button=document.createElement("button");
           button.type="button";
           button.className="tq-world-combat__option";
+          button.dataset.tqDevComponent="answer";
           button.dataset.repairAnswer=String(value);
           button.textContent=String(value);
           this.repairOptions.append(button);
@@ -3861,7 +3864,7 @@ export class WorldRuntime {
       if(challenge?.available){
         for(const value of this.combatChoices(challenge)){
           const button=document.createElement("button");
-          button.type="button";button.className="tq-world-combat__option";
+          button.type="button";button.className="tq-world-combat__option";button.dataset.tqDevComponent="answer";
           button.dataset.repairAnswer=String(value);button.textContent=String(value);
           this.repairOptions.append(button);
         }

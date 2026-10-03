@@ -53,7 +53,10 @@ export class DevOverlay {
     this.configAreaOpenState=new Set();
     this.liveCssStorageKey="tq.dev.live-css:v1";
     this.challengeStyleStorageKey="tq.dev.challenge-styles:v1";
+    this.compositionAssetStorageKey="tq.dev.composition-assets:v1";
+    this.selectedCssComposition="treasure";
     this.liveCssStyle=null;
+    this.compositionAssetStyle=null;
   }
   mount(){
     this.el=document.createElement("aside");this.el.className="tq-dev";
@@ -139,15 +142,32 @@ export class DevOverlay {
         </header>
         <div class="tq-live-css__body">
           <div class="tq-live-css__actions">
+            <button type="button" data-live-css-catalog>Composições</button>
             <button type="button" data-live-css-shop>Loja</button>
             <button type="button" data-live-css-challenge>Desafio</button>
             <button type="button" data-challenge-export>Exportar JSON</button>
             <button type="button" data-challenge-import>Importar JSON</button>
             <button type="button" data-live-css-clear>Limpar</button>
           </div>
+          <section class="tq-live-css__catalog" data-live-css-catalog-panel>
+            <strong>Composições visuais</strong>
+            <div><button type="button" data-css-composition="shop">Loja</button><button type="button" data-css-composition="treasure">Baú do tesouro</button><button type="button" data-css-composition="repair">Conserto do navio</button><button type="button" data-css-composition="shipyard">Estaleiro</button></div>
+            <label>Asset de fundo / moldura <input data-css-composition-asset readonly placeholder="Selecione uma composição"></label>
+            <button type="button" data-css-composition-asset-pick>Escolher no catálogo de assets</button>
+            <small>O asset escolhido fica vinculado à composição selecionada e entra no JSON exportado do DEV.</small>
+          </section>
           <fieldset class="tq-live-css__challenge" data-challenge-style-controls hidden>
             <legend>Editor visual · desafio</legend>
             <label>Tipo lógico <select data-challenge-kind><option value="treasure">Coletar tesouro</option><option value="repair">Consertar navio</option></select></label>
+            <label>Elemento selecionado <select data-challenge-component><option value="layout">Moldura</option><option value="prompt">Conta</option><option value="options">Grupo de alternativas</option><option value="answer">Alternativas</option></select></label>
+            <div class="tq-live-css__component" data-challenge-component-controls>
+              <strong data-challenge-component-title>Conta</strong>
+              <label>Display <select data-challenge-component-display><option value="block">Exibir</option><option value="none">Ocultar</option></select></label>
+              <label>Deslocamento X <input data-challenge-component-x type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-x-output>0px</output></label>
+              <label>Deslocamento Y <input data-challenge-component-y type="range" min="-160" max="160" step="1" value="0"><output data-challenge-component-y-output>0px</output></label>
+              <label>Escala <input data-challenge-component-scale type="range" min="40" max="160" step="1" value="100"><output data-challenge-component-scale-output>100%</output></label>
+              <small>Toque/clique diretamente no elemento do popup para selecioná-lo. Arraste-o na tela para posição fina.</small>
+            </div>
             <label>Largura máxima <input data-challenge-max-width type="range" min="360" max="1080" step="10" value="1080"><output data-challenge-max-width-output>1080px</output></label>
             <label>Posição vertical <input data-challenge-top type="range" min="24" max="42" step=".5" value="33.5"><output data-challenge-top-output>33.5%</output></label>
             <label>Margem lateral <input data-challenge-side type="range" min="18" max="32" step=".5" value="25.5"><output data-challenge-side-output>25.5%</output></label>
@@ -213,11 +233,17 @@ export class DevOverlay {
     });
     this.el.querySelector("[data-live-css-shop]").addEventListener("click",()=>this.loadShopLiveCssPreset());
     this.el.querySelector("[data-live-css-challenge]").addEventListener("click",()=>this.loadChallengeLiveCssPreset());
+    this.el.querySelector("[data-live-css-catalog]").addEventListener("click",()=>this.toggleCompositionCatalog(true));
+    this.el.querySelectorAll("[data-css-composition]").forEach(button=>button.addEventListener("click",()=>this.selectCssComposition(button.dataset.cssComposition)));
+    this.el.querySelector("[data-css-composition-asset-pick]").addEventListener("click",()=>this.openCompositionAssetPicker());
     this.el.querySelector("[data-challenge-export]").addEventListener("click",()=>this.exportChallengeStyles());
     this.el.querySelector("[data-challenge-import]").addEventListener("click",()=>this.importChallengeStyles());
     this.el.querySelectorAll("[data-challenge-style-controls] input").forEach(input=>input.addEventListener("input",()=>this.applyChallengeStyleControls()));
     this.el.querySelector("[data-challenge-kind]").addEventListener("change",event=>{this.loadChallengeProfileIntoControls(event.currentTarget.value);this.applyChallengeStyleControls()});
     this.el.querySelector("[data-challenge-prompt-font]").addEventListener("change",()=>this.applyChallengeStyleControls());
+    this.el.querySelector("[data-challenge-component]").addEventListener("change",()=>this.loadChallengeComponentControls());
+    this.el.querySelector("[data-challenge-component-display]").addEventListener("change",()=>this.applyChallengeStyleControls());
+    this.bindChallengeCanvasSelection();
 
     this.el.querySelector("[data-asset-search]").addEventListener("input",()=>this.renderAssets());
     this.el.querySelector("[data-asset-up]").addEventListener("click",()=>this.navigateAssetDirectory(this.parentAssetPath(this.assetDirectoryPath)));
@@ -357,6 +383,8 @@ export class DevOverlay {
     if(show){
       this.closeToolPanels("css");
       panel.hidden=false;
+      this.toggleCompositionCatalog(true);
+      this.selectCssComposition(this.selectedCssComposition);
       const editor=panel.querySelector("[data-live-css-editor]");
       if(editor){
         editor.value=this.liveCssStyle?.textContent||localStorage.getItem(this.liveCssStorageKey)||"";
@@ -383,6 +411,55 @@ export class DevOverlay {
     this.applyLiveCss(css);
     const editor=this.el?.querySelector("[data-live-css-editor]");
     if(editor)editor.value=css;
+    this.applyCompositionAssets();
+  }
+
+  compositionAssets(){try{return JSON.parse(localStorage.getItem(this.compositionAssetStorageKey)||"{}")||{}}catch{return {}}}
+  saveCompositionAssets(assets){try{localStorage.setItem(this.compositionAssetStorageKey,JSON.stringify(assets))}catch{}}
+  compositionAssetCss(assets=this.compositionAssets()){
+    const safe=value=>String(value||"").replace(/["\\]/g,"\\$&");
+    const rules=[];
+    if(assets.treasure)rules.push(`.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{--tq-popup-layout:url("${safe(assets.treasure)}")!important}`);
+    if(assets.repair)rules.push(`.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{--tq-popup-layout:url("${safe(assets.repair)}")!important}`);
+    if(assets.shop)rules.push(`.tq-world-shop__panel{background:transparent url("${safe(assets.shop)}") center/contain no-repeat!important}`);
+    if(assets.shipyard)rules.push(`.tq-shipyard__panel{background:#03131e url("${safe(assets.shipyard)}") center/cover no-repeat!important}`);
+    return rules.join("\n");
+  }
+  applyCompositionAssets(){
+    if(!this.compositionAssetStyle){this.compositionAssetStyle=document.createElement("style");this.compositionAssetStyle.id="tq-dev-composition-assets";document.head.append(this.compositionAssetStyle)}
+    this.compositionAssetStyle.textContent=this.compositionAssetCss();
+  }
+  toggleCompositionCatalog(show){const panel=this.el?.querySelector("[data-live-css-catalog-panel]");if(panel)panel.hidden=!show}
+  selectCssComposition(kind){
+    this.selectedCssComposition=["shop","treasure","repair","shipyard"].includes(kind)?kind:"treasure";
+    const panel=this.el?.querySelector("[data-live-css-catalog-panel]");if(!panel)return;
+    panel.querySelectorAll("[data-css-composition]").forEach(button=>button.classList.toggle("is-active",button.dataset.cssComposition===this.selectedCssComposition));
+    const input=panel.querySelector("[data-css-composition-asset]");if(input)input.value=this.compositionAssets()[this.selectedCssComposition]||"";
+    if(this.selectedCssComposition==="shop")this.loadShopLiveCssPreset();
+    if(this.selectedCssComposition==="treasure"||this.selectedCssComposition==="repair"){this.loadChallengeLiveCssPreset();const kindInput=this.el.querySelector("[data-challenge-kind]");if(kindInput){kindInput.value=this.selectedCssComposition;this.loadChallengeProfileIntoControls(this.selectedCssComposition);this.applyChallengeStyleControls()}}
+    this.previewCssComposition(this.selectedCssComposition);
+  }
+  previewCssComposition(kind){
+    const runtime=this.worldEditor?.runtime||this.runtime;if(!runtime)return;
+    runtime.shopOverlay?.close?.();runtime.shipyardOverlay?.close?.();
+    if(kind==="shop"){runtime.shopOverlay?.open?.();return}
+    if(kind==="shipyard"){runtime.shipyardOverlay?.open?.();return}
+    const wrap=runtime.challengeWrap||runtime.host?.querySelector?.("[data-world-challenge]");
+    const prompt=runtime.challengePrompt||runtime.host?.querySelector?.("[data-world-challenge-prompt]");
+    const options=runtime.repairOptions||runtime.host?.querySelector?.("[data-world-repair-options]");
+    if(!wrap||!prompt||!options)return;
+    runtime.applyPopupLayout?.(kind==="repair"?"repair-ship":"collect-treasure");
+    wrap.hidden=false;wrap.classList.toggle("is-treasure-challenge",kind==="treasure");wrap.classList.toggle("is-repair-challenge",kind==="repair");
+    const title=runtime.challengeTitle||runtime.host?.querySelector?.("[data-world-challenge-title]");if(title)title.textContent=kind==="repair"?"Acerte para restaurar 25 HP":"Resolva para recolher";
+    prompt.textContent="4 × 6 = ?";options.hidden=false;options.replaceChildren();
+    for(const answer of ["24","20","18","28"]){const button=document.createElement("button");button.type="button";button.className="tq-world-combat__option";button.dataset.tqDevComponent="answer";button.textContent=answer;options.append(button)}
+    const hp=runtime.repairHp||runtime.host?.querySelector?.("[data-world-repair-hp]");if(hp)hp.hidden=true;
+    const feedback=runtime.challengeFeedback||runtime.host?.querySelector?.("[data-world-challenge-feedback]");if(feedback)feedback.textContent="Prévia DEV — clique na conta ou em uma alternativa para editar.";
+  }
+  openCompositionAssetPicker(){
+    this.assetPickTarget={kind:"css-composition-asset",composition:this.selectedCssComposition};
+    if(this.assetNodeIndex.has("assets/hud"))this.assetDirectoryPath="assets/hud";
+    const search=this.el.querySelector("[data-asset-search]");if(search)search.value="";this.toggleAssets(true);
   }
 
   loadShopLiveCssPreset(){
@@ -429,37 +506,60 @@ export class DevOverlay {
     this.applyLiveCss(css,{persist:true});
   }
 
-  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",promptOffset:"0",promptSize:"72",optionsOffset:"0",slotHeight:"78",optionGap:"22",answerSize:"58",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb"}}
+  defaultChallengeStyle(kind="treasure"){return {kind,maxWidth:"1080",top:"33.5",side:"25.5",promptOffset:"0",promptSize:"72",optionsOffset:"0",slotHeight:"78",optionGap:"22",answerSize:"58",font:"system-ui,sans-serif",promptColor:"#24101f",answerColor:"#fff3bb",components:{layout:{display:"block",x:"0",y:"0",scale:"100"},prompt:{display:"block",x:"0",y:"0",scale:"100"},options:{display:"block",x:"0",y:"0",scale:"100"},answer:{display:"block",x:"0",y:"0",scale:"100"}}}}
+
+  normalizeChallengeStyle(value,kind){
+    const base=this.defaultChallengeStyle(kind),source=value&&typeof value==="object"?value:{};
+    const components={};for(const key of Object.keys(base.components))components[key]={...base.components[key],...(source.components?.[key]||{})};
+    return {...base,...source,kind,components};
+  }
 
   challengeStyleProfiles(){
     try{const data=JSON.parse(localStorage.getItem(this.challengeStyleStorageKey)||"{}");if(data?.schema==="tq2.dev.challenge-styles"&&data?.profiles)return data.profiles}catch{}
     return {treasure:this.defaultChallengeStyle("treasure"),repair:this.defaultChallengeStyle("repair")};
   }
 
-  saveChallengeStyleProfiles(profiles){try{localStorage.setItem(this.challengeStyleStorageKey,JSON.stringify({schema:"tq2.dev.challenge-styles",version:1,profiles}))}catch{}}
+  saveChallengeStyleProfiles(profiles){try{localStorage.setItem(this.challengeStyleStorageKey,JSON.stringify({schema:"tq2.dev.challenge-styles",version:2,profiles}))}catch{}}
 
   challengeStyleValues(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");
     const value=name=>panel?.querySelector("[data-challenge-"+name+"]")?.value||"";
-    return {kind:value("kind")||"treasure",maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",promptOffset:value("prompt-offset")||"0",promptSize:value("prompt-size")||"72",optionsOffset:value("options-offset")||"0",slotHeight:value("slot-height")||"78",optionGap:value("option-gap")||"22",answerSize:value("answer-size")||"58",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
+    const kind=value("kind")||"treasure",selected=value("component")||"prompt";
+    const base=this.normalizeChallengeStyle(this.challengeStyleProfiles()[kind],kind);
+    base.components[selected]={display:value("component-display")||"block",x:value("component-x")||"0",y:value("component-y")||"0",scale:value("component-scale")||"100"};
+    return {...base,kind,maxWidth:value("max-width")||"1080",top:value("top")||"33.5",side:value("side")||"25.5",promptOffset:value("prompt-offset")||"0",promptSize:value("prompt-size")||"72",optionsOffset:value("options-offset")||"0",slotHeight:value("slot-height")||"78",optionGap:value("option-gap")||"22",answerSize:value("answer-size")||"58",font:value("prompt-font")||"system-ui,sans-serif",promptColor:value("prompt-color")||"#24101f",answerColor:value("answer-color")||"#fff3bb"};
   }
 
   loadChallengeProfileIntoControls(kind){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
-    const profiles=this.challengeStyleProfiles(),value={...this.defaultChallengeStyle(kind),...(profiles[kind]||{}),kind};
+    const profiles=this.challengeStyleProfiles(),value=this.normalizeChallengeStyle(profiles[kind],kind);
     const fields={kind:"kind","max-width":"maxWidth",top:"top",side:"side","prompt-offset":"promptOffset","prompt-size":"promptSize","options-offset":"optionsOffset","slot-height":"slotHeight","option-gap":"optionGap","answer-size":"answerSize","prompt-font":"font","prompt-color":"promptColor","answer-color":"answerColor"};
     for(const [field,key] of Object.entries(fields)){const input=panel.querySelector("[data-challenge-"+field+"]");if(input)input.value=value[key]}
+    this.loadChallengeComponentControls(value);
+    this.syncChallengeStyleOutputs();
+  }
+
+  loadChallengeComponentControls(style=null){
+    const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
+    const kind=panel.querySelector("[data-challenge-kind]")?.value||"treasure";
+    const selected=panel.querySelector("[data-challenge-component]")?.value||"prompt";
+    const value=style||this.normalizeChallengeStyle(this.challengeStyleProfiles()[kind],kind);
+    const component=value.components?.[selected]||this.defaultChallengeStyle(kind).components[selected];
+    const labels={layout:"Moldura",prompt:"Conta",options:"Grupo de alternativas",answer:"Alternativas"};
+    const title=panel.querySelector("[data-challenge-component-title]");if(title)title.textContent=labels[selected]||selected;
+    for(const [field,key] of Object.entries({"component-display":"display","component-x":"x","component-y":"y","component-scale":"scale"})){const input=panel.querySelector("[data-challenge-"+field+"]");if(input)input.value=component[key]}
     this.syncChallengeStyleOutputs();
   }
 
   challengeCss(values=this.challengeStyleValues()){
     const selector=values.kind==="repair"?".tq-world-challenge.is-repair-challenge":".tq-world-challenge.is-treasure-challenge";
-    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important}\n${selector} .tq-world-challenge__prompt{font-family:${values.font}!important;color:${values.promptColor}!important;font-size:min(5vw,${values.promptSize}px)!important;transform:translateY(${values.promptOffset}px)}\n${selector} .tq-world-combat__options{gap:${values.optionGap}px!important;transform:translateY(${values.optionsOffset}px)}\n${selector} .tq-world-combat__option{min-height:${values.slotHeight}px!important;color:${values.answerColor}!important;font-size:min(4.2vw,${values.answerSize}px)!important}`;
+    const c=values.components||this.defaultChallengeStyle(values.kind).components,unit=item=>`translate(${item.x}px,${item.y}px) scale(${Number(item.scale||100)/100})`;
+    return `/* Desafio DEV · tipo lógico: ${values.kind} */\n${selector} .tq-world-challenge__card{display:${c.layout.display}!important;width:min(94vw,calc(86dvh * 1.40625),${values.maxWidth}px)!important;padding:${values.top}% ${values.side}% 4%!important;transform:${unit(c.layout)}!important}\n${selector} .tq-world-challenge__prompt{display:${c.prompt.display}!important;font-family:${values.font}!important;color:${values.promptColor}!important;font-size:min(5vw,${values.promptSize}px)!important;transform:translate(${c.prompt.x}px,calc(${values.promptOffset}px + ${c.prompt.y}px)) scale(${Number(c.prompt.scale||100)/100})!important}\n${selector} .tq-world-combat__options{display:${c.options.display==="none"?"none":"grid"}!important;gap:${values.optionGap}px!important;transform:translate(${c.options.x}px,calc(${values.optionsOffset}px + ${c.options.y}px)) scale(${Number(c.options.scale||100)/100})!important}\n${selector} .tq-world-combat__option{display:${c.answer.display}!important;min-height:${values.slotHeight}px!important;color:${values.answerColor}!important;font-size:min(4.2vw,${values.answerSize}px)!important;transform:${unit(c.answer)}!important}`;
   }
 
   syncChallengeStyleOutputs(){
     const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
-    for(const [name,suffix] of [["max-width","px"],["top","%"],["side","%"],["prompt-offset","px"],["prompt-size","px"],["options-offset","px"],["slot-height","px"],["option-gap","px"],["answer-size","px"]]){
+    for(const [name,suffix] of [["max-width","px"],["top","%"],["side","%"],["prompt-offset","px"],["prompt-size","px"],["options-offset","px"],["slot-height","px"],["option-gap","px"],["answer-size","px"],["component-x","px"],["component-y","px"],["component-scale","%"]]){
       const input=panel.querySelector("[data-challenge-"+name+"]"),output=panel.querySelector("[data-challenge-"+name+"-output]");
       if(input&&output)output.textContent=input.value+suffix;
     }
@@ -491,11 +591,38 @@ export class DevOverlay {
     try{
       const payload=JSON.parse(raw);
       if(payload?.schema!=="tq2.dev.challenge-styles"||!payload?.profiles)throw new Error("schema");
-      const profiles={};for(const kind of ["treasure","repair"]){const value=payload.profiles[kind];if(value&&typeof value==="object")profiles[kind]={...this.defaultChallengeStyle(kind),...value,kind}}
+      const profiles={};for(const kind of ["treasure","repair"]){const value=payload.profiles[kind];if(value&&typeof value==="object")profiles[kind]=this.normalizeChallengeStyle(value,kind)}
       if(!Object.keys(profiles).length)throw new Error("profiles");
       this.saveChallengeStyleProfiles({...this.challengeStyleProfiles(),...profiles});
       const kind=this.el?.querySelector("[data-challenge-kind]")?.value||"treasure";this.loadChallengeProfileIntoControls(kind);this.applyChallengeStyleControls();
     }catch{window.alert("JSON de desafio inválido. Use um arquivo exportado pelo DEV.")}
+  }
+
+  bindChallengeCanvasSelection(){
+    let drag=null;
+    const host=()=>this.worldEditor?.runtime?.host||this.runtime?.host||this.root;
+    const select=component=>{
+      const challenge=host()?.querySelector?.("[data-world-challenge]");
+      const kind=challenge?.classList.contains("is-repair-challenge")?"repair":"treasure";
+      this.toggleLiveCss(true);this.loadChallengeLiveCssPreset();
+      const panel=this.el?.querySelector("[data-challenge-style-controls]");if(!panel)return;
+      const kindInput=panel.querySelector("[data-challenge-kind]");if(kindInput&&kindInput.value!==kind){kindInput.value=kind;this.loadChallengeProfileIntoControls(kind)}
+      const componentInput=panel.querySelector("[data-challenge-component]");if(componentInput){componentInput.value=component;this.loadChallengeComponentControls()}
+      host()?.querySelectorAll?.("[data-tq-dev-component]").forEach(node=>node.classList.toggle("is-dev-selected",node.dataset.tqDevComponent===component));
+    };
+    host()?.addEventListener?.("pointerdown",event=>{
+      if(this.mode!=="edit")return;
+      const node=event.target.closest?.("[data-tq-dev-component]");if(!node)return;
+      event.preventDefault();event.stopPropagation();select(node.dataset.tqDevComponent);
+      drag={x:event.clientX,y:event.clientY};try{node.setPointerCapture(event.pointerId)}catch{}
+    },true);
+    host()?.addEventListener?.("pointermove",event=>{
+      if(!drag||this.mode!=="edit")return;
+      const panel=this.el?.querySelector("[data-challenge-style-controls]"),x=panel?.querySelector("[data-challenge-component-x]"),y=panel?.querySelector("[data-challenge-component-y]");if(!x||!y)return;
+      x.value=String(Math.max(-160,Math.min(160,Number(x.value)+event.clientX-drag.x)));y.value=String(Math.max(-160,Math.min(160,Number(y.value)+event.clientY-drag.y)));
+      drag.x=event.clientX;drag.y=event.clientY;this.applyChallengeStyleControls();
+    },true);
+    const stop=()=>{drag=null};host()?.addEventListener?.("pointerup",stop,true);host()?.addEventListener?.("pointercancel",stop,true);
   }
 
   closeToolPanels(except=""){
@@ -2931,6 +3058,11 @@ export class DevOverlay {
   applyAssetPick(asset){
     const target=this.assetPickTarget;
     if(!target||!asset)return false;
+
+    if(target.kind==="css-composition-asset"){
+      const assets=this.compositionAssets();assets[target.composition]="./"+asset.path;this.saveCompositionAssets(assets);this.applyCompositionAssets();
+      this.assetPickTarget=null;this.toggleAssets(false);this.toggleLiveCss(true);this.toggleCompositionCatalog(true);this.selectCssComposition(target.composition);return true;
+    }
 
     if(target.kind==="ship-frame"){
       const src="./"+asset.path;
