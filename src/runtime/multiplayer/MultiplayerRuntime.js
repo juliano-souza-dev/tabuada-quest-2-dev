@@ -16,7 +16,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");
     this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";
     this.snapshotHz=clamp(Number(options.snapshotHz)||5,2,10);this.pollMs=Math.max(180,Number(options.pollMs)||250);
-    this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";
+    this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";this.pushInFlight=false;this.pollInFlight=false;
   }
   async request(path,{method="GET",body=null,query=""}={}){
     if(!this.enabled||!this.auth?.status?.().authenticated)return null;
@@ -37,12 +37,19 @@ export class MultiplayerRuntime extends EventTarget{
     return {uid:status.uid,name:this.displayName||status.displayName||"Pirata",shipId:this.shipId,x:Number(p.x)||0,y:Number(p.y)||0,rotation:Number(p.rotation)||0,direction:String(p.direction||"n"),hp:Math.max(0,Number(state.navalPlayerHp)||0),updatedAt:Date.now(),online:true};
   }
   async pushPresence(force=false){
-    if(!this.worldId)return false;const now=Date.now();if(!force&&now-this.lastPush<80)return false;this.lastPush=now;
+    if(!this.worldId||this.pushInFlight)return false;const now=Date.now();if(!force&&now-this.lastPush<80)return false;
     const uid=safeKey(this.auth.status().uid);if(!uid)return false;
-    await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"PUT",body:this.localPayload()});return true;
+    this.pushInFlight=true;
+    try{
+      await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"PUT",body:this.localPayload()});
+      this.lastPush=Date.now();
+      return true;
+    }finally{this.pushInFlight=false}
   }
   async poll(){
-    if(!this.worldId)return;const uid=String(this.auth.status().uid||"");
+    if(!this.worldId||this.pollInFlight)return;this.pollInFlight=true;
+    try{
+    const uid=String(this.auth.status().uid||"");
     const players=await this.request("multiplayer/rooms/"+this.worldId+"/players",{query:"shallow=false"});
     if(players&&typeof players==="object"){
       const now=Date.now();const remote=Object.values(players).filter(p=>p&&p.uid!==uid&&now-Number(p.updatedAt||0)<8000).slice(0,4);
@@ -55,6 +62,7 @@ export class MultiplayerRuntime extends EventTarget{
       const ordered=Object.entries(events).sort((a,b)=>a[0].localeCompare(b[0]));
       for(const [key,event] of ordered){if(this.lastEventKey&&key<=this.lastEventKey)continue;if(event?.uid!==uid)this.dispatchEvent(new CustomEvent("event",{detail:event}));this.lastEventKey=key;}
     }
+    }finally{this.pollInFlight=false}
   }
   async sendShot(shot={}){
     if(!this.worldId)return false;const uid=String(this.auth.status().uid||"");if(!uid)return false;
