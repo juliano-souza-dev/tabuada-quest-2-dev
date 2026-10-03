@@ -9,6 +9,17 @@ const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(
 const LEGACY_DEFAULT_SHIP_ID="pirate-default";
 const CURRENT_DEFAULT_SHIP_ID="ship-pirate-galleon-navio";
 const migrateLegacyShipId=id=>String(id||"")===LEGACY_DEFAULT_SHIP_ID?CURRENT_DEFAULT_SHIP_ID:String(id||"");
+const normalizeGlobalAmmo=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  const source=value.stock&&typeof value.stock==="object"?value.stock:{};
+  const stock={};
+  for(const [rawId,rawQty] of Object.entries(source)){
+    const id=String(rawId||"").trim();
+    const qty=Math.max(0,Math.floor(Number(rawQty)||0));
+    if(id&&qty>0)stock[id]=qty;
+  }
+  return {selectedAmmoId:String(value.selectedAmmoId||""),stock};
+};
 
 export class GameRuntime {
   static async load(root,manifestUrl="./src/config/game.manifest.json",options={}){
@@ -53,6 +64,7 @@ export class GameRuntime {
     this.rewardClaimsInFlight=new Set();
     this.playerShips={ownedShips:[],equippedShip:null};
     this.playerCannons={owned:{},equippedByShip:{}};
+    this.playerAmmo={selectedAmmoId:"",stock:{}};
     this.playerStateStore=null;
     this.contentStore=options.contentStore||null;
     this.contentSource=this.contentStore?.status?.().ready?"canonical":"bootstrap";
