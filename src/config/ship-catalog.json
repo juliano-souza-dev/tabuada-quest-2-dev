@@ -762,6 +762,180 @@
       },
       "schema": "tq.ship",
       "version": 2
+    },
+    {
+      "id": "ship-pirate-galleon-navio",
+      "name": "Galeão Pirata",
+      "type": "player",
+      "available": true,
+      "description": "Galeão pirata com atlas direcional de 16 posições em passos de 22,5°.",
+      "spriteMode": "combined",
+      "autoFrame": true,
+      "cellSize": 400,
+      "asset": "./assets/ships/navio.webp",
+      "acquisition": {
+        "starter": false,
+        "shop": false,
+        "event": false
+      },
+      "navigation": {
+        "width": 230,
+        "height": 230,
+        "minSpeed": 80,
+        "speed": 420,
+        "acceleration": 1100,
+        "braking": 0.12,
+        "roll": 2.4,
+        "heave": 3.2,
+        "sway": 0,
+        "periodMs": 3600,
+        "wake": true,
+        "shadow": true,
+        "src": "./assets/ships/navio.webp",
+        "sprite": {
+          "src": "./assets/ships/navio.webp",
+          "columns": 4,
+          "rows": 4,
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
+          },
+          "directionFrames": {
+            "n": 0,
+            "nne": 1,
+            "ne": 2,
+            "ene": 3,
+            "e": 4,
+            "ese": 5,
+            "se": 6,
+            "sse": 7,
+            "s": 8,
+            "ssw": 9,
+            "sw": 10,
+            "wsw": 11,
+            "w": 12,
+            "wnw": 13,
+            "nw": 14,
+            "nnw": 15
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
+        },
+        "compiled": {}
+      },
+      "combat": {
+        "hp": 50,
+        "attackRange": 1200,
+        "attackCooldownMs": 900,
+        "damage": 1,
+        "recoil": 18,
+        "shake": 5,
+        "muzzleFlash": true,
+        "smoke": true,
+        "impact": true,
+        "useNavigationAtlas": true,
+        "cannonSlots": 15
+      },
+      "schema": "tq.ship",
+      "version": 2
     }
   ],
   "shipTypes": [
