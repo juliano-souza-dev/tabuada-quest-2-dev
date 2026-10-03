@@ -12,5 +12,6 @@
     "snapshotHz": 5,
     "pollMs": 250,
     "root": "multiplayer/rooms"
-  }
+  },
+  "functionsBaseURL": "https://southamerica-east1-tabuadaquest2.cloudfunctions.net"
 }
