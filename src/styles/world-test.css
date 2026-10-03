@@ -168,35 +168,147 @@
 .tq-world-challenge__feedback{min-height:22px;margin:14px 0 0;color:#d8efff;font:800 13px/1.35 system-ui}
 @media(max-width:430px){.tq-world-challenge__card form{grid-template-columns:1fr}.tq-world-challenge__card form button{width:100%}}
 
-/* Moldura específica do desafio "Coletar tesouro". A versão padrão fica
-   disponível em assets/hud/bau_tesouro_padrao_ui.webp para trocar de tema. */
-.tq-world-challenge.is-treasure-challenge{padding:12px;background:rgba(8,0,17,.76)}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),1080px);aspect-ratio:1.40625;box-sizing:border-box;padding:33.5% 25.5% 4%;border:0;border-radius:0;background:var(--tq-popup-layout,transparent url("../../assets/hud/bau_tesouro_halloween_ui.webp")) center/contain no-repeat;box-shadow:none}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card>small,.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card h2{display:none}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__close{right:7%;top:20%;width:8%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;color:transparent;box-shadow:none}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__prompt{margin:0 0 5.5%;color:#24101f;font-size:clamp(28px,5vw,72px);text-shadow:0 2px 0 #f7d68c,0 4px 8px rgba(47,8,36,.72)}
-.tq-world-challenge.is-treasure-challenge .tq-world-combat__options{width:100%;max-width:none;gap:clamp(6px,1.8vw,22px)}.tq-world-challenge.is-treasure-challenge .tq-world-combat__option{min-height:clamp(29px,7.4vw,78px);padding:0;border:0;border-radius:14px;background:transparent;color:#fff3bb;font-size:clamp(18px,4.2vw,58px);text-shadow:0 3px 2px #401000,0 0 2px #ffb31c;box-shadow:none}.tq-world-challenge.is-treasure-challenge .tq-world-combat__option:focus-visible{outline:3px solid #fff4a8;outline-offset:-3px}.tq-world-challenge.is-treasure-challenge .tq-world-combat__option:active{transform:none;filter:brightness(1.3)}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__feedback{margin:7px 0 0;color:#fff2bd;font-size:12px}
-@media(max-width:430px){.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{padding:33.5% 25.5% 4%}.tq-world-challenge.is-treasure-challenge .tq-world-combat__option{min-height:29px;font-size:18px}}
+/* Molduras temáticas dos desafios. Os assets foram gerados em 1448x1086,
+   portanto a geometria real é 4:3. O conteúdo interativo é posicionado nas
+   áreas vazias desenhadas no próprio asset, sem depender de padding fluido. */
+.tq-world-challenge.is-treasure-challenge,
+.tq-world-challenge.is-repair-challenge{padding:8px;background:rgba(8,0,17,.76)}
 
-/* Moldura específica do desafio "Consertar navio". A versão padrão fica
-   disponível em assets/hud/conserto_navio_padrao_ui.webp para outro tema. */
-.tq-world-challenge.is-repair-challenge{padding:12px;background:rgba(8,0,17,.76)}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.333333),1080px);aspect-ratio:4/3;box-sizing:border-box;padding:0;border:0;border-radius:0;background:var(--tq-popup-layout,transparent url("../../assets/hud/conserto_navio_halloween_ui.webp")) center/contain no-repeat;box-shadow:none;overflow:visible}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__card>small,.tq-world-challenge.is-repair-challenge .tq-world-challenge__card h2,.tq-world-challenge.is-repair-challenge .tq-world-repair-hp{display:none!important}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__close{position:absolute;right:7.7%;top:16.8%;width:7.7%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;color:transparent;box-shadow:none}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__prompt{position:absolute;left:28%;right:24%;top:42.5%;height:16%;display:flex;align-items:center;justify-content:center;margin:0;color:#24101f;font-size:clamp(30px,4.5vw,64px);line-height:1;white-space:nowrap;text-align:center;text-shadow:0 2px 0 #f7d68c,0 4px 8px rgba(47,8,36,.72);pointer-events:none}
-.tq-world-challenge.is-repair-challenge .tq-world-combat__options{position:absolute;left:27.2%;right:24.2%;top:59.2%;bottom:16.5%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));column-gap:4.2%;row-gap:8.5%;width:auto;max-width:none;margin:0}
-.tq-world-challenge.is-repair-challenge .tq-world-combat__option{min-height:0;height:100%;padding:0;border:0;border-radius:14px;background:transparent;color:#fff3bb;font-size:clamp(20px,3.8vw,52px);line-height:1;text-shadow:0 3px 2px #401000,0 0 2px #ffb31c;box-shadow:none}
-.tq-world-challenge.is-repair-challenge .tq-world-combat__option:focus-visible{outline:3px solid #fff4a8;outline-offset:-3px}
-.tq-world-challenge.is-repair-challenge .tq-world-combat__option:active{transform:none;filter:brightness(1.3)}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__feedback{position:absolute;left:24%;right:22%;bottom:8%;margin:0;color:#fff2bd;font-size:clamp(10px,1.2vw,14px);line-height:1.15;text-align:center}
-@media(max-width:430px){
-  .tq-world-challenge.is-repair-challenge{padding:4px}
-  .tq-world-challenge.is-repair-challenge .tq-world-challenge__card{width:min(98vw,calc(92dvh * 1.333333))}
-  .tq-world-challenge.is-repair-challenge .tq-world-challenge__prompt{font-size:clamp(24px,8.5vw,38px)}
-  .tq-world-challenge.is-repair-challenge .tq-world-combat__option{font-size:clamp(18px,7vw,30px)}
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{
+  position:relative;
+  width:min(94vw,calc(88dvh * 1.333333),1080px);
+  aspect-ratio:4/3;
+  box-sizing:border-box;
+  padding:0;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  overflow:visible;
 }
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{
+  background:var(--tq-popup-layout,transparent url("../../assets/hud/bau_tesouro_halloween_ui.webp")) center/contain no-repeat;
+}
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{
+  background:var(--tq-popup-layout,transparent url("../../assets/hud/conserto_navio_halloween_ui.webp")) center/contain no-repeat;
+}
+
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card>small,
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card h2,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__card>small,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__card h2,
+.tq-world-challenge.is-repair-challenge .tq-world-repair-hp{display:none!important}
+
+/* Área clicável do X desenhado no asset. */
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__close,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__close{
+  position:absolute;
+  right:14.4%;
+  top:16.7%;
+  width:8.6%;
+  height:auto;
+  aspect-ratio:1;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:transparent;
+  box-shadow:none;
+  z-index:4;
+}
+
+/* Pergaminho: x≈27%-73%, y≈41%-57% no asset 1448x1086. */
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__prompt,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__prompt{
+  position:absolute;
+  left:27.0%;
+  right:27.0%;
+  top:41.2%;
+  height:15.4%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+  padding:0 1%;
+  box-sizing:border-box;
+  color:#24101f;
+  font:1000 clamp(25px,3.7vw,58px)/1 system-ui;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  text-align:center;
+  text-shadow:0 2px 0 #f7d68c,0 4px 8px rgba(47,8,36,.72);
+  pointer-events:none;
+  z-index:3;
+}
+
+/* Quatro placas: x≈25%-74%, y≈59%-80% no asset. */
+.tq-world-challenge.is-treasure-challenge .tq-world-combat__options,
+.tq-world-challenge.is-repair-challenge .tq-world-combat__options{
+  position:absolute;
+  left:25.2%;
+  right:25.8%;
+  top:58.9%;
+  bottom:20.0%;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:repeat(2,minmax(0,1fr));
+  column-gap:2.9%;
+  row-gap:9.2%;
+  width:auto;
+  max-width:none;
+  margin:0;
+  padding:0;
+  z-index:3;
+}
+.tq-world-challenge.is-treasure-challenge .tq-world-combat__option,
+.tq-world-challenge.is-repair-challenge .tq-world-combat__option{
+  width:100%;
+  min-width:0;
+  min-height:0;
+  height:100%;
+  padding:0;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  color:#fff3bb;
+  font:1000 clamp(18px,3.1vw,46px)/1 system-ui;
+  font-variant-numeric:tabular-nums;
+  text-align:center;
+  text-shadow:0 3px 2px #401000,0 0 2px #ffb31c;
+  box-shadow:none;
+  touch-action:manipulation;
+}
+.tq-world-challenge.is-treasure-challenge .tq-world-combat__option:focus-visible,
+.tq-world-challenge.is-repair-challenge .tq-world-combat__option:focus-visible{outline:3px solid #fff4a8;outline-offset:-3px}
+.tq-world-challenge.is-treasure-challenge .tq-world-combat__option:active,
+.tq-world-challenge.is-repair-challenge .tq-world-combat__option:active{transform:none;filter:brightness(1.3)}
+
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__feedback,
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__feedback{
+  position:absolute;
+  left:27%;
+  right:27%;
+  bottom:9.5%;
+  min-height:0;
+  margin:0;
+  color:#fff2bd;
+  font:800 clamp(9px,1vw,13px)/1.15 system-ui;
+  text-align:center;
+  text-shadow:0 2px 4px #000;
+  z-index:3;
+}
+
+@media(max-width:430px){
+  .tq-world-challenge.is-treasure-challenge,
+  .tq-world-challenge.is-repair-challenge{padding:2px}
+  .tq-world-challenge.is-treasure-challenge .tq-world-challenge__card,
+  .tq-world-challenge.is-repair-challenge .tq-world-challenge__card{width:min(99vw,calc(92dvh * 1.333333))}
+  .tq-world-challenge.is-treasure-challenge .tq-world-challenge__prompt,
+  .tq-world-challenge.is-repair-challenge .tq-world-challenge__prompt{font-size:clamp(22px,8vw,34px)}
+  .tq-world-challenge.is-treasure-challenge .tq-world-combat__option,
+  .tq-world-challenge.is-repair-challenge .tq-world-combat__option{font-size:clamp(17px,6vw,27px)}
+}
+
 .tq-world-host:not(.is-editor) .tq-world-entity--popup{display:none!important}
 
 .tq-world-controls{position:fixed;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom));z-index:550;display:flex;align-items:end;justify-content:space-between;padding:0 16px;pointer-events:none}
