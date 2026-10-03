@@ -823,7 +823,10 @@ export class GameRuntime {
     const login={kind:"scene",id:String(this.manifest.auth?.loginSceneId||"login")};
 
     let requested=null;
-    if(override){
+    if(override&&authRequired&&!this.authenticated){
+      this.pendingAuthRoute=clone(override);
+      requested=login;
+    }else if(override){
       requested=override;
     }else if(authRequired&&!this.authenticated){
       requested=login;
