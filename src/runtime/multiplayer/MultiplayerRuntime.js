@@ -56,7 +56,9 @@ export class MultiplayerRuntime extends EventTarget{
   async pushPresence(force=false){
     if(!this.worldId||this.pushInFlight)return false;const now=Date.now();if(!force&&now-this.lastPush<80)return false;
     const uid=safeKey(this.auth.status().uid);if(!uid)return false;
-    const local=this.localPayload();\n    this.socketSend({type:"state",x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp});\n    this.pushInFlight=true;
+    const local=this.localPayload();
+    this.socketSend({type:"state",x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp});
+    this.pushInFlight=true;
     try{
       await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"PUT",body:this.localPayload()});
       this.lastPush=Date.now();
