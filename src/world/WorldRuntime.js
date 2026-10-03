@@ -200,6 +200,7 @@ export class WorldRuntime {
         }).filter(item=>item.id&&item.quantity>0);
         return {
           attacking:this.navalAutoFire===true,
+          hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           target:{
@@ -265,12 +266,14 @@ export class WorldRuntime {
       this.state.ammo.stock[initialAmmoId]=initialTestAmmoQuantity;
     }
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
+    this.onStarterCannonEarned=typeof options.onStarterCannonEarned==="function"?options.onStarterCannonEarned:null;
     const defaultCannonId=String(this.cannonCatalog[0]?.id||"");
-    const requestedCannonIds=Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[];
-    const validatedCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-    this.testCannonIds=validatedCannonIds.length
-      ?validatedCannonIds
-      :(requestedCannonIds.length?requestedCannonIds:(defaultCannonId?[defaultCannonId]:[]));
+    const productionCannonIds=Array.isArray(options.playerCannonIds)?options.playerCannonIds.map(String):null;
+    const requestedCannonIds=productionCannonIds||(
+      Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[defaultCannonId]
+    );
+    const validatedCannonIds=requestedCannonIds.filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
+    this.testCannonIds=validatedCannonIds;
     const requestedTestAmmoId=String(options.testAmmoId||"").trim();
     if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
     this.player={
@@ -883,8 +886,8 @@ export class WorldRuntime {
       <div class="tq-world-challenge" data-world-challenge hidden>
         <section class="tq-world-challenge__card" role="dialog" aria-modal="true" aria-labelledby="tq-world-challenge-title">
           <button type="button" class="tq-world-challenge__close" data-world-challenge-close aria-label="Fechar desafio">×</button>
-          <small>BAÚ DO TESOURO</small>
-          <h2 id="tq-world-challenge-title">Resolva para recolher</h2>
+          <small data-world-challenge-kicker>BAÚ DO TESOURO</small>
+          <h2 id="tq-world-challenge-title" data-world-challenge-title>Resolva para recolher</h2>
           <strong class="tq-world-challenge__prompt" data-world-challenge-prompt></strong>
           <div class="tq-world-repair-hp" data-world-repair-hp hidden><div class="tq-world-repair-hp__track"><span data-world-repair-hp-fill></span></div><b data-world-repair-hp-label></b></div>
           <div class="tq-world-combat__options" data-world-repair-options aria-label="Escolha a resposta"></div>
@@ -968,6 +971,8 @@ export class WorldRuntime {
     this.gameplayToast=this.host.querySelector("[data-world-gameplay-toast]");
     this.gameplayToastTimer=0;
     this.challengeWrap=this.host.querySelector("[data-world-challenge]");
+    this.challengeKicker=this.host.querySelector("[data-world-challenge-kicker]");
+    this.challengeTitle=this.host.querySelector("[data-world-challenge-title]");
     this.challengeForm=this.host.querySelector("[data-world-challenge-form]");
     this.challengePrompt=this.host.querySelector("[data-world-challenge-prompt]");
     this.challengeAnswer=this.host.querySelector("[data-world-challenge-answer]");
@@ -1196,9 +1201,7 @@ export class WorldRuntime {
     const cannons=(this.testCannonIds?.length?this.testCannonIds:this.cannonCatalog.slice(0,1).map(item=>String(item.id)))
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
-    if(!cannons.length){
-      return distance<=this.playerNavalCombatStats().attackRange?[{range:this.playerNavalCombatStats().attackRange}]:[];
-    }
+    if(!cannons.length)return [];
     return cannons.filter(cannon=>distance<=Math.max(1,Number(cannon.range)||900));
   }
 
@@ -1208,7 +1211,7 @@ export class WorldRuntime {
       .filter(Boolean);
     return cannons.length
       ?Math.max(...cannons.map(cannon=>Math.max(1,Number(cannon.range)||900)))
-      :this.playerNavalCombatStats().attackRange;
+      :0;
   }
 
   isNavalTargetInRange(entity){
@@ -3600,6 +3603,8 @@ export class WorldRuntime {
       this.challengeTimer=0;
     }
     this.challengeActive=null;
+    if(this.challengeKicker)this.challengeKicker.textContent="BAÚ DO TESOURO";
+    if(this.challengeTitle)this.challengeTitle.textContent="Resolva para recolher";
     if(this.challengeWrap)this.challengeWrap.hidden=true;
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
@@ -3609,6 +3614,100 @@ export class WorldRuntime {
       this.challengeAnswer.disabled=false;
     }
     if(this.challengeSubmit)this.challengeSubmit.disabled=false;
+  }
+
+  async beginStarterCannonChallenge(){
+    if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
+
+    this.stopNavalAutoFire({keepTarget:true});
+    this.stopForChallenge();
+    if(this.actionWrap)this.actionWrap.hidden=true;
+
+    const entity={
+      id:"starter-cannon-rescue",
+      type:"cannon-rescue",
+      label:"Canhão básico"
+    };
+    let challenge=null;
+    try{
+      challenge=this.createPedagogyChallenge
+        ?await this.createPedagogyChallenge({entity,worldState:this.getState()})
+        :null;
+    }catch(error){
+      console.warn("Starter cannon challenge creation failed",error);
+    }
+
+    this.challengeActive={entity,challenge,kind:"starter-cannon"};
+    if(this.challengeKicker)this.challengeKicker.textContent="SEM CANHÃO EQUIPADO";
+    if(this.challengeTitle)this.challengeTitle.textContent="Ganhe um canhão básico";
+    if(this.challengeWrap)this.challengeWrap.hidden=false;
+    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
+    if(this.repairHp)this.repairHp.hidden=true;
+    if(this.challengeFeedback)this.challengeFeedback.textContent=
+      "Você não tem nenhum canhão equipado. Acerte a multiplicação para receber o Canhão do Marujo.";
+    if(this.repairOptions){
+      this.repairOptions.hidden=false;
+      this.repairOptions.replaceChildren();
+      if(challenge?.available){
+        for(const value of this.combatChoices(challenge)){
+          const button=document.createElement("button");
+          button.type="button";
+          button.className="tq-world-combat__option";
+          button.dataset.repairAnswer=String(value);
+          button.textContent=String(value);
+          this.repairOptions.append(button);
+        }
+      }
+    }
+
+    if(!challenge?.available){
+      if(this.challengePrompt)this.challengePrompt.textContent="Desafio indisponível";
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        String(challenge?.message||"Não foi possível gerar a multiplicação agora.");
+      return false;
+    }
+    if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
+    return true;
+  }
+
+  resolveStarterCannonChallenge(result,challenge){
+    const detail={
+      entityId:"starter-cannon-rescue",
+      challengeId:String(challenge?.id||""),
+      operation:String(challenge?.operation||challenge?.kind||"multiplication"),
+      a:Number(challenge?.a),
+      b:Number(challenge?.b),
+      answer:result?.answer,
+      correct:result?.correct===true,
+      region:Number(challenge?.region)||null,
+      bonus:false,
+      countsTowardPlanned:challenge?.countsTowardPlanned!==false
+    };
+    this.onPedagogyResult?.(detail);
+
+    if(result?.correct!==true){
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        "Ainda não. Tente novamente para conquistar o canhão básico.";
+      return false;
+    }
+
+    const granted=this.onStarterCannonEarned?.()||{ok:false};
+    const ids=Array.isArray(granted?.equippedCannonIds)
+      ?granted.equippedCannonIds.map(String)
+      :(granted?.cannonId?[String(granted.cannonId)]:[]);
+    this.testCannonIds=ids.filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
+    if(!this.testCannonIds.length){
+      if(this.challengeFeedback)this.challengeFeedback.textContent=
+        "Acertou, mas não foi possível equipar o canhão. Tente novamente.";
+      return false;
+    }
+
+    const name=String(granted?.cannonName||this.cannonCatalog.find(item=>String(item?.id||"")===this.testCannonIds[0])?.name||"Canhão do Marujo");
+    if(this.challengeFeedback)this.challengeFeedback.textContent="Acertou! "+name+" recebido e equipado.";
+    this.showGameplayToast("🎁 "+name+" recebido e equipado");
+    this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
+    return true;
   }
 
   async beginTreasureChallenge(entity){
@@ -3735,6 +3834,11 @@ export class WorldRuntime {
     }
 
     const result=challenge.evaluate(raw)||{};
+
+    if(active?.kind==="starter-cannon"){
+      this.resolveStarterCannonChallenge(result,challenge);
+      return;
+    }
 
     if(this.repairActive){
       const detail={
@@ -4343,6 +4447,10 @@ export class WorldRuntime {
       if(this.actionWrap)this.actionWrap.hidden=false;
       return;
     }
+    if(!Array.isArray(this.testCannonIds)||this.testCannonIds.length===0){
+      this.beginStarterCannonChallenge();
+      return;
+    }
     const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
       ?this.combatTarget
       :this.nearby;
@@ -4657,7 +4765,7 @@ export class WorldRuntime {
       }
       if(Array.isArray(patch.test.cannonIds)){
         const validIds=patch.test.cannonIds.map(String).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-        this.testCannonIds=validIds.length?validIds:[String(this.cannonCatalog[0]?.id||"")];
+        this.testCannonIds=validIds;
         this.config.test.cannonIds=[...this.testCannonIds];
       }
     }
