@@ -36,7 +36,24 @@
   "player": {
     "defaultShipId": "ship-pirate-galleon-navio",
     "grantDefaultShip": true,
-    "grantDefaultCannon": false
+    "grantDefaultCannon": false,
+    "startingLoadout": {
+      "version": 2,
+      "cannons": [
+        {
+          "id": "cannon-bronze",
+          "quantity": 2,
+          "equip": true
+        }
+      ],
+      "ammo": [
+        {
+          "id": "cannonball-standard",
+          "quantity": 200,
+          "select": true
+        }
+      ]
+    }
   },
   "afterAuth": {
     "kind": "world",
