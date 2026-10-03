@@ -15,7 +15,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.auth=auth;this.config=config||{};this.enabled=options.enabled!==false;
     this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");
     this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";
-    this.snapshotHz=clamp(Number(options.snapshotHz)||5,2,10);this.pollMs=Math.max(180,Number(options.pollMs)||250);
+    this.snapshotHz=clamp(Number(options.snapshotHz)||10,5,20);this.pollMs=Math.max(80,Number(options.pollMs)||100);
     this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";this.pushInFlight=false;this.pollInFlight=false;
   }
   async request(path,{method="GET",body=null,query=""}={}){
@@ -30,7 +30,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;this.shipId=String(shipId||"");this.displayName=String(displayName||"");
     console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);
     await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
-    this.pollTimer=setInterval(()=>this.poll().catch(()=>{}),this.pollMs);await this.poll();return true;
+    this.pollTimer=setInterval(()=>this.pollPlayers().catch(()=>{}),this.pollMs);await this.poll();return true;
   }
   localPayload(){
     const state=this.getLocalState?.()||{};const p=state.player||{};const status=this.auth.status();
@@ -46,15 +46,18 @@ export class MultiplayerRuntime extends EventTarget{
       return true;
     }finally{this.pushInFlight=false}
   }
-  async poll(){
-    if(!this.worldId||this.pollInFlight)return;this.pollInFlight=true;
-    try{
-    const uid=String(this.auth.status().uid||"");
+  async pollPlayers(){
+    if(!this.worldId)return;const uid=String(this.auth.status().uid||"");
     const players=await this.request("multiplayer/rooms/"+this.worldId+"/players",{query:"shallow=false"});
     if(players&&typeof players==="object"){
       const now=Date.now();const remote=Object.values(players).filter(p=>p&&p.uid!==uid&&now-Number(p.updatedAt||0)<8000).slice(0,4);
       this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:remote}}));
     }
+  }
+  async poll(){
+    if(!this.worldId||this.pollInFlight)return;this.pollInFlight=true;
+    try{
+    await this.pollPlayers();
     const bosses=await this.request("multiplayer/rooms/"+this.worldId+"/bosses");
     this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:bosses&&typeof bosses==="object"?bosses:{}}}));
     const events=await this.request("multiplayer/rooms/"+this.worldId+"/events",{query:'orderBy="$key"&limitToLast=20'});
