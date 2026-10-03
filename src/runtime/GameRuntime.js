@@ -507,8 +507,17 @@ export class GameRuntime {
       owned:cannons.owned&&typeof cannons.owned==="object"?clone(cannons.owned):{},
       equippedByShip:cannons.equippedByShip&&typeof cannons.equippedByShip==="object"?clone(cannons.equippedByShip):{}
     };
+    const ammo=(
+      game.ammo&&typeof game.ammo==="object"?game.ammo:
+      runtime?.ammo&&typeof runtime.ammo==="object"?runtime.ammo:
+      state.ammo&&typeof state.ammo==="object"?state.ammo:
+      {}
+    );
+    this.playerAmmo=normalizeGlobalAmmo(ammo);
     this.ensurePlayerShips();
     this.ensurePlayerCannons();
+    this.ensurePlayerAmmo();
+    this.ensureStarterLoadout();
     return true;
   }
 
@@ -524,6 +533,7 @@ export class GameRuntime {
           equippedShip:this.playerShips.equippedShip
         },
         cannons:clone(this.playerCannons),
+        ammo:clone(this.playerAmmo),
         rewards:clone(this.rewards)
       }
     };
@@ -1728,6 +1738,7 @@ export class GameRuntime {
       worldStates:clone(this.worldStates),
       flags:clone(this.flags),
       inventory:clone(this.inventory),
+      ammo:clone(this.playerAmmo),
       rewards:clone(this.rewards)
     };
   }
@@ -1740,7 +1751,9 @@ export class GameRuntime {
         availableShips:this.listAvailableShips().map(ship=>ship.id),
         ownedShips:[...this.playerShips.ownedShips],
         equippedShip:this.playerShips.equippedShip
-      }
+      },
+      cannons:clone(this.playerCannons),
+      ammo:clone(this.playerAmmo)
     };
   }
 
@@ -1777,8 +1790,11 @@ export class GameRuntime {
           equippedByShip:state.cannons.equippedByShip&&typeof state.cannons.equippedByShip==="object"?clone(state.cannons.equippedByShip):{}
         };
       }
+      this.playerAmmo=normalizeGlobalAmmo(state.ammo||{});
       this.ensurePlayerShips();
       this.ensurePlayerCannons();
+      this.ensurePlayerAmmo();
+      this.ensureStarterLoadout();
       return true;
     }catch{
       return false;
@@ -1793,7 +1809,8 @@ export class GameRuntime {
           ownedShips:[...this.playerShips.ownedShips],
           equippedShip:this.playerShips.equippedShip
         },
-        cannons:clone(this.playerCannons)
+        cannons:clone(this.playerCannons),
+        ammo:clone(this.playerAmmo)
       };
       localStorage.setItem(this.persistenceKey,JSON.stringify(state));
       return true;
