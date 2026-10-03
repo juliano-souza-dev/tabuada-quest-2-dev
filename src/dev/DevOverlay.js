@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261003-3425";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261003-3445";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1915";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1923";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-2118";
