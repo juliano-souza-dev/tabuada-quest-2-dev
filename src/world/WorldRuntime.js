@@ -184,18 +184,41 @@ export class WorldRuntime {
     this.mobileHud=new MobileHudOverlay({
       missions:Array.isArray(options.missionCatalog)?options.missionCatalog:[],
       region:regionNumber,
-      getState:()=>({
-        hasTarget:Boolean(this.combatTarget&&this.isClickableCombatShip(this.combatTarget)),
-        attacking:this.navalAutoFire===true,
-        playerHp:Number(this.navalPlayerHp||0),
-        playerMaxHp:Number(this.navalPlayerMaxHp||0),
-        inCombat:Boolean(this.navalAutoFire||this.combatTarget||this.navalHostile?.size),
-        inChallenge:Boolean(this.challengeActive)
-      }),
+      getState:()=>{
+        const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
+        const targetInRange=Boolean(target&&this.isNavalTargetInRange(target));
+        const targetHp=target?this.navalHpState(target):{current:0,max:1};
+        const ammo=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[]).map(item=>{
+          const id=String(item?.id||"");
+          return {
+            id,
+            name:String(item?.name||id),
+            image:String(item?.effects?.texture||""),
+            quantity:Math.max(0,Number(this.state?.ammo?.stock?.[id])||0),
+            selected:String(this.state?.ammo?.selectedAmmoId||"")===id
+          };
+        }).filter(item=>item.id&&item.quantity>0);
+        return {
+          attacking:this.navalAutoFire===true,
+          playerHp:Number(this.navalPlayerHp||0),
+          playerMaxHp:Number(this.navalPlayerMaxHp||0),
+          target:{
+            visible:targetInRange,
+            name:target?String(target.label||target.shipName||target.name||"Navio inimigo"):"",
+            hp:Number(targetHp.current||0),
+            maxHp:Number(targetHp.max||1)
+          },
+          ammo
+        };
+      },
       onAttack:()=>this.activateNearby(),
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
-      onRepair:()=>this.beginPlayerRepair({forced:false}),
-      onAmmo:()=>this.cyclePlayerAmmo()
+      onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
+      onShop:()=>this.shopOverlay?.open?.(),
+      onShipyard:()=>{
+        globalThis.dispatchEvent?.(new CustomEvent("tq:shipyard-request",{detail:{worldId:String(this.config.id||"")}}));
+        return false;
+      }
     });
     this.remotePlayers=new Map();
     this.coopTransport=null;
@@ -1213,6 +1236,7 @@ export class WorldRuntime {
     this.navalNextShotAt=0;
     if(this.combatTarget?.el)this.combatTarget.el.classList.remove("is-combat-target");
     this.combatTarget=null;
+    this.host?.classList.remove("has-combat-target");
     if(hideAction&&this.actionWrap)this.actionWrap.hidden=true;
   }
 
@@ -1226,6 +1250,7 @@ export class WorldRuntime {
       this.navalNextShotAt=0;
     }
     this.combatTarget=entity;
+    this.host?.classList.add("has-combat-target");
     this.navalAutoFire=keepAutoFire;
     this.nearby=entity;
     // Combat selection always takes priority over the optional repair action.
@@ -4151,6 +4176,17 @@ export class WorldRuntime {
         state.nextShotAt=Number(time)+180;
       }
     }
+  }
+
+  selectPlayerAmmo(ammoId){
+    const id=String(ammoId||"").trim();
+    if(!id)return false;
+    const item=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[]).find(entry=>String(entry?.id||"")===id&&entry?.available!==false);
+    const quantity=Math.max(0,Number(this.state?.ammo?.stock?.[id])||0);
+    if(!item||quantity<=0)return false;
+    if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
+    this.state.ammo.selectedAmmoId=id;
+    return true;
   }
 
   cyclePlayerAmmo(){
