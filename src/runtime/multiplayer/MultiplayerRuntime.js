@@ -44,7 +44,8 @@ export class MultiplayerRuntime extends EventTarget{
   async joinWorld(worldId,{getLocalState,shipId="",displayName=""}={}){
     await this.leaveWorld();this.worldId=safeKey(worldId);if(!this.worldId)return false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;this.shipId=String(shipId||"");this.displayName=String(displayName||"");
-    console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);\n    this.connectSocket();
+    console.info("[TQ Multiplayer] joining",this.worldId,this.databaseURL);
+    this.connectSocket();
     await this.pushPresence(true);console.info("[TQ Multiplayer] presence online",this.worldId);this.timer=setInterval(()=>this.pushPresence(false).catch(()=>{}),Math.round(1000/this.snapshotHz));
     this.pollTimer=setInterval(()=>this.pollPlayers().catch(()=>{}),this.pollMs);await this.poll();return true;
   }
