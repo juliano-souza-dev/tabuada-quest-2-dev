@@ -326,7 +326,7 @@ export class WorldRuntime {
       y:Number(config.editor?.cameraY??this.player.y)
     };
     this.zoom=Number(config.editor?.zoom??0.58);
-    this.playZoom=clamp(Number(config.camera?.playZoom??0.4841),.30,1.4);
+    this.playZoom=clamp(Number(options.globalCamera?.playZoom??config.camera?.playZoom??0.4841),.30,1.4);
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
@@ -5097,6 +5097,14 @@ export class WorldRuntime {
     this.updatePlayerConfig({effects:preset.ship});
     this.applyEnvironmentVisual();
     return this.getWorld();
+  }
+
+  setGlobalCamera(patch={}){
+    if(patch.playZoom!==undefined){
+      this.playZoom=clamp(Number(patch.playZoom)||0.4841,.30,1.4);
+      if(this.mode==="play")this.zoom=this.playZoom;
+    }
+    return {playZoom:this.playZoom};
   }
 
   updateWorld(patch={},commit=true){
