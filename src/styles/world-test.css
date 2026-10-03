@@ -152,7 +152,7 @@
   text-shadow:0 2px 4px #000,0 0 8px #000;
 }
 .tq-world-action button,.tq-world-editor-back{min-height:46px;padding:10px 16px;border:2px solid #fff2a2;border-radius:13px;background:#6d4017;color:#fff;font:900 14px/1.1 system-ui;box-shadow:0 5px 16px #0008;touch-action:manipulation}
-.tq-world-challenge{position:fixed;inset:0;z-index:850;display:grid;place-items:center;padding:22px;background:rgba(1,13,22,.72);backdrop-filter:blur(5px);pointer-events:auto}
+.tq-world-challenge{position:fixed;inset:0;z-index:850;display:grid;place-items:center;padding:22px;background:rgba(1,13,22,.72);text-shadow:0 2px 4px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.55);pointer-events:auto}
 .tq-world-challenge[hidden]{display:none}
 .tq-world-challenge__card{position:relative;width:min(410px,100%);padding:24px 22px 22px;border:2px solid #ffe59a;border-radius:20px;background:linear-gradient(180deg,#17374a,#0c2231);box-shadow:0 18px 50px #000b;color:#fff;text-align:center}
 .tq-world-challenge__card>small{display:block;margin-bottom:6px;color:#ffe59a;font:900 11px/1.1 system-ui;letter-spacing:.16em}
@@ -1767,6 +1767,6 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   .tq-ammo-popover{left:auto;right:max(8px,env(safe-area-inset-right));bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));width:240px}
 }
 
-.tq-world-gameplay-toast{position:fixed;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 72px));z-index:690;transform:translateX(-50%);max-width:min(78vw,360px);padding:7px 12px;border-radius:999px;background:rgba(3,20,31,.78);border:1px solid rgba(255,255,255,.22);box-shadow:0 5px 18px rgba(0,0,0,.22);color:#fff;font:700 13px/1.25 system-ui,-apple-system,sans-serif;text-align:center;pointer-events:none;backdrop-filter:blur(5px);animation:tqGameplayToastIn .18s ease-out both}
+.tq-world-gameplay-toast{position:fixed;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 72px));z-index:690;transform:translateX(-50%);max-width:min(78vw,360px);padding:7px 12px;border-radius:999px;background:transparent;border:0;box-shadow:none;color:#fff;font:700 13px/1.25 system-ui,-apple-system,sans-serif;text-align:center;pointer-events:none;backdrop-filter:blur(5px);animation:tqGameplayToastIn .18s ease-out both}
 .tq-world-gameplay-toast.is-leaving{opacity:0;transform:translate(-50%,-5px);transition:opacity .18s ease,transform .18s ease}
 @keyframes tqGameplayToastIn{from{opacity:0;transform:translate(-50%,-5px)}to{opacity:1;transform:translate(-50%,0)}}
