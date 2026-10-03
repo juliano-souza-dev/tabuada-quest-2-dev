@@ -346,6 +346,9 @@
 .tq-world-weather--snow i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 5px rgba(225,244,255,.65);animation-name:tq-weather-snow}
 .tq-world-weather--halloween{background:radial-gradient(circle at 75% 18%,rgba(255,119,35,.12),transparent 30%),linear-gradient(180deg,rgba(49,14,65,.16),rgba(18,5,29,.05))}
 .tq-world-weather--halloween i{width:5px;height:5px;border-radius:50%;background:rgba(255,141,45,.72);box-shadow:0 0 10px rgba(255,109,24,.7);animation-name:tq-weather-ember}
+.tq-world-weather--halloween-rain{background:radial-gradient(circle at 75% 18%,rgba(255,119,35,.11),transparent 30%),linear-gradient(180deg,rgba(35,24,57,.24),rgba(8,15,27,.10))}
+.tq-world-weather--halloween-rain i[data-weather-kind="rain"]{width:2px;height:16vh;background:linear-gradient(180deg,rgba(220,238,255,0),rgba(210,235,255,.62));transform:rotate(12deg);animation-name:tq-weather-rain}
+.tq-world-weather--halloween-rain i[data-weather-kind="halloween"]{top:105vh;width:5px;height:5px;border-radius:50%;background:rgba(255,141,45,.72);box-shadow:0 0 10px rgba(255,109,24,.7);animation-name:tq-weather-ember}
 @keyframes tq-weather-rain{to{transform:translate(-9vw,125vh) rotate(12deg)}}
 @keyframes tq-weather-snow{0%{transform:translate(0,-5vh) rotate(0)}50%{transform:translate(4vw,58vh) rotate(180deg)}100%{transform:translate(-2vw,120vh) rotate(360deg)}}
 @keyframes tq-weather-ember{0%{transform:translateY(105vh) scale(.6);opacity:0}15%{opacity:.9}100%{transform:translate(5vw,-15vh) scale(1.3);opacity:0}}
