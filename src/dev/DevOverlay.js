@@ -3286,7 +3286,7 @@ export class DevOverlay {
     const currentWorld=this.workspace==="world"?String(this.worldEditor?.getWorld?.()?.id||""):"";
     const params=new URLSearchParams();
     if(currentWorld)params.set("start","world:"+currentWorld);
-    params.set("devtools","1");
+    params.set("flowtest","1");
     const url="./game.html"+(params.toString()?"?"+params.toString():"");
     window.open(url,"tq-production-flow");
   }
