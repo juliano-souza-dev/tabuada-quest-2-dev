@@ -9,7 +9,7 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
 
   const auth=new FirebaseAuthService(config);
   const playerState=new PlayerStateStore(auth,config);
-  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:5,pollMs:250});
+  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:10,pollMs:100});
 
   const signalReady=async(reason)=>{
     const status=auth.status();
