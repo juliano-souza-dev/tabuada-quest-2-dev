@@ -309,7 +309,11 @@ export class GameRuntime {
     this.multiplayer.addEventListener?.("event",onEvent);
     this.multiplayer.addEventListener?.("bosses",onBosses);
     this.multiplayerCleanups.push(()=>this.multiplayer?.removeEventListener?.("players",onPlayers),()=>this.multiplayer?.removeEventListener?.("event",onEvent),()=>this.multiplayer?.removeEventListener?.("bosses",onBosses));
-    this.worldRuntime.setCoopTransport?.({ensureBoss:boss=>this.multiplayer.ensureBoss?.(boss),damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta)});
+    this.worldRuntime.setCoopTransport?.({
+      uid:String(this.multiplayer.auth?.status?.().uid||""),
+      ensureBoss:boss=>this.multiplayer.ensureBoss?.(boss),
+      damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta)
+    });
     const ship=this.getEquippedShip();
     this.multiplayer.joinWorld(worldId,{getLocalState:()=>this.worldRuntime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""}).catch(error=>console.warn("Multiplayer join failed",error));
     return true;
@@ -1113,9 +1117,20 @@ export class GameRuntime {
     }
   }
 
-  handleBossDefeated({bossId,entity,rewards}={}){
+  handleBossDefeated({bossId,entity,rewards,contribution}={}){
     const stableBossId=String(bossId||entity?.coopBossId||entity?.id||"").trim();
     if(!stableBossId)return false;
+    const minimumRatio=Math.max(0,Math.min(1,Number(contribution?.minimumRatio??entity?.combat?.rewardMinDamageRatio)||0));
+    const damageRatio=Math.max(0,Math.min(1,Number(contribution?.damageRatio)||0));
+    if(minimumRatio>0&&damageRatio<minimumRatio){
+      globalThis.dispatchEvent?.(new CustomEvent("tq:bossrewardineligible",{detail:{
+        bossId:stableBossId,
+        damage:Math.max(0,Number(contribution?.damage)||0),
+        damageRatio,
+        minimumRatio
+      }}));
+      return false;
+    }
     return this.handleCombatVictory({entity,rewards,claimKey:"boss:"+stableBossId});
   }
 
