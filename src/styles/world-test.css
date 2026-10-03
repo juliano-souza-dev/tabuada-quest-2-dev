@@ -171,7 +171,7 @@
 /* Moldura específica do desafio "Coletar tesouro". A versão padrão fica
    disponível em assets/hud/bau_tesouro_padrao_ui.webp para trocar de tema. */
 .tq-world-challenge.is-treasure-challenge{padding:12px;background:rgba(8,0,17,.76)}
-.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),1080px);aspect-ratio:1.40625;box-sizing:border-box;padding:33.5% 25.5% 4%;border:0;border-radius:0;background:transparent url("../../assets/hud/bau_tesouro_halloween_ui.webp") center/contain no-repeat;box-shadow:none}
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),1080px);aspect-ratio:1.40625;box-sizing:border-box;padding:33.5% 25.5% 4%;border:0;border-radius:0;background:var(--tq-popup-layout,transparent url("../../assets/hud/bau_tesouro_halloween_ui.webp")) center/contain no-repeat;box-shadow:none}
 .tq-world-challenge.is-treasure-challenge .tq-world-challenge__card>small,.tq-world-challenge.is-treasure-challenge .tq-world-challenge__card h2{display:none}
 .tq-world-challenge.is-treasure-challenge .tq-world-challenge__close{right:7%;top:20%;width:8%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;color:transparent;box-shadow:none}
 .tq-world-challenge.is-treasure-challenge .tq-world-challenge__prompt{margin:0 0 5.5%;color:#24101f;font-size:clamp(28px,5vw,72px);text-shadow:0 2px 0 #f7d68c,0 4px 8px rgba(47,8,36,.72)}
@@ -182,13 +182,14 @@
 /* Moldura específica do desafio "Consertar navio". A versão padrão fica
    disponível em assets/hud/conserto_navio_padrao_ui.webp para outro tema. */
 .tq-world-challenge.is-repair-challenge{padding:12px;background:rgba(8,0,17,.76)}
-.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),1080px);aspect-ratio:1.40625;box-sizing:border-box;padding:33.5% 25.5% 4%;border:0;border-radius:0;background:transparent url("../../assets/hud/conserto_navio_halloween_ui.webp") center/contain no-repeat;box-shadow:none}
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{width:min(94vw,calc(86dvh * 1.40625),1080px);aspect-ratio:1.40625;box-sizing:border-box;padding:33.5% 25.5% 4%;border:0;border-radius:0;background:var(--tq-popup-layout,transparent url("../../assets/hud/conserto_navio_halloween_ui.webp")) center/contain no-repeat;box-shadow:none}
 .tq-world-challenge.is-repair-challenge .tq-world-challenge__card>small,.tq-world-challenge.is-repair-challenge .tq-world-challenge__card h2,.tq-world-challenge.is-repair-challenge .tq-world-repair-hp{display:none!important}
 .tq-world-challenge.is-repair-challenge .tq-world-challenge__close{right:7%;top:20%;width:8%;height:auto;aspect-ratio:1;border:0;border-radius:50%;background:transparent;color:transparent;box-shadow:none}
 .tq-world-challenge.is-repair-challenge .tq-world-challenge__prompt{margin:0 0 5.5%;color:#24101f;font-size:clamp(28px,5vw,72px);text-shadow:0 2px 0 #f7d68c,0 4px 8px rgba(47,8,36,.72)}
 .tq-world-challenge.is-repair-challenge .tq-world-combat__options{width:100%;max-width:none;gap:clamp(6px,1.8vw,22px)}.tq-world-challenge.is-repair-challenge .tq-world-combat__option{min-height:clamp(29px,7.4vw,78px);padding:0;border:0;border-radius:14px;background:transparent;color:#fff3bb;font-size:clamp(18px,4.2vw,58px);text-shadow:0 3px 2px #401000,0 0 2px #ffb31c;box-shadow:none}.tq-world-challenge.is-repair-challenge .tq-world-combat__option:focus-visible{outline:3px solid #fff4a8;outline-offset:-3px}.tq-world-challenge.is-repair-challenge .tq-world-combat__option:active{transform:none;filter:brightness(1.3)}
 .tq-world-challenge.is-repair-challenge .tq-world-challenge__feedback{margin:7px 0 0;color:#fff2bd;font-size:12px}
 @media(max-width:430px){.tq-world-challenge.is-repair-challenge .tq-world-challenge__card{padding:33.5% 25.5% 4%}.tq-world-challenge.is-repair-challenge .tq-world-combat__option{min-height:29px;font-size:18px}}
+.tq-world-host:not(.is-editor) .tq-world-entity--popup{display:none!important}
 
 .tq-world-controls{position:fixed;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom));z-index:550;display:flex;align-items:end;justify-content:space-between;padding:0 16px;pointer-events:none}
 .tq-world-host.is-editor .tq-world-controls,.tq-world-host.is-editor .tq-world-action{display:none!important}

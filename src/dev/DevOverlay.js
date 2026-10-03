@@ -2402,7 +2402,9 @@ export class DevOverlay {
     const motionRange=(key,label)=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-motion-output="'+key+'">'+Math.round(Number(motion[key]||0))+'</output></span><input data-motion-prop="'+key+'" type="range" min="0" max="100" step="1" value="'+Number(motion[key]||0)+'"></label>';
     const effectRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-effect-output="'+key+'">'+(Math.round(Number(effect[key]||0)*100)/100)+suffix+'</output></span><input data-effect-prop="'+key+'" data-effect-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(effect[key]??0)+'"></label>';
     const collisionRange=(key,label,min,max,step,suffix="")=>'<label class="tq-world-motion-range"><span><b>'+label+'</b><output data-collision-output="'+key+'">'+(Math.round(Number(collision[key]||0)*100)/100)+suffix+'</output></span><input data-collision-prop="'+key+'" data-collision-suffix="'+suffix+'" type="range" min="'+min+'" max="'+max+'" step="'+step+'" value="'+Number(collision[key]??0)+'"></label>';
-    const typeOptions=["object","barrel","treasure","ship","location","island","background","region-exit"].map(value=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+value+'</option>').join("");
+    const typeOptions=[["object","Objeto"],["barrel","Barril"],["treasure","Tesouro"],["ship","Navio"],["location","Local"],["island","Ilha"],["background","Fundo"],["region-exit","Saída de região"],["popup","PopUps"]].map(([value,label])=>'<option value="'+value+'" '+(entity.type===value?'selected':'')+'>'+label+'</option>').join("");
+    const popupMap=entity.popupMapping&&typeof entity.popupMapping==="object"?entity.popupMapping:{popupType:"math",trigger:"collect-treasure"};
+    const popupMappingEditor=entity.type==="popup"?'<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🪟 Mapeamento do Popup</strong><span>▸</span></button><div class="tq-config-area__body" hidden><label class="tq-world-field"><span>Tipo de popup</span><select data-popup-map="popupType"><option value="math" '+(popupMap.popupType==="math"?'selected':'')+'>Contininha</option></select></label><label class="tq-world-field"><span>Exibir quando</span><select data-popup-map="trigger"><option value="collect-treasure" '+(popupMap.trigger==="collect-treasure"?'selected':'')+'>Coletar tesouro</option><option value="repair-ship" '+(popupMap.trigger==="repair-ship"?'selected':'')+'>Consertar navio</option></select></label><small class="tq-world-editor-note">Este asset é somente o layout. O motor continua fornecendo a conta e as quatro alternativas quando a ação selecionada for executada.</small></div></section>':'';
     const effectCategories=[["generic","Genérico"],["treasure","Baú / tesouro"],["sea-item","Item ao mar"],["island","Ilha"],["background","Background / profundidade"],["ship","Navio aleatório"]]
       .map(([value,label])=>'<option value="'+value+'" '+(effect.category===value?'selected':'')+'>'+label+'</option>').join("");
     const effectPresets=effectPresetItems.map(item=>'<option value="'+item.id+'" '+(effect.preset===item.id?'selected':'')+'>'+this.escapeHtml(item.label||item.id)+'</option>').join("");
@@ -2442,6 +2444,7 @@ export class DevOverlay {
           text("src","Asset")+
           '<small class="tq-world-editor-note">Tipo lógico não altera a aparência do asset. Região, location e background continuam sendo renderizados como o sprite original.</small>'+
         '</div></section>'+
+        popupMappingEditor+
         '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Transformação</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
           num("x","Position X")+num("y","Position Y")+
           num("width","Width",16,entity.type==="region-exit"?"":2400)+num("height","Height",16,entity.type==="region-exit"?"":2400)+
@@ -2581,6 +2584,10 @@ export class DevOverlay {
         });
         this.worldEditor.updateEntityCollision(entity.id,{active:true,shape:"box",scaleX:1,scaleY:1,padding:0,action:"enter-world"},true);
       }
+      if(key==="type"&&value==="popup"){
+        patch.popupMapping=entity.popupMapping&&typeof entity.popupMapping==="object"
+          ?entity.popupMapping:{popupType:"math",trigger:"collect-treasure"};
+      }
       if(key==="destinationWorldId"){
         const linked=this.allWorldEntries().find(world=>world.id===value);
         patch.destinationWorldName=linked?.name||"";
@@ -2606,6 +2613,13 @@ export class DevOverlay {
       }
       input.addEventListener("change",()=>commitWorldProp(input));
     });
+
+    content.querySelectorAll("[data-popup-map]").forEach(input=>input.addEventListener("change",()=>{
+      const current=this.worldEditor.getSelected()||entity;
+      const mapping={...(current.popupMapping||popupMap),[input.dataset.popupMap]:String(input.value||"")};
+      this.selected=this.worldEditor.updateEntity(entity.id,{popupMapping:mapping},true)||this.selected;
+      this.syncLocalWorldFromEditor();
+    }));
 
     content.querySelectorAll("[data-world-rotate]").forEach(button=>button.addEventListener("click",()=>{
       const value=Number(button.dataset.worldRotate);

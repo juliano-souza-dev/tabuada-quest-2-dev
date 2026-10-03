@@ -3526,7 +3526,7 @@ export class WorldRuntime {
     if(!this.repairActive||this.repairActive!==active)return;
     active.challenge=challenge;
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
-    if(this.challengeWrap){this.challengeWrap.hidden=false;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.classList.add("is-repair-challenge")}
+    if(this.challengeWrap){this.applyPopupLayout("repair-ship");this.challengeWrap.hidden=false;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.classList.add("is-repair-challenge")}
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairHp){this.repairHp.hidden=false;const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;}
     if(this.repairOptions){
@@ -3580,7 +3580,7 @@ export class WorldRuntime {
     this.repairActive=null;
     this.challengeActive=null;
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
-    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-repair-challenge")}
+    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-repair-challenge");this.challengeWrap.style.removeProperty("--tq-popup-layout")}
     if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}
     if(this.repairHp)this.repairHp.hidden=true;
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
@@ -3619,7 +3619,7 @@ export class WorldRuntime {
     this.challengeActive=null;
     if(this.challengeKicker)this.challengeKicker.textContent="BAÚ DO TESOURO";
     if(this.challengeTitle)this.challengeTitle.textContent="Resolva para recolher";
-    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-treasure-challenge")}
+    if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.style.removeProperty("--tq-popup-layout")}
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
@@ -3852,7 +3852,7 @@ export class WorldRuntime {
     }
 
     this.challengeActive={entity,challenge};
-    if(this.challengeWrap){this.challengeWrap.hidden=false;this.challengeWrap.classList.add("is-treasure-challenge")}
+    if(this.challengeWrap){this.applyPopupLayout("collect-treasure");this.challengeWrap.hidden=false;this.challengeWrap.classList.add("is-treasure-challenge")}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairOptions){
@@ -4532,6 +4532,15 @@ export class WorldRuntime {
       cannonCatalog:this.cannonCatalog,
       shipCatalog:this.shipCatalog
     });
+  }
+
+  applyPopupLayout(trigger){
+    const layout=this.entities.find(entity=>String(entity?.type||"")==="popup"&&entity?.popupMapping?.popupType==="math"&&entity?.popupMapping?.trigger===trigger&&entity?.src);
+    if(!this.challengeWrap)return;
+    if(layout?.src){
+      const safe=String(layout.src).replace(/["\\]/g,"");
+      this.challengeWrap.style.setProperty("--tq-popup-layout",'url("'+safe+'")');
+    }else this.challengeWrap.style.removeProperty("--tq-popup-layout");
   }
 
   selectPlayerAmmo(ammoId){
