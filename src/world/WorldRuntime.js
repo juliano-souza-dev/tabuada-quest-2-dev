@@ -4368,15 +4368,22 @@ export class WorldRuntime {
     setTimeout(remove,1200);
   }
 
-  applyDirectNavalDamage(entity,amount=1){
+  applyDirectNavalDamage(entity,amount=1,{burstIndex=0,burstTotal=1}={}){
     if(!entity||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
     const hp=this.navalHpState(entity);
     const next=Math.max(0,hp.current-Math.max(1,Number(amount)||1));
     this.navalHp.set(String(entity.id),next);
     const dealt=Math.max(0,hp.current-next);
+    const total=Math.max(1,Number(burstTotal)||1);
+    const index=Math.max(0,Math.min(total-1,Number(burstIndex)||0));
+    // Um ataque com vários canhões chega quase no mesmo instante. Espalhar os
+    // números evita que um impacto esconda o outro sobre o alvo.
+    const center=index-(total-1)/2;
+    const offsetX=center*66;
+    const offsetY=-Math.abs(center)*22-Math.floor(index/4)*28;
     this.showNavalDamageNumber({
-      x:Number(entity.visualX??entity.x)||0,
-      y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
+      x:(Number(entity.visualX??entity.x)||0)+offsetX,
+      y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36)+offsetY,
       amount:dealt
     });
 
@@ -4423,6 +4430,7 @@ export class WorldRuntime {
         ammo
       })===true;
       if(!fired)continue;
+      const burstIndex=firedCount;
       this.audio?.play("cannon-shot");
       firedCount+=1;
       if(!ammoUnlimited){
@@ -4448,7 +4456,7 @@ export class WorldRuntime {
           if(coopBoss){
             const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
             this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
-          }else this.applyDirectNavalDamage(entity,shotDamage);
+          }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
         }
       },duration);
     }

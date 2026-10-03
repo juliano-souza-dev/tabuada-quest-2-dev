@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261003-2040";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261003-2050";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
 
