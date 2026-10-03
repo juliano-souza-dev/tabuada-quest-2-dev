@@ -92,9 +92,27 @@ const mountRewardDiagnostics=()=>{
 
   return panel;
 };
-const rewardDiagnostics=mountRewardDiagnostics();
+const rewardDiagnostics=null;
 try{
 game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261001-1848");
+
+if(flowTest){
+  try{
+    const key="tq.flowtest.world.override.v1";
+    const raw=localStorage.getItem(key);
+    if(raw){
+      const payload=JSON.parse(raw);
+      const world=payload?.world&&typeof payload.world==="object"?payload.world:null;
+      const expectedId=start?.kind==="world"?String(start.id||""):"";
+      if(world?.id&&(!expectedId||String(world.id)===expectedId)){
+        game.setWorldOverride?.(world);
+      }
+      localStorage.removeItem(key);
+    }
+  }catch(error){
+    try{localStorage.removeItem("tq.flowtest.world.override.v1")}catch{}
+    console.warn("[TQ Game] flow-test world override ignored",error);
+  }
 
 if(flowTest){
   services=createLocalFlowTestServices();
@@ -109,6 +127,7 @@ if(flowTest){
     state:services.playerState.load()
   };
   globalThis.dispatchEvent?.(new CustomEvent("tq:auth-entry-ready",{detail}));
+  }
 }else{
   services=await installAuthRuntime(game,{
     configUrl:"./src/config/firebase-public.json?v=20260930-1851"
