@@ -10,6 +10,7 @@ import { directionForHeading, resolveDirectionalSource, directionalRegionStyle }
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261003-0242";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261003-0248";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -178,6 +179,23 @@ export class WorldRuntime {
       cannonCatalog:Array.isArray(options.cannonCatalog)?options.cannonCatalog:[],
       shipCatalog:Array.isArray(options.shipCatalog)?options.shipCatalog:[],
       getBalances:()=>this.shopBalances()
+    });
+    const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
+    this.mobileHud=new MobileHudOverlay({
+      missions:Array.isArray(options.missionCatalog)?options.missionCatalog:[],
+      region:regionNumber,
+      getState:()=>({
+        hasTarget:Boolean(this.combatTarget&&this.isClickableCombatShip(this.combatTarget)),
+        attacking:this.navalAutoFire===true,
+        playerHp:Number(this.navalPlayerHp||0),
+        playerMaxHp:Number(this.navalPlayerMaxHp||0),
+        inCombat:Boolean(this.navalAutoFire||this.combatTarget||this.navalHostile?.size),
+        inChallenge:Boolean(this.challengeActive)
+      }),
+      onAttack:()=>this.activateNearby(),
+      onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
+      onRepair:()=>this.beginPlayerRepair({forced:false}),
+      onAmmo:()=>this.cyclePlayerAmmo()
     });
     this.remotePlayers=new Map();
     this.coopTransport=null;
@@ -889,7 +907,10 @@ export class WorldRuntime {
       </div>`;
 
     this.root.append(this.host);
-    if(!this.editorEnabled)this.shopOverlay?.mount?.(this.host);
+    if(!this.editorEnabled){
+      this.shopOverlay?.mount?.(this.host);
+      this.mobileHud?.mount?.(this.host);
+    }
     this.viewport=this.host.querySelector(".tq-world-viewport");
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
     this.oceanRenderer=null;
@@ -4126,6 +4147,32 @@ export class WorldRuntime {
     }
   }
 
+  cyclePlayerAmmo(){
+    const available=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[])
+      .filter(item=>item&&item.available!==false);
+    if(!available.length)return null;
+
+    const stocked=available.filter(item=>{
+      const id=String(item.id||"");
+      if(item.test?.unlimited===true)return true;
+      return Math.max(0,Number(this.state?.ammo?.stock?.[id])||0)>0;
+    });
+    const pool=stocked.length?stocked:available;
+    const current=String(this.state?.ammo?.selectedAmmoId||"");
+    let index=pool.findIndex(item=>String(item.id||"")===current);
+    index=(index+1)%pool.length;
+    const next=pool[index]||pool[0];
+    if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
+    this.state.ammo.selectedAmmoId=String(next.id||"");
+    if(this.actionMessage){
+      const quantity=next.test?.unlimited===true
+        ?"∞"
+        :String(Math.max(0,Number(this.state.ammo.stock?.[next.id])||0));
+      this.actionMessage.textContent="Munição equipada: "+String(next.name||next.id)+" · "+quantity;
+    }
+    return structuredClone(next);
+  }
+
   activateNearby(){
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
@@ -5136,6 +5183,7 @@ export class WorldRuntime {
     this.clearPlayerWake();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.shopOverlay?.destroy?.();
+    this.mobileHud?.destroy?.();
     this.root.classList.remove("tq-world-test-active");
     this.root.innerHTML="";
   }
