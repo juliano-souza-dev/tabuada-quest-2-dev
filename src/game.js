@@ -1,5 +1,6 @@
 import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2935";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-2450";
+import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
@@ -94,11 +95,27 @@ const mountRewardDiagnostics=()=>{
 const rewardDiagnostics=mountRewardDiagnostics();
 try{
 game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261001-1848");
-services=await installAuthRuntime(game,{
-  configUrl:"./src/config/firebase-public.json?v=20260930-1851"
-});
-game.attachPlayerStateStore(services.playerState);
-game.attachMultiplayer?.(services.multiplayer);
+
+if(flowTest){
+  services=createLocalFlowTestServices();
+  game.attachPlayerStateStore(services.playerState);
+  game.attachMultiplayer?.(null);
+
+  const detail={
+    reason:"flowtest-local-session",
+    status:services.auth.status(),
+    restore:await services.playerState.restore(),
+    content:{ok:true,code:"flowtest-local-json",source:"local-json"},
+    state:services.playerState.load()
+  };
+  globalThis.dispatchEvent?.(new CustomEvent("tq:auth-entry-ready",{detail}));
+}else{
+  services=await installAuthRuntime(game,{
+    configUrl:"./src/config/firebase-public.json?v=20260930-1851"
+  });
+  game.attachPlayerStateStore(services.playerState);
+  game.attachMultiplayer?.(services.multiplayer);
+}
 
 await game.start(start);
 
@@ -111,6 +128,7 @@ globalThis.TabuadaQuest={
   auth:services.auth,
   playerState:services.playerState,
   multiplayer:services.multiplayer,
+  flowTestLocalAccount:flowTest===true,
   getAccessStatus:services.getStatus,
   rewardDiagnostics
 };
