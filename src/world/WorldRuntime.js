@@ -4025,6 +4025,7 @@ export class WorldRuntime {
     if(entity.type==="treasure"){
       const rolled=entity.runtimeTreasure?this.rollTreasureRewards(entity):null;
       if(rolled)entity.rewards=rolled;
+      this.audio?.play("treasure-success");
       this.onTreasureCollected?.({entity:this.cleanEntity(entity),challenge,rewards:rolled?structuredClone(rolled):undefined});
       if(entity.runtimeTreasure&&entity.treasureRespawn===true)entity.treasureRespawnAt=performance.now()+Math.max(1000,Number(entity.treasureRespawnDelayMs)||30000);
     }
