@@ -727,6 +727,102 @@ export class GameRuntime {
     return this.playerCannons;
   }
 
+  ensurePlayerAmmo({migrateWorldStates=true}={}){
+    const validAmmo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+      .filter(item=>item?.available!==false);
+    const validIds=new Set(validAmmo.map(item=>String(item.id)));
+    const defaultId=String(this.ammoCatalog?.defaultAmmoId||validAmmo[0]?.id||"");
+    const normalized=normalizeGlobalAmmo(this.playerAmmo);
+    const stock={};
+    for(const [id,qty] of Object.entries(normalized.stock)){
+      if(validIds.has(id)&&qty>0)stock[id]=qty;
+    }
+    let selectedAmmoId=validIds.has(normalized.selectedAmmoId)?normalized.selectedAmmoId:"";
+
+    if(migrateWorldStates){
+      for(const state of Object.values(this.worldStates||{})){
+        if(!state||typeof state!=="object"||!state.ammo)continue;
+        const legacy=normalizeGlobalAmmo(state.ammo);
+        for(const [id,qty] of Object.entries(legacy.stock)){
+          if(validIds.has(id))stock[id]=Math.max(Number(stock[id])||0,qty);
+        }
+        if(!selectedAmmoId&&validIds.has(legacy.selectedAmmoId))selectedAmmoId=legacy.selectedAmmoId;
+        delete state.ammo;
+      }
+    }
+
+    if(!selectedAmmoId||!(Number(stock[selectedAmmoId])>0)){
+      selectedAmmoId=(defaultId&&Number(stock[defaultId])>0)
+        ?defaultId
+        :(Object.keys(stock).find(id=>Number(stock[id])>0)||"");
+    }
+    this.playerAmmo={selectedAmmoId,stock};
+    return this.playerAmmo;
+  }
+
+  ensureStarterLoadout(){
+    const loadout=this.manifest.player?.startingLoadout;
+    if(!loadout||typeof loadout!=="object")return false;
+    const version=Math.max(1,Math.floor(Number(loadout.version)||1));
+    this.flags=this.flags&&typeof this.flags==="object"?this.flags:{};
+    this.ensurePlayerShips();
+    this.ensurePlayerCannons();
+    this.ensurePlayerAmmo();
+    if(Math.floor(Number(this.flags.startingLoadoutVersion)||0)>=version)return false;
+
+    const shipId=String(this.playerShips.equippedShip||"");
+    const capacity=this.shipCannonCapacity(shipId);
+    const equipped=shipId?this.getShipCannons(shipId):[];
+    for(const item of Array.isArray(loadout.cannons)?loadout.cannons:[]){
+      const id=String(item?.id||"");
+      const cannon=this.cannonEntry(id);
+      if(!cannon||cannon.available===false)continue;
+      const quantity=Math.max(0,Math.floor(Number(item?.quantity)||0));
+      if(quantity<=0)continue;
+      this.playerCannons.owned[id]=Math.max(Number(this.playerCannons.owned[id])||0,quantity);
+      if(item?.equip===true&&shipId){
+        let equippedCount=equipped.filter(value=>value===id).length;
+        while(equippedCount<quantity&&equipped.length<capacity){
+          equipped.push(id);
+          equippedCount++;
+        }
+      }
+    }
+    if(shipId)this.playerCannons.equippedByShip[shipId]=equipped;
+    this.ensurePlayerCannons();
+
+    for(const item of Array.isArray(loadout.ammo)?loadout.ammo:[]){
+      const id=String(item?.id||"");
+      const valid=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+        .some(ammo=>String(ammo?.id||"")===id&&ammo?.available!==false);
+      if(!valid)continue;
+      const quantity=Math.max(0,Math.floor(Number(item?.quantity)||0));
+      if(quantity<=0)continue;
+      this.playerAmmo.stock[id]=Math.max(Number(this.playerAmmo.stock[id])||0,quantity);
+      if(item?.select===true&&!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
+    }
+    this.ensurePlayerAmmo({migrateWorldStates:false});
+    this.flags.startingLoadoutVersion=version;
+
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    const onboarding=game.onboarding&&typeof game.onboarding==="object"?game.onboarding:{};
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        onboarding:{
+          ...onboarding,
+          starterCannonChallengeCompleted:true,
+          starterAmmoChallengeCompleted:true,
+          startingLoadoutVersion:version,
+          startingLoadoutGrantedAt:Number(onboarding.startingLoadoutGrantedAt)||Date.now()
+        }
+      }
+    };
+    return true;
+  }
+
   getShipCannons(shipId=this.playerShips.equippedShip){
     this.ensurePlayerCannons();
     const id=String(shipId||"");
