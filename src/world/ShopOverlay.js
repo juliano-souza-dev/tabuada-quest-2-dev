@@ -1,5 +1,5 @@
-const DEFAULT_FRAME="./assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp";
-const DEFAULT_SLOT="./assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp";
+const DEFAULT_FRAME=new URL("../../assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp",import.meta.url).href;
+const DEFAULT_SLOT=new URL("../../assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp",import.meta.url).href;
 
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const money=value=>new Intl.NumberFormat("pt-BR").format(Math.max(0,Math.floor(Number(value)||0)));
@@ -181,7 +181,7 @@ export class ShopOverlay{
     for(const item of items){
       const row=document.createElement("article");
       row.className="tq-world-shop__slot";
-      row.style.setProperty("--shop-slot-asset",`url("${this.slotAsset}")`);
+      row.style.backgroundImage=`url("${this.slotAsset}")`;
       const image=item.image?`<img src="${item.image}" alt="">`:"";
       row.innerHTML=`
         <div class="tq-world-shop__item-image">${image}</div>
