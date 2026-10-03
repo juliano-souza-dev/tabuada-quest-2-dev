@@ -935,11 +935,15 @@ export class GameRuntime {
       }
     };
 
+    const balances=this.getWalletBalances();
     const detail={
       worldId,
       entityId:String(cleanEntity.id),
-      rewards:{coins,gold,rubies,xp,itemId,quantity:itemId?quantity:0,shipId}
+      rewards:{coins,gold,rubies,xp,itemId,quantity:itemId?quantity:0,shipId},
+      balances:clone(balances)
     };
+    // Keep every visible wallet consumer in lockstep with the canonical reward state.
+    this.worldRuntime?.shopOverlay?.refreshBalances?.();
     globalThis.dispatchEvent?.(new CustomEvent("tq:rewardgranted",{detail:clone(detail)}));
     this.saveState();
     this.syncCloud("reward-claim");
