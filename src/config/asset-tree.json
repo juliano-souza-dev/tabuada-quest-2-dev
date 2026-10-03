@@ -1911,6 +1911,11 @@
       "path": "assets/ships/ship_w.png"
     },
     {
+      "type": "audio",
+      "name": "sound_game_coins_win.wav",
+      "path": "assets/sound/sound_game_coins_win.wav"
+    },
+    {
       "type": "image",
       "name": "avatar_selection_panel.webp",
       "path": "assets/ui/createprofile/avatar_selection_panel.webp"
