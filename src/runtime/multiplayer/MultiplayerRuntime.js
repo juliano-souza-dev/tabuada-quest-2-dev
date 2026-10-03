@@ -98,7 +98,14 @@ export class MultiplayerRuntime extends EventTarget{
   }
   async ensureBoss(boss={}){
     if(!this.worldId)return null;const bossId=safeKey(boss.bossId);if(!bossId)return null;
-    this.socketSend({type:"boss.ensure",bossId,entityId:String(boss.entityId||boss.bossId||""),name:String(boss.name||"Boss"),maxHp:Math.max(1,Number(boss.maxHp)||1)});
+    this.socketSend({
+      type:"boss.ensure",
+      bossId,
+      entityId:String(boss.entityId||boss.bossId||""),
+      name:String(boss.name||"Boss"),
+      maxHp:Math.max(1,Number(boss.maxHp)||1),
+      respawnDelayMs:Math.max(1000,Number(boss.respawnDelayMs)||300000)
+    });
     return null;
   }
   async damageBoss(bossId,damage=1,meta={}){
