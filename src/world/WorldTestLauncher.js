@@ -14,6 +14,11 @@ export async function launchWorldTest(root,{worldId=""}={}){
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
 
+  const manifestResponse=await fetch("./src/config/game.manifest.json?v=20261003-global-camera",{cache:"no-store"});
+  if(!manifestResponse.ok)throw new Error("Game manifest failed: "+manifestResponse.status);
+  const gameManifest=await manifestResponse.json();
+  const globalCamera=gameManifest?.worldDefaults?.camera||{playZoom:0.4841};
+
   const ammoResponse=await fetch("./src/config/ammo-catalog.json?v=20261002-0926",{cache:"no-store"});
   if(!ammoResponse.ok)throw new Error("Ammo catalog failed: "+ammoResponse.status);
   const ammoCatalog=await ammoResponse.json();
@@ -43,6 +48,7 @@ export async function launchWorldTest(root,{worldId=""}={}){
     root.innerHTML="";
     world=new WorldRuntime(root,config,{
       state,
+      globalCamera,
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoUnlimited:true,
