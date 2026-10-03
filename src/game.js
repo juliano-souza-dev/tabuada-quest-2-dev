@@ -4,6 +4,7 @@ import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=202610
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
 const rawStart=params.get("start");
+const flowTest=params.get("flowtest")==="1";
 let start=null;
 
 if(rawStart){
@@ -14,6 +15,28 @@ if(rawStart){
     if((kind==="scene"||kind==="world")&&id)start={kind,id};
   }
 }
+
+const mountFlowTestExit=()=>{
+  if(!flowTest)return null;
+  document.documentElement.classList.add("tq-flow-test-active");
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="tq-flow-test-exit";
+  button.setAttribute("aria-label","Sair do modo testar fluxo");
+  button.title="Sair do modo Testar fluxo";
+  button.innerHTML='<span aria-hidden="true">✕</span><strong>Sair do teste</strong>';
+  button.addEventListener("click",()=>{
+    try{globalThis.opener?.focus?.()}catch{}
+    try{globalThis.close()}catch{}
+    setTimeout(()=>{
+      if(!document.hidden)location.href="./index.html";
+    },120);
+  });
+  document.body.append(button);
+  return button;
+};
+
+mountFlowTestExit();
 
 const showBootError=error=>{
   console.error("[TQ Game] boot failed",error);
