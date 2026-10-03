@@ -1,5 +1,5 @@
 
-const objectiveLabel=objective=>{
+const objectiveLabel=(objective,progress=0)=>{
   const type=String(objective?.type||"");
   const target=Math.max(0,Number(objective?.target)||0);
   const labels={
@@ -14,7 +14,11 @@ const objectiveLabel=objective=>{
     travel_cargo:"Complete a rota de carga",
     repair_ship:"Repare seu navio"
   };
-  return (labels[type]||"Complete o objetivo")+(target?" · "+target:"");
+  const base=objective?.targetLabel&&type==="defeat_npc"
+    ?"Derrote "+String(objective.targetLabel)
+    :(labels[type]||"Complete o objetivo");
+  const current=Math.max(0,Math.min(target,Math.floor(Number(progress)||0)));
+  return base+(target?" · "+current+"/"+target:"");
 };
 
 const iconButton=(kind,label,icon)=>{
@@ -122,6 +126,7 @@ export class MobileHudOverlay{
   renderMissions(){
     const host=this.drawer?.querySelector(".tq-mobile-hud__missions-list");
     if(!host)return;
+    const progress=this.getState()?.missionProgress||{};
     const list=this.missions.filter(item=>Number(item?.region)===this.region).sort((a,b)=>Number(a.order||0)-Number(b.order||0));
     host.innerHTML="";
     if(!list.length){
@@ -141,7 +146,7 @@ export class MobileHudOverlay{
         '<div class="tq-mobile-hud__mission-reward"></div>';
       card.querySelector(".tq-mobile-hud__mission-number").textContent=String(mission.order||"•");
       card.querySelector(".tq-mobile-hud__mission-copy strong").textContent=String(mission.name||mission.id||"Missão");
-      card.querySelector(".tq-mobile-hud__mission-copy span").textContent=objectiveLabel(mission.objective);
+      card.querySelector(".tq-mobile-hud__mission-copy span").textContent=objectiveLabel(mission.objective,progress?.[mission.id]);
       const rewards=[];
       if(Number(reward.gold)>0)rewards.push("🪙 "+Number(reward.gold));
       if(Number(reward.rubies)>0)rewards.push("💎 "+Number(reward.rubies));
@@ -153,6 +158,7 @@ export class MobileHudOverlay{
   openMissions(){
     this.closeAmmoMenu();
     if(!this.drawer)return;
+    this.renderMissions();
     this.drawer.hidden=false;
     document.documentElement.classList.add("tq-missions-open");
   }
