@@ -1,4 +1,5 @@
-const CACHE_NAME="tq-dev-assets-v1";
+const CACHE_NAME="tq-dev-assets-v20261003-2655";
+const DEV_CACHE_RESET_KEY="tq.dev.cache-reset:v20261003-2655";
 const MANIFEST_URL="./src/config/asset-tree.json";
 const HASH_KEY="tq.dev.asset-manifest-hash:v1";
 
@@ -49,6 +50,28 @@ async function digest(text){
   const bytes=new TextEncoder().encode(text);
   const hash=await crypto.subtle.digest("SHA-256",bytes);
   return [...new Uint8Array(hash)].map(byte=>byte.toString(16).padStart(2,"0")).join("");
+}
+
+async function resetDevWorkersAndCaches(){
+  if(localStorage.getItem(DEV_CACHE_RESET_KEY)==="1")return false;
+  try{
+    if("serviceWorker" in navigator){
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration=>registration.unregister().catch(()=>false)));
+    }
+    if("caches" in globalThis){
+      const names=await caches.keys();
+      await Promise.all(names
+        .filter(name=>name.startsWith("tq-dev-assets-")||name.startsWith("tq-pwa-runtime-"))
+        .map(name=>caches.delete(name)));
+    }
+    localStorage.removeItem(HASH_KEY);
+    localStorage.setItem(DEV_CACHE_RESET_KEY,"1");
+    return true;
+  }catch(error){
+    console.warn("[DEV asset cache] cache/worker reset failed",error);
+    return false;
+  }
 }
 
 async function registerWorker(){
@@ -111,6 +134,7 @@ async function runPool(items,worker,limit=6,onDone=()=>{}){
 }
 
 export async function installDevAssetCache(){
+  await resetDevWorkersAndCaches();
   const overlay=progressOverlay();
   setProgress(overlay,{done:0,total:0,status:"Lendo catálogo de assets…"});
 
