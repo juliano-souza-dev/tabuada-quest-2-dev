@@ -90,7 +90,7 @@ export class DevOverlay {
               <label><span>Altura</span><input data-world-create-height type="number" min="1000" max="20000" value="4000"></label>
             </div>
             <label><span>Fundo do oceano</span><select data-world-create-background></select></label>
-            <label><span>Movimento inicial</span><select data-world-create-preset><option value="calm">Calmo</option><option value="adventure" selected>Aventura</option><option value="storm">Tempestade</option></select></label>
+            <label><span>Movimento inicial</span><select data-world-create-preset><option value="calm">Calmo</option><option value="adventure" selected>Aventura</option><option value="storm">Tempestade</option><option value="halloween">🎃 Halloween</option></select></label>
             <div class="tq-scenes__create-error" data-world-create-error hidden></div>
             <div class="tq-scenes__create-actions"><button type="button" data-world-create-cancel>Cancelar</button><button type="submit" class="is-primary">Criar oceano</button></div>
           </form>
@@ -995,8 +995,15 @@ export class DevOverlay {
     const presetDefaults={
       calm:{speed:12,directionX:.55,directionY:.18,swell:12,tileSize:760,brightness:100,saturation:95},
       adventure:{speed:28,directionX:.82,directionY:.32,swell:28,tileSize:720,brightness:102,saturation:105},
-      storm:{speed:56,directionX:1,directionY:.62,swell:62,tileSize:660,brightness:88,saturation:82}
-    }[preset];
+      storm:{speed:56,directionX:1,directionY:.62,swell:62,tileSize:660,brightness:88,saturation:82},
+      halloween:{
+        speed:70,directionX:1,directionY:.68,swell:72,tileSize:590,
+        brightness:27,saturation:52,contrast:82,
+        tintR:74,tintG:48,tintB:88,
+        distortion:36,waveFrequencyA:24,waveFrequencyB:29,waveMix:56,
+        foamMix:48,sparkleIntensity:8,sparkleSharpness:32
+      }
+    }[preset]||{speed:28,directionX:.82,directionY:.32,swell:28,tileSize:720,brightness:102,saturation:105};
 
     const revision="local-"+Date.now();
     const world={
@@ -1018,7 +1025,20 @@ export class DevOverlay {
         direction:"n",
         src:"./assets/ships/events/halloween/navio_pirata_halloween_tabuada.webp"
       },
-      ocean:{active:true,renderer:"webgl",background,preset,...presetDefaults},
+      ocean:{
+        active:true,
+        renderer:"webgl",
+        background,
+        preset:preset==="halloween"?"storm":preset,
+        ...presetDefaults,
+        ...(preset==="halloween"?{
+          layers:{
+            deep:{background,parallax:.22,driftX:7,driftY:4,tileScale:1.18,opacity:1},
+            wave:{background,parallax:.45,driftX:18,driftY:11,tileScale:.72,opacity:.34},
+            foam:{background,parallax:.68,driftX:36,driftY:24,tileScale:.48,opacity:.2}
+          }
+        }:{})
+      },
       minimap:{enabled:true,frameAsset:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp",showLocations:true,showShips:true,showCamera:true,types:["location","island","ship"]},
       entities:[],
       npcPopulation:{
@@ -1031,7 +1051,24 @@ export class DevOverlay {
       treasurePopulation:{enabled:false,seed:1,spread:{mode:"random-spaced",margin:220,minDistance:180},types:[]},
       camera:{playZoom:1},
       editor:{cameraX:width/2,cameraY:height/2,zoom:.55},
-      meta:{schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev"}
+      meta:{
+        schema:"tq.world",version:1,sourceRevision:revision,editorVersion:1,createdFrom:"tabuada-quest-dev",
+        ...(preset==="halloween"?{event:"halloween",preset:"halloween"}:{})
+      },
+      ...(preset==="halloween"?{
+        environment:{
+          preset:"storm",
+          weather:"rain",
+          clouds:{active:true,density:.92,opacity:.3,scale:2.15,speed:16,direction:145,parallax:.42},
+          halloween:{active:true,fog:{active:true,intensity:.58},pumpkinGlow:true}
+        },
+        treasurePopulation:{
+          enabled:true,seed:1031,
+          spread:{mode:"random-spaced",margin:260,minDistance:220},
+          types:[{treasureId:"tesouro-halloween-abobora",count:40,respawn:false,spawnIntervalSec:.12,respawnDelaySec:30}]
+        },
+        region:{index:0,code:"HALLOWEEN",nextWorldId:null,previousWorldId:null,halloween:true,event:true}
+      }:{})
     };
     const entry={id,name,type:"ocean",path:null,local:true};
     this.localWorlds.push({entry,world});
