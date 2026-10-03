@@ -4328,6 +4328,7 @@ export class WorldRuntime {
     };
     const size=Math.max(48,Number(entity.width)||96,Number(entity.height)||96);
     this.navalRenderer?.destroyShip?.({at:point,size,duration});
+    if(entity.el)entity.el.hidden=true;
 
     const respawnDelay=entity.runtimeGenerated&&entity.respawn===true
       ?Math.max(0,Number(entity.respawnDelayMs)||0)
@@ -4377,7 +4378,7 @@ export class WorldRuntime {
         return;
       }
       this.completeCollection(entity);
-    },duration+respawnDelay);
+    },respawnDelay>0?Math.max(duration,respawnDelay):duration);
     this.navalDestroyTimers.set(id,timer);
     return true;
   }
