@@ -591,12 +591,6 @@ export class GameRuntime {
       equippedByShip[shipId]=equipped;
     }
 
-    const equippedShip=String(this.playerShips.equippedShip||"");
-    if(equippedShip&&Array.isArray(equippedByShip[equippedShip])&&equippedByShip[equippedShip].length===0){
-      const candidate=Object.entries(owned).find(([id,qty])=>validIds.has(id)&&Number(qty)>0)?.[0]||"";
-      if(candidate&&validIds.has(candidate))equippedByShip[equippedShip]=[candidate];
-    }
-
     // Owned is total inventory including equipped units. Ensure counts cover all equipped copies.
     const equippedCounts={};
     for(const ids of Object.values(equippedByShip)){
@@ -653,7 +647,6 @@ export class GameRuntime {
     const equipped=this.getShipCannons(sid);
     const index=equipped.indexOf(cid);
     if(index<0)return {ok:false,code:"not_equipped"};
-    if(equipped.length<=1)return {ok:false,code:"last_cannon",message:"O navio precisa ter pelo menos 1 canhão equipado."};
     equipped.splice(index,1);
     this.playerCannons.equippedByShip[sid]=equipped;
     if(save)this.saveState();
@@ -674,25 +667,31 @@ export class GameRuntime {
     this.ensurePlayerCannons();
     const cannonId=String(this.cannonCatalog?.defaultCannonId||"cannon-basic");
     const cannon=this.cannonEntry(cannonId);
-    const shipId=String(this.playerShips.equippedShip||"");
-    if(!cannon||!shipId)return {ok:false};
+    if(!cannon)return {ok:false};
 
-    const equipped=this.getShipCannons(shipId);
-    if(equipped.length>0){
-      return {ok:true,cannonId:String(equipped[0]),equippedCannonIds:equipped,alreadyEquipped:true};
+    const ownedTotal=Object.values(this.playerCannons.owned||{})
+      .reduce((sum,value)=>sum+Math.max(0,Math.floor(Number(value)||0)),0);
+    if(ownedTotal>0){
+      return {
+        ok:true,
+        alreadyOwned:true,
+        cannonId,
+        cannonName:String(cannon.name||"Canhão do Marujo"),
+        equippedCannonIds:this.getShipCannons()
+      };
     }
 
-    this.playerCannons.owned[cannonId]=Math.max(1,Number(this.playerCannons.owned[cannonId])||0);
-    this.playerCannons.equippedByShip[shipId]=[cannonId];
+    this.playerCannons.owned[cannonId]=1;
     this.saveState();
     globalThis.dispatchEvent?.(new CustomEvent("tq:cannonearned",{
-      detail:{shipId,cannonId,source:"multiplication-rescue"}
+      detail:{cannonId,source:"multiplication-rescue",equipped:false}
     }));
     return {
       ok:true,
       cannonId,
       cannonName:String(cannon.name||"Canhão do Marujo"),
-      equippedCannonIds:[cannonId]
+      equippedCannonIds:[],
+      stored:true
     };
   }
 
@@ -712,13 +711,6 @@ export class GameRuntime {
     const ship=this.shipEntry(shipId);
     if(!ship||ship.available===false||!this.playerShips.ownedShips.includes(shipId))return false;
     this.ensurePlayerCannons();
-    if(this.getShipCannons(shipId).length<1){
-      const storage=this.getCannonStorage();
-      const candidate=Object.entries(storage).find(([,qty])=>Number(qty)>0)?.[0];
-      if(!candidate)return false;
-      const equipped=this.equipCannonToShip(candidate,shipId,{save:false});
-      if(!equipped.ok)return false;
-    }
     if(this.playerShips.equippedShip===shipId)return true;
 
     this.playerShips.equippedShip=shipId;
