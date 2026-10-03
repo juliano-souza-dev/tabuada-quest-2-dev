@@ -1517,3 +1517,252 @@ html.tq-missions-open .tq-mobile-hud__missions{pointer-events:auto}
   .tq-mobile-hud__button--ammo{right:max(10px,env(safe-area-inset-right));bottom:max(94px,calc(env(safe-area-inset-bottom) + 86px))}
   .tq-mobile-hud__button--attack,.tq-mobile-hud__button--cancel{right:max(10px,env(safe-area-inset-right));bottom:max(32px,calc(env(safe-area-inset-bottom) + 24px));width:96px;height:60px}
 }
+
+
+/* Combat HUD v2: status is separated from navigation and actions */
+.tq-world-shop-launcher{display:none!important}
+.tq-world-host.has-combat-target .tq-world-action{display:none!important}
+
+.tq-mobile-combat-ui{
+  position:fixed;
+  inset:0;
+  z-index:620;
+  pointer-events:none;
+}
+.tq-world-host.is-editor .tq-mobile-combat-ui{display:none!important}
+
+.tq-target-status{
+  position:absolute;
+  top:max(16px,calc(env(safe-area-inset-top) + 10px));
+  left:50%;
+  transform:translateX(-50%);
+  width:min(420px,calc(100vw - 28px));
+  display:grid;
+  gap:6px;
+  justify-items:center;
+  pointer-events:none;
+  filter:drop-shadow(0 5px 12px rgba(0,0,0,.55));
+}
+.tq-target-status[hidden]{display:none!important}
+.tq-target-status>strong{
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding:4px 10px;
+  border-radius:10px;
+  background:rgba(11,16,24,.76);
+  color:#fff3d2;
+  font:900 14px/1.1 system-ui;
+  text-shadow:0 2px 3px #000;
+}
+
+.tq-hpbar{
+  position:relative;
+  width:100%;
+  height:24px;
+  overflow:hidden;
+  border:2px solid rgba(255,255,255,.76);
+  border-radius:999px;
+  background:rgba(10,15,22,.84);
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.75),0 2px 8px rgba(0,0,0,.42);
+}
+.tq-hpbar>span{
+  position:absolute;
+  inset:0 auto 0 0;
+  width:100%;
+  transition:width .18s linear;
+}
+.tq-hpbar>b{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font:900 12px/1 system-ui;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 3px #000,0 0 4px #000;
+}
+.tq-hpbar--enemy{border-color:rgba(255,190,117,.9)}
+.tq-hpbar--enemy>span{background:linear-gradient(90deg,#941f24,#e34232,#ff7a45)}
+.tq-hpbar--player{height:20px;border-color:rgba(180,255,198,.82)}
+.tq-hpbar--player>span{background:linear-gradient(90deg,#16723a,#27af5a,#76de75)}
+
+.tq-player-status{
+  position:absolute;
+  left:max(14px,env(safe-area-inset-left));
+  bottom:max(148px,calc(env(safe-area-inset-bottom) + 140px));
+  width:132px;
+  display:grid;
+  gap:4px;
+  pointer-events:none;
+}
+.tq-player-status>small{
+  padding-left:6px;
+  color:#d8f5df;
+  font:900 9px/1 system-ui;
+  letter-spacing:.12em;
+  text-shadow:0 2px 3px #000;
+}
+
+.tq-combat-dock{
+  position:absolute;
+  left:max(150px,calc(env(safe-area-inset-left) + 150px));
+  right:max(8px,env(safe-area-inset-right));
+  bottom:max(8px,env(safe-area-inset-bottom));
+  min-height:58px;
+  display:flex;
+  flex-flow:row wrap-reverse;
+  align-content:flex-start;
+  justify-content:flex-end;
+  gap:6px;
+  pointer-events:auto;
+}
+.tq-combat-dock__button{
+  position:relative;
+  width:52px;
+  height:52px;
+  flex:0 0 52px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid rgba(255,219,139,.55);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(39,27,47,.94),rgba(13,20,28,.94));
+  color:#fff3d0;
+  box-shadow:0 5px 14px rgba(0,0,0,.48),inset 0 0 0 1px rgba(255,255,255,.05);
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+.tq-combat-dock__button>span{
+  display:grid;
+  place-items:center;
+  font-size:22px;
+  line-height:1;
+}
+.tq-combat-dock__button>small{
+  position:absolute;
+  left:2px;
+  right:2px;
+  bottom:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#fff;
+  font:800 7px/1 system-ui;
+  text-shadow:0 1px 2px #000;
+}
+.tq-combat-dock__button.is-primary{
+  width:60px;
+  height:60px;
+  flex-basis:60px;
+  margin-top:-8px;
+  border-color:#ffd46d;
+  background:radial-gradient(circle at 50% 35%,rgba(168,67,32,.95),rgba(71,25,30,.97));
+  box-shadow:0 0 0 2px rgba(255,195,82,.12),0 7px 18px rgba(0,0,0,.58);
+}
+.tq-combat-dock__button.is-primary>span{font-size:27px}
+.tq-combat-dock__button.is-cancel{
+  border-color:#ff8d8d;
+  background:radial-gradient(circle at 50% 35%,rgba(139,31,39,.98),rgba(55,18,28,.98));
+}
+.tq-combat-dock__button:disabled,.tq-combat-dock__button.is-disabled{
+  opacity:.4;
+  filter:grayscale(.55);
+}
+.tq-combat-dock__button:not(:disabled):active{transform:scale(.94)}
+
+.tq-ammo-popover{
+  position:absolute;
+  left:max(150px,calc(env(safe-area-inset-left) + 150px));
+  bottom:max(72px,calc(env(safe-area-inset-bottom) + 64px));
+  width:min(245px,calc(100vw - 164px));
+  max-height:min(52vh,390px);
+  overflow:auto;
+  padding:7px;
+  border:1px solid rgba(255,216,128,.55);
+  border-radius:15px;
+  background:rgba(10,15,24,.95);
+  box-shadow:0 12px 30px rgba(0,0,0,.62);
+  pointer-events:auto;
+  overscroll-behavior:contain;
+}
+.tq-ammo-popover[hidden]{display:none!important}
+.tq-ammo-popover__list{display:flex;flex-direction:column;gap:6px}
+.tq-ammo-popover__item{
+  min-height:52px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  padding:5px 8px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:11px;
+  background:rgba(255,255,255,.055);
+  color:#fff;
+  text-align:left;
+  touch-action:manipulation;
+}
+.tq-ammo-popover__item.is-selected{
+  border-color:#ffd16e;
+  box-shadow:inset 0 0 0 1px rgba(255,209,110,.28);
+  background:rgba(113,73,31,.36);
+}
+.tq-ammo-popover__item img,.tq-ammo-popover__item>span{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  object-fit:contain;
+  font-size:23px;
+}
+.tq-ammo-popover__item>div{display:grid;gap:2px;min-width:0}
+.tq-ammo-popover__item strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font:900 11px/1.1 system-ui;
+}
+.tq-ammo-popover__item small{color:#ffd98f;font:900 10px/1 system-ui}
+.tq-ammo-popover__empty{padding:14px;color:#c7d0d7;text-align:center;font:800 11px/1 system-ui}
+
+.tq-mobile-combat-ui .tq-mobile-hud__toast{
+  position:absolute;
+  left:50%;
+  bottom:max(142px,calc(env(safe-area-inset-bottom) + 134px));
+  transform:translate(-50%,8px);
+  max-width:min(280px,70vw);
+  padding:8px 12px;
+  border:1px solid rgba(255,209,102,.65);
+  border-radius:12px;
+  background:rgba(15,8,24,.92);
+  color:#fff0bf;
+  font:800 11px/1.25 system-ui;
+  text-align:center;
+  opacity:0;
+  transition:opacity .16s ease,transform .16s ease;
+  pointer-events:none;
+}
+.tq-mobile-combat-ui .tq-mobile-hud__toast.is-visible{opacity:1;transform:translate(-50%,0)}
+
+html.tq-shop-open .tq-mobile-combat-ui,
+html.tq-missions-open .tq-mobile-combat-ui{visibility:hidden}
+html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
+
+@media(max-width:430px){
+  .tq-target-status{top:max(10px,calc(env(safe-area-inset-top) + 6px));width:calc(100vw - 24px)}
+  .tq-target-status>strong{font-size:12px}
+  .tq-hpbar{height:22px}
+  .tq-player-status{left:max(10px,env(safe-area-inset-left));bottom:max(136px,calc(env(safe-area-inset-bottom) + 128px));width:122px}
+  .tq-player-status .tq-hpbar{height:18px}
+  .tq-combat-dock{left:max(140px,calc(env(safe-area-inset-left) + 140px));right:max(6px,env(safe-area-inset-right));gap:5px}
+  .tq-combat-dock__button{width:48px;height:48px;flex-basis:48px;border-radius:13px}
+  .tq-combat-dock__button.is-primary{width:56px;height:56px;flex-basis:56px}
+  .tq-ammo-popover{left:max(140px,calc(env(safe-area-inset-left) + 140px));width:min(230px,calc(100vw - 150px))}
+}
+
+@media(orientation:landscape) and (max-height:600px){
+  .tq-player-status{left:max(10px,env(safe-area-inset-left));bottom:max(126px,calc(env(safe-area-inset-bottom) + 118px));width:128px}
+  .tq-combat-dock{left:auto;right:max(8px,env(safe-area-inset-right));width:min(390px,calc(100vw - 170px));bottom:max(8px,env(safe-area-inset-bottom))}
+  .tq-ammo-popover{left:auto;right:max(8px,env(safe-area-inset-right));bottom:max(70px,calc(env(safe-area-inset-bottom) + 62px));width:240px}
+}
