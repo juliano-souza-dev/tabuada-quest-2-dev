@@ -3750,12 +3750,12 @@ export class WorldRuntime {
 
     this.challengeActive={entity,challenge,kind:"starter-ammo"};
     if(this.challengeKicker)this.challengeKicker.textContent="SEM MUNIÇÃO";
-    if(this.challengeTitle)this.challengeTitle.textContent="Ganhe 50 munições básicas";
+    if(this.challengeTitle)this.challengeTitle.textContent="Ganhe 1000 munições básicas";
     if(this.challengeWrap)this.challengeWrap.hidden=false;
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
     if(this.repairHp)this.repairHp.hidden=true;
     if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Você ficou sem munição. Acerte a multiplicação para receber 50 Bolas de Canhão.";
+      "Você ficou sem munição. Acerte a multiplicação para receber 1000 Bolas de Canhão.";
     if(this.repairOptions){
       this.repairOptions.hidden=false;
       this.repairOptions.replaceChildren();
@@ -3811,18 +3811,18 @@ export class WorldRuntime {
     }
 
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
-    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+50;
+    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1000;
     this.state.ammo.selectedAmmoId=ammoId;
     this.onStarterAmmoEarned?.({
       ammoId,
       ammoName:String(ammo.name||"Bola de Canhão"),
-      quantity:50,
+      quantity:1000,
       total:this.state.ammo.stock[ammoId]
     });
 
     if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Acertou! +50 Bolas de Canhão recebidas e equipadas.";
-    this.showGameplayToast("🎁 +50 Bolas de Canhão");
+      "Acertou! +1000 Bolas de Canhão recebidas e equipadas.";
+    this.showGameplayToast("🎁 +1000 Bolas de Canhão");
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
     return true;
   }
@@ -3923,20 +3923,17 @@ export class WorldRuntime {
       return false;
     }
 
-    // Equipment is explicit. Winning a cannon adds it to inventory/storage only.
-    // The combat runtime must never infer an equipped cannon from ownership.
     this.syncEquippedCannonsFromShipyard();
     const name=String(granted?.cannonName||"Canhão do Marujo");
     if(this.challengeFeedback)this.challengeFeedback.textContent=
       granted?.alreadyOwned
-        ?"Você já possui um canhão. Equipe-o no estaleiro."
-        :"Acertou! "+name+" recebido. Agora equipe-o no estaleiro.";
+        ?"Você já possui o canhão inicial."
+        :"Acertou! "+name+" recebido e equipado automaticamente.";
     this.showGameplayToast(granted?.alreadyOwned
-      ?"⚓ Equipe seu canhão no estaleiro"
-      :"🎁 "+name+" enviado ao depósito");
+      ?"⚓ Canhão inicial disponível"
+      :"🎁 "+name+" equipado");
     this.challengeTimer=setTimeout(()=>{
       this.closeTreasureChallenge();
-      this.shipyardOverlay?.open?.();
     },850);
     return true;
   }
@@ -5497,358 +5494,3 @@ export class WorldRuntime {
       return visibleTypes.has(this.minimapLogicalType(entity));
     });
   }
-
-  renderMinimap(force=false,time=performance.now()){
-    if(!this.minimapEl||!this.minimapCanvas||!this.minimapCtx)return;
-    const enabled=this.minimapEnabled()&&this.mode==="play";
-    this.minimapEl.hidden=!enabled;
-    if(!enabled)return;
-
-    const frameAsset=String(this.minimapConfig().frameAsset??"").trim();
-    const hasFrame=Boolean(frameAsset);
-    this.minimapEl.classList.toggle("has-frame",hasFrame);
-    if(this.minimapFrameEl){
-      if(hasFrame){
-        if(this.minimapFrameEl.getAttribute("src")!==frameAsset)this.minimapFrameEl.src=frameAsset;
-        this.minimapFrameEl.hidden=false;
-      }else{
-        this.minimapFrameEl.hidden=true;
-        this.minimapFrameEl.removeAttribute("src");
-      }
-    }
-    if(!force&&time-this.minimapLastRender<100)return;
-    this.minimapLastRender=time;
-
-    const rect=this.minimapCanvas.getBoundingClientRect();
-    const width=Math.max(1,Math.round(rect.width||148));
-    const height=Math.max(1,Math.round(rect.height||148));
-    const dpr=Math.max(1,Math.min(3,globalThis.devicePixelRatio||1));
-    const pixelWidth=Math.round(width*dpr);
-    const pixelHeight=Math.round(height*dpr);
-    if(this.minimapCanvas.width!==pixelWidth||this.minimapCanvas.height!==pixelHeight){
-      this.minimapCanvas.width=pixelWidth;
-      this.minimapCanvas.height=pixelHeight;
-    }
-
-    const ctx=this.minimapCtx;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,width,height);
-
-    const area=this.getPlayableBounds();
-    const pad=10;
-    const drawWidth=Math.max(1,width-pad*2);
-    const drawHeight=Math.max(1,height-pad*2);
-    const scale=Math.min(drawWidth/area.width,drawHeight/area.height);
-    const mapWidth=area.width*scale;
-    const mapHeight=area.height*scale;
-    const offsetX=(width-mapWidth)/2;
-    const offsetY=(height-mapHeight)/2;
-    const project=(x,y)=>({
-      x:offsetX+(Number(x)-area.left)*scale,
-      y:offsetY+(Number(y)-area.top)*scale
-    });
-
-    ctx.save();
-    ctx.fillStyle="rgba(5,38,55,.88)";
-    ctx.fillRect(offsetX,offsetY,mapWidth,mapHeight);
-    ctx.strokeStyle="rgba(206,242,255,.75)";
-    ctx.lineWidth=1;
-    ctx.strokeRect(offsetX+.5,offsetY+.5,Math.max(0,mapWidth-1),Math.max(0,mapHeight-1));
-
-    for(const entity of this.minimapEntities()){
-      const point=project(entity.visualX??entity.x,entity.visualY??entity.y);
-      const logicalType=this.minimapLogicalType(entity);
-      ctx.save();
-      ctx.translate(point.x,point.y);
-
-      if(logicalType==="ship"){
-        ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
-        ctx.beginPath();
-        ctx.moveTo(0,-6);
-        ctx.lineTo(4.5,5);
-        ctx.lineTo(0,2.8);
-        ctx.lineTo(-4.5,5);
-        ctx.closePath();
-        ctx.fillStyle="rgba(116,221,255,.96)";
-        ctx.strokeStyle="rgba(225,250,255,.98)";
-        ctx.lineWidth=1.5;
-        ctx.fill();
-        ctx.stroke();
-      }else if(logicalType==="island"){
-        const radius=Math.max(4.5,Math.min(10,Math.max(Number(entity.width||180),Number(entity.height||140))*scale*.22));
-        ctx.beginPath();
-        ctx.ellipse(0,0,radius,radius*.68,0,0,Math.PI*2);
-        ctx.fillStyle="rgba(102,187,106,.98)";
-        ctx.strokeStyle="rgba(226,255,210,.98)";
-        ctx.lineWidth=1.5;
-        ctx.fill();
-        ctx.stroke();
-      }else{
-        ctx.rotate(Math.PI/4);
-        ctx.fillStyle="rgba(255,204,92,.98)";
-        ctx.strokeStyle="rgba(255,249,215,.98)";
-        ctx.lineWidth=1.5;
-        ctx.fillRect(-4.5,-4.5,9,9);
-        ctx.strokeRect(-4.5,-4.5,9,9);
-      }
-
-      ctx.restore();
-    }
-
-    if(this.minimapConfig().showCamera!==false&&this.viewportSize&&this.zoom>0){
-      const viewW=Math.min(area.width,this.viewportSize.width/this.zoom);
-      const viewH=Math.min(area.height,this.viewportSize.height/this.zoom);
-      const left=Math.max(area.left,Math.min(area.right-viewW,this.camera.x-viewW/2));
-      const top=Math.max(area.top,Math.min(area.bottom-viewH,this.camera.y-viewH/2));
-      const view=project(left,top);
-      ctx.strokeStyle="rgba(255,255,255,.42)";
-      ctx.lineWidth=1;
-      ctx.strokeRect(view.x,view.y,Math.max(2,viewW*scale),Math.max(2,viewH*scale));
-    }
-
-    const player=project(this.player.x,this.player.y);
-    ctx.save();
-    ctx.translate(player.x,player.y);
-    ctx.rotate((Number(this.player.rotation)||0)*Math.PI/180);
-    ctx.beginPath();
-    ctx.moveTo(0,-7);
-    ctx.lineTo(5.5,6);
-    ctx.lineTo(0,3.5);
-    ctx.lineTo(-5.5,6);
-    ctx.closePath();
-    ctx.fillStyle="#ffffff";
-    ctx.strokeStyle="rgba(2,24,37,.95)";
-    ctx.lineWidth=2;
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.restore();
-  }
-
-  updateProgress(){
-    const total=this.entities.filter(e=>e.type==="barrel").length;
-    const collected=this.entities.filter(e=>e.type==="barrel"&&this.collected.has(e.id)).length;
-    if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
-  }
-
-  setCoopTransport(transport=null){
-    this.coopTransport=transport||null;
-    this.coopLocalUid=String(transport?.uid||"");
-    for(const entity of this.entities){
-      if(this.isCoopBoss(entity)){
-        const hp=this.navalHpState(entity);
-        this.coopTransport?.ensureBoss?.({
-          bossId:this.coopBossId(entity),
-          entityId:entity.id,
-          name:entity.label||entity.shipName||"Boss",
-          maxHp:hp.max,
-          respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)
-        }).catch?.(()=>{});
-      }
-    }
-  }
-
-  isCoopBoss(entity){
-    return Boolean(entity&&String(entity.type||"")==="ship"&&(entity.coopBoss===true||entity.boss===true||entity.combat?.boss===true||entity.npcRole==="boss"));
-  }
-
-  coopBossId(entity){return String(entity?.coopBossId||entity?.npcId||entity?.id||"").replace(/[^a-z0-9._-]+/gi,"-");}
-
-  notifyCoopBossDefeated(entity){
-    if(!this.isCoopBoss(entity))return false;
-    const bossId=this.coopBossId(entity);
-    const state=this.coopBossStates.get(bossId)||{};
-    const spawnId=String(state.spawnId||entity.bossSpawnCycle||1);
-    const notifyKey=bossId+":"+spawnId;
-    if(!bossId||this.coopBossRewardNotified.has(notifyKey))return false;
-    this.coopBossRewardNotified.add(notifyKey);
-    const maxHp=Math.max(1,Number(state.maxHp)||Number(entity.combat?.hp)||1);
-    const serverContribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
-    const localContribution=Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0);
-    const damage=Math.max(serverContribution,localContribution);
-    const damageRatio=clamp(damage/maxHp,0,1);
-    const minimumRatio=clamp(Number(entity.combat?.rewardMinDamageRatio)||0,0,1);
-    this.onBossDefeated?.({
-      bossId,
-      spawnId,
-      entity:this.cleanEntity(entity),
-      rewards:structuredClone(entity?.rewards||{}),
-      contribution:{damage,damageRatio,minimumRatio,eligible:damageRatio>=minimumRatio}
-    });
-    return true;
-  }
-
-  syncCoopBosses(bosses={}){
-    this.coopBossStates=new Map(Object.entries(bosses&&typeof bosses==="object"?bosses:{}));
-    for(const entity of this.entities){
-      if(!this.isCoopBoss(entity))continue;const bossId=this.coopBossId(entity),state=this.coopBossStates.get(bossId);if(!state)continue;
-      const hp=Math.max(0,Number(state.hp)||0);this.navalHp.set(String(entity.id),hp);
-      const contribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
-      this.coopBossLocalDamage.set(bossId,contribution);
-      if(state.defeated===true||hp<=0){
-        this.notifyCoopBossDefeated(entity);
-        if(Number(state.respawnAt)>0)entity.respawnDelayMs=Math.max(1000,Number(state.respawnAt)-Date.now());
-        if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
-      }else if(Number(state.spawnId)>Number(entity.bossSpawnCycle||1)){
-        entity.bossSpawnCycle=Number(state.spawnId);
-        this.coopBossLocalDamage.set(bossId,contribution);
-      }
-    }
-  }
-
-  syncRemotePlayers(players=[]){
-    const seen=new Set();
-    for(const remote of Array.isArray(players)?players:[]){
-      const uid=String(remote?.uid||"");if(!uid)continue;seen.add(uid);
-      let entity=this.remotePlayers.get(uid);
-      if(!entity){
-        entity={id:"multiplayer."+uid,type:"ship",role:"multiplayer",label:String(remote.name||"Pirata"),shipId:String(remote.shipId||""),x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,width:108,height:150,z:31,collision:{active:false,action:"none"},motion:{active:false},effect:{category:"ship",preset:"none"},runtimeMultiplayer:true};
-        const profile=this.resolveShip?.(entity.shipId,"player");
-        if(profile)Object.assign(entity,structuredClone(profile),{id:entity.id,type:"ship",role:"multiplayer",runtimeMultiplayer:true,x:entity.x,y:entity.y,rotation:entity.rotation,label:entity.label,collision:{active:false,action:"none"}});
-        // A remote player must always be visible, even when its saved/equipped ship id
-        // is not present in the production ship catalog yet.
-        if(!entity.src){
-          const local=this.config.player||{};
-          entity.src=String(local.src||local.sprite?.src||"");
-          entity.sprite=structuredClone(local.sprite||null);
-          entity.spriteMode=local.spriteMode||"combined";
-          entity.width=Math.max(24,Number(local.width)||230);
-          entity.height=Math.max(24,Number(local.height)||230);
-        }
-        entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
-        if(this.entityLayer)this.renderEntities();
-      }
-      const now=performance.now(),targetX=Number(remote.x)||0,targetY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
-      const sampleMs=clamp(now-Number(entity.netSampleAt||now-100),70,180);
-      const dx=targetX-Number(entity.x||0),dy=targetY-Number(entity.y||0);
-      const distance=Math.hypot(dx,dy);
-      if(distance>900){
-        entity.x=targetX;entity.y=targetY;entity.rotation=targetRotation;
-        entity.netFrom=null;entity.netTo=null;
-      }else{
-        entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(75,sampleMs*1.15)};
-      }
-      entity.netSampleAt=now;
-      entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");entity.netLastSeen=performance.now();
-    }
-    const now=performance.now();for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)&&now-Number(entity.netLastSeen||now)>3000){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
-    this.entities.forEach((e,i)=>e.index=i);
-  }
-
-  updateRemotePlayers(time=performance.now()){
-    for(const entity of this.remotePlayers.values()){
-      const a=entity.netFrom,b=entity.netTo;if(!a||!b)continue;const t=clamp((time-a.at)/Math.max(1,b.at-a.at),0,1);
-      entity.x=a.x+(b.x-a.x)*t;entity.y=a.y+(b.y-a.y)*t;entity.rotation=a.rotation+(b.rotation-a.rotation)*t;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;this.applyEntityVisual(entity);
-    }
-  }
-
-  handleMultiplayerEvent(event={}){
-    if(event.type==="shot"&&event.from&&event.to){
-      this.navalRenderer?.fire?.({from:event.from,to:event.to,duration:Math.max(120,Number(event.duration)||620),ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined});
-      this.audio?.play("cannon-shot");
-    }
-    if(event.type==="boss-hit"){
-      const bossId=String(event.bossId||"");
-      const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);
-      if(entity){
-        this.navalHp.set(String(entity.id),Math.max(0,Number(event.hp)||0));
-        if(event.contributors&&typeof event.contributors==="object"){
-          const state=this.coopBossStates.get(bossId)||{};
-          this.coopBossStates.set(bossId,{...state,...event,contributors:{...event.contributors}});
-          this.coopBossLocalDamage.set(bossId,Math.max(0,Number(event.contributors?.[this.coopLocalUid])||0));
-        }else if(String(event.uid||"")===this.coopLocalUid){
-          this.coopBossLocalDamage.set(bossId,Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0)+Math.max(0,Number(event.damage)||0));
-        }
-        if(event.defeated===true){
-          this.notifyCoopBossDefeated(entity);
-          if(Number(event.respawnAt)>0)entity.respawnDelayMs=Math.max(1000,Number(event.respawnAt)-Date.now());
-          if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
-        }
-      }
-    }
-  }
-
-  tick(time){
-    const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
-    this.lastTime=time;
-    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
-    else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
-    this.updatePlayerVisual(time,dt);
-    this.updateRemotePlayers(time);
-    this.updatePlayerWaterEffects(time);
-    // World simulation never freezes because the local player sank.
-    this.updateEntityMotionFrame(time,dt);
-    this.updateDirectNavalCombat(time);
-    this.updateTreasurePopulation(time);
-    this.updateCameraKeyboard(dt);
-    this.updateCamera(false,dt);
-    if(this.cloudsEl&&!this.cloudsEl.hidden){
-      const parallax=this.environmentConfig().clouds.parallax;
-      this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
-      this.cloudsEl.style.setProperty("--cloud-camera-y",(-this.camera.y*parallax)+"px");
-    }
-    this.updateOceanFrame(time);
-    this.navalRenderer?.render?.({
-      time,
-      camera:this.camera,
-      zoom:this.mode==="play"?this.playZoom:this.zoom,
-      width:this.viewportSize?.width||this.viewport?.clientWidth||1,
-      height:this.viewportSize?.height||this.viewport?.clientHeight||1,
-      damagedShips:this.navalDamageVisuals()
-    });
-    this.updateNearby();
-    this.renderMinimap(false,time);
-
-    if(this.coordsEl){
-      const target=this.mode==="edit"?this.camera:this.player;
-      this.coordsEl.textContent=`x ${Math.round(target.x)} · y ${Math.round(target.y)}`;
-    }
-    if(this.directionEl)this.directionEl.textContent=(this.config.player?.sprite||this.config.player?.directions)?`Direção: ${String(this.player.direction||"n").toUpperCase()}`:"";
-    if(this.zoomEl)this.zoomEl.textContent=this.mode==="edit"?`zoom ${Math.round(this.zoom*100)}%`:"";
-
-    this.raf=requestAnimationFrame(t=>this.tick(t));
-  }
-
-  getState(){
-    return {
-      player:{x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction},
-      collected:[...this.collected],
-      navalPlayerHp:this.navalPlayerHp,
-      ammo:normalizeAmmoInventory(this.state.ammo||{}),
-      combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
-    };
-  }
-
-  destroy(){
-    if(this.challengeTimer)clearTimeout(this.challengeTimer);
-    if(this.combatTimer)clearTimeout(this.combatTimer);
-    for(const side of ["player","enemy"]){
-      if(this.combatSpriteTimers?.[side])clearTimeout(this.combatSpriteTimers[side]);
-    }
-    if(this.combatFxTimer)clearTimeout(this.combatFxTimer);
-    this.challengeTimer=0;
-    this.combatTimer=0;
-    this.combatSpriteTimers={player:0,enemy:0};
-    this.combatFxTimer=0;
-    cancelAnimationFrame(this.raf);
-    this.resetOceanRenderer();
-    for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
-    this.navalDestroyTimers.clear();
-    this.navalDestroying.clear();
-    this.audio?.destroy?.();
-    this.audio=null;
-    this.navalRenderer?.destroy?.();
-    this.navalRenderer=null;
-    for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
-    this.entityEffectRenderers.clear();
-    this.clearPlayerWake();
-    for(const cleanup of this.cleanups.splice(0))cleanup();
-    this.shopOverlay?.destroy?.();
-    this.shipyardOverlay?.destroy?.();
-    this.mobileHud?.destroy?.();
-    this.root.classList.remove("tq-world-test-active");
-    this.root.innerHTML="";
-  }
-}
