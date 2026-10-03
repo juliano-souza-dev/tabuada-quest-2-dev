@@ -669,7 +669,7 @@ export class DevOverlay {
     try{
       const response=await fetch(entry.path,{cache:"no-store"});
       if(!response.ok)throw new Error("HTTP "+response.status);
-      return await response.json();
+      return this.sanitizeWorldCameraOverride(await response.json());
     }catch(error){
       console.warn("Scene load for flow validation failed",entry.id,error);
       return null;
@@ -1055,6 +1055,15 @@ export class DevOverlay {
     try{localStorage.setItem(this.localWorldStorageKey,JSON.stringify(this.localWorlds))}catch(error){console.warn("DEV local worlds save failed",error)}
   }
 
+  sanitizeWorldCameraOverride(world){
+    const clean=world&&typeof world==="object"?structuredClone(world):world;
+    if(clean?.camera&&typeof clean.camera==="object"){
+      delete clean.camera.playZoom;
+      if(Object.keys(clean.camera).length===0)delete clean.camera;
+    }
+    return clean;
+  }
+
   allWorldEntries(){
     const repository=Array.isArray(this.worldCatalog?.worlds)?this.worldCatalog.worlds:[];
     const entries=[...repository];
@@ -1070,7 +1079,7 @@ export class DevOverlay {
     const item=this.localWorlds.find(entry=>entry.entry.id===id);
     const world=this.worldEditor.getWorld();
     if(item&&world){
-      item.world=structuredClone(world);
+      item.world=this.sanitizeWorldCameraOverride(world);
       item.entry.name=world.name||item.entry.name;
       this.saveLocalWorlds();
     }
@@ -1140,10 +1149,10 @@ export class DevOverlay {
     if(!entry?.id)return null;
     if(this.worldEditor?.entry?.id===entry.id&&this.worldEditor?.active){
       const current=this.worldEditor.getWorld();
-      if(current)return structuredClone(current);
+      if(current)return this.sanitizeWorldCameraOverride(current);
     }
     const local=this.localWorlds.find(item=>item.entry.id===entry.id);
-    if(local)return structuredClone(local.world);
+    if(local)return this.sanitizeWorldCameraOverride(local.world);
     if(!entry.path)return null;
     try{
       const response=await fetch(entry.path,{cache:"no-store"});
@@ -1406,6 +1415,7 @@ export class DevOverlay {
       :null;
     try{
       await Promise.allSettled([
+        this.gameManifestReady,
         this.shipEditorReady,
         this.ammoEditorReady,
         this.cannonCatalogReady,
