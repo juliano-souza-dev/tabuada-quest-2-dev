@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261001-1848");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261003-2040-galeao");
 
 if(flowTest){
   try{
