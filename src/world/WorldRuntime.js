@@ -225,7 +225,7 @@ export class WorldRuntime {
           attacking:this.navalAutoFire===true,
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
-          repairAvailable:this.navalHostile.size===0&&!this.combatTarget&&!this.navalAutoFire,
+          repairAvailable:!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
@@ -3651,7 +3651,7 @@ export class WorldRuntime {
 
   async beginPlayerRepair({forced=false}={}){
     if(this.mode!=="play"||this.repairActive||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
-    if(!forced&&(this.navalPlayerHp<=0||this.navalHostile.size>0||this.combatTarget||this.navalAutoFire))return false;
+    if(!forced&&(this.navalPlayerHp<=0||this.isPlayerInNavalCombat()))return false;
     this.stopForChallenge();
     this.clearCombatTarget({hideAction:true});
     this.navalAutoFire=false;
@@ -4243,9 +4243,7 @@ export class WorldRuntime {
       this.regionExitDismissedId=null;
       const canRepair=this.navalPlayerHp>0
         &&this.navalPlayerHp<this.navalPlayerMaxHp
-        &&this.navalHostile.size===0
-        &&!this.combatTarget
-        &&!this.navalAutoFire;
+        &&!this.isPlayerInNavalCombat();
       if(this.actionButton)delete this.actionButton.dataset.worldAction;
       // O reparo é acionado pelo botão próprio do HUD, ao lado de Atirar.
       // A área central permanece reservada apenas para interações do mapa.
@@ -4293,6 +4291,18 @@ export class WorldRuntime {
     if(!this.navalHp.has(id))this.navalHp.set(id,max);
     return {current:Math.max(0,Number(this.navalHp.get(id))||0),max};
   }
+
+  isPlayerInNavalCombat(){
+    if(this.combatActive||this.navalAutoFire===true)return true;
+    for(const entity of this.entities||[]){
+      if(!entity||entity.devFrozen||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
+      if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))continue;
+      const stats=this.entityNavalCombatStats(entity);
+      if(this.navalTargetDistance(entity)<=stats.attackRange)return true;
+    }
+    return false;
+  }
+
 
   navalDamageVisuals(){
     const visuals=[];
