@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1940";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-1955";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog}={}){
@@ -111,7 +111,7 @@ export class WorldEditor {
     const availableAmmo=(Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).filter(item=>item?.available!==false);
     const defaultAmmoId=String(ammoCatalog.defaultAmmoId||availableAmmo[0]?.id||"cannonball-standard");
     const testAmmoId=String(world.test?.ammoId||defaultAmmoId);
-    const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
+    const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??10000)||0));
     this.runtime=new WorldRuntime(this.host,world,{
       editorEnabled:true,
       cannonCatalog:availableCannons,
@@ -119,6 +119,8 @@ export class WorldEditor {
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,
+      // Estoque isolado do DEV/Play: toda munição disponível começa cheia.
+      initialAllTestAmmoQuantity:10000,
       shopBalances:()=>this.shopBalances(),
       onShopPurchase:request=>this.onShopPurchase?.(request),
       getShipyardState:()=>this.getShipyardState(),

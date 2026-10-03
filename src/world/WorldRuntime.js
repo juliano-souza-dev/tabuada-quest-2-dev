@@ -286,6 +286,13 @@ export class WorldRuntime {
       const initialAmmoId=String(options.testAmmoId||this.state.ammo.selectedAmmoId||this.ammoCatalog?.[0]?.id||"");
       this.state.ammo.stock[initialAmmoId]=initialTestAmmoQuantity;
     }
+    const initialAllTestAmmoQuantity=Math.max(0,Math.floor(Number(options.initialAllTestAmmoQuantity)||0));
+    if(Number.isFinite(Number(options.initialAllTestAmmoQuantity))){
+      for(const ammo of this.ammoCatalog){
+        const ammoId=String(ammo?.id||"").trim();
+        if(ammoId&&ammo?.available!==false)this.state.ammo.stock[ammoId]=initialAllTestAmmoQuantity;
+      }
+    }
     this.cannonCatalog=Array.isArray(options.cannonCatalog)?structuredClone(options.cannonCatalog):[];
     this.onStarterCannonEarned=typeof options.onStarterCannonEarned==="function"?options.onStarterCannonEarned:null;
     this.onStarterAmmoEarned=typeof options.onStarterAmmoEarned==="function"?options.onStarterAmmoEarned:null;
@@ -4367,8 +4374,21 @@ export class WorldRuntime {
 
   navalProjectileHitsTarget(target,aimPoint,{width=96,height=96}={}){
     if(!target||this.collected.has(target.id)||this.navalDestroying.has(target.id))return false;
-    const hitRadius=Math.max(24,Math.min(Number(width)||96,Number(height)||96)*.36);
-    return Math.hypot((Number(target.x)||0)-Number(aimPoint?.x||0),(Number(target.y)||0)-Number(aimPoint?.y||0))<=hitRadius;
+    // O casco é uma elipse orientada, não um ponto no centro do sprite. Isso
+    // permite que a bola atinja qualquer parte visível do navio.
+    const hull={
+      ...target,
+      type:String(target.type||"ship"),
+      width:Number(width)||96,
+      height:Number(height)||96,
+      visualX:Number(target.x)||0,
+      visualY:Number(target.y)||0,
+      visualRotation:Number(target.rotation)||0
+    };
+    const collision=normalizeCollision(target.collision||{
+      active:true,shape:"ellipse",scaleX:.46,scaleY:.60,padding:8,action:"combat"
+    },hull);
+    return resolveCircleVsEntity(aimPoint,16,hull,collision).collided;
   }
 
   fireDirectNavalProjectile(entity){

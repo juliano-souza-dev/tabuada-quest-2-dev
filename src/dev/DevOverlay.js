@@ -1,4 +1,4 @@
-import { WorldEditor } from "./world/WorldEditor.js?v=20261003-1900";
+import { WorldEditor } from "./world/WorldEditor.js?v=20261003-1950";
 import { ShipEditor } from "./ships/ShipEditor.js?v=20261002-1915";
 import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1923";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-2118";
@@ -1492,7 +1492,7 @@ export class DevOverlay {
       const cameraPlayZoom=Math.max(.30,Math.min(1.4,Number(world.camera?.playZoom??1)));
       const testAmmo=Array.isArray(this.ammoEditor?.all?.())?this.ammoEditor.all().filter(item=>item?.available!==false):[];
       const selectedTestAmmoId=String(world.test?.ammoId||this.ammoEditor?.catalog?.defaultAmmoId||testAmmo[0]?.id||"");
-      const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??50)||0));
+      const testAmmoQuantity=Math.max(0,Math.floor(Number(world.test?.ammoQuantity??10000)||0));
       const testAmmoOptions=testAmmo.map(item=>'<option value="'+this.escapeHtml(item.id)+'" '+(selectedTestAmmoId===String(item.id)?'selected':'')+'>'+this.escapeHtml(item.name||item.id)+'</option>').join("");
       const testCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
       const defaultTestCannonId=String(this.cannonEditor?.catalog?.defaultCannonId||testCannons[0]?.id||"");
@@ -1689,8 +1689,8 @@ export class DevOverlay {
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>💣 Munição de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-field"><span>Munição ativa</span><select data-world-test-ammo>'+testAmmoOptions+'</select></label>'+
-            '<label class="tq-world-field"><span>Quantidade de bolas</span><input data-world-test-ammo-quantity type="number" min="0" max="9999" step="1" value="'+testAmmoQuantity+'"></label>'+
-            '<small class="tq-world-editor-note">Cada canhão disparado consome 1 bola. Este estoque pertence somente ao ambiente de teste.</small>'+
+            '<label class="tq-world-field"><span>Quantidade de bolas</span><input data-world-test-ammo-quantity type="number" min="0" max="10000" step="1" value="'+testAmmoQuantity+'"></label>'+
+            '<small class="tq-world-editor-note">Ao iniciar o DEV/Play, cada munição disponível recebe 10.000 unidades. Este estoque não altera a conta.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧨 Canhões de teste</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
