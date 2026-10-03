@@ -45,6 +45,51 @@ const showBootError=error=>{
 };
 let game;
 let services;
+
+const mountRewardDiagnostics=()=>{
+  if(!flowTest)return null;
+  const panel=document.createElement("aside");
+  panel.id="tq-reward-diagnostics";
+  panel.style.cssText=[
+    "position:fixed","right:8px","bottom:8px","z-index:2147483646",
+    "width:min(420px,calc(100vw - 16px))","max-height:48vh","overflow:auto",
+    "padding:10px 12px","border-radius:10px","background:rgba(8,12,20,.94)",
+    "color:#dff7ff","font:12px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace",
+    "box-shadow:0 8px 28px rgba(0,0,0,.45)","white-space:pre-wrap"
+  ].join(";");
+  panel.textContent="Reward diagnostics ativo\nAguardando coleta...";
+  document.body.append(panel);
+
+  const rows=[];
+  const push=(label,data={})=>{
+    const stamp=new Date().toLocaleTimeString();
+    rows.unshift("["+stamp+"] "+label+"\n"+JSON.stringify(data,null,2));
+    panel.textContent=rows.slice(0,8).join("\n\n");
+  };
+
+  const rewardDebug=event=>push("rewarddebug",event.detail||{});
+  const rewardGranted=event=>push("rewardgranted",event.detail||{});
+  const playerSync=event=>push("player-sync",{
+    event:event.detail||{},
+    runtimeWallet:game?.getWalletBalances?.()||null,
+    runtimeRewards:game?.rewards||null,
+    persistedRewards:services?.playerState?.load?.()?.game?.rewards||null
+  });
+  const authReady=event=>push("auth-entry-ready",{
+    reason:event.detail?.reason,
+    restore:event.detail?.restore?.code,
+    runtimeWallet:game?.getWalletBalances?.()||null,
+    restoredRewards:event.detail?.state?.game?.rewards||null
+  });
+
+  globalThis.addEventListener("tq:rewarddebug",rewardDebug);
+  globalThis.addEventListener("tq:rewardgranted",rewardGranted);
+  globalThis.addEventListener("tq:player-sync",playerSync);
+  globalThis.addEventListener("tq:auth-entry-ready",authReady);
+
+  return panel;
+};
+const rewardDiagnostics=mountRewardDiagnostics();
 try{
 game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261001-1848");
 services=await installAuthRuntime(game,{
@@ -64,5 +109,6 @@ globalThis.TabuadaQuest={
   auth:services.auth,
   playerState:services.playerState,
   multiplayer:services.multiplayer,
-  getAccessStatus:services.getStatus
+  getAccessStatus:services.getStatus,
+  rewardDiagnostics
 };
