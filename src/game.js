@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2046-fire-key";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261003-2054-global-loadout";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261003-2450";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261003-2040-galeao");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261003-2054-global-loadout");
 
 if(flowTest){
   try{
