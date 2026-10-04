@@ -1356,6 +1356,20 @@ export class GameRuntime {
 
       claims.push(claimKey);
       const {coins,gold,rubies,xp,itemId,quantity,shipId}=normalized;
+      const ammoReward=configured?.ammo&&typeof configured.ammo==="object"?configured.ammo:null;
+      if(ammoReward){
+        const ammoId=String(ammoReward.id||ammoReward.ammoId||"").trim();
+        const ammoQuantity=Math.max(0,Math.floor(Number(ammoReward.quantity)||0));
+        const validAmmo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+          .some(ammo=>String(ammo?.id||"")===ammoId&&ammo?.available!==false);
+        if(ammoId&&ammoQuantity>0&&validAmmo){
+          this.ensurePlayerAmmo({migrateWorldStates:false});
+          this.playerAmmo.stock[ammoId]=Math.max(0,Number(this.playerAmmo.stock[ammoId])||0)+ammoQuantity;
+          if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=ammoId;
+          if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
+          this.worldRuntime?.onAmmoChange?.(clone(this.playerAmmo));
+        }
+      }
 
       if(itemId){
         for(let count=0;count<quantity;count++)this.inventory.push(itemId);
