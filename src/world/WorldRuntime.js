@@ -13,6 +13,7 @@ import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261004-2340-player-anchored-combat-camera";
+import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261004-pixi-phase1";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -1062,6 +1063,18 @@ export class WorldRuntime {
     this.shipyardOverlay?.mount?.(this.host);
     this.mobileHud?.mount?.(this.host);
     this.viewport=this.host.querySelector(".tq-world-viewport");
+    this.pixiRenderer=new PixiWorldRenderer(this.viewport);
+    this.pixiRenderer.init().then(ok=>{
+      if(!ok)return;
+      this.host?.classList.add("is-pixi-world");
+      this.pixiRenderer.syncEntities(this.entities||[]);
+      this.pixiRenderer.setCamera({
+        camera:this.camera,
+        zoom:this.mode==="play"?this.playZoom:this.zoom,
+        width:this.viewportSize?.width||this.viewport?.clientWidth||1,
+        height:this.viewportSize?.height||this.viewport?.clientHeight||1
+      });
+    });
     this.oceanCanvas=this.host.querySelector("[data-world-ocean-webgl]");
     this.oceanRenderer=null;
     this.oceanRendererInit=null;
@@ -2739,6 +2752,7 @@ export class WorldRuntime {
     const rect=this.viewport.getBoundingClientRect();
     this.viewportSize={width:rect.width,height:rect.height};
     this.oceanRenderer?.resize?.(rect.width,rect.height);
+    this.pixiRenderer?.resize?.(rect.width,rect.height);
     this.clampEditorCamera();
     this.updateCamera(true);
     this.renderMinimap(true);
@@ -3295,6 +3309,12 @@ export class WorldRuntime {
     const tx=Math.round(vw/2-this.camera.x*zoom);
     const ty=Math.round(vh/2-this.camera.y*zoom);
     this.stage.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${zoom})`;
+    this.pixiRenderer?.setCamera?.({
+      camera:this.camera,
+      zoom,
+      width:vw,
+      height:vh
+    });
     this.syncGizmo();
   }
 
@@ -6921,6 +6941,13 @@ export class WorldRuntime {
     this.syncAutomaticCombatTarget();
     this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
+    if(this.pixiRenderer?.ready){
+      this.pixiRenderer.syncEntities(this.entities);
+      for(const entity of this.entities){
+        if(String(entity?.type||"")!=="treasure"||!entity.el)continue;
+        entity.el.style.opacity=this.pixiRenderer.hasEntity(entity.id)?"0":"";
+      }
+    }
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     this.updateEnvironmentCycle(time);
@@ -6999,6 +7026,8 @@ export class WorldRuntime {
     this.bossProjectileFxWindow.clear();
     this.audio?.destroy?.();
     this.audio=null;
+    this.pixiRenderer?.destroy?.();
+    this.pixiRenderer=null;
     this.navalRenderer?.destroy?.();
     this.navalRenderer=null;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
