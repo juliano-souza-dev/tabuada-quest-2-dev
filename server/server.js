@@ -351,7 +351,11 @@ wss.on("connection",ws=>{
       monitor.shots++;
       const authoritative=m.type==="fire.request";
       const targetId=key(m.targetId),target=current.entities.get(targetId);
-      if(!target||target.defeated||target.hp<=0)return;
+      if(!target||target.defeated||target.hp<=0){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"invalid_target",shotId:key(m.shotId),targetId,at:Date.now()});
+        return;
+      }
 
       const ammoId=key(m.ammoId),cannonId=key(m.cannonId);
       const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
