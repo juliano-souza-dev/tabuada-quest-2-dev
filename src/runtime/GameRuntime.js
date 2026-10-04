@@ -155,10 +155,7 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      const forceSharedStart=this.manifest.auth?.forceStartWorldOnAuth===true;
-      const authRoute=forceSharedStart
-        ?clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"})
-        :(accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"}));
+      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
 
       if(!this.started){
         if(this.authenticated)this.pendingAuthRoute=authRoute;
@@ -1817,9 +1814,7 @@ export class GameRuntime {
     }else if(authRequired&&!this.authenticated){
       requested=login;
     }else{
-      const forceSharedStart=this.authenticated&&this.manifest.auth?.forceStartWorldOnAuth===true;
       requested=this.pendingAuthRoute
-        ||(forceSharedStart?this.manifest.afterAuth:null)
         ||(this.restoreSession&&this.current?this.current:null)
         ||(this.authenticated?this.manifest.afterAuth:null)
         ||this.manifest.start
