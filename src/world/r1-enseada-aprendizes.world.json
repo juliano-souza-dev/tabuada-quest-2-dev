@@ -371,9 +371,9 @@
         "shipId": "ship-halloween-dreadnought",
         "count": 1,
         "enabled": true,
-        "respawn": true,
+        "respawn": false,
         "respawnDelaySec": 10,
-        "hp": 100000000,
+        "hp": 1000000,
         "spawn": {
           "mode": "random-spaced",
           "margin": 1200,
@@ -431,22 +431,14 @@
     }
   },
   "treasurePopulation": {
-    "enabled": true,
+    "enabled": false,
     "seed": 101,
     "spread": {
       "mode": "random-spaced",
       "margin": 240,
       "minDistance": 190
     },
-    "types": [
-      {
-        "treasureId": "tesouro-halloween-abobora",
-        "count": 18,
-        "respawn": false,
-        "spawnIntervalSec": 0.12,
-        "respawnDelaySec": 30
-      }
-    ]
+    "types": []
   },
   "region": {
     "index": 1,
