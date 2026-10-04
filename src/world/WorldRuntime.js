@@ -115,16 +115,6 @@ const normalizeAmmoInventory=input=>{
     stock:normalizedStock
   };
 };
-const HALLOWEEN_TEST_AMMO={
-  id:"cannonball-halloween-purple",
-  name:"Bola de Canhão Halloween Roxa",
-  damage:12,
-  projectileSpeed:720,
-  size:1,
-  effects:{texture:"./assets/cannons/bola_canhao_halloween_roxa.webp",projectile:"halloween-purple-webgl",impact:"halloween-purple-webgl",renderer:"webgl2"},
-  test:{unlimited:true}
-};
-
 const normalizeNpcAmmoIds=input=>{
   const values=Array.isArray(input)?input:[];
   return [...new Set(values.map(value=>String(value||"").trim()).filter(Boolean))];
@@ -309,7 +299,7 @@ export class WorldRuntime {
     this.state=structuredClone(options.state||{});
     this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];
-    this.testAmmoUnlimited=options.testAmmoUnlimited===true;
+    this.testAmmoUnlimited=false;
     const initialTestAmmoQuantity=Math.max(0,Math.floor(Number(options.testAmmoQuantity)||0));
     if(Number.isFinite(Number(options.testAmmoQuantity))){
       const initialAmmoId=String(options.testAmmoId||this.state.ammo.selectedAmmoId||this.ammoCatalog?.[0]?.id||"");
@@ -4831,9 +4821,13 @@ export class WorldRuntime {
     }
     const targetDistance=this.navalTargetDistance(entity);
     const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
-    const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
-      ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
-    const ammoDamage=clamp(Number(ammo?.damage)||1,0.1,100000000);
+    const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
+    const ammoStock=Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
+    if(!selectedAmmoId||!ammo||ammoStock<=0){
+      this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+"."});
+      return false;
+    }
+    const ammoDamage=clamp(Number(ammo.damage)||1,0.1,100000000);
     const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
@@ -4846,9 +4840,9 @@ export class WorldRuntime {
     const onlineAuthoritative=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.fireProjectile;
     if(onlineAuthoritative){
       const hp=this.navalHpState(entity);
-      const ammoUnlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
-      let ammoRemaining=ammoUnlimited?Number.POSITIVE_INFINITY:Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
-      if(!ammo||ammoRemaining<=0){
+      const ammoUnlimited=false;
+      let ammoRemaining=ammoStock;
+      if(ammoRemaining<=0){
         if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
         return false;
       }
@@ -4859,7 +4853,7 @@ export class WorldRuntime {
         const cannon=batteryShot.cannon;
         const muzzle=batteryShot.hardpoint;
         const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
         const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,5000);
         const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
         const duration=clamp(intercept.time*1000,120,8000);
@@ -4910,9 +4904,9 @@ export class WorldRuntime {
     }
 
     const hp=this.navalHpState(entity);
-    const ammoUnlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
-    let ammoRemaining=ammoUnlimited?Number.POSITIVE_INFINITY:Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
-    if(!ammo||ammoRemaining<=0){
+    const ammoUnlimited=false;
+    let ammoRemaining=ammoStock;
+    if(ammoRemaining<=0){
       if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
       return false;
     }
@@ -4956,7 +4950,7 @@ export class WorldRuntime {
           return;
         }
         this.audio?.play("cannon-impact-ship");
-        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
         const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
         const serverOwned=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.damageEntity;
         if(serverOwned){
@@ -5233,10 +5227,10 @@ export class WorldRuntime {
 
     const stocked=available.filter(item=>{
       const id=String(item.id||"");
-      if(item.test?.unlimited===true)return true;
-      return Math.max(0,Number(this.state?.ammo?.stock?.[id])||0)>0;
+      return Math.max(0,Math.floor(Number(this.state?.ammo?.stock?.[id])||0))>0;
     });
-    const pool=stocked.length?stocked:available;
+    if(!stocked.length)return null;
+    const pool=stocked;
     const current=String(this.state?.ammo?.selectedAmmoId||"");
     let index=pool.findIndex(item=>String(item.id||"")===current);
     index=(index+1)%pool.length;
@@ -5245,9 +5239,7 @@ export class WorldRuntime {
     this.state.ammo.selectedAmmoId=String(next.id||"");
     this.onAmmoChange?.(structuredClone(this.state.ammo));
     if(this.actionMessage){
-      const quantity=next.test?.unlimited===true
-        ?"∞"
-        :String(Math.max(0,Number(this.state.ammo.stock?.[next.id])||0));
+      const quantity=String(Math.max(0,Math.floor(Number(this.state.ammo.stock?.[next.id])||0)));
       this.actionMessage.textContent="Munição equipada: "+String(next.name||next.id)+" · "+quantity;
     }
     return structuredClone(next);
@@ -6656,9 +6648,8 @@ export class WorldRuntime {
   handleMultiplayerEvent(event={}){
     if(event.type==="fire.rejected"){
       const ammoId=String(event.ammoId||"");
-      const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId);
-      const unlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
-      if(ammoId&&!unlimited){
+      const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId&&item?.available!==false);
+      if(ammoId&&ammo){
         this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1;
         this.onAmmoChange?.(structuredClone(this.state.ammo));
       }
