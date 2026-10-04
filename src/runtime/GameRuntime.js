@@ -1,6 +1,6 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
 import { WorldRuntime } from "../world/WorldRuntime.js?v=20261003-2054-global-loadout";
-import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-1210";
+import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
 const clone=value=>structuredClone(value);
@@ -1657,11 +1657,14 @@ export class GameRuntime {
       createPedagogyChallenge:({entity})=>{
         const starterRescue=entity?.type==="cannon-rescue"||entity?.type==="ammo-rescue";
         const repairChallenge=entity?.type==="repair";
+        const mapPedagogyRegion=repairChallenge?Math.max(0,Math.floor(Number(entry?.region)||0)):0;
         return this.pedagogyRuntime.createChallenge({
           kind:entity?.type==="treasure"?"treasure":((starterRescue||repairChallenge)?"combat":"world-interaction"),
           worldId,
           entityId:entity?.id,
           entityType:entity?.type,
+          pedagogyRegion:mapPedagogyRegion||undefined,
+          useRegionFamilies:repairChallenge&&mapPedagogyRegion>0,
           minimumFactor:starterRescue?2:1,
           minimumProduct:starterRescue?6:1
         });
