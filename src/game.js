@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2055-boss-reward-lite-fx";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2029-preserve-server-target-id";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2104-pc-ws-endpoint";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2104-pc-ws-endpoint";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
