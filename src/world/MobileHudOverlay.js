@@ -38,6 +38,7 @@ export class MobileHudOverlay{
     this.onRepair=typeof options.onRepair==="function"?options.onRepair:null;
     this.onCancel=typeof options.onCancel==="function"?options.onCancel:null;
     this.onFollow=typeof options.onFollow==="function"?options.onFollow:null;
+    this.onUseHullReinforcement=typeof options.onUseHullReinforcement==="function"?options.onUseHullReinforcement:null;
     this.onSelectAmmo=typeof options.onSelectAmmo==="function"?options.onSelectAmmo:null;
     this.onShop=typeof options.onShop==="function"?options.onShop:null;
     this.onShipyard=typeof options.onShipyard==="function"?options.onShipyard:null;
@@ -75,13 +76,15 @@ export class MobileHudOverlay{
     const ammo=iconButton("ammo","Munição","💣");
     const fire=iconButton("fire","Atirar","🔥");
     const follow=iconButton("follow","Seguir","🎯");
+    const shield=iconButton("shield","Reforço","🛡️");
     const repair=iconButton("repair","Reparar","🔧");
     const missions=iconButton("missions","Missões","📜");
     const shop=iconButton("shop","Loja","🪙");
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
     fire.classList.add("is-primary");
-    dock.append(ammo,fire,follow,repair,missions,shop,shipyard);
+    dock.append(ammo,fire,follow,shield,repair,missions,shop,shipyard);
     follow.hidden=true;
+    shield.hidden=true;
 
     const drawer=document.createElement("section");
     drawer.className="tq-mobile-hud__missions";
@@ -111,6 +114,7 @@ export class MobileHudOverlay{
       else this.onAttack?.();
     });
     bind(follow,()=>this.onFollow?.());
+    bind(shield,()=>this.onUseHullReinforcement?.());
     bind(repair,()=>this.onRepair?.());
     bind(missions,()=>this.openMissions());
     bind(shop,()=>this.onShop?.());
@@ -272,6 +276,18 @@ export class MobileHudOverlay{
       follow.querySelector("span").textContent=state.following===true?"◎":"🎯";
       follow.querySelector("small").textContent=state.following===true?"Seguindo":"Seguir";
       follow.setAttribute("aria-label",state.following===true?"Parar de seguir alvo":"Seguir alvo");
+    }
+
+    const shield=this.wrap.querySelector('[data-hud-action="shield"]');
+    if(shield){
+      const qty=Math.max(0,Math.floor(Number(state.hullReinforcementQuantity)||0));
+      const active=state.hullReinforcementActive===true;
+      shield.hidden=qty<=0&&!active;
+      shield.disabled=active||qty<=0;
+      shield.classList.toggle("is-active",active);
+      shield.querySelector("span").textContent=active?"🛡️":"🛡️";
+      shield.querySelector("small").textContent=active?"Protegido":"Reforço "+qty;
+      shield.setAttribute("aria-label",active?"Reforço de casco ativo":"Usar reforço de casco. Estoque: "+qty);
     }
 
     const repair=this.wrap.querySelector('[data-hud-action="repair"]');
