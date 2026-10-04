@@ -218,6 +218,9 @@ export class OceanWebGLRenderer{
     this.buffer=null;
     this.wakeProgram=null;
     this.wakeBuffer=null;
+    this.wakeCpuBuffer=new Float32Array(0);
+    this.wakeFloatCount=0;
+    this.wakeGpuCapacityBytes=0;
     this.wakeAttributes={};
     this.wakeUniforms={};
     this.wakeVertexCount=0;
@@ -427,18 +430,35 @@ export class OceanWebGLRenderer{
     return true;
   }
 
+  ensureWakeCpuCapacity(floatCount){
+    const required=Math.max(0,Math.floor(Number(floatCount)||0));
+    if(this.wakeCpuBuffer.length>=required)return;
+    let capacity=Math.max(256,this.wakeCpuBuffer.length||0);
+    while(capacity<required)capacity*=2;
+    this.wakeCpuBuffer=new Float32Array(capacity);
+  }
+
   buildWakeVertices(wake,timeMs){
     const samples=Array.isArray(wake?.samples)?wake.samples:[];
-    if(samples.length<2||wake?.active===false)return new Float32Array(0);
+    this.wakeFloatCount=0;
+    if(samples.length<2||wake?.active===false)return this.wakeCpuBuffer;
+
+    const maxVertices=(samples.length-1)*6*3;
+    this.ensureWakeCpuCapacity(maxVertices*5);
 
     const width=Math.max(18,Number(wake?.width)||64);
     const opacity=clamp(Number(wake?.opacity??.72),0,1);
     const lifetime=Math.max(600,Number(wake?.lifetime)||2600);
     const now=Math.max(0,Number(timeMs)||0);
-    const vertices=[];
+    let cursor=0;
 
     const pushVertex=(x,y,alpha,kind,across)=>{
-      vertices.push(x,y,alpha,kind,across);
+      const out=this.wakeCpuBuffer;
+      out[cursor++]=x;
+      out[cursor++]=y;
+      out[cursor++]=alpha;
+      out[cursor++]=kind;
+      out[cursor++]=across;
     };
 
     const section=(sample,index,kind,side)=>{
@@ -484,19 +504,27 @@ export class OceanWebGLRenderer{
     appendStrip(0,0);
     appendStrip(1,-1);
     appendStrip(1,1);
-    return new Float32Array(vertices);
+    this.wakeFloatCount=cursor;
+    return this.wakeCpuBuffer;
   }
 
   renderWake({time=0,camera={x:0,y:0},zoom=1,width=1,height=1,wake=null}={}){
     const gl=this.gl;
     if(!gl||!this.wakeProgram||!this.wakeBuffer)return false;
     const data=this.buildWakeVertices(wake,time);
-    this.wakeVertexCount=Math.floor(data.length/5);
+    this.wakeVertexCount=Math.floor(this.wakeFloatCount/5);
     if(!this.wakeVertexCount)return false;
 
     gl.useProgram(this.wakeProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER,this.wakeBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER,data,gl.DYNAMIC_DRAW);
+    const uploadBytes=this.wakeFloatCount*Float32Array.BYTES_PER_ELEMENT;
+    if(this.wakeGpuCapacityBytes<uploadBytes){
+      let capacity=Math.max(1024,this.wakeGpuCapacityBytes||0);
+      while(capacity<uploadBytes)capacity*=2;
+      gl.bufferData(gl.ARRAY_BUFFER,capacity,gl.DYNAMIC_DRAW);
+      this.wakeGpuCapacityBytes=capacity;
+    }
+    gl.bufferSubData(gl.ARRAY_BUFFER,0,data,0,this.wakeFloatCount);
 
     const stride=5*4;
     const attrs=this.wakeAttributes;
@@ -558,6 +586,9 @@ export class OceanWebGLRenderer{
     this.texture=null;
     this.buffer=null;
     this.wakeBuffer=null;
+    this.wakeCpuBuffer=new Float32Array(0);
+    this.wakeFloatCount=0;
+    this.wakeGpuCapacityBytes=0;
     this.wakeVertexCount=0;
     this.textureWidth=0;
     this.textureHeight=0;
