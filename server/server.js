@@ -630,7 +630,7 @@ wss.on("connection",ws=>{
 setInterval(()=>{
   const now=Date.now(),dt=SNAPSHOT_MS/1000;
   for(const [roomId,r] of rooms){
-    for(const [id,p] of r.players)if(now-p.updatedAt>STALE_MS){try{p.ws.close()}catch{}r.players.delete(id)}
+    for(const [id,p] of r.players)if(now-p.updatedAt>STALE_MS){leaveParty(r,id);try{p.ws.close()}catch{}r.players.delete(id)}
     for(const [id,s] of r.shots)if(now-Number(s.at||0)>15000)r.shots.delete(id);
     for(const e of r.entities.values()){
       simulateEntity(r,e,dt,now);
