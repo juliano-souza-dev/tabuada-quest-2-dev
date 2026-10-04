@@ -1488,7 +1488,11 @@ export class GameRuntime {
     const rewardShipId=String(entity?.rewardShipId||"").trim();
     if(rewardShipId){
       const granted=await this.grantShip(rewardShipId,{equip:true,save:false});
+      // Force the event reward as the active ship before persisting. This is
+      // intentionally explicit instead of relying only on the shipyard grant.
       if(granted){
+        this.playerShips.equippedShip=rewardShipId;
+        this.ensurePlayerShips();
         this.saveState();
         this.syncCloud("boss-event-ship");
         globalThis.dispatchEvent?.(new CustomEvent("tq:bossshipgranted",{detail:{
