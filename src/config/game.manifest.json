@@ -57,8 +57,7 @@
   },
   "afterAuth": {
     "kind": "world",
-    "id": "teste-multiplayer-sync",
-    "force": true
+    "id": "r1-enseada-aprendizes"
   },
   "auth": {
     "required": true,
