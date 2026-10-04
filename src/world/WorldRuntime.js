@@ -5683,14 +5683,9 @@ export class WorldRuntime {
       reducedAmmoFx:next.reducedAmmoFx!==undefined?next.reducedAmmoFx===true:current.reducedAmmoFx===true
     };
     if(this.cloudsEl)this.cloudsEl.hidden=this.graphicsSettings.clouds===false;
-    if(this.oceanCanvas)this.oceanCanvas.hidden=this.graphicsSettings.oceanWaves===false;
-    if(this.graphicsSettings.oceanWaves===false)this.host?.classList.remove("is-webgl-ocean");
+    if(this.oceanCanvas)this.oceanCanvas.hidden=false;
     this.navalRenderer?.setReducedFx?.(this.graphicsSettings.reducedAmmoFx===true);
-    if(this.graphicsSettings.oceanWaves===false){
-      this.updateOceanFrame(0);
-    }else{
-      this.initOceanRenderer();
-    }
+    this.initOceanRenderer();
     if(persist)this.onGraphicsSettingsChange?.(structuredClone(this.graphicsSettings));
     return structuredClone(this.graphicsSettings);
   }
@@ -5792,12 +5787,21 @@ export class WorldRuntime {
   updateOceanFrame(time){
     const ocean=this.config.ocean||normalizeOceanConfig({});
     const wavesEnabled=this.graphicsSettings?.oceanWaves!==false;
-    const webglRendered=wavesEnabled&&ocean.renderer==="webgl"
+    const renderOcean=wavesEnabled?ocean:{
+      ...ocean,
+      speed:Number(ocean.speed||0)*.38,
+      swell:Number(ocean.swell||0)*.30,
+      distortion:Number(ocean.distortion||0)*.28,
+      waveMix:Number(ocean.waveMix||0)*.42,
+      foamMix:Number(ocean.foamMix||0)*.30,
+      sparkleIntensity:Number(ocean.sparkleIntensity||0)*.22
+    };
+    const webglRendered=ocean.renderer==="webgl"
       &&this.oceanRenderer?.render?.({
         time,
         camera:this.camera,
         zoom:this.mode==="play"?this.playZoom:this.zoom,
-        ocean,
+        ocean:renderOcean,
         width:this.viewportSize?.width||1,
         height:this.viewportSize?.height||1,
         wake:(()=>{
@@ -5814,9 +5818,7 @@ export class WorldRuntime {
 
     if(webglRendered)return;
 
-    // When wave animation is disabled the ocean must still move with the camera.
-    // Freeze only the time component, never the camera transform.
-    const frame=computeOceanFrame(ocean,wavesEnabled?time:0,this.camera);
+    const frame=computeOceanFrame(renderOcean,time,this.camera);
     for(const key of ["deep","wave","foam"]){
       const el=this.oceanEls?.[key];
       const layerFrame=frame.layers?.[key];
