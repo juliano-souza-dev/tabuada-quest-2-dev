@@ -34,7 +34,8 @@ const wss=new WebSocketServer({server,maxPayload:16*1024});
 wss.on("connection",ws=>{
   let current=null,uid="";
   ws.on("message",raw=>{
-    monitor.messages++;\n    let m;try{m=JSON.parse(String(raw))}catch{return}
+    monitor.messages++;
+    let m;try{m=JSON.parse(String(raw))}catch{return}
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
