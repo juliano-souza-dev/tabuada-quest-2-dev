@@ -111,9 +111,15 @@ export class MultiplayerRuntime extends EventTarget{
     return null;
   }
   async damageBoss(bossId,damage=1,meta={}){
-    if(!this.worldId)return null;bossId=safeKey(bossId);if(!bossId)return null;
-    this.socketSend({type:"boss.damage",bossId,damage:clamp(Number(damage)||1,1,5000),shotId:safeKey(meta.shotId||"")});
-    return null;
+    if(!this.worldId)return false;
+    bossId=safeKey(bossId);
+    if(!bossId)return false;
+    return this.socketSend({
+      type:"boss.damage",
+      bossId,
+      damage:clamp(Number(damage)||1,1,5000),
+      shotId:safeKey(meta.shotId||"")
+    })===true;
   }
   async sendHit(){
     return false; // PvP disabled: players never damage other players.
