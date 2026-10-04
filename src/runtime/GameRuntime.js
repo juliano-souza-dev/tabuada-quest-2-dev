@@ -1438,7 +1438,7 @@ export class GameRuntime {
     }
   }
 
-  handleBossDefeated({bossId,entity,rewards,contribution}={}){
+  async handleBossDefeated({bossId,spawnId,entity,rewards,contribution}={}){
     const stableBossId=String(bossId||entity?.coopBossId||entity?.id||"").trim();
     if(!stableBossId)return false;
     const minimumRatio=Math.max(0,Math.min(1,Number(contribution?.minimumRatio??entity?.combat?.rewardMinDamageRatio)||0));
@@ -1452,7 +1452,31 @@ export class GameRuntime {
       }}));
       return false;
     }
-    return this.handleCombatVictory({entity,rewards,claimKey:"boss:"+stableBossId});
+
+    const claimKey="boss:"+stableBossId+":"+String(spawnId||"1");
+    const rewardResult=await this.handleCombatVictory({entity,rewards,claimKey});
+    const rewardShipId=String(entity?.rewardShipId||"").trim();
+    if(rewardShipId){
+      const granted=await this.grantShip(rewardShipId,{equip:true,save:false});
+      if(granted){
+        this.saveState();
+        this.syncCloud("boss-event-ship");
+        globalThis.dispatchEvent?.(new CustomEvent("tq:bossshipgranted",{detail:{
+          bossId:stableBossId,
+          spawnId:String(spawnId||"1"),
+          shipId:rewardShipId,
+          equipped:true,
+          damage:Math.max(0,Number(contribution?.damage)||0),
+          damageRatio,
+          minimumRatio
+        }}));
+        if(this.current?.kind==="world"){
+          const route=this.routeSnapshot();
+          await this.openWorld(route,{pushHistory:false});
+        }
+      }
+    }
+    return rewardResult||true;
   }
 
   async handleTreasureCollected({entity,challenge,rewards}={}){
