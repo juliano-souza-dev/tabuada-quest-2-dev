@@ -117,6 +117,12 @@ export class MultiplayerRuntime extends EventTarget{
           full:data.type==="snapshot",
           entities:data.entities||{}
         }}));
+        this.dispatchEvent(new CustomEvent("projectiles",{detail:{
+          worldId:this.worldId,
+          serverTime:data.serverTime,
+          full:data.type==="snapshot",
+          projectiles:data.projectiles||{}
+        }}));
         if(data.type==="snapshot"){
           this.dispatchEvent(new CustomEvent("bosses",{detail:{
             worldId:this.worldId,
