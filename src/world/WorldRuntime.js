@@ -4641,6 +4641,46 @@ export class WorldRuntime {
     }
   }
 
+  navalEntityVelocity(entity){
+    const nav=entity?.nav&&typeof entity.nav==="object"?entity.nav:{};
+    return {x:Number(nav.vx??entity?.vx)||0,y:Number(nav.vy??entity?.vy)||0};
+  }
+
+  navalOrientedHitbox(entity){
+    const direction=String(entity?.direction||entity?.nav?.direction||"n").toLowerCase();
+    const angles={n:-Math.PI/2,nne:-3*Math.PI/8,ne:-Math.PI/4,ene:-Math.PI/8,e:0,ese:Math.PI/8,se:Math.PI/4,sse:3*Math.PI/8,s:Math.PI/2,ssw:5*Math.PI/8,sw:3*Math.PI/4,wsw:7*Math.PI/8,w:Math.PI,wnw:-7*Math.PI/8,nw:-3*Math.PI/4,nnw:-5*Math.PI/8};
+    return {
+      x:Number(entity?.x)||0,y:Number(entity?.y)||0,
+      angle:Number.isFinite(angles[direction])?angles[direction]:-Math.PI/2,
+      halfLength:Math.max(26,(Number(entity?.height)||140)*.36),
+      halfWidth:Math.max(18,(Number(entity?.width)||100)*.30)
+    };
+  }
+
+  navalPointHitsHull(point,entity){
+    const box=this.navalOrientedHitbox(entity);
+    const dx=Number(point?.x||0)-box.x,dy=Number(point?.y||0)-box.y;
+    const c=Math.cos(-box.angle),sn=Math.sin(-box.angle);
+    const along=dx*c-dy*sn,across=dx*sn+dy*c;
+    return Math.abs(along)<=box.halfLength&&Math.abs(across)<=box.halfWidth;
+  }
+
+  predictNavalIntercept(shooter,target,projectileSpeed){
+    const sx=Number(shooter?.x)||0,sy=Number(shooter?.y)||0;
+    const tx=Number(target?.x)||0,ty=Number(target?.y)||0;
+    const v=this.navalEntityVelocity(target),rx=tx-sx,ry=ty-sy,speed=Math.max(1,Number(projectileSpeed)||1);
+    const a=v.x*v.x+v.y*v.y-speed*speed,b=2*(rx*v.x+ry*v.y),c=rx*rx+ry*ry;
+    let t=0;
+    if(Math.abs(a)<1e-6)t=Math.abs(b)>1e-6?-c/b:0;
+    else{
+      const d=b*b-4*a*c;
+      if(d>=0){const q=Math.sqrt(d),t1=(-b-q)/(2*a),t2=(-b+q)/(2*a);t=[t1,t2].filter(n=>n>0).sort((x,y)=>x-y)[0]||0;}
+    }
+    if(!(t>0))t=Math.sqrt(c)/speed;
+    t=clamp(t,.05,8);
+    return {x:tx+v.x*t,y:ty+v.y*t,time:t};
+  }
+
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     const targetDistance=this.navalTargetDistance(entity);
@@ -4666,10 +4706,11 @@ export class WorldRuntime {
     for(const cannon of eligible){
       if(ammoRemaining<=0)break;
       const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-      const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
+      const intercept=this.predictNavalIntercept(this.player,entity,projectileSpeed);
+      const duration=clamp(intercept.time*1000,80,8000);
       const fired=this.navalRenderer?.fire?.({
         from:{x:this.player.x,y:this.player.y},
-        to:{x:entity.x,y:entity.y,target:entity},
+        to:{x:intercept.x,y:intercept.y},
         duration,
         ammo
       })===true;
@@ -4690,18 +4731,10 @@ export class WorldRuntime {
       // Phase 1 of the combat rebuild: damage is resolved from the projectile
       // impact, never from the fire button. The shot keeps its predicted impact
       // point; a ship that maneuvers away can make the projectile hit the water.
-      const targetVx=Number(entity.nav?.vx??entity.vx)||0;
-      const targetVy=Number(entity.nav?.vy??entity.vy)||0;
-      const predictedImpact={
-        x:Number(entity.x||0)+targetVx*(duration/1000),
-        y:Number(entity.y||0)+targetVy*(duration/1000)
-      };
+      const predictedImpact={x:intercept.x,y:intercept.y};
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-        const ex=Number(entity.x||0),ey=Number(entity.y||0);
-        const halfW=Math.max(22,(Number(entity.width)||100)*.38);
-        const halfH=Math.max(28,(Number(entity.height)||140)*.38);
-        const hit=Math.abs(ex-predictedImpact.x)<=halfW&&Math.abs(ey-predictedImpact.y)<=halfH;
+        const hit=this.navalPointHitsHull(predictedImpact,entity);
         if(!hit){
           this.audio?.play?.("cannon-impact-water");
           return;
