@@ -440,7 +440,8 @@ export class GameRuntime {
       uid:String(this.multiplayer.auth?.status?.().uid||""),
       ensureBoss:boss=>this.multiplayer.ensureBoss?.(boss),
       damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta),
-      damageEntity:(entityId,damage,meta)=>this.multiplayer.damageEntity?.(entityId,damage,meta)
+      damageEntity:(entityId,damage,meta)=>this.multiplayer.damageEntity?.(entityId,damage,meta),
+      fireProjectile:shot=>this.multiplayer.fireProjectile?.(shot)===true
     };
     const ship=this.getEquippedShip();
     this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
