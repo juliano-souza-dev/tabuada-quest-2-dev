@@ -1,6 +1,6 @@
 {
   "schema": "tq.cannon-catalog",
-  "version": 5,
+  "version": 6,
   "defaultCannonId": "cannon-basic",
   "cannons": [
     {
@@ -13,7 +13,7 @@
         "unlock": "R1",
         "unlockRegion": 1
       },
-      "damageMultiplier": 2.5,
+      "damageMultiplier": 2,
       "function": "Canhão inicial",
       "range": 700,
       "projectileSpeed": 900,
@@ -42,7 +42,7 @@
         "unlock": "R2",
         "unlockRegion": 2
       },
-      "damageMultiplier": 3.5,
+      "damageMultiplier": 3,
       "function": "Primeiro upgrade",
       "range": 850,
       "projectileSpeed": 950,
@@ -98,7 +98,7 @@
         "unlock": "R8",
         "unlockRegion": 8
       },
-      "damageMultiplier": 7.5,
+      "damageMultiplier": 7,
       "function": "Canhão de alto nível",
       "range": 1200,
       "projectileSpeed": 1100,
