@@ -4886,7 +4886,18 @@ export class WorldRuntime {
         const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
         if(coopBoss){
           const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-          this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
+          Promise.resolve(this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}))
+            .then(sent=>{
+              // The boss must remain playable even when the local Node/WebSocket
+              // server is offline. Only skip local damage when the server
+              // explicitly accepted this hit and will broadcast authoritative HP.
+              if(sent!==true){
+                this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
+              }
+            })
+            .catch(()=>{
+              this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
+            });
         }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
       },duration);
     }
