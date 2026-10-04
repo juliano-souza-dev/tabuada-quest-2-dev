@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2018-moving-npc-fire";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2025-projectile-spawn-passive-npcs";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2004-ws2-endpoint";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
