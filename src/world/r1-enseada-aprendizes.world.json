@@ -380,6 +380,24 @@
           "minDistance": 900
         },
         "hitRewardGold": 100
+      },
+      {
+        "npcId": "npc-passive-gold-test",
+        "shipId": "ship-pirate-galleon-navio",
+        "count": 3,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 12,
+        "hp": 20,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 900,
+          "minDistance": 550
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 50
+        }
       }
     ]
   },
