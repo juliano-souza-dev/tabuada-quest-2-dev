@@ -416,6 +416,7 @@ export class WorldRuntime {
     );
     this.navalDestroying=new Set();
     this.navalDestroyTimers=new Map();
+    this.damageNumberElements=new Set();
     this.regionTransitionActive=null;
     this.regionExitDismissedId=null;
     this.collisionAvoidance={entityId:null,side:0,until:0};
@@ -738,6 +739,7 @@ export class WorldRuntime {
     }
 
     this.entities.forEach((entity,index)=>entity.index=index);
+    this.rebuildEntityIndex();
     if(render&&this.entityLayer)this.renderEntities();
   }
 
@@ -4679,7 +4681,12 @@ export class WorldRuntime {
 
   showNavalDamageNumber({x=0,y=0,amount=0,received=false}={}){
     if(!this.entityLayer||!(Number(amount)>0))return;
+    if(!(this.damageNumberElements instanceof Set))this.damageNumberElements=new Set();
+    // Damage labels are cosmetic. Capping concurrent nodes prevents long fights
+    // and multi-cannon volleys from flooding the DOM and triggering GC/layout spikes.
+    if(this.damageNumberElements.size>=28)return;
     const el=document.createElement("span");
+    this.damageNumberElements.add(el);
     el.className="tq-world-damage-number"+(received?" is-received":"");
     const raw=Math.max(0.1,Number(amount)||0.1);
     const display=Math.round(raw*10)/10;
@@ -4687,7 +4694,13 @@ export class WorldRuntime {
     el.style.left=(Number(x)||0)+"px";
     el.style.top=(Number(y)||0)+"px";
     this.entityLayer.append(el);
-    const remove=()=>el.remove();
+    let removed=false;
+    const remove=()=>{
+      if(removed)return;
+      removed=true;
+      this.damageNumberElements.delete(el);
+      el.remove();
+    };
     el.addEventListener("animationend",remove,{once:true});
     setTimeout(remove,1200);
   }
