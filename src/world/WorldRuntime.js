@@ -4728,8 +4728,10 @@ export class WorldRuntime {
     const theta=pose.rotation*Math.PI/180;
     const forward={x:Math.sin(theta),y:-Math.cos(theta)};
     const right={x:Math.cos(theta),y:Math.sin(theta)};
-    const dx=Number(target?.x??target?.visualX)||0-pose.x;
-    const dy=Number(target?.y??target?.visualY)||0-pose.y;
+    const tx=Number(target?.visualX??target?.x)||0;
+    const ty=Number(target?.visualY??target?.y)||0;
+    const dx=tx-pose.x;
+    const dy=ty-pose.y;
     const forwardDot=dx*forward.x+dy*forward.y;
     const rightDot=dx*right.x+dy*right.y;
     if(hasBow&&forwardDot>0&&Math.abs(forwardDot)>Math.abs(rightDot)*1.15)return "bow";
@@ -4765,7 +4767,7 @@ export class WorldRuntime {
     if(!list.length)return [];
     const layout=this.navalBatteryLayout(list.length);
     const hasBow=layout.some(item=>item.side==="bow");
-    const targetSide=this.navalTargetBatterySide(shooter,target,hasBow);
+    const targetSide=layout.length===1?layout[0].side:this.navalTargetBatterySide(shooter,target,hasBow);
     return layout
       .map((descriptor,index)=>({
         descriptor,
