@@ -4607,7 +4607,7 @@ export class WorldRuntime {
     const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
     const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
       ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
-    const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,999);
+    const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,100000000);
     const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
@@ -4647,21 +4647,32 @@ export class WorldRuntime {
         const bossHp=this.navalHpState(entity);
         this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max,respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)}).catch?.(()=>{});
       }
+      // Phase 1 of the combat rebuild: damage is resolved from the projectile
+      // impact, never from the fire button. The shot keeps its predicted impact
+      // point; a ship that maneuvers away can make the projectile hit the water.
+      const targetVx=Number(entity.nav?.vx??entity.vx)||0;
+      const targetVy=Number(entity.nav?.vy??entity.vy)||0;
+      const predictedImpact={
+        x:Number(entity.x||0)+targetVx*(duration/1000),
+        y:Number(entity.y||0)+targetVy*(duration/1000)
+      };
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-        const remainingDistance=Math.hypot(
-          Number(entity.x||0)-Number(this.player?.x||0),
-          Number(entity.y||0)-Number(this.player?.y||0)
-        );
-        if(coopBoss||remainingDistance<=Math.max(1,Number(cannon.range)||900)){
-          this.audio?.play("cannon-impact-ship");
-          const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
-          const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,4995);
-          if(coopBoss){
-            const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-            this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
-          }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
+        const ex=Number(entity.x||0),ey=Number(entity.y||0);
+        const halfW=Math.max(22,(Number(entity.width)||100)*.38);
+        const halfH=Math.max(28,(Number(entity.height)||140)*.38);
+        const hit=Math.abs(ex-predictedImpact.x)<=halfW&&Math.abs(ey-predictedImpact.y)<=halfH;
+        if(!hit){
+          this.audio?.play?.("cannon-impact-water");
+          return;
         }
+        this.audio?.play("cannon-impact-ship");
+        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+        const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,100000000);
+        if(coopBoss){
+          const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+          this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
+        }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
       },duration);
     }
     if(!firedCount)return false;
