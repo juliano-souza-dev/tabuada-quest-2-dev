@@ -2872,50 +2872,35 @@ export class WorldRuntime {
     if(this.mode!=="play"||!state||typeof state!=="object")return false;
     const x=Number(state.x),y=Number(state.y);
     if(!Number.isFinite(x)||!Number.isFinite(y))return false;
-    const errorX=x-(Number(this.player?.x)||0);
-    const errorY=y-(Number(this.player?.y)||0);
-    const error=Math.hypot(errorX,errorY);
-    if(error<=8)return false;
 
-    if(error>=140){
-      this.player.x=x;
-      this.player.y=y;
-      if(Number.isFinite(Number(state.vx)))this.player.vx=Number(state.vx);
-      if(Number.isFinite(Number(state.vy)))this.player.vy=Number(state.vy);
-      if(Number.isFinite(Number(state.rotation)))this.player.rotation=Number(state.rotation);
-      if(state.direction)this.player.direction=String(state.direction);
-      this.playerAuthorityCorrection=null;
-      return true;
-    }
-
-    this.playerAuthorityCorrection={
-      x,y,
-      vx:Number.isFinite(Number(state.vx))?Number(state.vx):this.player.vx,
-      vy:Number.isFinite(Number(state.vy))?Number(state.vy):this.player.vy,
-      rotation:Number.isFinite(Number(state.rotation))?Number(state.rotation):this.player.rotation,
-      direction:state.direction?String(state.direction):this.player.direction
-    };
-    return true;
-  }
-
-  applyLocalAuthorityCorrection(dt=1/60){
-    const correction=this.playerAuthorityCorrection;
-    if(!correction)return false;
-    const dx=correction.x-this.player.x;
-    const dy=correction.y-this.player.y;
-    const error=Math.hypot(dx,dy);
-    if(error<1.5){
+    // Local movement is predicted immediately. A normal server acknowledgement
+    // is necessarily older than the player's current frame, so continuously
+    // lerping back to it acts like a permanent brake. Only reconcile when the
+    // authoritative position is far enough away to indicate a real divergence.
+    const error=Math.hypot(
+      x-(Number(this.player?.x)||0),
+      y-(Number(this.player?.y)||0)
+    );
+    if(error<220){
       this.playerAuthorityCorrection=null;
       return false;
     }
-    const blend=1-Math.exp(-Math.max(.001,Number(dt)||1/60)*8);
-    this.player.x+=dx*blend;
-    this.player.y+=dy*blend;
-    this.player.vx+=(correction.vx-this.player.vx)*blend*.45;
-    this.player.vy+=(correction.vy-this.player.vy)*blend*.45;
-    this.player.rotation=lerpAngle(this.player.rotation,correction.rotation,blend*.55);
-    if(correction.direction)this.player.direction=correction.direction;
+
+    this.player.x=x;
+    this.player.y=y;
+    if(Number.isFinite(Number(state.vx)))this.player.vx=Number(state.vx);
+    if(Number.isFinite(Number(state.vy)))this.player.vy=Number(state.vy);
+    if(Number.isFinite(Number(state.rotation)))this.player.rotation=Number(state.rotation);
+    if(state.direction)this.player.direction=String(state.direction);
+    this.playerAuthorityCorrection=null;
     return true;
+  }
+
+  applyLocalAuthorityCorrection(){
+    // Prediction remains authoritative for presentation between server acks.
+    // Reconciliation is performed atomically in syncLocalAuthority only when
+    // the divergence exceeds the safety threshold.
+    return false;
   }
 
   playerWaterEffects(){
