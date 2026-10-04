@@ -475,7 +475,7 @@ export class GameRuntime {
       fireProjectile:shot=>this.multiplayer.fireProjectile?.(shot)===true
     };
     const ship=this.getEquippedShip();
-    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
+    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},getCannonIds:()=>this.getShipCannons(this.playerShips.equippedShip),shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
       .then(()=>{
         if(this.worldRuntime!==runtime)return;
         runtime.setCoopTransport?.(coopTransport);
