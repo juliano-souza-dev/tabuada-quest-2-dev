@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1604-room-revision-v2";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1904-snapshot-buffer";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1604-room-revision-v2";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
