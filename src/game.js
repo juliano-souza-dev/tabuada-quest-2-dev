@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1749-sync-arena";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1801-force-sync-cache";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1430-delta-netcode";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261003-2054-global-loadout");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1801-force-sync-cache");
 
 if(flowTest){
   try{
