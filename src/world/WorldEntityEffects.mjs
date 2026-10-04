@@ -191,15 +191,17 @@ export function computeEntityEffectFrame(input={},timeMs=0,phase=0,context={}){
     const origin=context.cameraOrigin||camera;
     const factor=effect.parallax;
     const depth=1-factor;
-    const worldHeight=Math.max(1,Number(context.worldHeight)||1);
     const verticalDelta=(Number(camera.y)||0)-(Number(origin.y)||0);
-    const scale=1+clamp(verticalDelta/worldHeight,-1,1)*(effect.intensity/100)*.08;
     return {
       ...zero,
+      // Camera/parallax must never resize the entity itself. Scaling the asset
+      // here creates a visual feedback loop where ships appear to "inflate"
+      // whenever the camera moves. Keep entity size stable and move only its
+      // apparent depth position relative to the camera.
       offsetX:((Number(camera.x)||0)-(Number(origin.x)||0))*depth,
       offsetY:verticalDelta*depth,
-      scaleX:scale,
-      scaleY:scale
+      scaleX:1,
+      scaleY:1
     };
   }
 
