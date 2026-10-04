@@ -33,6 +33,7 @@ function room(id){
     players:new Map(),
     parties:new Map(),
     partyInvites:new Map(),
+    partyRewardClaims:new Set(),
     entities:new Map(),
     shots:new Map(),
     projectiles:new Map(),
@@ -85,17 +86,17 @@ function leaveParty(room,uid){
 function mergeIntoParty(room,fromUid,toUid){
   const from=room.players.get(key(fromUid)),to=room.players.get(key(toUid));
   if(!from||!to)return {ok:false,reason:"player_missing"};
+  const fromPartyId=String(from.partyId||""),toPartyId=String(to.partyId||"");
   const fromMembers=partyMembersForUid(room,from.uid);
   const toMembers=partyMembersForUid(room,to.uid);
   const combined=[...new Set([...fromMembers,...toMembers])];
   if(combined.length>6)return {ok:false,reason:"party_full"};
-  const existingId=from.partyId||to.partyId;
-  const partyId=existingId||key("party-"+Date.now()+"-"+from.uid.slice(0,10));
+  const partyId=fromPartyId||toPartyId||key("party-"+Date.now()+"-"+from.uid.slice(0,10));
   const party={id:partyId,members:new Set(combined),createdAt:Date.now()};
   room.parties.set(partyId,party);
-  for(const uid of combined){const p=room.players.get(uid);if(p)p.partyId=partyId}
-  if(from.partyId&&from.partyId!==partyId)room.parties.delete(from.partyId);
-  if(to.partyId&&to.partyId!==partyId)room.parties.delete(to.partyId);
+  for(const memberUid of combined){const member=room.players.get(memberUid);if(member)member.partyId=partyId}
+  if(fromPartyId&&fromPartyId!==partyId)room.parties.delete(fromPartyId);
+  if(toPartyId&&toPartyId!==partyId)room.parties.delete(toPartyId);
   sendPartyState(room,partyId);
   return {ok:true,partyId,members:combined};
 }
@@ -419,8 +420,11 @@ wss.on("connection",ws=>{
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
       const cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:"",x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
+      const previous=current.players.get(uid);
+      const preservedPartyId=String(previous?.partyId||"");
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:preservedPartyId,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
+      if(preservedPartyId)sendPartyState(current,preservedPartyId);
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
     }
@@ -493,13 +497,14 @@ wss.on("connection",ws=>{
     }
     if(m.type==="party.reward"){
       const claimKey=key(m.claimKey);
-      if(!claimKey)return;
+      if(!claimKey||current.partyRewardClaims.has(claimKey))return;
+      current.partyRewardClaims.add(claimKey);
       const members=partyMembersForUid(current,uid);
       const count=Math.max(1,members.length);
-      const gold=Math.max(0,Math.floor(Number(m.gold)||0));
-      const xp=Math.max(0,Math.floor(Number(m.xp)||0));
-      const shareGold=Math.floor(gold/count);
-      const shareXp=Math.floor(xp/count);
+      const gold=Math.max(0,Number(m.gold)||0);
+      const xp=Math.max(0,Number(m.xp)||0);
+      const shareGold=Math.round((gold/count)*100)/100;
+      const shareXp=Math.round((xp/count)*100)/100;
       for(const memberUid of members){
         const member=current.players.get(memberUid);
         if(member?.ws)send(member.ws,{type:"party.reward",claimKey,sourceUid:uid,partyId:p.partyId||"",memberCount:count,gold:shareGold,xp:shareXp,at:Date.now()});
@@ -612,7 +617,7 @@ wss.on("connection",ws=>{
     }
   });
   ws.on("close",()=>{
-    if(current&&uid){
+    if(current&&uid&&current.players.get(uid)?.ws===ws){
       leaveParty(current,uid);
       current.players.delete(uid);
       broadcast(current,{type:"player-left",uid,at:Date.now()});
