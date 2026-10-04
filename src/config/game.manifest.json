@@ -30,7 +30,7 @@
     "id": "login"
   },
   "persistence": {
-    "restoreSession": true,
+    "restoreSession": false,
     "sessionKey": "tq.game.runtime:v2"
   },
   "player": {
@@ -67,5 +67,12 @@
     "camera": {
       "playZoom": 0.4841
     }
+  },
+  "multiplayerTest": {
+    "enabled": true,
+    "worldId": "r1-enseada-aprendizes",
+    "useLocalWorldContent": true,
+    "grantAllAmmo": 1000,
+    "grantStrongestCannon": true
   }
 }
