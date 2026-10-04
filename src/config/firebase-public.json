@@ -8,10 +8,9 @@
   "databaseURL": "https://tabuadaquest2-default-rtdb.firebaseio.com",
   "multiplayer": {
     "enabled": true,
+    "authority": "node-websocket",
     "maxPlayersPerRoom": 5,
     "snapshotHz": 20,
-    "pollMs": 250,
-    "root": "multiplayer/rooms",
     "websocketURL": "wss://ws.ihubenglish.com"
   },
   "gameContent": {
@@ -25,5 +24,6 @@
   },
   "authDomain": "tabuadaquest2.firebaseapp.com",
   "appId": "1:489461827440:web:b176e51d8d41a8525871b5",
-  "messagingSenderId": "489461827440"
+  "messagingSenderId": "489461827440",
+  "role": "auth-player-persistence-content-bridge"
 }
