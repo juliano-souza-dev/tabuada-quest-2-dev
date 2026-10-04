@@ -12,7 +12,7 @@
     "snapshotHz": 20,
     "pollMs": 250,
     "root": "multiplayer/rooms",
-    "websocketURL": "wss://talked-gazette-harris-merchandise.trycloudflare.com"
+    "websocketURL": "wss://ws.ihubenglish.com"
   },
   "gameContent": {
     "enabled": true,
