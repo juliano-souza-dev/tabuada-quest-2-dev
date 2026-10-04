@@ -438,7 +438,7 @@
       "type": "ship",
       "role": "npc",
       "label": "Capitão das Almas",
-      "shipId": "pirate-halloween",
+      "shipId": "ship-halloween-pumpkin-corsair",
       "x": 4000,
       "y": 2500,
       "width": 300,
@@ -477,112 +477,112 @@
         "roll": 0,
         "sway": 0
       },
-      "src": "./assets/ships/events/halloween/navios_halloween_400x400.webp",
+      "src": "./assets/ships/events/halloween/galeão_halloween.webp",
       "spriteMode": "combined",
       "sprite": {
-        "src": "./assets/ships/events/halloween/navios_halloween_400x400.webp",
+        "src": "./assets/ships/events/halloween/galeão_halloween.webp",
         "columns": 4,
         "rows": 4,
-        "imageWidth": 400,
-        "imageHeight": 400,
-        "cellWidth": 100,
-        "cellHeight": 100,
+        "imageWidth": 1600,
+        "imageHeight": 1600,
+        "cellWidth": 400,
+        "cellHeight": 400,
         "regions": {
           "n": {
             "x": 0,
             "y": 0,
-            "width": 100,
-            "height": 100
+            "width": 400,
+            "height": 400
           },
           "nne": {
-            "x": 100,
+            "x": 400,
             "y": 0,
-            "width": 100,
-            "height": 100
+            "width": 400,
+            "height": 400
           },
           "ne": {
-            "x": 200,
+            "x": 800,
             "y": 0,
-            "width": 100,
-            "height": 100
+            "width": 400,
+            "height": 400
           },
           "ene": {
-            "x": 300,
+            "x": 1200,
             "y": 0,
-            "width": 100,
-            "height": 100
+            "width": 400,
+            "height": 400
           },
           "e": {
             "x": 0,
-            "y": 100,
-            "width": 100,
-            "height": 100
+            "y": 400,
+            "width": 400,
+            "height": 400
           },
           "ese": {
-            "x": 100,
-            "y": 100,
-            "width": 100,
-            "height": 100
+            "x": 400,
+            "y": 400,
+            "width": 400,
+            "height": 400
           },
           "se": {
-            "x": 200,
-            "y": 100,
-            "width": 100,
-            "height": 100
+            "x": 800,
+            "y": 400,
+            "width": 400,
+            "height": 400
           },
           "sse": {
-            "x": 300,
-            "y": 100,
-            "width": 100,
-            "height": 100
+            "x": 1200,
+            "y": 400,
+            "width": 400,
+            "height": 400
           },
           "s": {
             "x": 0,
-            "y": 200,
-            "width": 100,
-            "height": 100
+            "y": 800,
+            "width": 400,
+            "height": 400
           },
           "ssw": {
-            "x": 100,
-            "y": 200,
-            "width": 100,
-            "height": 100
+            "x": 400,
+            "y": 800,
+            "width": 400,
+            "height": 400
           },
           "sw": {
-            "x": 200,
-            "y": 200,
-            "width": 100,
-            "height": 100
+            "x": 800,
+            "y": 800,
+            "width": 400,
+            "height": 400
           },
           "wsw": {
-            "x": 300,
-            "y": 200,
-            "width": 100,
-            "height": 100
+            "x": 1200,
+            "y": 800,
+            "width": 400,
+            "height": 400
           },
           "w": {
             "x": 0,
-            "y": 300,
-            "width": 100,
-            "height": 100
+            "y": 1200,
+            "width": 400,
+            "height": 400
           },
           "wnw": {
-            "x": 100,
-            "y": 300,
-            "width": 100,
-            "height": 100
+            "x": 400,
+            "y": 1200,
+            "width": 400,
+            "height": 400
           },
           "nw": {
-            "x": 200,
-            "y": 300,
-            "width": 100,
-            "height": 100
+            "x": 800,
+            "y": 1200,
+            "width": 400,
+            "height": 400
           },
           "nnw": {
-            "x": 300,
-            "y": 300,
-            "width": 100,
-            "height": 100
+            "x": 1200,
+            "y": 1200,
+            "width": 400,
+            "height": 400
           }
         },
         "directionFrames": {
