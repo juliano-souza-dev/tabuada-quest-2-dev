@@ -2034,11 +2034,18 @@ export class WorldRuntime {
       return true;
     };
 
-    const finishPan=()=>{
+    const finishPan=({recenterImmediately=false}={})=>{
       const dragged=Boolean(pan?.dragging);
       this.host?.classList.remove("is-camera-dragging");
       if(this.mode==="play"&&dragged&&this.playCameraDetached){
-        this.playCameraRecenterAt=performance.now()+3000;
+        if(recenterImmediately){
+          this.playCameraDetached=false;
+          this.playCameraRecenterAt=0;
+          if(this.recenterButton)this.recenterButton.hidden=true;
+          this.updateCamera(true);
+        }else{
+          this.playCameraRecenterAt=performance.now()+3000;
+        }
       }
       pan=null;
     };
@@ -2063,7 +2070,7 @@ export class WorldRuntime {
       try{
         if(this.viewport.hasPointerCapture(event.pointerId))this.viewport.releasePointerCapture(event.pointerId);
       }catch{}
-      finishPan();
+      finishPan({recenterImmediately:event.pointerType==="touch"});
     };
 
     const touchStart=event=>{
@@ -2096,7 +2103,7 @@ export class WorldRuntime {
       if(!ended)return;
       const dragged=Boolean(pan?.dragging);
       touchPan=null;
-      finishPan();
+      finishPan({recenterImmediately:true});
       if(dragged)event.preventDefault();
     };
 
