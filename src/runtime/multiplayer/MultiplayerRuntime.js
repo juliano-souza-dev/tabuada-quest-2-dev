@@ -42,6 +42,8 @@ export class MultiplayerRuntime extends EventTarget{
       shipId:this.shipId,
       x:Number(p.x)||0,
       y:Number(p.y)||0,
+      vx:Number(p.vx)||0,
+      vy:Number(p.vy)||0,
       rotation:Number(p.rotation)||0,
       direction:String(p.direction||"n"),
       hp:Math.max(0,Number(state.navalPlayerHp)||0),
@@ -69,7 +71,7 @@ export class MultiplayerRuntime extends EventTarget{
       ws.send(JSON.stringify({
         type:"join",worldId:this.worldId,uid:st.uid,
         name:this.displayName||st.displayName||"Pirata",
-        shipId:this.shipId,x:local.x,y:local.y,rotation:local.rotation,
+        shipId:this.shipId,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
         direction:local.direction,hp:local.hp
       }));
       if(this.pendingWorldEnsure)ws.send(JSON.stringify(this.pendingWorldEnsure));
@@ -85,21 +87,26 @@ export class MultiplayerRuntime extends EventTarget{
         if(this.pendingWorldEnsure)this.socketSend(this.pendingWorldEnsure);
         return;
       }
-      if(data.type==="snapshot"){
+      if(data.type==="snapshot"||data.type==="state.delta"){
         const uid=String(this.auth.status().uid||"");
         this.dispatchEvent(new CustomEvent("players",{detail:{
           worldId:this.worldId,
+          serverTime:data.serverTime,
+          full:data.type==="snapshot",
           players:(data.players||[]).filter(p=>String(p.uid)!==uid)
         }}));
         this.dispatchEvent(new CustomEvent("entities",{detail:{
           worldId:this.worldId,
           serverTime:data.serverTime,
+          full:data.type==="snapshot",
           entities:data.entities||{}
         }}));
-        this.dispatchEvent(new CustomEvent("bosses",{detail:{
-          worldId:this.worldId,
-          bosses:data.bosses||{}
-        }}));
+        if(data.type==="snapshot"){
+          this.dispatchEvent(new CustomEvent("bosses",{detail:{
+            worldId:this.worldId,
+            bosses:data.bosses||{}
+          }}));
+        }
         return;
       }
       if(data.type==="boss.state"&&data.boss){
@@ -171,7 +178,7 @@ export class MultiplayerRuntime extends EventTarget{
     if(!this.worldId||!this.socketReady)return false;
     const local=this.localPayload();
     return this.socketSend({
-      type:"state",x:local.x,y:local.y,rotation:local.rotation,
+      type:"state",x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
       direction:local.direction,hp:local.hp
     });
   }
