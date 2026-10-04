@@ -10,7 +10,7 @@ export async function createAuthRuntimeServices({configUrl="./src/config/firebas
 
   const auth=new FirebaseAuthService(config);
   const playerState=new PlayerStateStore(auth,config);
-  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:10,pollMs:100});
+  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:Number(config.multiplayer?.snapshotHz)||20});
   const gameContent=new GameContentStore(auth,config);
 
   await auth.init();
