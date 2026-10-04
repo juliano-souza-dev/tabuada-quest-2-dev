@@ -96,7 +96,13 @@ export class PlayerStateStore extends EventTarget {
     if(!auth.authenticated||!auth.uid)return state;
     const payload=JSON.stringify(state);
     try{this.storage?.setItem?.(this.accountKey(auth.uid),payload)}catch{}
-    this.writeMeta(auth.uid,{updatedAt:Date.now(),pendingSync:Boolean(sync)});
+    const previous=this.readMeta(auth.uid);
+    this.writeMeta(auth.uid,{
+      updatedAt:Date.now(),
+      // A local-only autosave must never cancel a durable checkpoint that is
+      // already waiting for Firestore.
+      pendingSync:Boolean(sync)||previous.pendingSync===true
+    });
     if(sync)this.scheduleSync();
     return state;
   }
