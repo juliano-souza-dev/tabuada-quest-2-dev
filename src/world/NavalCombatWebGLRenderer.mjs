@@ -170,6 +170,12 @@ export class NavalCombatWebGLRenderer{
     this.cssWidth=0;
     this.cssHeight=0;
     this.projectileTextures=new Map();
+    this.reducedFx=false;
+  }
+
+  setReducedFx(enabled=false){
+    this.reducedFx=enabled===true;
+    return this.reducedFx;
   }
 
   init(){
@@ -228,7 +234,7 @@ export class NavalCombatWebGLRenderer{
 
   resize(width,height){
     if(!this.gl)return;
-    const dpr=clamp(Number(globalThis.devicePixelRatio)||1,1,1.35);
+    const dpr=this.reducedFx?1:clamp(Number(globalThis.devicePixelRatio)||1,1,1.35);
     const cssWidth=Math.max(1,Number(width)||1);
     const cssHeight=Math.max(1,Number(height)||1);
     const pixelWidth=Math.max(1,Math.round(cssWidth*dpr));
@@ -326,11 +332,13 @@ export class NavalCombatWebGLRenderer{
         x:shot.from.x,y:shot.from.y,startTime:shot.startTime,
         duration:fx.muzzle.durationMs,fx
       });
-      if(this.muzzles.length>12)this.muzzles.splice(0,this.muzzles.length-12);
+      const muzzleCap=this.reducedFx?4:12;
+      if(this.muzzles.length>muzzleCap)this.muzzles.splice(0,this.muzzles.length-muzzleCap);
     }
     const textureSrc=fx.projectile.texture;
     if(textureSrc)this.loadProjectileTexture(normalizedAmmo?.id,textureSrc);
-    if(this.shots.length>16)this.shots.splice(0,this.shots.length-16);
+    const shotCap=this.reducedFx?8:16;
+    if(this.shots.length>shotCap)this.shots.splice(0,this.shots.length-shotCap);
     return true;
   }
 
@@ -376,7 +384,8 @@ export class NavalCombatWebGLRenderer{
             fx:shot.fx,
             seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
           });
-          if(this.impacts.length>12)this.impacts.splice(0,this.impacts.length-12);
+          const impactCap=this.reducedFx?5:12;
+          if(this.impacts.length>impactCap)this.impacts.splice(0,this.impacts.length-impactCap);
         }
         try{shot.onImpact?.()}catch(error){
           console.warn("[TabuadaQuest] Naval impact callback failed:",error);
@@ -467,7 +476,7 @@ export class NavalCombatWebGLRenderer{
           {color:m.accentColor,coreColor:m.coreColor,glow:m.intensity,opacity:clamp(m.starburst*(1-progress*.55),0,1)}
         );
       }
-      const muzzleSparkCount=Math.min(6,Math.max(0,Math.round(m.sparks*.18)));
+      const muzzleSparkCount=this.reducedFx?Math.min(2,Math.max(0,Math.round(m.sparks*.06))):Math.min(6,Math.max(0,Math.round(m.sparks*.18)));
       const muzzleFade=clamp(1-progress,0,1);
       for(let i=0;i<muzzleSparkCount;i++){
         const hash=Math.sin((i+1)*83.71+muzzle.startTime*.0017)*43758.5453;
@@ -498,7 +507,7 @@ export class NavalCombatWebGLRenderer{
         const x=shot.from.x+dx*eased+(-dy/length)*wobble;
         const y=shot.from.y+dy*eased+(dx/length)*wobble;
         if(fx.trail.enabled&&fx.trail.length>0){
-          const trailSteps=Math.min(10,Math.max(0,Math.ceil(fx.trail.length*.45)));
+          const trailSteps=this.reducedFx?Math.min(4,Math.max(1,Math.ceil(fx.trail.length*.18))):Math.min(10,Math.max(0,Math.ceil(fx.trail.length*.45)));
           for(let step=trailSteps;step>=1;step--){
             const ratio=step/trailSteps;
             const trailT=clamp(t-ratio*.22,0,1);
@@ -572,7 +581,7 @@ export class NavalCombatWebGLRenderer{
         const textured=textureEntry?.ready&&textureEntry.texture;
         const assetSize=clamp((textured?14:10)*Number(shot.ammo?.size||1)*fx.projectile.scale,4,26);
 
-        const echoCount=Math.min(1,Math.max(0,fx.projectile.echoCount));
+        const echoCount=this.reducedFx?0:Math.min(1,Math.max(0,fx.projectile.echoCount));
         for(let echo=1;echo<=echoCount;echo++){
           const echoT=clamp(t-echo*fx.projectile.echoSpacing,0,t);
           if(echoT<=0)continue;
@@ -619,7 +628,7 @@ export class NavalCombatWebGLRenderer{
               opacity:fx.projectile.auraOpacity*.52
             }
           );
-          const orbitCount=Math.min(3,Math.max(0,fx.projectile.orbitCount));
+          const orbitCount=this.reducedFx?0:Math.min(3,Math.max(0,fx.projectile.orbitCount));
           const orbitRadius=(assetSize*fx.projectile.orbitRadius*.72)/Math.max(.2,Number(zoom)||1);
           for(let i=0;i<orbitCount;i++){
             const phase=(i/Math.max(1,orbitCount))*Math.PI*2+now*.0045*fx.projectile.pulseSpeed;
