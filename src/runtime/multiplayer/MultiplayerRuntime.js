@@ -183,6 +183,7 @@ export class MultiplayerRuntime extends EventTarget{
     if(!this.worldId)return false;
     const payload={
       type:"world.ensure",
+      revision:String(seed.revision||""),
       bounds:seed.bounds&&typeof seed.bounds==="object"?seed.bounds:{},
       entities:Array.isArray(seed.entities)?seed.entities:[]
     };
