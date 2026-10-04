@@ -235,7 +235,8 @@ export class GameRuntime {
       return value&&typeof value==="object"?clone(value):null;
     };
 
-    const manifest=load(this.manifestUrl||"./src/config/game.manifest.json");
+    const preserveForcedTestRoute=this.manifest.afterAuth?.force===true;
+    const manifest=preserveForcedTestRoute?null:load(this.manifestUrl||"./src/config/game.manifest.json");
     if(manifest){
       this.manifest=manifest;
       this.restoreSession=this.manifest.persistence?.restoreSession!==false;
@@ -243,9 +244,9 @@ export class GameRuntime {
 
     const next={
       sceneCatalog:load(catalogs.scenes||"./src/config/scene-catalog.json"),
-      worldCatalog:load(catalogs.worlds||"./src/config/world-catalog.json"),
+      worldCatalog:preserveForcedTestRoute?null:load(catalogs.worlds||"./src/config/world-catalog.json"),
       shipCatalog:load(catalogs.ships||"./src/config/ship-catalog.json"),
-      npcCatalog:load(catalogs.npcs||"./src/config/npc-catalog.json"),
+      npcCatalog:preserveForcedTestRoute?null:load(catalogs.npcs||"./src/config/npc-catalog.json"),
       treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
       ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
