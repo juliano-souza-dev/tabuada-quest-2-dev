@@ -1669,9 +1669,20 @@ export class GameRuntime {
     }
 
     let sourceWorld;
+    const testWorld=this.manifest?.multiplayerTest||{};
+    const forceLocalTestWorld=testWorld.enabled===true
+      &&testWorld.useLocalWorldContent===true
+      &&String(entry.id||"")===String(testWorld.worldId||"r1-enseada-aprendizes");
     const overriddenWorld=entry.id?this.worldOverrides.get(String(entry.id)):null;
     if(overriddenWorld){
       sourceWorld=clone(overriddenWorld);
+    }else if(forceLocalTestWorld){
+      const localPath="./src/world/r1-enseada-aprendizes.world.json";
+      const response=await fetch(localPath+"?v=20261004-1600-r1-authoritative-reset",{cache:"no-store"});
+      if(!response.ok)throw new Error("Local multiplayer test world load failed: "+response.status);
+      sourceWorld=await response.json();
+      entry.path=localPath;
+      this.contentSource="local-multiplayer-test";
     }else{
       try{
         sourceWorld=await this.loadJson(entry.path);
