@@ -4820,6 +4820,21 @@ export class WorldRuntime {
     const eligible=battery.filter(item=>targetDistance<=Math.max(1,Number(item.cannon?.range)||900));
     if(!eligible.length)return false;
 
+    // Boss behavior: once a valid attack volley starts, stop navigation before
+    // solving projectile interception. This prevents the coop boss from turning
+    // away during the first projectile flight and makes the first valid volley
+    // capable of landing instead of endlessly chasing a moving prediction.
+    if(this.isCoopBoss(entity)&&entity.bossCombatStopped!==true){
+      entity.bossCombatStopped=true;
+      if(entity.npcNavigation){
+        entity.npcNavigation.vx=0;
+        entity.npcNavigation.vy=0;
+        entity.npcNavigation.targetHeading=Number(entity.rotation)||Number(entity.npcNavigation.heading)||0;
+      }
+      entity.anchorX=entity.x;
+      entity.anchorY=entity.y;
+    }
+
     const hp=this.navalHpState(entity);
     const ammoUnlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
     let ammoRemaining=ammoUnlimited?Number.POSITIVE_INFINITY:Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
