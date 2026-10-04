@@ -2247,6 +2247,29 @@ html.tq-missions-open .tq-mobile-hud__missions{visibility:visible}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 2px 3px rgba(0,0,0,.45);
 }
 .tq-world-shop__buy:active{transform:translateY(1px)}
+/* Mobile shop: keep purchase controls physically usable even on narrow screens.
+   The previous percentage rows collapsed inside the 3:1 card. */
+@media (max-width:520px){
+  .tq-world-shop__list{bottom:8.5%;gap:6px}
+  .tq-world-shop__slot{
+    aspect-ratio:auto;
+    min-height:132px;
+    grid-template-columns:23% minmax(0,1fr) 31%;
+    grid-template-rows:minmax(30px,auto) minmax(38px,1fr) 42px;
+    column-gap:7px;
+    row-gap:4px;
+    padding:10px 9px;
+  }
+  .tq-world-shop__item-image{min-height:104px}
+  .tq-world-shop__item-name{font-size:10px;line-height:1.1}
+  .tq-world-shop__item-info{font-size:8px;line-height:1.2;overflow:hidden}
+  .tq-world-shop__price{min-height:30px;padding:2px 3px}
+  .tq-world-shop__price b{font-size:9px;white-space:normal;line-height:1.05}
+  .tq-world-shop__quantity{min-height:38px}
+  .tq-world-shop__quantity button{min-width:0;font-size:17px;touch-action:manipulation}
+  .tq-world-shop__quantity b{font-size:11px}
+  .tq-world-shop__buy{min-height:42px;font-size:10px;touch-action:manipulation}
+}
 @media (orientation:portrait) and (max-width:720px){
   .tq-world-shop__list{left:7.8%;right:7.8%;top:39.2%;bottom:10.2%;gap:1.2%;padding:.7% 0 3%}
   .tq-world-shop__slot{grid-template-columns:25% minmax(0,1fr) 27%;grid-template-rows:30% 31% 39%;padding:5.8% 5.5%}
