@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
 const PROTOCOL_VERSION="20261004-authoritative-v4";
-const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
+const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=60000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
 const ALLOW_LEGACY_DIRECT_DAMAGE=String(process.env.ALLOW_LEGACY_DIRECT_DAMAGE||"").toLowerCase()==="true";
