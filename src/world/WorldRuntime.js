@@ -5687,9 +5687,7 @@ export class WorldRuntime {
     if(this.graphicsSettings.oceanWaves===false)this.host?.classList.remove("is-webgl-ocean");
     this.navalRenderer?.setReducedFx?.(this.graphicsSettings.reducedAmmoFx===true);
     if(this.graphicsSettings.oceanWaves===false){
-      for(const el of Object.values(this.oceanEls||{})){
-        if(el)el.style.transform="none";
-      }
+      this.updateOceanFrame(0);
     }else{
       this.initOceanRenderer();
     }
@@ -5792,9 +5790,9 @@ export class WorldRuntime {
   }
 
   updateOceanFrame(time){
-    if(this.graphicsSettings?.oceanWaves===false)return;
     const ocean=this.config.ocean||normalizeOceanConfig({});
-    const webglRendered=ocean.renderer==="webgl"
+    const wavesEnabled=this.graphicsSettings?.oceanWaves!==false;
+    const webglRendered=wavesEnabled&&ocean.renderer==="webgl"
       &&this.oceanRenderer?.render?.({
         time,
         camera:this.camera,
@@ -5816,7 +5814,9 @@ export class WorldRuntime {
 
     if(webglRendered)return;
 
-    const frame=computeOceanFrame(ocean,time,this.camera);
+    // When wave animation is disabled the ocean must still move with the camera.
+    // Freeze only the time component, never the camera transform.
+    const frame=computeOceanFrame(ocean,wavesEnabled?time:0,this.camera);
     for(const key of ["deep","wave","foam"]){
       const el=this.oceanEls?.[key];
       const layerFrame=frame.layers?.[key];
