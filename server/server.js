@@ -34,7 +34,7 @@ function directionForRotation(rotation){
 }
 function publicEntity(e){
   return {
-    id:e.id,npcId:e.npcId,shipId:e.shipId,name:e.name,
+    id:e.id,serverSlot:e.serverSlot,npcId:e.npcId,shipId:e.shipId,name:e.name,
     x:e.x,y:e.y,rotation:e.rotation,direction:e.direction,
     vx:e.vx,vy:e.vy,hp:e.hp,maxHp:e.maxHp,
     boss:e.boss,defeated:e.defeated,stopped:e.stopped,
@@ -92,7 +92,7 @@ function ensureWorld(r,m){
     const speed=clamp(raw.speed,0,1200);
     const rotation=Number(raw.rotation)||0;
     r.entities.set(id,{
-      id,npcId:key(raw.npcId||""),shipId:key(raw.shipId||""),name:String(raw.name||"NPC").slice(0,80),
+      id,serverSlot:Math.max(0,Math.floor(Number(raw.serverSlot)||0)),npcId:key(raw.npcId||""),shipId:key(raw.shipId||""),name:String(raw.name||"NPC").slice(0,80),
       x:Number(raw.x)||0,y:Number(raw.y)||0,rotation,direction:String(raw.direction||directionForRotation(rotation)).slice(0,8),
       vx:0,vy:0,speed,minSpeed:clamp(raw.minSpeed,0,speed),acceleration:clamp(raw.acceleration||speed*3.1,0,3000),
       hp:maxHp,maxHp,boss:raw.boss===true,hostile:raw.hostile!==false,defeated:false,stopped:false,
@@ -188,7 +188,7 @@ function resolveProjectile(r,p,now=Date.now()){
     const e=r.entities.get(key(p.targetId));
     if(e&&!e.defeated){
       const radius=clamp(e.hitRadius||90,24,260);
-      const miss=Math.hypot(Number(e.x)||0-p.to.x,Number(e.y)||0-p.to.y);
+      const miss=Math.hypot((Number(e.x)||0)-p.to.x,(Number(e.y)||0)-p.to.y);
       hit=miss<=radius;
       if(hit){
         const damage=Math.min(p.damage,Math.max(0,e.hp));
@@ -208,7 +208,7 @@ function resolveProjectile(r,p,now=Date.now()){
   }else if(p.targetType==="player"){
     const target=r.players.get(key(p.targetId));
     if(target&&target.hp>0){
-      const miss=Math.hypot(Number(target.x)||0-p.to.x,Number(target.y)||0-p.to.y);
+      const miss=Math.hypot((Number(target.x)||0)-p.to.x,(Number(target.y)||0)-p.to.y);
       hit=miss<=95;
       if(hit){
         const damage=Math.min(p.damage,Math.max(0,target.hp));
