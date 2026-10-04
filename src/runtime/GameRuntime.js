@@ -1843,6 +1843,16 @@ export class GameRuntime {
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
+      onRuntimeStateChange:()=>{
+        if(this.current?.kind==="world"&&this.worldRuntime?.getState){
+          const snapshot=this.worldRuntime.getState();
+          if(snapshot&&typeof snapshot==="object"){
+            delete snapshot.ammo;
+            this.worldStates[worldId]=clone(snapshot);
+          }
+        }
+        this.saveState();
+      },
       getShipyardState:()=>({
         ships:this.listOwnedShips().map(ship=>({id:ship.id,name:ship.name||ship.id,equipped:ship.id===this.playerShips.equippedShip,cannons:this.getShipCannons(ship.id).map(id=>this.cannonEntry(id)).filter(Boolean).map(c=>({id:c.id,name:c.name||c.id}))})),
         cannons:(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).map(c=>({id:c.id,name:c.name||c.id})),
