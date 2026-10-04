@@ -378,7 +378,8 @@
           "mode": "random-spaced",
           "margin": 1200,
           "minDistance": 900
-        }
+        },
+        "hitRewardGold": 100
       }
     ]
   },
