@@ -1711,17 +1711,6 @@ export class GameRuntime {
     // runtime-only test overrides, so combat behaves exactly like normal play.
     const testConfig=this.manifest?.multiplayerTest||{};
     if(testConfig.enabled===true&&worldId===String(testConfig.worldId||"")){
-      const strongest=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
-        .filter(cannon=>cannon?.available!==false)
-        .sort((a,b)=>(Number(b.damageMultiplier)||0)-(Number(a.damageMultiplier)||0))[0]||null;
-      const shipId=String(this.playerShips.equippedShip||"");
-      if(testConfig.grantStrongestCannon===true&&strongest&&shipId){
-        const cid=String(strongest.id||"");
-        this.ensurePlayerCannons();
-        if((Number(this.playerCannons.owned?.[cid])||0)<1)this.playerCannons.owned[cid]=1;
-        this.playerCannons.equippedByShip[shipId]=[cid];
-        this.ensurePlayerCannons();
-      }
       const ammoFloor=Math.max(0,Math.floor(Number(testConfig.grantAllAmmo)||0));
       const ammoGrantVersion=1;
       const alreadyGranted=Math.floor(Number(this.flags?.multiplayerTestAmmoGrantVersion)||0)>=ammoGrantVersion;
