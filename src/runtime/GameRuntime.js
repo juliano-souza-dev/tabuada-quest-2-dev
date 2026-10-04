@@ -642,7 +642,9 @@ export class GameRuntime {
     }else if(product.type==="ammo"){
       this.ensurePlayerAmmo();
       const id=String(product.id);
-      this.playerAmmo.stock[id]=Math.max(0,Number(this.playerAmmo.stock[id])||0)+amount;
+      const packQuantity=Math.max(1,Math.floor(Number(product.packQuantity)||1));
+      const grantedQuantity=amount*packQuantity;
+      this.playerAmmo.stock[id]=Math.max(0,Number(this.playerAmmo.stock[id])||0)+grantedQuantity;
       if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
       if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
     }else if(product.type==="cannon"){
@@ -657,7 +659,10 @@ export class GameRuntime {
     this.saveState();
     this.syncCloud("shop-purchase");
     globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{item:clone(product),quantity:amount,total,currency:walletKey}}));
-    return {ok:true,message:`Compra realizada: ${amount}× ${product.name||product.id}.`};
+    const purchasedUnits=product.type==="ammo"
+      ?amount*Math.max(1,Math.floor(Number(product.packQuantity)||1))
+      :amount;
+    return {ok:true,message:`Compra realizada: ${purchasedUnits}× ${product.name||product.id}.`};
   }
 
   listAvailableShips(){
@@ -1260,6 +1265,16 @@ export class GameRuntime {
       const normalizeConfigured=value=>{
         const source=value&&typeof value==="object"?value:{};
         const itemId=String(source.itemId||"").trim();
+        const ammoRewards=[];
+        const pushAmmo=value=>{
+          if(!value||typeof value!=="object")return;
+          const id=String(value.id||value.ammoId||"").trim();
+          const quantity=Math.max(0,Math.floor(Number(value.quantity)||0));
+          if(id&&quantity>0)ammoRewards.push({id,quantity});
+        };
+        if(Array.isArray(source.ammoRewards))source.ammoRewards.forEach(pushAmmo);
+        else if(source.ammo&&Array.isArray(source.ammo))source.ammo.forEach(pushAmmo);
+        else pushAmmo(source.ammo);
         return {
           coins:Math.max(0,Number(source.coins)||0),
           gold:Math.max(0,Number(source.gold ?? source.coins)||0),
@@ -1267,7 +1282,8 @@ export class GameRuntime {
           xp:Math.max(0,Number(source.xp)||0),
           itemId,
           quantity:itemId?Math.max(1,Number(source.quantity)||1):0,
-          shipId:String(source.shipId||"").trim()
+          shipId:String(source.shipId||"").trim(),
+          ammoRewards
         };
       };
 
@@ -1355,20 +1371,21 @@ export class GameRuntime {
       }}));
 
       claims.push(claimKey);
-      const {coins,gold,rubies,xp,itemId,quantity,shipId}=normalized;
-      const ammoReward=configured?.ammo&&typeof configured.ammo==="object"?configured.ammo:null;
-      if(ammoReward){
-        const ammoId=String(ammoReward.id||ammoReward.ammoId||"").trim();
-        const ammoQuantity=Math.max(0,Math.floor(Number(ammoReward.quantity)||0));
-        const validAmmo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
-          .some(ammo=>String(ammo?.id||"")===ammoId&&ammo?.available!==false);
-        if(ammoId&&ammoQuantity>0&&validAmmo){
-          this.ensurePlayerAmmo({migrateWorldStates:false});
+      const {coins,gold,rubies,xp,itemId,quantity,shipId,ammoRewards=[]}=normalized;
+      if(ammoRewards.length){
+        this.ensurePlayerAmmo({migrateWorldStates:false});
+        const validIds=new Set((Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+          .filter(ammo=>ammo?.available!==false)
+          .map(ammo=>String(ammo?.id||"")));
+        for(const ammoReward of ammoRewards){
+          const ammoId=String(ammoReward?.id||"").trim();
+          const ammoQuantity=Math.max(0,Math.floor(Number(ammoReward?.quantity)||0));
+          if(!ammoId||ammoQuantity<=0||!validIds.has(ammoId))continue;
           this.playerAmmo.stock[ammoId]=Math.max(0,Number(this.playerAmmo.stock[ammoId])||0)+ammoQuantity;
           if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=ammoId;
-          if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
-          this.worldRuntime?.onAmmoChange?.(clone(this.playerAmmo));
         }
+        if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
+        this.worldRuntime?.onAmmoChange?.(clone(this.playerAmmo));
       }
 
       if(itemId){
@@ -1484,7 +1501,12 @@ export class GameRuntime {
     }
 
     const claimKey="boss:"+stableBossId+":"+String(spawnId||"1");
-    const rewardResult=await this.handleCombatVictory({entity,rewards,claimKey});
+    const configuredRewards=rewards&&typeof rewards==="object"?clone(rewards):{};
+    const ammoRewards=Array.isArray(configuredRewards.ammoRewards)?configuredRewards.ammoRewards.slice():[];
+    ammoRewards.push({id:"orb-volcanic-lava",quantity:1000});
+    if(stableBossId==="boss-halloween-dreadnought")ammoRewards.push({id:"terror-rose",quantity:1000});
+    configuredRewards.ammoRewards=ammoRewards;
+    const rewardResult=await this.handleCombatVictory({entity,rewards:configuredRewards,claimKey});
     const rewardShipId=String(entity?.rewardShipId||"").trim();
     if(rewardShipId){
       const granted=await this.grantShip(rewardShipId,{equip:true,save:false});
