@@ -1,15 +1,7 @@
 {
   "schema": "tq.world-catalog",
-  "version": 7,
+  "version": 8,
   "worlds": [
-    {
-      "id": "teste-multiplayer-sync",
-      "name": "Campo de Teste Multiplayer",
-      "type": "ocean",
-      "region": 0,
-      "test": true,
-      "path": "./src/world/teste-multiplayer-sync.world.json"
-    },
     {
       "id": "r1-enseada-aprendizes",
       "name": "Enseada dos Aprendizes",
