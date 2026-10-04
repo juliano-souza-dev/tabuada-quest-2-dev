@@ -1,10 +1,20 @@
 import {WebSocketServer} from "ws";
 import http from "node:http";
+import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
 const rooms=new Map();
-const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0};
+const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
+const ALLOW_LEGACY_DIRECT_DAMAGE=String(process.env.ALLOW_LEGACY_DIRECT_DAMAGE||"").toLowerCase()==="true";
+const loadCatalog=relativePath=>{
+  try{return JSON.parse(readFileSync(new URL(relativePath,import.meta.url),"utf8"))}
+  catch(error){console.error("[RT] catalog load failed",relativePath,error);return {}}
+};
+const ammoCatalog=loadCatalog("../src/config/ammo-catalog.json");
+const cannonCatalog=loadCatalog("../src/config/cannon-catalog.json");
+const ammoById=new Map((Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).map(item=>[String(item?.id||""),item]));
+const cannonById=new Map((Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).map(item=>[String(item?.id||""),item]));
 const log=(event,detail="")=>console.log(`[RT ${new Date().toISOString()}] ${event}${detail?` ${detail}`:""}`);
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 const key=v=>String(v||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
@@ -183,6 +193,7 @@ function spawnProjectile(r,data={}){
     targetId:key(data.targetId||""),
     from,to,
     ammoId:key(data.ammoId||""),
+    cannonId:key(data.cannonId||""),
     damage:clamp(data.damage||1,.1,5000),
     projectileSpeed:speed,
     duration,
@@ -284,7 +295,7 @@ wss.on("connection",ws=>{
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server"});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -302,25 +313,57 @@ wss.on("connection",ws=>{
       monitor.stateUpdates++;
       p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
     }
-    if(m.type==="projectile.fire"){
+    if(m.type==="fire.request"||m.type==="projectile.fire"){
       monitor.shots++;
+      const authoritative=m.type==="fire.request";
       const targetId=key(m.targetId),target=current.entities.get(targetId);
       if(!target||target.defeated||target.hp<=0)return;
-      const range=clamp(m.range||1200,100,12000);
+
+      const ammoId=key(m.ammoId),cannonId=key(m.cannonId);
+      const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
+      if(authoritative&&(!ammo||ammo.available===false||!cannon||cannon.available===false)){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"invalid_loadout",targetId,ammoId,cannonId,at:Date.now()});
+        return;
+      }
+
+      const now=Date.now();
+      const cooldown=clamp(cannon?.attackCooldownMs||m.attackCooldownMs||950,150,10000);
+      if(authoritative&&now<Number(p.nextFireAt||0)){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"cooldown",targetId,retryAt:p.nextFireAt,at:now});
+        return;
+      }
+
+      const range=clamp(cannon?.range||m.range||1200,100,12000);
       const playerDistance=Math.hypot((Number(p.x)||0)-target.x,(Number(p.y)||0)-target.y);
-      if(playerDistance>range+180)return;
+      if(playerDistance>range+180){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"out_of_range",targetId,range,distance:playerDistance,at:now});
+        return;
+      }
+
       const rawFrom={x:Number(m.from?.x)||Number(p.x)||0,y:Number(m.from?.y)||Number(p.y)||0};
       const fromDistance=Math.hypot(rawFrom.x-(Number(p.x)||0),rawFrom.y-(Number(p.y)||0));
       const from=fromDistance<=320?rawFrom:{x:Number(p.x)||0,y:Number(p.y)||0};
       if(target.boss){target.stopped=true;target.vx=0;target.vy=0}
-      const to={x:target.x,y:target.y};
-      spawnProjectile(current,{
+
+      const projectileSpeed=clamp(
+        authoritative?(Number(ammo?.projectileSpeed)||Number(cannon?.projectileSpeed)||720):(Number(m.projectileSpeed)||720),
+        120,4000
+      );
+      const damage=authoritative
+        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,5),.1,5000)
+        :clamp(Number(m.damage)||1,.1,5000);
+
+      if(authoritative)p.nextFireAt=now+cooldown;
+      const projectile=spawnProjectile(current,{
         shotId:key(m.shotId||projectileId("player")),
         ownerType:"player",ownerId:uid,ownerUid:uid,
         targetType:"entity",targetId:target.id,
-        from,to,ammoId:m.ammoId,damage:m.damage,
-        projectileSpeed:m.projectileSpeed,duration:m.duration
+        from,to:{x:target.x,y:target.y},ammoId,cannonId,damage,projectileSpeed
       });
+      if(projectile)send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
       return;
     }
     if(m.type==="shot"){
@@ -330,6 +373,10 @@ wss.on("connection",ws=>{
       current.shots.set(shotId,event);broadcast(current,event,ws);return;
     }
     if(m.type==="entity.damage"||m.type==="boss.damage"){
+      if(!ALLOW_LEGACY_DIRECT_DAMAGE){
+        send(ws,{type:"fire.rejected",reason:"direct_damage_disabled",at:Date.now()});
+        return;
+      }
       monitor.entityHits++;
       const event=applyEntityDamage(current,uid,m);
       if(event){
