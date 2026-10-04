@@ -19,6 +19,7 @@ function room(id){
     players:new Map(),
     entities:new Map(),
     shots:new Map(),
+    projectiles:new Map(),
     bounds:{left:0,top:0,right:60000,bottom:12000},
     initialized:false,
     emptySince:0
@@ -97,6 +98,14 @@ function ensureWorld(r,m){
       hp:maxHp,maxHp,boss:raw.boss===true,defeated:false,stopped:false,
       respawn:raw.respawn===true,respawnDelayMs:clamp(raw.respawnDelayMs||30000,1000,86400000),
       respawnAt:0,spawnId:Math.max(1,Number(raw.spawnId)||1),contributors:{},
+      attackRange:clamp(raw.attackRange||900,100,12000),
+      attackCooldownMs:clamp(raw.attackCooldownMs||1200,150,10000),
+      projectileSpeed:clamp(raw.projectileSpeed||720,120,4000),
+      damage:clamp(raw.damage||1,.1,5000),
+      ammoId:key(raw.ammoId||""),
+      volleyCount:clamp(raw.volleyCount||1,1,32),
+      hitRadius:clamp(raw.hitRadius||90,24,260),
+      nextAttackAt:now+500+(hashString(id)%900),
       courseCycle:0,nextCourseAt:now+3500+(hashString(id)%5500),updatedAt:now
     });
   }
@@ -143,12 +152,112 @@ function applyEntityDamage(r,uid,m){
   };
 }
 
+function projectileId(prefix="shot"){return key(prefix+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,9))}
+function spawnProjectile(r,data={}){
+  const now=Date.now();
+  const id=key(data.shotId||projectileId(data.ownerType||"shot"));
+  if(!id||r.projectiles.has(id))return null;
+  const from={x:Number(data.from?.x)||0,y:Number(data.from?.y)||0};
+  const to={x:Number(data.to?.x)||0,y:Number(data.to?.y)||0};
+  const speed=clamp(data.projectileSpeed||720,120,4000);
+  const distance=Math.hypot(to.x-from.x,to.y-from.y);
+  const duration=clamp(data.duration||distance/speed*1000,120,8000);
+  const projectile={
+    id,shotId:id,
+    ownerType:String(data.ownerType||"player"),
+    ownerId:key(data.ownerId||""),
+    ownerUid:key(data.ownerUid||""),
+    targetType:String(data.targetType||"entity"),
+    targetId:key(data.targetId||""),
+    from,to,
+    ammoId:key(data.ammoId||""),
+    damage:clamp(data.damage||1,.1,5000),
+    projectileSpeed:speed,
+    duration,
+    createdAt:now,
+    resolvesAt:now+duration
+  };
+  r.projectiles.set(id,projectile);
+  broadcast(r,{type:"projectile.spawn",...projectile});
+  return projectile;
+}
+function resolveProjectile(r,p,now=Date.now()){
+  if(!p||now<Number(p.resolvesAt||0))return false;
+  let hit=false,event=null;
+  if(p.targetType==="entity"){
+    const e=r.entities.get(key(p.targetId));
+    if(e&&!e.defeated){
+      const radius=clamp(e.hitRadius||90,24,260);
+      const miss=Math.hypot(Number(e.x)||0-p.to.x,Number(e.y)||0-p.to.y);
+      hit=miss<=radius;
+      if(hit){
+        const damage=Math.min(p.damage,Math.max(0,e.hp));
+        e.hp=Math.max(0,Math.round((e.hp-damage)*10)/10);
+        if(p.ownerUid)e.contributors[p.ownerUid]=Math.max(0,Number(e.contributors[p.ownerUid])||0)+damage;
+        e.defeated=e.hp<=0;
+        e.updatedAt=now;
+        if(e.defeated&&e.respawn)e.respawnAt=now+e.respawnDelayMs;
+        event={
+          type:"projectile.hit",shotId:p.id,ownerType:p.ownerType,ownerId:p.ownerId,ownerUid:p.ownerUid,
+          targetType:"entity",targetId:e.id,npcId:e.npcId,boss:e.boss,
+          damage,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
+          respawnAt:e.respawnAt||0,spawnId:e.spawnId,contributors:{...e.contributors},at:now
+        };
+      }
+    }
+  }else if(p.targetType==="player"){
+    const target=r.players.get(key(p.targetId));
+    if(target&&target.hp>0){
+      const miss=Math.hypot(Number(target.x)||0-p.to.x,Number(target.y)||0-p.to.y);
+      hit=miss<=95;
+      if(hit){
+        const damage=Math.min(p.damage,Math.max(0,target.hp));
+        target.hp=Math.max(0,Math.round((target.hp-damage)*10)/10);
+        event={
+          type:"projectile.hit",shotId:p.id,ownerType:p.ownerType,ownerId:p.ownerId,
+          targetType:"player",targetId:target.uid,damage,hp:target.hp,maxHp:null,at:now
+        };
+      }
+    }
+  }
+  if(hit&&event)broadcast(r,event);
+  else broadcast(r,{type:"projectile.miss",shotId:p.id,ownerType:p.ownerType,ownerId:p.ownerId,targetType:p.targetType,targetId:p.targetId,to:p.to,at:now});
+  r.projectiles.delete(p.id);
+  return true;
+}
+function maybeFireNpc(r,e,now=Date.now()){
+  if(e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
+  let target=null,best=Infinity;
+  for(const p of r.players.values()){
+    if(!(p.hp>0))continue;
+    const d=Math.hypot((Number(p.x)||0)-e.x,(Number(p.y)||0)-e.y);
+    if(d<=e.attackRange&&d<best){best=d;target=p}
+  }
+  if(!target)return false;
+  e.nextAttackAt=now+e.attackCooldownMs;
+  const shots=Math.max(1,Math.min(16,Math.floor(Number(e.volleyCount)||1)));
+  for(let i=0;i<shots;i++){
+    const delay=i*55;
+    const lead=delay/1000;
+    const from={x:e.x,y:e.y};
+    const to={x:(Number(target.x)||0),y:(Number(target.y)||0)};
+    spawnProjectile(r,{
+      shotId:projectileId("npc"),
+      ownerType:"entity",ownerId:e.id,targetType:"player",targetId:target.uid,
+      from,to,ammoId:e.ammoId,damage:e.damage,projectileSpeed:e.projectileSpeed,
+      duration:Math.max(120,best/e.projectileSpeed*1000+delay)
+    });
+  }
+  return true;
+}
+
 const server=http.createServer((req,res)=>{
   if(req.url==="/health"){
     const players=[...rooms.values()].reduce((sum,r)=>sum+r.players.size,0);
     const entities=[...rooms.values()].reduce((sum,r)=>sum+r.entities.size,0);
+    const projectiles=[...rooms.values()].reduce((sum,r)=>sum+r.projectiles.size,0);
     res.writeHead(200,{"content-type":"application/json"});
-    res.end(JSON.stringify({ok:true,rooms:rooms.size,players,entities,uptime:process.uptime()}));
+    res.end(JSON.stringify({ok:true,rooms:rooms.size,players,entities,projectiles,uptime:process.uptime()}));
     return;
   }
   res.writeHead(404);res.end();
@@ -179,6 +288,27 @@ wss.on("connection",ws=>{
     if(m.type==="state"){
       monitor.stateUpdates++;
       p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
+    }
+    if(m.type==="projectile.fire"){
+      monitor.shots++;
+      const targetId=key(m.targetId),target=current.entities.get(targetId);
+      if(!target||target.defeated||target.hp<=0)return;
+      const range=clamp(m.range||1200,100,12000);
+      const playerDistance=Math.hypot((Number(p.x)||0)-target.x,(Number(p.y)||0)-target.y);
+      if(playerDistance>range+180)return;
+      const rawFrom={x:Number(m.from?.x)||Number(p.x)||0,y:Number(m.from?.y)||Number(p.y)||0};
+      const fromDistance=Math.hypot(rawFrom.x-(Number(p.x)||0),rawFrom.y-(Number(p.y)||0));
+      const from=fromDistance<=320?rawFrom:{x:Number(p.x)||0,y:Number(p.y)||0};
+      if(target.boss){target.stopped=true;target.vx=0;target.vy=0}
+      const to={x:target.x,y:target.y};
+      spawnProjectile(current,{
+        shotId:key(m.shotId||projectileId("player")),
+        ownerType:"player",ownerId:uid,ownerUid:uid,
+        targetType:"entity",targetId:target.id,
+        from,to,ammoId:m.ammoId,damage:m.damage,
+        projectileSpeed:m.projectileSpeed,duration:m.duration
+      });
+      return;
     }
     if(m.type==="shot"){
       monitor.shots++;
@@ -219,7 +349,11 @@ setInterval(()=>{
   for(const [roomId,r] of rooms){
     for(const [id,p] of r.players)if(now-p.updatedAt>STALE_MS){try{p.ws.close()}catch{}r.players.delete(id)}
     for(const [id,s] of r.shots)if(now-Number(s.at||0)>15000)r.shots.delete(id);
-    for(const e of r.entities.values())simulateEntity(r,e,dt,now);
+    for(const e of r.entities.values()){
+      simulateEntity(r,e,dt,now);
+      maybeFireNpc(r,e,now);
+    }
+    for(const p of [...r.projectiles.values()])resolveProjectile(r,p,now);
     if(r.players.size){r.emptySince=0;broadcast(r,snapshot(r))}
     else if(!r.emptySince)r.emptySince=now;
     if(!r.players.size&&r.emptySince&&now-r.emptySince>15*60*1000)rooms.delete(roomId);
