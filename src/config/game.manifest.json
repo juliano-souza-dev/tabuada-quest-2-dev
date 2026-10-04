@@ -61,7 +61,8 @@
   },
   "auth": {
     "required": true,
-    "loginSceneId": "login"
+    "loginSceneId": "login",
+    "forceStartWorldOnAuth": true
   },
   "worldDefaults": {
     "camera": {
