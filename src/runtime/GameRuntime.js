@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261004-2148-static-ocean-camera-fix";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261004-2151-soft-ocean-webgl";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
