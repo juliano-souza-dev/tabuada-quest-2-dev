@@ -57,7 +57,8 @@
   },
   "afterAuth": {
     "kind": "world",
-    "id": "teste-multiplayer-sync"
+    "id": "teste-multiplayer-sync",
+    "force": true
   },
   "auth": {
     "required": true,
