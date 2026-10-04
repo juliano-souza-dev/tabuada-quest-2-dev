@@ -4655,8 +4655,12 @@ export class WorldRuntime {
   }
 
   navalEntityVelocity(entity){
+    const npcNav=entity?.npcNavigation&&typeof entity.npcNavigation==="object"?entity.npcNavigation:null;
     const nav=entity?.nav&&typeof entity.nav==="object"?entity.nav:{};
-    return {x:Number(nav.vx??entity?.vx)||0,y:Number(nav.vy??entity?.vy)||0};
+    return {
+      x:Number(npcNav?.vx??nav.vx??entity?.vx)||0,
+      y:Number(npcNav?.vy??nav.vy??entity?.vy)||0
+    };
   }
 
   navalOrientedHitbox(entity){
