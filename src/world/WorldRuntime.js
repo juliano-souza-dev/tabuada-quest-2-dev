@@ -4466,12 +4466,13 @@ export class WorldRuntime {
     const interaction=this.entityInteraction(entity);
 
     if(entity.type==="treasure"&&action==="collect"){
-      if(this.treasureTarget?.id===entity.id){
-        this.treasureTarget=null;
-        this.beginTreasureChallenge(entity);
-      }else{
+      if(entity.treasurePending||this.collected.has(entity.id)){
         this.actionWrap.hidden=true;
+        return;
       }
+      this.treasureTarget=null;
+      this.clearNavigationTarget();
+      this.beginTreasureChallenge(entity);
       return;
     }
     if(action==="enter-world"||interaction?.actionId==="enter-region"){
@@ -5367,7 +5368,10 @@ export class WorldRuntime {
 
     if(action==="collect"){
       if(entity.type==="treasure"){
-        if(this.treasureTarget?.id===entity.id)this.beginTreasureChallenge(entity);
+        if(entity.treasurePending||this.collected.has(entity.id))return;
+        this.treasureTarget=null;
+        this.clearNavigationTarget();
+        this.beginTreasureChallenge(entity);
         return;
       }
       this.completeCollection(entity);
