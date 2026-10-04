@@ -21,6 +21,8 @@ export class MultiplayerRuntime extends EventTarget{
     this.pendingBossEnsures=new Map();
     this.snapshotHz=clamp(Number(options.snapshotHz||config.multiplayer?.snapshotHz)||20,5,20);
     this.timer=0;
+    this.stateSequence=0;
+    this.lastAckSequence=0;
     this.intentionalClose=false;
     this.offlineFallbackLocked=false;
     this.protocolVersion="20261004-authoritative-v4";
@@ -104,6 +106,14 @@ export class MultiplayerRuntime extends EventTarget{
         }
         this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket",authority:"server",protocolVersion:data.protocolVersion}}));
         if(this.pendingWorldEnsure)this.socketSend(this.pendingWorldEnsure);
+        return;
+      }
+      if(data.type==="state.ack"){
+        const seq=Math.max(0,Math.floor(Number(data.seq)||0));
+        if(seq>=this.lastAckSequence){
+          this.lastAckSequence=seq;
+          this.dispatchEvent(new CustomEvent("authority",{detail:data}));
+        }
         return;
       }
       if(data.type==="snapshot"||data.type==="state.delta"){
@@ -204,8 +214,9 @@ export class MultiplayerRuntime extends EventTarget{
   pushRealtimeState(){
     if(!this.worldId||!this.socketReady)return false;
     const local=this.localPayload();
+    const seq=++this.stateSequence;
     return this.socketSend({
-      type:"state",shipId:local.shipId,cannonIds:local.cannonIds,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
+      type:"state",seq,shipId:local.shipId,cannonIds:local.cannonIds,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
       direction:local.direction,hp:local.hp
     });
   }
