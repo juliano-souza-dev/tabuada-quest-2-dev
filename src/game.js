@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2328-offline-volley-batching";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2340-player-anchored-combat-camera";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2129-authoritative-cannon-loadout";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
