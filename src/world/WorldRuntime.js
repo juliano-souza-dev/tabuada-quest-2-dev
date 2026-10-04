@@ -6467,13 +6467,14 @@ export class WorldRuntime {
     }
   }
 
-  syncRemotePlayers(players=[]){
+  syncRemotePlayers(players=[],meta={}){
     const seen=new Set();
+    const receivedAt=performance.now();
     for(const remote of Array.isArray(players)?players:[]){
       const uid=String(remote?.uid||"");if(!uid)continue;seen.add(uid);
       let entity=this.remotePlayers.get(uid);
       if(!entity){
-        entity={id:"multiplayer."+uid,type:"ship",role:"multiplayer",label:String(remote.name||"Pirata"),shipId:String(remote.shipId||""),x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,width:108,height:150,z:31,collision:{active:false,action:"none"},motion:{active:false},effect:{category:"ship",preset:"none"},runtimeMultiplayer:true};
+        entity={id:"multiplayer."+uid,type:"ship",role:"multiplayer",label:String(remote.name||"Pirata"),shipId:String(remote.shipId||""),x:Number(remote.x)||0,y:Number(remote.y)||0,rotation:Number(remote.rotation)||0,width:108,height:150,z:31,collision:{active:false,action:"none"},motion:{active:false},effect:{category:"ship",preset:"none"},runtimeMultiplayer:true,netSnapshots:[]};
         const profile=this.resolveShip?.(entity.shipId,"player");
         if(profile)Object.assign(entity,structuredClone(profile),{id:entity.id,type:"ship",role:"multiplayer",runtimeMultiplayer:true,x:entity.x,y:entity.y,rotation:entity.rotation,label:entity.label,collision:{active:false,action:"none"}});
         // A remote player must always be visible, even when its saved/equipped ship id
@@ -6489,45 +6490,80 @@ export class WorldRuntime {
         entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
         if(this.entityLayer)this.renderEntities();
       }
-      const now=performance.now(),rawX=Number(remote.x)||0,rawY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
-      const vx=Number(remote.vx)||0,vy=Number(remote.vy)||0;
-      const leadSec=.08;
-      const targetX=rawX+vx*leadSec,targetY=rawY+vy*leadSec;
-      const sampleMs=clamp(now-Number(entity.netSampleAt||now-50),35,90);
-      const dx=targetX-Number(entity.x||0),dy=targetY-Number(entity.y||0);
-      const distance=Math.hypot(dx,dy);
-      if(distance>700){
-        entity.x=targetX;entity.y=targetY;entity.rotation=targetRotation;
-        entity.netFrom=null;entity.netTo=null;
-      }else{
-        entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+clamp(sampleMs*.72,24,42)};
+
+      entity.shipId=String(remote.shipId||entity.shipId||"");
+      entity.remoteHp=Math.max(0,Number(remote.hp)||0);
+      entity.label=String(remote.name||entity.label||"Pirata");
+      entity.netLastSeen=receivedAt;
+
+      const snapshot={
+        at:receivedAt,
+        serverTime:Number(meta?.serverTime)||0,
+        x:Number(remote.x)||0,
+        y:Number(remote.y)||0,
+        rotation:Number(remote.rotation)||0,
+        vx:Number(remote.vx)||0,
+        vy:Number(remote.vy)||0
+      };
+      if(!Array.isArray(entity.netSnapshots))entity.netSnapshots=[];
+
+      const last=entity.netSnapshots[entity.netSnapshots.length-1];
+      if(last&&Math.hypot(snapshot.x-last.x,snapshot.y-last.y)>700){
+        entity.netSnapshots.length=0;
+        entity.x=snapshot.x;entity.y=snapshot.y;entity.rotation=snapshot.rotation;
+        entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;
       }
-      entity.netVelocity={vx,vy};
-      entity.netSampleAt=now;
-      entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");entity.netLastSeen=performance.now();
+
+      entity.netSnapshots.push(snapshot);
+      if(entity.netSnapshots.length>32)entity.netSnapshots.splice(0,entity.netSnapshots.length-32);
     }
-    const now=performance.now();for(const [uid,entity] of [...this.remotePlayers])if(!seen.has(uid)&&now-Number(entity.netLastSeen||now)>3000){entity.el?.remove();this.entities=this.entities.filter(e=>e!==entity);this.remotePlayers.delete(uid);}
+
+    const now=performance.now();
+    for(const [uid,entity] of [...this.remotePlayers]){
+      if(!seen.has(uid)&&now-Number(entity.netLastSeen||now)>3000){
+        entity.el?.remove();
+        this.entities=this.entities.filter(e=>e!==entity);
+        this.remotePlayers.delete(uid);
+      }
+    }
     this.entities.forEach((e,i)=>e.index=i);
   }
 
   updateRemotePlayers(time=performance.now()){
+    const renderTime=time-100;
     for(const entity of this.remotePlayers.values()){
-      const a=entity.netFrom,b=entity.netTo;if(!a||!b)continue;
-      const rawT=(time-a.at)/Math.max(1,b.at-a.at);
-      if(rawT<=1){
-        const t=clamp(rawT,0,1);
+      const snapshots=Array.isArray(entity.netSnapshots)?entity.netSnapshots:null;
+      if(!snapshots?.length)continue;
+
+      while(snapshots.length>2&&snapshots[1].at<renderTime-250)snapshots.shift();
+
+      let a=snapshots[0],b=null;
+      for(let i=1;i<snapshots.length;i++){
+        if(snapshots[i].at>=renderTime){
+          b=snapshots[i];
+          break;
+        }
+        a=snapshots[i];
+      }
+
+      if(b&&b.at>a.at){
+        const t=clamp((renderTime-a.at)/(b.at-a.at),0,1);
         entity.x=a.x+(b.x-a.x)*t;
         entity.y=a.y+(b.y-a.y)*t;
         entity.rotation=lerpAngle(a.rotation,b.rotation,t);
+      }else if(renderTime<=a.at){
+        entity.x=a.x;entity.y=a.y;entity.rotation=a.rotation;
       }else{
-        const extraSec=clamp((time-b.at)/1000,0,.12);
-        const velocity=entity.netVelocity||{};
-        entity.x=b.x+(Number(velocity.vx)||0)*extraSec;
-        entity.y=b.y+(Number(velocity.vy)||0)*extraSec;
-        entity.rotation=b.rotation;
+        const extraSec=clamp((renderTime-a.at)/1000,0,.12);
+        entity.x=a.x+(Number(a.vx)||0)*extraSec;
+        entity.y=a.y+(Number(a.vy)||0)*extraSec;
+        entity.rotation=a.rotation;
       }
-      entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;this.applyEntityVisual(entity);
+
+      entity.visualX=entity.x;
+      entity.visualY=entity.y;
+      entity.visualRotation=entity.rotation;
+      this.applyEntityVisual(entity);
     }
   }
 
