@@ -313,7 +313,7 @@ function spawnProjectile(r,data={}){
     from,to,
     ammoId:key(data.ammoId||""),
     cannonId:key(data.cannonId||""),
-    damage:clamp(data.damage||1,.1,5000),
+    damage:clamp(data.damage||1,.1,100000000),
     projectileSpeed:speed,
     duration,
     createdAt:now,
@@ -342,9 +342,12 @@ function resolveProjectile(r,p,now=Date.now()){
         e.defeated=e.hp<=0;
         e.updatedAt=now;
         if(e.defeated&&e.respawn)e.respawnAt=now+e.respawnDelayMs;
+        const members=p.ownerUid?partyMembersForUid(r,p.ownerUid):[];
         event={
           type:"projectile.hit",shotId:p.id,ownerType:p.ownerType,ownerId:p.ownerId,ownerUid:p.ownerUid,
           targetType:"entity",targetId:e.id,npcId:e.npcId,boss:e.boss,
+          partyId:r.players.get(key(p.ownerUid))?.partyId||"",
+          partyMembers:members,
           rewardGold:Math.max(0,Math.floor(Number(e.hitRewardGold)||0)),
           damage,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
           respawnAt:e.respawnAt||0,spawnId:e.spawnId,contributors:{...e.contributors},at:now
