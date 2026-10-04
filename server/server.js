@@ -208,6 +208,30 @@ function applyEntityDamage(r,uid,m){
 }
 
 function projectileId(prefix="shot"){return key(prefix+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,9))}
+function predictProjectileIntercept(from,target,projectileSpeed){
+  const speed=Math.max(1,Number(projectileSpeed)||720);
+  const tx=Number(target?.x)||0,ty=Number(target?.y)||0;
+  const vx=Number(target?.vx)||0,vy=Number(target?.vy)||0;
+  const rx=tx-(Number(from?.x)||0),ry=ty-(Number(from?.y)||0);
+  const a=vx*vx+vy*vy-speed*speed;
+  const b=2*(rx*vx+ry*vy);
+  const c=rx*rx+ry*ry;
+  let t=0;
+  if(Math.abs(a)<1e-6){
+    if(Math.abs(b)>1e-6)t=-c/b;
+  }else{
+    const disc=b*b-4*a*c;
+    if(disc>=0){
+      const root=Math.sqrt(disc);
+      const t1=(-b-root)/(2*a),t2=(-b+root)/(2*a);
+      const candidates=[t1,t2].filter(value=>Number.isFinite(value)&&value>0);
+      if(candidates.length)t=Math.min(...candidates);
+    }
+  }
+  if(!(t>0))t=Math.sqrt(c)/speed;
+  t=clamp(t,0,8);
+  return {x:tx+vx*t,y:ty+vy*t,time:t};
+}
 function spawnProjectile(r,data={}){
   const now=Date.now();
   const id=key(data.shotId||projectileId(data.ownerType||"shot"));
@@ -400,11 +424,13 @@ wss.on("connection",ws=>{
         p.lastVolleyId=volleyId;
         p.nextFireAt=now+cooldown;
       }
+      const intercept=predictProjectileIntercept(from,target,projectileSpeed);
       const projectile=spawnProjectile(current,{
         shotId:key(m.shotId||projectileId("player")),
         ownerType:"player",ownerId:uid,ownerUid:uid,
         targetType:"entity",targetId:target.id,
-        from,to:{x:target.x,y:target.y},ammoId,cannonId,damage,projectileSpeed
+        from,to:{x:intercept.x,y:intercept.y},ammoId,cannonId,damage,projectileSpeed,
+        duration:Math.max(120,intercept.time*1000)
       });
       if(projectile)send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
       return;
