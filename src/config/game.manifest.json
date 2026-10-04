@@ -73,6 +73,6 @@
     "worldId": "r1-enseada-aprendizes",
     "useLocalWorldContent": true,
     "grantAllAmmo": 1000,
-    "grantStrongestCannon": true
+    "grantStrongestCannon": false
   }
 }
