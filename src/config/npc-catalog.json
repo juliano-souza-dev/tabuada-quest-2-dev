@@ -97,7 +97,7 @@
         "attitude": "hostile",
         "damage": 5,
         "maxTargets": 2,
-        "rewardMinDamageRatio": 0,
+        "rewardMinDamageRatio": 0.15,
         "cannonLoadout": [
           {
             "cannonId": "cannon-royal-golden-lion",
@@ -123,6 +123,36 @@
         "attitude": "peaceful",
         "damage": 1,
         "cannonLoadout": [],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "boss-reward-test-15pct",
+      "name": "Terror do Halloween · Teste de Recompensa",
+      "shipId": "ship-halloween-dreadnought",
+      "boss": true,
+      "coopBoss": true,
+      "coopBossId": "boss-reward-test-15pct",
+      "rewardShipId": "ship-halloween-dreadnought",
+      "navigation": {
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 120,
+        "attitude": "hostile",
+        "damage": 2,
+        "maxTargets": 1,
+        "rewardMinDamageRatio": 0.15,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-basic",
+            "quantity": 1
+          }
+        ],
         "ammoId": "cannonball-standard",
         "ammoUnlimited": true
       }
