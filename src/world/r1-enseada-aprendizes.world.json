@@ -358,8 +358,8 @@
     "seed": 31,
     "spread": {
       "mode": "random-spaced",
-      "margin": 320,
-      "minDistance": 363
+      "margin": 1200,
+      "minDistance": 900
     },
     "movement": {
       "mode": "straight",
@@ -367,42 +367,17 @@
     },
     "types": [
       {
-        "npcId": "boss-halloween-dreadnought",
+        "npcId": "boss-sync-test-100m",
         "shipId": "ship-halloween-dreadnought",
         "count": 1,
         "enabled": true,
         "respawn": true,
-        "respawnDelaySec": 300,
-        "hp": 5000000,
-        "rewards": {
-          "shipId": "ship-halloween-dreadnought"
-        },
+        "respawnDelaySec": 10,
+        "hp": 100000000,
         "spawn": {
           "mode": "random-spaced",
-          "margin": 420,
+          "margin": 1200,
           "minDistance": 900
-        }
-      },
-      {
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "shipId": "ship-halloween-pumpkin-corsair",
-        "count": 5,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 20,
-        "hp": 3,
-        "rewards": {
-          "gold": 100,
-          "rubies": {
-            "chance": 25,
-            "min": 1,
-            "max": 5
-          }
-        },
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 360,
-          "minDistance": 420
         }
       }
     ]
@@ -454,13 +429,6 @@
       "normalWeather": "halloween",
       "rainWeather": "halloween-rain"
     }
-  },
-  "test": {
-    "cannonIds": [
-      "novo-canhao-3"
-    ],
-    "ammoId": "cannonball-piercing",
-    "ammoQuantity": 10000
   },
   "treasurePopulation": {
     "enabled": true,
