@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2242-r1-safe-200k-npcs";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2250-remove-bad-halloween-asset";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2129-authoritative-cannon-loadout";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
