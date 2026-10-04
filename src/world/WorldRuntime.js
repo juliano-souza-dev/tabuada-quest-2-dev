@@ -76,6 +76,7 @@ const normalizeNpcPopulation=input=>{
       respawn:item?.respawn===true,
       respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,86400),
       devFrozen:item?.devFrozen===true,
+      hitRewardGold:Math.max(0,Math.floor(Number(item?.hitRewardGold)||0)),
       rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
       allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
     })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
@@ -621,6 +622,7 @@ export class WorldRuntime {
       bossSpawnCycle:1,
       npcSpawnCycle:1,
       devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
+      hitRewardGold:Math.max(0,Math.floor(Number(typeConfig?.hitRewardGold)||0)),
       rewards:typeConfig?.rewards&&typeof typeConfig.rewards==="object"?structuredClone(typeConfig.rewards):{},
       npcAttitude:String(profile.npcAttitude||profile.combat?.attitude||"retaliate"),
       npcBehavior:String(profile.navigation?.behavior||profile.npcBehavior||"roam"),
@@ -6250,7 +6252,8 @@ export class WorldRuntime {
             })(),
             ammoId:String(this.entityNavalCombatStats(entity).loadout?.ammo?.id||entity.combat?.ammoId||""),
             volleyCount:Math.max(1,Math.floor((this.entityNavalCombatStats(entity).cannonCount||1)/2)),
-            hitRadius:Math.max(36,Math.min(220,Math.max(Number(entity.width)||96,Number(entity.height)||96)*.36))
+            hitRadius:Math.max(36,Math.min(220,Math.max(Number(entity.width)||96,Number(entity.height)||96)*.36)),
+            hitRewardGold:Math.max(0,Math.floor(Number(entity.hitRewardGold)||0))
           };
         })
     };
@@ -6341,6 +6344,18 @@ export class WorldRuntime {
         y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
         amount:Number(event.damage)||0
       });
+    }
+    if(String(event.ownerUid||"")===this.coopLocalUid&&Number(event.damage)>0&&Number(event.rewardGold)>0){
+      const rewardGold=Math.max(0,Math.floor(Number(event.rewardGold)||0));
+      const claimKey="hit:"+String(event.shotId||"");
+      if(rewardGold>0&&claimKey!=="hit:"){
+        this.onRewardCollected?.({
+          entity:this.cleanEntity(entity),
+          rewards:{gold:rewardGold},
+          claimKey
+        });
+        this.showGameplayToast("Acerto confirmado · +"+rewardGold+" ouro",1100);
+      }
     }
     if(event.boss===true){
       const bossId=this.coopBossId(entity);
