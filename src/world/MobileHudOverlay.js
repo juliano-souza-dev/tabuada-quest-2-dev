@@ -113,7 +113,7 @@ export class MobileHudOverlay{
         '<header><div><small>DESEMPENHO</small><strong>Configurações</strong></div><button type="button" data-settings-close aria-label="Fechar">×</button></header>'+
         '<div class="tq-mobile-hud__settings-list">'+
           '<label><span><strong>Nuvens</strong><small>Exibir camada de nuvens</small></span><input type="checkbox" data-setting-key="clouds"></label>'+
-          '<label><span><strong>Ondas do mar</strong><small>Animar o oceano em WebGL</small></span><input type="checkbox" data-setting-key="oceanWaves"></label>'+
+          '<label><span><strong>Ondas do mar</strong><small>Desmarcado: WebGL mais suave e leve</small></span><input type="checkbox" data-setting-key="oceanWaves"></label>'+
           '<label><span><strong>Efeitos de munição reduzidos</strong><small>Menos partículas, trilhas e brilho</small></span><input type="checkbox" data-setting-key="reducedAmmoFx"></label>'+
         '</div>'+
       '</div>';
