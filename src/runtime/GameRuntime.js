@@ -343,6 +343,13 @@ export class GameRuntime {
     const target=String(targetWorldId||"").trim();
     const from=String(fromWorldId||"").trim();
     if(!target||!from)return true;
+
+    // Region exits are navigational by default. The previous implementation
+    // silently blocked forward travel unless complete-region had already been
+    // fired, but worlds currently do not expose a guaranteed completion hook.
+    // Keep the progression gate opt-in so navigation can never deadlock.
+    if(this.manifest?.progression?.lockRegionExits!==true)return true;
+
     const fromIndex=Math.max(0,Number(from.match(/^r(\d+)/i)?.[1])||0);
     const targetIndex=Math.max(0,Number(target.match(/^r(\d+)/i)?.[1])||0);
     if(!fromIndex||!targetIndex)return true;
