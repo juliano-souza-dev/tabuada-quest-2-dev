@@ -64,6 +64,7 @@ export class DevOverlay {
         <button data-mode="edit" class="active">✥ <span>Editar</span></button>
         <button data-mode="config">⚙ <span>Config</span></button>
         <button data-mode="play">▶ <span>Play</span></button>
+        <button data-flow-test title="Executar como produção, sem login e sem salvar progresso real">🧪 <span>Testar fluxo</span></button>
         <button data-export title="Exportar configuração global completa">⇩ <span>JSON Global</span></button>
         <button data-mold>▣ <span>Molde</span></button>
         <button data-scenes>☷ <span>Cenas</span></button>
@@ -137,6 +138,7 @@ export class DevOverlay {
       </section>`;
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
+    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
