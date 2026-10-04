@@ -378,7 +378,8 @@ wss.on("connection",ws=>{
       const targetId=key(m.targetId),target=current.entities.get(targetId);
       if(!target||target.defeated||target.hp<=0){
         monitor.rejectedShots++;
-        log("FIRE-X ",`uid=${uid} reason=invalid_target target=${targetId}`);\n        send(ws,{type:"fire.rejected",reason:"invalid_target",shotId:key(m.shotId),targetId,at:Date.now()});
+        log("FIRE-X ",`uid=${uid} reason=invalid_target target=${targetId}`);
+        send(ws,{type:"fire.rejected",reason:"invalid_target",shotId:key(m.shotId),targetId,at:Date.now()});
         return;
       }
 
@@ -386,7 +387,8 @@ wss.on("connection",ws=>{
       const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
       if(authoritative&&(!ammo||ammo.available===false||!cannon||cannon.available===false)){
         monitor.rejectedShots++;
-        log("FIRE-X ",`uid=${uid} reason=invalid_loadout ammo=${ammoId} cannon=${cannonId}`);\n        send(ws,{type:"fire.rejected",reason:"invalid_loadout",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
+        log("FIRE-X ",`uid=${uid} reason=invalid_loadout ammo=${ammoId} cannon=${cannonId}`);
+        send(ws,{type:"fire.rejected",reason:"invalid_loadout",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
         return;
       }
 
@@ -433,7 +435,10 @@ wss.on("connection",ws=>{
         from,to:{x:intercept.x,y:intercept.y},ammoId,cannonId,damage,projectileSpeed,
         duration:Math.max(120,intercept.time*1000)
       });
-      if(projectile){\n        log("FIRE+  ",`uid=${uid} target=${target.id} shot=${projectile.id} damage=${damage}`);\n        send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});\n      }
+      if(projectile){
+        log("FIRE+  ",`uid=${uid} target=${target.id} shot=${projectile.id} damage=${damage}`);
+        send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
+        }
       return;
     }
     if(m.type==="shot"){
