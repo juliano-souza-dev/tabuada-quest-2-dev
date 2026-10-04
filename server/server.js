@@ -2,7 +2,7 @@ import {WebSocketServer} from "ws";
 import http from "node:http";
 
 const PORT=Number(process.env.PORT)||8080;
-const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), STALE_MS=15000;
+const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0};
 const log=(event,detail="")=>console.log(`[RT ${new Date().toISOString()}] ${event}${detail?` ${detail}`:""}`);
@@ -22,11 +22,12 @@ function room(id){
     projectiles:new Map(),
     bounds:{left:0,top:0,right:60000,bottom:12000},
     initialized:false,
-    emptySince:0
+    emptySince:0,
+    lastFullSnapshotAt:0
   });
   return rooms.get(id);
 }
-function publicPlayer(p){return {uid:p.uid,name:p.name,shipId:p.shipId,x:p.x,y:p.y,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true}}
+function publicPlayer(p){return {uid:p.uid,name:p.name,shipId:p.shipId,x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true}}
 function directionForRotation(rotation){
   const names=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
   const n=((Number(rotation)||0)%360+360)%360;
@@ -65,6 +66,17 @@ function maybeRespawnEntity(e,now=Date.now()){
   e.nextCourseAt=now+3500+rng()*5500;
   e.updatedAt=now;
   return true;
+}
+function stateDelta(r,now=Date.now()){
+  return {
+    type:"state.delta",worldId:r.id,serverTime:now,
+    players:[...r.players.values()].map(p=>({uid:p.uid,x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true})),
+    entities:Object.fromEntries([...r.entities].map(([id,e])=>[id,{
+      id:e.id,x:e.x,y:e.y,rotation:e.rotation,direction:e.direction,
+      vx:e.vx,vy:e.vy,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
+      respawnAt:e.respawnAt||0,spawnId:e.spawnId,updatedAt:e.updatedAt
+    }]))
+  };
 }
 function snapshot(r){
   const now=Date.now();
@@ -272,7 +284,7 @@ wss.on("connection",ws=>{
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server"});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -287,7 +299,7 @@ wss.on("connection",ws=>{
     }
     if(m.type==="state"){
       monitor.stateUpdates++;
-      p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
+      p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
     }
     if(m.type==="projectile.fire"){
       monitor.shots++;
@@ -354,8 +366,14 @@ setInterval(()=>{
       maybeFireNpc(r,e,now);
     }
     for(const p of [...r.projectiles.values()])resolveProjectile(r,p,now);
-    if(r.players.size){r.emptySince=0;broadcast(r,snapshot(r))}
-    else if(!r.emptySince)r.emptySince=now;
+    if(r.players.size){
+      r.emptySince=0;
+      broadcast(r,stateDelta(r,now));
+      if(!r.lastFullSnapshotAt||now-r.lastFullSnapshotAt>=FULL_SNAPSHOT_MS){
+        r.lastFullSnapshotAt=now;
+        broadcast(r,snapshot(r));
+      }
+    }else if(!r.emptySince)r.emptySince=now;
     if(!r.players.size&&r.emptySince&&now-r.emptySince>15*60*1000)rooms.delete(roomId);
   }
 },SNAPSHOT_MS);
