@@ -5952,6 +5952,7 @@ export class WorldRuntime {
       ctx.translate(point.x,point.y);
 
       if(logicalType==="ship"){
+        const playerShip=entity.runtimeMultiplayer===true||entity.role==="multiplayer";
         ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
         ctx.beginPath();
         ctx.moveTo(0,-6);
@@ -5959,8 +5960,9 @@ export class WorldRuntime {
         ctx.lineTo(0,2.8);
         ctx.lineTo(-4.5,5);
         ctx.closePath();
-        ctx.fillStyle="rgba(116,221,255,.96)";
-        ctx.strokeStyle="rgba(225,250,255,.98)";
+        // Players and NPCs must be distinguishable at a glance on the minimap.
+        ctx.fillStyle=playerShip?"rgba(92,232,132,.98)":"rgba(255,111,92,.98)";
+        ctx.strokeStyle=playerShip?"rgba(226,255,234,.98)":"rgba(255,235,228,.98)";
         ctx.lineWidth=1.5;
         ctx.fill();
         ctx.stroke();
@@ -6027,8 +6029,8 @@ export class WorldRuntime {
     ctx.lineTo(0,3.5);
     ctx.lineTo(-5.5,6);
     ctx.closePath();
-    ctx.fillStyle="#ffffff";
-    ctx.strokeStyle="rgba(2,24,37,.95)";
+    ctx.fillStyle="rgba(92,232,132,.98)";
+    ctx.strokeStyle="rgba(226,255,234,.98)";
     ctx.lineWidth=2;
     ctx.fill();
     ctx.stroke();
