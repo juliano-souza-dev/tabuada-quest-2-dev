@@ -155,7 +155,7 @@ function ensureWorld(r,m){
       attackRange:clamp(raw.attackRange||900,100,12000),
       attackCooldownMs:clamp(raw.attackCooldownMs||1200,150,10000),
       projectileSpeed:clamp(raw.projectileSpeed||720,120,4000),
-      damage:clamp(raw.damage||1,.1,5000),
+      damage:clamp(raw.damage||1,.1,100000000),
       ammoId:key(raw.ammoId||""),
       volleyCount:clamp(raw.volleyCount||1,1,32),
       hitRadius:clamp(raw.hitRadius||90,24,260),
@@ -192,7 +192,7 @@ function applyEntityDamage(r,uid,m){
   if(!e||!shotId||r.shots.has("hit:"+shotId))return null;
   const now=Date.now();maybeRespawnEntity(e,now);if(e.defeated)return null;
   r.shots.set("hit:"+shotId,{at:now});
-  const requested=clamp(m.damage,0.1,5000);
+  const requested=clamp(m.damage,0.1,100000000);
   const damage=Math.min(requested,Math.max(0,e.hp));
   e.hp=Math.max(0,Math.round((e.hp-damage)*10)/10);
   e.contributors[uid]=Math.max(0,Number(e.contributors[uid])||0)+damage;
@@ -447,8 +447,8 @@ wss.on("connection",ws=>{
         120,4000
       );
       const damage=authoritative
-        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,100),.1,5000)
-        :clamp(Number(m.damage)||1,.1,5000);
+        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,100),.1,100000000)
+        :clamp(Number(m.damage)||1,.1,100000000);
 
       if(authoritative&&!sameVolley){
         p.lastVolleyId=volleyId;
@@ -471,7 +471,7 @@ wss.on("connection",ws=>{
     if(m.type==="shot"){
       monitor.shots++;
       const shotId=key(m.shotId||uid+"-"+Date.now());if(current.shots.has(shotId))return;
-      const event={type:"shot",uid,shotId,from:m.from||null,to:m.to||null,ammoId:key(m.ammoId),damage:clamp(m.damage,0,5000),duration:clamp(m.duration||620,120,8000),at:Date.now()};
+      const event={type:"shot",uid,shotId,from:m.from||null,to:m.to||null,ammoId:key(m.ammoId),damage:clamp(m.damage,0,100000000),duration:clamp(m.duration||620,120,8000),at:Date.now()};
       current.shots.set(shotId,event);broadcast(current,event,ws);return;
     }
     if(m.type==="entity.damage"||m.type==="boss.damage"){
