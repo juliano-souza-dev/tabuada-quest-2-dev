@@ -427,6 +427,10 @@ export class GameRuntime {
     this.stopMultiplayerWorld();
     const onPlayers=event=>this.worldRuntime?.syncRemotePlayers?.(event.detail?.players||[],{serverTime:event.detail?.serverTime,full:event.detail?.full===true});
     const onEntities=event=>this.worldRuntime?.syncServerEntities?.(event.detail?.entities||{});
+    const onProjectiles=event=>this.worldRuntime?.syncServerProjectiles?.(event.detail?.projectiles||{},{
+      serverTime:event.detail?.serverTime,
+      full:event.detail?.full===true
+    });
     const onEvent=event=>this.worldRuntime?.handleMultiplayerEvent?.(event.detail||{});
     const onBosses=event=>this.worldRuntime?.syncCoopBosses?.(event.detail?.bosses||{});
     const onTransport=event=>{
@@ -449,12 +453,14 @@ export class GameRuntime {
     };
     this.multiplayer.addEventListener?.("players",onPlayers);
     this.multiplayer.addEventListener?.("entities",onEntities);
+    this.multiplayer.addEventListener?.("projectiles",onProjectiles);
     this.multiplayer.addEventListener?.("event",onEvent);
     this.multiplayer.addEventListener?.("bosses",onBosses);
     this.multiplayer.addEventListener?.("transport",onTransport);
     this.multiplayerCleanups.push(
       ()=>this.multiplayer?.removeEventListener?.("players",onPlayers),
       ()=>this.multiplayer?.removeEventListener?.("entities",onEntities),
+      ()=>this.multiplayer?.removeEventListener?.("projectiles",onProjectiles),
       ()=>this.multiplayer?.removeEventListener?.("event",onEvent),
       ()=>this.multiplayer?.removeEventListener?.("bosses",onBosses),
       ()=>this.multiplayer?.removeEventListener?.("transport",onTransport)
