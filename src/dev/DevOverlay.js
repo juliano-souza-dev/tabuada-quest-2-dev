@@ -63,7 +63,6 @@ export class DevOverlay {
         <button data-drag class="tq-dev__drag" aria-label="Arrastar ferramentas" title="Arrastar">⠿</button>
         <button data-mode="edit" class="active">✥ <span>Editar</span></button>
         <button data-mode="config">⚙ <span>Config</span></button>
-        <button data-flow-test title="Abrir este fluxo no runtime real de produção">🧪 <span>Testar fluxo</span></button>
         <button data-mode="play">▶ <span>Play</span></button>
         <button data-export title="Exportar configuração global completa">⇩ <span>JSON Global</span></button>
         <button data-mold>▣ <span>Molde</span></button>
@@ -138,7 +137,6 @@ export class DevOverlay {
       </section>`;
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
-    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
@@ -1730,6 +1728,10 @@ export class DevOverlay {
             '<div class="tq-world-npc-types">'+testCannonRows+'</div>'+
             '<small class="tq-world-editor-note">Use − e ＋ para definir quantos canhões de cada modelo ficam equipados. Loadout exclusivo do DEV.</small>'+
           '</div></section>'+
+          '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧪 Teste do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
+            '<button type="button" class="tq-composition-action" data-world-test-activate>Ativar World Test</button>'+
+            '<small class="tq-world-editor-note">Abre a região atual no modo de teste sem precisar adicionar ?worldtest=1 à URL.</small>'+
+          '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera global do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(4)+'x</output></span>'+
               '<input data-world-camera-prop="playZoom" type="range" min="0.30" max="1.40" step="0.0001" value="'+cameraPlayZoom+'">'+
@@ -1819,6 +1821,11 @@ export class DevOverlay {
         '</div>';
 
       this.bindCollapsedAreas(content);
+    content.querySelector("[data-world-test-activate]")?.addEventListener("click",()=>{
+      const worldId=String(this.worldEditor?.entry?.id||this.worldEditor?.getWorld?.()?.id||"");
+      try{sessionStorage.setItem("tq.dev.worldtest.request.v1",JSON.stringify({worldId,requestedAt:Date.now()}));}catch{}
+      location.reload();
+    });
 
       content.querySelectorAll("[data-world-root-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldRootProp;
