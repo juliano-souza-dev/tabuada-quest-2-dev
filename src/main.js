@@ -25,10 +25,23 @@ const createDevPlayerState=()=>{
 await installDevAssetCache();
 const continuity=readAppContinuity();
 const worldTestParam=new URLSearchParams(location.search).get("worldtest");
-const worldTest=Boolean(worldTestParam);
+let worldTestRequest=null;
+try{
+  const raw=sessionStorage.getItem("tq.dev.worldtest.request.v1");
+  if(raw){
+    worldTestRequest=JSON.parse(raw);
+    sessionStorage.removeItem("tq.dev.worldtest.request.v1");
+  }
+}catch{}
+const worldTest=Boolean(worldTestParam)||Boolean(worldTestRequest);
+if(worldTestParam){
+  const cleanUrl=new URL(location.href);
+  cleanUrl.searchParams.delete("worldtest");
+  history.replaceState(history.state,"",cleanUrl.pathname+(cleanUrl.search||"")+cleanUrl.hash);
+}
 
 if(worldTest){
-  const worldId=worldTestParam==="1"?"":worldTestParam;
+  const worldId=worldTestRequest?.worldId||((worldTestParam&&worldTestParam!=="1")?worldTestParam:"");
   await launchWorldTest(app,{worldId});
   globalThis.TabuadaQuest={
     ...(globalThis.TabuadaQuest||{}),
