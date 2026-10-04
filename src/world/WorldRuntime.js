@@ -4694,6 +4694,87 @@ export class WorldRuntime {
     return {x:tx+v.x*t,y:ty+v.y*t,time:t};
   }
 
+  navalShooterPose(source,{player=false}={}){
+    const raw=source&&typeof source==="object"?source:{};
+    const direction=String(raw.direction||raw.nav?.direction||"").toLowerCase();
+    const directionDegrees={n:0,nne:22.5,ne:45,ene:67.5,e:90,ese:112.5,se:135,sse:157.5,s:180,ssw:-157.5,sw:-135,wsw:-112.5,w:-90,wnw:-67.5,nw:-45,nnw:-22.5};
+    const fallbackRotation=Number.isFinite(directionDegrees[direction])?directionDegrees[direction]:0;
+    const rotation=Number(raw.rotation??raw.visualRotation);
+    return {
+      x:Number(raw.visualX??raw.x)||0,
+      y:Number(raw.visualY??raw.y)||0,
+      rotation:Number.isFinite(rotation)?rotation:fallbackRotation,
+      width:Math.max(32,Number(player?this.config.player?.width:raw.width)||230),
+      height:Math.max(32,Number(player?this.config.player?.height:raw.height)||230)
+    };
+  }
+
+  navalBatteryLayout(count){
+    const total=clamp(Math.floor(Number(count)||0),0,64);
+    if(total<=0)return [];
+    if(total===1)return [{index:0,side:"bow",slot:0,total:1}];
+    const bowCount=total%2===1?1:0;
+    const broadsideCount=total-bowCount;
+    const perSide=Math.floor(broadsideCount/2);
+    const layout=[];
+    for(let i=0;i<perSide;i++)layout.push({index:layout.length,side:"port",slot:i,total:perSide});
+    for(let i=0;i<perSide;i++)layout.push({index:layout.length,side:"starboard",slot:i,total:perSide});
+    if(bowCount)layout.push({index:layout.length,side:"bow",slot:0,total:1});
+    return layout;
+  }
+
+  navalTargetBatterySide(shooter,target,hasBow=false){
+    const pose=this.navalShooterPose(shooter);
+    const theta=pose.rotation*Math.PI/180;
+    const forward={x:Math.sin(theta),y:-Math.cos(theta)};
+    const right={x:Math.cos(theta),y:Math.sin(theta)};
+    const dx=Number(target?.x??target?.visualX)||0-pose.x;
+    const dy=Number(target?.y??target?.visualY)||0-pose.y;
+    const forwardDot=dx*forward.x+dy*forward.y;
+    const rightDot=dx*right.x+dy*right.y;
+    if(hasBow&&forwardDot>0&&Math.abs(forwardDot)>Math.abs(rightDot)*1.15)return "bow";
+    return rightDot>=0?"starboard":"port";
+  }
+
+  navalCannonHardpoint(shooter,descriptor,{player=false}={}){
+    const pose=this.navalShooterPose(shooter,{player});
+    const theta=pose.rotation*Math.PI/180;
+    const forward={x:Math.sin(theta),y:-Math.cos(theta)};
+    const right={x:Math.cos(theta),y:Math.sin(theta)};
+    const halfLength=Math.max(24,pose.height*.26);
+    const halfBeam=Math.max(18,pose.width*.19);
+    let along=0,across=0;
+    if(descriptor.side==="bow"){
+      along=halfLength*.92;
+      across=0;
+    }else{
+      const slots=Math.max(1,Number(descriptor.total)||1);
+      const ratio=slots===1?0:(Number(descriptor.slot)/(slots-1)-.5);
+      along=ratio*halfLength*1.15;
+      across=(descriptor.side==="starboard"?1:-1)*halfBeam;
+    }
+    return {
+      x:pose.x+forward.x*along+right.x*across,
+      y:pose.y+forward.y*along+right.y*across,
+      side:descriptor.side
+    };
+  }
+
+  navalActiveBattery(shooter,cannons,target,{player=false}={}){
+    const list=Array.isArray(cannons)?cannons:[];
+    if(!list.length)return [];
+    const layout=this.navalBatteryLayout(list.length);
+    const hasBow=layout.some(item=>item.side==="bow");
+    const targetSide=this.navalTargetBatterySide(shooter,target,hasBow);
+    return layout
+      .map((descriptor,index)=>({
+        descriptor,
+        cannon:list[index]||null,
+        hardpoint:this.navalCannonHardpoint(shooter,descriptor,{player})
+      }))
+      .filter(item=>item.cannon&&item.descriptor.side===targetSide);
+  }
+
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     const targetDistance=this.navalTargetDistance(entity);
@@ -4705,7 +4786,9 @@ export class WorldRuntime {
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
     if(!cannons.length)return false;
-    const eligible=cannons.filter(cannon=>targetDistance<=Math.max(1,Number(cannon.range)||900));
+    const shooter={...this.player,width:this.config.player?.width,height:this.config.player?.height};
+    const battery=this.navalActiveBattery(shooter,cannons,entity,{player:true});
+    const eligible=battery.filter(item=>targetDistance<=Math.max(1,Number(item.cannon?.range)||900));
     if(!eligible.length)return false;
 
     const hp=this.navalHpState(entity);
@@ -4716,13 +4799,15 @@ export class WorldRuntime {
       return false;
     }
     let firedCount=0;
-    for(const cannon of eligible){
+    for(const batteryShot of eligible){
       if(ammoRemaining<=0)break;
+      const cannon=batteryShot.cannon;
+      const muzzle=batteryShot.hardpoint;
       const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-      const intercept=this.predictNavalIntercept(this.player,entity,projectileSpeed);
+      const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
       const duration=clamp(intercept.time*1000,80,8000);
       const fired=this.navalRenderer?.fire?.({
-        from:{x:this.player.x,y:this.player.y},
+        from:muzzle,
         to:{x:intercept.x,y:intercept.y},
         duration,
         ammo
@@ -4880,26 +4965,31 @@ export class WorldRuntime {
       .slice(0,maxTargets);
     if(!candidates.length)return false;
 
-    const volleyCount=Math.max(1,stats.cannonCount||1);
+    const target=candidates[0];
+    const battery=this.navalActiveBattery(entity,loadout.cannons,target);
+    if(!battery.length)return false;
+    const volleyCount=battery.length;
     let firedCount=0;
     for(let shotIndex=0;shotIndex<volleyCount;shotIndex++){
-      const target=candidates[shotIndex%candidates.length];
-      const cannon=loadout.cannons[shotIndex]||null;
+      const batteryShot=battery[shotIndex];
+      const cannon=batteryShot.cannon;
+      const muzzle=batteryShot.hardpoint;
+      const shotTarget=candidates[shotIndex%candidates.length]||target;
       const delay=shotIndex*55;
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-        const targetDistance=Math.hypot((Number(entity.x)||0)-target.x,(Number(entity.y)||0)-target.y);
+        const targetDistance=Math.hypot(muzzle.x-shotTarget.x,muzzle.y-shotTarget.y);
         const duration=clamp(targetDistance/Math.max(120,stats.projectileSpeed||620)*1000,220,2200);
         const fired=this.navalRenderer?.fire?.({
-          from:{x:entity.x,y:entity.y},
-          to:{x:target.x,y:target.y},
+          from:muzzle,
+          to:{x:shotTarget.x,y:shotTarget.y},
           duration,
           ammo:loadout.ammo||undefined
         })===true;
         if(!fired)return;
         firedCount+=1;
         this.audio?.play("cannon-shot");
-        if(target.local){
+        if(shotTarget.local){
           setTimeout(()=>{
             if(this.navalPlayerHp<=0||this.repairActive?.forced===true||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
             this.audio?.play("cannon-impact-ship");
