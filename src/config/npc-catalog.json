@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 4,
+  "version": 5,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -158,13 +158,38 @@
       }
     },
     {
-      "id": "npc-heavy-200k-test",
-      "name": "Corsário Pesado de Teste",
-      "shipId": "ship-halloween-dreadnought",
+      "id": "npc-heavy-pumpkin-200k-test",
+      "name": "Corsário Pesado da Abóbora",
+      "shipId": "ship-halloween-pumpkin-corsair",
       "navigation": {
-        "minSpeed": 35,
-        "speed": 95,
-        "acceleration": 360,
+        "minSpeed": 45,
+        "speed": 110,
+        "acceleration": 420,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 200000,
+        "attitude": "hostile",
+        "damage": 3,
+        "maxTargets": 1,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-bronze",
+            "quantity": 4
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "npc-heavy-galleon-200k-test",
+      "name": "Galeão Pesado de Teste",
+      "shipId": "ship-pirate-galleon-navio",
+      "navigation": {
+        "minSpeed": 40,
+        "speed": 100,
+        "acceleration": 380,
         "behavior": "roam"
       },
       "combat": {
