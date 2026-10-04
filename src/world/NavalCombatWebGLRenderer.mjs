@@ -309,6 +309,9 @@ export class NavalCombatWebGLRenderer{
     const shot={
       from:{x:Number(from.x)||0,y:Number(from.y)||0},
       to:{x:Number(to.x)||0,y:Number(to.y)||0},
+      // Optional live target keeps the visual projectile attached to the same
+      // collision result while ships are moving.
+      target:to?.target&&typeof to.target==="object"?to.target:null,
       duration:clamp(Number(duration)||620,120,2400),
       startTime:Number(startTime)||performance.now(),
       impactSpawned:false,
@@ -353,6 +356,10 @@ export class NavalCombatWebGLRenderer{
     const now=Number(time)||performance.now();
 
     for(const shot of this.shots){
+      if(shot.target){
+        shot.to.x=Number(shot.target.visualX??shot.target.x??shot.to.x)||shot.to.x;
+        shot.to.y=Number(shot.target.visualY??shot.target.y??shot.to.y)||shot.to.y;
+      }
       const elapsed=now-shot.startTime;
       if(elapsed>=shot.duration&&!shot.impactSpawned){
         shot.impactSpawned=true;
