@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261004-1912-authoritative-projectiles";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261004-1942-server-target-id";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
