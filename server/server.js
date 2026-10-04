@@ -70,7 +70,7 @@ function maybeRespawnEntity(e,now=Date.now()){
 function stateDelta(r,now=Date.now()){
   return {
     type:"state.delta",worldId:r.id,serverTime:now,
-    players:[...r.players.values()].map(p=>({uid:p.uid,x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true})),
+    players:[...r.players.values()].map(p=>({uid:p.uid,name:p.name,shipId:p.shipId,x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true})),
     entities:Object.fromEntries([...r.entities].map(([id,e])=>[id,{
       id:e.id,x:e.x,y:e.y,rotation:e.rotation,direction:e.direction,
       vx:e.vx,vy:e.vy,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
@@ -294,6 +294,7 @@ wss.on("connection",ws=>{
 
     if(m.type==="world.ensure"){
       ensureWorld(current,m);
+      current.lastFullSnapshotAt=Date.now();
       send(ws,snapshot(current));
       return;
     }
