@@ -203,7 +203,13 @@ export class GameRuntime {
   }
 
   async loadJson(url){
-    const canonical=this.contentStore?.json?.(url);
+    const test=this.manifest?.multiplayerTest||{};
+    const forceLocal=test.enabled===true&&test.useLocalWorldContent===true&&(
+      String(url||"").includes("/r1-enseada-aprendizes.world.json")
+      ||String(url||"").includes("/npc-catalog.json")
+      ||String(url||"").includes("/world-catalog.json")
+    );
+    const canonical=forceLocal?null:this.contentStore?.json?.(url);
     if(canonical&&typeof canonical==="object"){
       this.contentSource="canonical";
       return clone(canonical);
@@ -236,11 +242,12 @@ export class GameRuntime {
       this.restoreSession=this.manifest.persistence?.restoreSession!==false;
     }
 
+    const keepLocalTestWorld=this.manifest?.multiplayerTest?.enabled===true&&this.manifest?.multiplayerTest?.useLocalWorldContent===true;
     const next={
       sceneCatalog:load(catalogs.scenes||"./src/config/scene-catalog.json"),
-      worldCatalog:load(catalogs.worlds||"./src/config/world-catalog.json"),
+      worldCatalog:keepLocalTestWorld?this.worldCatalog:load(catalogs.worlds||"./src/config/world-catalog.json"),
       shipCatalog:load(catalogs.ships||"./src/config/ship-catalog.json"),
-      npcCatalog:load(catalogs.npcs||"./src/config/npc-catalog.json"),
+      npcCatalog:keepLocalTestWorld?this.npcCatalog:load(catalogs.npcs||"./src/config/npc-catalog.json"),
       treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
       ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
@@ -1678,21 +1685,25 @@ export class GameRuntime {
 
     // Production sync arena: use the real inventory/loadout pipeline rather than
     // runtime-only test overrides, so combat behaves exactly like normal play.
-    if(worldId==="r1-enseada-aprendizes"){
+    const testConfig=this.manifest?.multiplayerTest||{};
+    if(testConfig.enabled===true&&worldId===String(testConfig.worldId||"")){
       const strongest=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
         .filter(cannon=>cannon?.available!==false)
         .sort((a,b)=>(Number(b.damageMultiplier)||0)-(Number(a.damageMultiplier)||0))[0]||null;
       const shipId=String(this.playerShips.equippedShip||"");
-      if(strongest&&shipId){
+      if(testConfig.grantStrongestCannon===true&&strongest&&shipId){
         const cid=String(strongest.id||"");
         this.ensurePlayerCannons();
         if((Number(this.playerCannons.owned?.[cid])||0)<1)this.playerCannons.owned[cid]=1;
         this.playerCannons.equippedByShip[shipId]=[cid];
         this.ensurePlayerCannons();
       }
-      for(const ammo of Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]){
-        const ammoId=String(ammo?.id||"").trim();
-        if(ammoId&&ammo?.available!==false)this.playerAmmo.stock[ammoId]=Math.max(1000,Math.floor(Number(this.playerAmmo.stock[ammoId])||0));
+      const ammoFloor=Math.max(0,Math.floor(Number(testConfig.grantAllAmmo)||0));
+      if(ammoFloor>0){
+        for(const ammo of Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]){
+          const ammoId=String(ammo?.id||"").trim();
+          if(ammoId&&ammo?.available!==false)this.playerAmmo.stock[ammoId]=Math.max(ammoFloor,Math.floor(Number(this.playerAmmo.stock[ammoId])||0));
+        }
       }
       if(!this.playerAmmo.selectedAmmoId){
         this.playerAmmo.selectedAmmoId=String(this.ammoCatalog?.defaultAmmoId||this.ammoCatalog?.ammo?.[0]?.id||"");
