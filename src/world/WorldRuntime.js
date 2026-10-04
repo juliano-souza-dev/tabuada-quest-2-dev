@@ -6567,6 +6567,46 @@ export class WorldRuntime {
     }
   }
 
+  syncServerProjectiles(projectiles={},meta={}){
+    if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
+    const serverNow=Number(meta?.serverTime)||Date.now();
+    const now=performance.now();
+
+    for(const [rawId,raw] of Object.entries(projectiles&&typeof projectiles==="object"?projectiles:{})){
+      const projectile=raw&&typeof raw==="object"?raw:null;
+      if(!projectile)continue;
+      const id=String(projectile.shotId||projectile.id||rawId||"");
+      if(!id||this.serverProjectileRendered.has(id))continue;
+
+      const resolvesAt=Number(projectile.resolvesAt)||0;
+      if(resolvesAt&&resolvesAt<=serverNow)continue;
+
+      const from=projectile.from&&typeof projectile.from==="object"?projectile.from:{x:0,y:0};
+      const to=projectile.to&&typeof projectile.to==="object"?projectile.to:from;
+      const progress=Number.isFinite(Number(projectile.progress))
+        ?clamp(Number(projectile.progress),0,1)
+        :clamp((serverNow-(Number(projectile.createdAt)||serverNow))/Math.max(1,(Number(projectile.resolvesAt)||serverNow+1)-(Number(projectile.createdAt)||serverNow)),0,1);
+      const current={
+        x:Number.isFinite(Number(projectile.x))?Number(projectile.x):(Number(from.x)||0)+((Number(to.x)||0)-(Number(from.x)||0))*progress,
+        y:Number.isFinite(Number(projectile.y))?Number(projectile.y):(Number(from.y)||0)+((Number(to.y)||0)-(Number(from.y)||0))*progress
+      };
+      const remaining=Math.max(80,resolvesAt?resolvesAt-serverNow:(Number(projectile.duration)||620)*(1-progress));
+
+      this.serverProjectileRendered.set(id,now);
+      this.navalRenderer?.fire?.({
+        from:current,
+        to:{x:Number(to.x)||0,y:Number(to.y)||0},
+        duration:remaining,
+        ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(projectile.ammoId||""))||undefined
+      });
+      this.audio?.play("cannon-shot");
+    }
+
+    for(const [id,seenAt] of [...this.serverProjectileRendered]){
+      if(now-Number(seenAt||0)>15000)this.serverProjectileRendered.delete(id);
+    }
+  }
+
   handleMultiplayerEvent(event={}){
     if(event.type==="fire.rejected"){
       const ammoId=String(event.ammoId||"");
@@ -6586,13 +6626,18 @@ export class WorldRuntime {
       }
     }
     if((event.type==="shot"||event.type==="projectile.spawn")&&event.from&&event.to){
-      this.navalRenderer?.fire?.({
-        from:event.from,
-        to:event.to,
-        duration:Math.max(120,Number(event.duration)||620),
-        ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined
-      });
-      this.audio?.play("cannon-shot");
+      const shotId=String(event.shotId||event.id||"");
+      if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
+      if(!shotId||!this.serverProjectileRendered.has(shotId)){
+        if(shotId)this.serverProjectileRendered.set(shotId,performance.now());
+        this.navalRenderer?.fire?.({
+          from:event.from,
+          to:event.to,
+          duration:Math.max(120,Number(event.duration)||620),
+          ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined
+        });
+        this.audio?.play("cannon-shot");
+      }
     }
     if(event.type==="projectile.hit"){
       this.audio?.play("cannon-impact-ship");
