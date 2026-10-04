@@ -155,14 +155,19 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
+      const multiplayerTestActive=this.manifest?.multiplayerTest?.enabled===true;
+      const authRoute=multiplayerTestActive
+        ?clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"})
+        :(accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"}));
 
       if(!this.started){
         if(this.authenticated)this.pendingAuthRoute=authRoute;
         return;
       }
 
-      const route=accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot());
+      const route=multiplayerTestActive&&wasLogin&&this.authenticated
+        ?authRoute
+        :(accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot()));
       if(!route)return;
       queueMicrotask(()=>{
         const task=route.kind==="world"
@@ -236,7 +241,8 @@ export class GameRuntime {
       return value&&typeof value==="object"?clone(value):null;
     };
 
-    const manifest=load(this.manifestUrl||"./src/config/game.manifest.json");
+    const preserveTestManifest=this.manifest?.multiplayerTest?.enabled===true;
+    const manifest=preserveTestManifest?null:load(this.manifestUrl||"./src/config/game.manifest.json");
     if(manifest){
       this.manifest=manifest;
       this.restoreSession=this.manifest.persistence?.restoreSession!==false;
