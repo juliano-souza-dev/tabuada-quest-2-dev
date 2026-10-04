@@ -115,7 +115,7 @@ const normalizeAmmoInventory=input=>{
 const HALLOWEEN_TEST_AMMO={
   id:"cannonball-halloween-purple",
   name:"Bola de Canhão Halloween Roxa",
-  damage:10,
+  damage:12,
   projectileSpeed:720,
   size:1,
   effects:{texture:"./assets/cannons/bola_canhao_halloween_roxa.webp",projectile:"halloween-purple-webgl",impact:"halloween-purple-webgl",renderer:"webgl2"},
@@ -3120,9 +3120,18 @@ export class WorldRuntime {
         this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
         this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
       }else{
+        // During an active naval attack, frame the ship receiving the attack.
+        // Outside combat the camera keeps following the player as before.
+        const combatCameraTarget=this.navalAutoFire===true
+          &&this.combatTarget
+          &&this.isClickableCombatShip(this.combatTarget)
+          ?this.combatTarget
+          :null;
+        const focusX=Number(combatCameraTarget?.visualX??combatCameraTarget?.x??this.player.x);
+        const focusY=Number(combatCameraTarget?.visualY??combatCameraTarget?.y??this.player.y);
         const target={
-          x:clamp(this.player.x,halfW,this.config.width-halfW),
-          y:clamp(this.player.y,halfH,this.config.height-halfH)
+          x:clamp(focusX,halfW,this.config.width-halfW),
+          y:clamp(focusY,halfH,this.config.height-halfH)
         };
         if(immediate){
           this.camera.x=target.x;
