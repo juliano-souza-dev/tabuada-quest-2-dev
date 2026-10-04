@@ -21,7 +21,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.timer=0;
     this.intentionalClose=false;
     this.offlineFallbackLocked=false;
-    this.protocolVersion="20261004-authoritative-v1";
+    this.protocolVersion="20261004-authoritative-v2";
   }
 
   status(){
