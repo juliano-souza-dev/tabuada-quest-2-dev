@@ -263,6 +263,7 @@ export class WorldRuntime {
     this.coopLocalUid="";
     this.serverWorldAuthority=false;
     this.serverEntityStates=new Map();
+    this.offlineDynamicState=null;
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -6091,16 +6092,64 @@ export class WorldRuntime {
     if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
   }
 
-  setServerWorldAuthority(active=false){
-    this.serverWorldAuthority=active===true;
-    if(!this.serverWorldAuthority){
-      this.serverEntityStates.clear();
-      for(const entity of this.entities){
-        if(!entity?.runtimeGenerated)continue;
-        entity.serverAuthoritative=false;
-        entity.serverNetFrom=null;
-        entity.serverNetTo=null;
+  captureOfflineDynamicState(){
+    const entities={};
+    for(const entity of this.entities){
+      if(!entity?.runtimeGenerated||String(entity.type||"")!=="ship")continue;
+      const hp=this.navalHpState(entity);
+      entities[String(entity.id)]={
+        x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,
+        direction:String(entity.direction||"n"),hp:hp.current,
+        vx:Number(entity.npcNavigation?.vx)||0,vy:Number(entity.npcNavigation?.vy)||0,
+        hidden:entity.el?.hidden===true,
+        spawnCycle:Math.max(1,Number(entity.npcSpawnCycle)||1)
+      };
+    }
+    this.offlineDynamicState={entities,capturedAt:Date.now()};
+    return this.offlineDynamicState;
+  }
+
+  restoreOfflineDynamicState(){
+    const states=this.offlineDynamicState?.entities||{};
+    for(const entity of this.entities){
+      if(!entity?.runtimeGenerated)continue;
+      const state=states[String(entity.id)];
+      entity.serverAuthoritative=false;
+      entity.serverNetFrom=null;
+      entity.serverNetTo=null;
+      if(!state)continue;
+      entity.x=Number(state.x)||0;
+      entity.y=Number(state.y)||0;
+      entity.rotation=Number(state.rotation)||0;
+      entity.direction=String(state.direction||entity.direction||"n");
+      entity.anchorX=entity.x;entity.anchorY=entity.y;
+      entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;
+      if(entity.npcNavigation){
+        entity.npcNavigation.vx=Number(state.vx)||0;
+        entity.npcNavigation.vy=Number(state.vy)||0;
+        entity.npcNavigation.heading=entity.rotation;
+        entity.npcNavigation.targetHeading=entity.rotation;
       }
+      this.navalHp.set(String(entity.id),Math.max(0,Number(state.hp)||0));
+      entity.npcSpawnCycle=Math.max(1,Number(state.spawnCycle)||1);
+      this.navalDestroying.delete(String(entity.id));
+      if(entity.el)entity.el.hidden=state.hidden===true;
+      if(entity.nameEl)entity.nameEl.hidden=state.hidden===true;
+      entity.collision=normalizeCollision({...entity.collision,active:state.hidden!==true,action:"none"},entity);
+      this.syncCombatClickableEntity(entity);
+      this.syncCollisionVisual(entity);
+      this.applyEntityVisual(entity);
+    }
+    return true;
+  }
+
+  setServerWorldAuthority(active=false){
+    const next=active===true;
+    if(next&&!this.serverWorldAuthority)this.captureOfflineDynamicState();
+    this.serverWorldAuthority=next;
+    if(!next){
+      this.serverEntityStates.clear();
+      this.restoreOfflineDynamicState();
     }
     return this.serverWorldAuthority;
   }
