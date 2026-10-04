@@ -6374,7 +6374,7 @@ export class WorldRuntime {
       this.coopBossStates.set(bossId,{...state,...event});
       this.coopBossLocalDamage.set(bossId,Math.max(0,Number(event.contributors?.[this.coopLocalUid])||0));
     }
-    if(event.defeated===true||hp<=0){
+    if(event.defeated===true&&hp<=0){
       const id=String(entity.id);
       if(!this.navalDestroying.has(id)){
         this.navalDestroying.add(id);
@@ -6427,7 +6427,8 @@ export class WorldRuntime {
     const state=this.coopBossStates.get(bossId)||{};
     const spawnId=String(state.spawnId||entity.bossSpawnCycle||1);
     const notifyKey=bossId+":"+spawnId;
-    if(!bossId||this.coopBossRewardNotified.has(notifyKey))return false;
+    const authoritativeHp=Math.max(0,Number(state.hp));
+    if(!bossId||state.defeated!==true||authoritativeHp>0||this.coopBossRewardNotified.has(notifyKey))return false;
     this.coopBossRewardNotified.add(notifyKey);
     const maxHp=Math.max(1,Number(state.maxHp)||Number(entity.combat?.hp)||1);
     const serverContribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
@@ -6440,6 +6441,9 @@ export class WorldRuntime {
       spawnId,
       entity:this.cleanEntity(entity),
       rewards:structuredClone(entity?.rewards||{}),
+      defeated:true,
+      hp:authoritativeHp,
+      maxHp,
       contribution:{damage,damageRatio,minimumRatio,eligible:damageRatio>=minimumRatio}
     });
     return true;
@@ -6459,7 +6463,7 @@ export class WorldRuntime {
       }
       const contribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
       this.coopBossLocalDamage.set(bossId,contribution);
-      if(state.defeated===true||hp<=0){
+      if(state.defeated===true&&hp<=0){
         this.notifyCoopBossDefeated(entity);
         if(Number(state.respawnAt)>0)entity.respawnDelayMs=Math.max(1000,Number(state.respawnAt)-Date.now());
         if(!this.navalDestroying.has(entity.id)&&!this.collected.has(entity.id))this.beginNavalDestruction(entity);
