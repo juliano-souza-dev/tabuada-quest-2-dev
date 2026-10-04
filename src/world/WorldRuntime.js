@@ -3695,7 +3695,22 @@ export class WorldRuntime {
   }
 
   async beginPlayerRepair({forced=false}={}){
-    if(this.mode!=="play"||this.repairActive||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
+    if(this.mode!=="play"||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
+    if(this.repairActive){
+      if(forced===true&&this.repairActive.forced!==true){
+        this.repairActive.forced=true;
+        this.repairActive.challenge=null;
+        this.stopForChallenge();
+        this.clearCombatTarget({hideAction:true});
+        this.navalAutoFire=false;
+        this.navalNextShotAt=0;
+        if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
+        this.challengeActive=null;
+        await this.loadPlayerRepairRound();
+        return true;
+      }
+      return false;
+    }
     if(!forced&&(this.navalPlayerHp<=0||this.isPlayerInNavalCombat()))return false;
     this.stopForChallenge();
     this.clearCombatTarget({hideAction:true});
@@ -4633,6 +4648,7 @@ export class WorldRuntime {
   }
 
   applyDirectPlayerNavalDamage(amount=1,source=null){
+    if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
     const previousHp=this.navalPlayerHp;
     this.navalPlayerHp=Math.max(0,this.navalPlayerHp-Math.max(1,Number(amount)||1));
@@ -4677,7 +4693,7 @@ export class WorldRuntime {
     const stats=this.entityNavalCombatStats(entity);
     const maxTargets=this.isCoopBoss(entity)?clamp(Math.floor(Number(entity.combat?.maxTargets)||1),1,2):1;
     const candidates=[
-      ...(this.navalPlayerHp>0?[{
+      ...(this.navalPlayerHp>0&&this.repairActive?.forced!==true?[{
         id:"local",
         local:true,
         x:Number(this.player?.x)||0,
@@ -4711,7 +4727,7 @@ export class WorldRuntime {
         this.audio?.play("cannon-shot");
         if(target.local){
           setTimeout(()=>{
-            if(this.navalPlayerHp>0&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
+            if(this.navalPlayerHp>0&&this.repairActive?.forced!==true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
               this.audio?.play("cannon-impact-ship");
               this.applyDirectPlayerNavalDamage(stats.damage,entity);
             }
