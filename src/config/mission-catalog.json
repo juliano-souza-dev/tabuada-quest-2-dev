@@ -1,6 +1,6 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 1,
+  "version": 2,
   "missions": [
     {
       "id": "R1_M01",
@@ -45,7 +45,9 @@
       },
       "reward": {
         "gold": 50,
-        "rubies": 0
+        "rubies": 0,
+        "cannonId": "cannon-halloween-pumpkin-terror",
+        "cannonQuantity": 1
       },
       "required": true
     },
