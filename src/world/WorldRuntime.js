@@ -6762,7 +6762,9 @@ export class WorldRuntime {
       if(!shotId||!this.serverProjectileRendered.has(shotId)){
         const now=performance.now();
         if(shotId)this.serverProjectileRendered.set(shotId,now);
-        const target=this.entities.find(item=>String(item?.id||"")===String(event.targetId||"")||String(item?.serverEntityId||"")===String(event.targetId||""));
+        const targetId=String(event.targetId||"");
+        const target=this.entityByIdGet(targetId)
+          ||this.entities.find(item=>String(item?.serverEntityId||"")===targetId);
         const bossTarget=Boolean(target&&this.isCoopBoss(target));
         let allowFx=true;
         let allowAudio=true;
@@ -6792,7 +6794,9 @@ export class WorldRuntime {
       }
     }
     if(event.type==="projectile.hit"){
-      const hitTarget=this.entities.find(item=>String(item?.id||"")===String(event.targetId||"")||String(item?.serverEntityId||"")===String(event.targetId||""));
+      const hitTargetId=String(event.targetId||"");
+      const hitTarget=this.entityByIdGet(hitTargetId)
+        ||this.entities.find(item=>String(item?.serverEntityId||"")===hitTargetId);
       const bossHit=Boolean(hitTarget&&this.isCoopBoss(hitTarget));
       if(!bossHit){
         this.audio?.play("cannon-impact-ship");
