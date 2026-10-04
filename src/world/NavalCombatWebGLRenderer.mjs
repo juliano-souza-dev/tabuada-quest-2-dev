@@ -228,7 +228,7 @@ export class NavalCombatWebGLRenderer{
 
   resize(width,height){
     if(!this.gl)return;
-    const dpr=clamp(Number(globalThis.devicePixelRatio)||1,1,2);
+    const dpr=clamp(Number(globalThis.devicePixelRatio)||1,1,1.35);
     const cssWidth=Math.max(1,Number(width)||1);
     const cssHeight=Math.max(1,Number(height)||1);
     const pixelWidth=Math.max(1,Math.round(cssWidth*dpr));
@@ -326,11 +326,11 @@ export class NavalCombatWebGLRenderer{
         x:shot.from.x,y:shot.from.y,startTime:shot.startTime,
         duration:fx.muzzle.durationMs,fx
       });
-      if(this.muzzles.length>24)this.muzzles.splice(0,this.muzzles.length-24);
+      if(this.muzzles.length>12)this.muzzles.splice(0,this.muzzles.length-12);
     }
     const textureSrc=fx.projectile.texture;
     if(textureSrc)this.loadProjectileTexture(normalizedAmmo?.id,textureSrc);
-    if(this.shots.length>24)this.shots.splice(0,this.shots.length-24);
+    if(this.shots.length>16)this.shots.splice(0,this.shots.length-16);
     return true;
   }
 
@@ -370,12 +370,13 @@ export class NavalCombatWebGLRenderer{
             x:shot.to.x,
             y:shot.to.y,
             startTime:shot.startTime+shot.duration,
-            duration:section.durationMs,
+            duration:Math.min(680,section.durationMs),
             kind:shot.impactKind,
             effect:piercing?"piercing-shrapnel":"profile",
             fx:shot.fx,
             seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
           });
+          if(this.impacts.length>12)this.impacts.splice(0,this.impacts.length-12);
         }
         try{shot.onImpact?.()}catch(error){
           console.warn("[TabuadaQuest] Naval impact callback failed:",error);
@@ -466,7 +467,7 @@ export class NavalCombatWebGLRenderer{
           {color:m.accentColor,coreColor:m.coreColor,glow:m.intensity,opacity:clamp(m.starburst*(1-progress*.55),0,1)}
         );
       }
-      const muzzleSparkCount=Math.min(18,Math.max(0,Math.round(m.sparks*.42)));
+      const muzzleSparkCount=Math.min(6,Math.max(0,Math.round(m.sparks*.18)));
       const muzzleFade=clamp(1-progress,0,1);
       for(let i=0;i<muzzleSparkCount;i++){
         const hash=Math.sin((i+1)*83.71+muzzle.startTime*.0017)*43758.5453;
@@ -497,7 +498,7 @@ export class NavalCombatWebGLRenderer{
         const x=shot.from.x+dx*eased+(-dy/length)*wobble;
         const y=shot.from.y+dy*eased+(dx/length)*wobble;
         if(fx.trail.enabled&&fx.trail.length>0){
-          const trailSteps=Math.min(36,fx.trail.length);
+          const trailSteps=Math.min(10,Math.max(0,Math.ceil(fx.trail.length*.45)));
           for(let step=trailSteps;step>=1;step--){
             const ratio=step/trailSteps;
             const trailT=clamp(t-ratio*.22,0,1);
@@ -569,9 +570,9 @@ export class NavalCombatWebGLRenderer{
         const point=toClip(x,y);
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
-        const assetSize=clamp((textured?32:18)*Number(shot.ammo?.size||1)*fx.projectile.scale,6,128);
+        const assetSize=clamp((textured?14:10)*Number(shot.ammo?.size||1)*fx.projectile.scale,4,26);
 
-        const echoCount=Math.min(4,Math.max(0,fx.projectile.echoCount));
+        const echoCount=Math.min(1,Math.max(0,fx.projectile.echoCount));
         for(let echo=1;echo<=echoCount;echo++){
           const echoT=clamp(t-echo*fx.projectile.echoSpacing,0,t);
           if(echoT<=0)continue;
@@ -618,7 +619,7 @@ export class NavalCombatWebGLRenderer{
               opacity:fx.projectile.auraOpacity*.52
             }
           );
-          const orbitCount=Math.min(10,Math.max(0,fx.projectile.orbitCount));
+          const orbitCount=Math.min(3,Math.max(0,fx.projectile.orbitCount));
           const orbitRadius=(assetSize*fx.projectile.orbitRadius*.72)/Math.max(.2,Number(zoom)||1);
           for(let i=0;i<orbitCount;i++){
             const phase=(i/Math.max(1,orbitCount))*Math.PI*2+now*.0045*fx.projectile.pulseSpeed;
