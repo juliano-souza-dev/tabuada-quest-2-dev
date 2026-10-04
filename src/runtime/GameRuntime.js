@@ -418,13 +418,19 @@ export class GameRuntime {
     this.multiplayer.addEventListener?.("event",onEvent);
     this.multiplayer.addEventListener?.("bosses",onBosses);
     this.multiplayerCleanups.push(()=>this.multiplayer?.removeEventListener?.("players",onPlayers),()=>this.multiplayer?.removeEventListener?.("event",onEvent),()=>this.multiplayer?.removeEventListener?.("bosses",onBosses));
-    this.worldRuntime.setCoopTransport?.({
+    const runtime=this.worldRuntime;
+    const coopTransport={
       uid:String(this.multiplayer.auth?.status?.().uid||""),
       ensureBoss:boss=>this.multiplayer.ensureBoss?.(boss),
       damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta)
-    });
+    };
     const ship=this.getEquippedShip();
-    this.multiplayer.joinWorld(worldId,{getLocalState:()=>this.worldRuntime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""}).catch(error=>console.warn("Multiplayer join failed",error));
+    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
+      .then(()=>{
+        if(this.worldRuntime!==runtime)return;
+        runtime.setCoopTransport?.(coopTransport);
+      })
+      .catch(error=>console.warn("Multiplayer join failed",error));
     return true;
   }
 
