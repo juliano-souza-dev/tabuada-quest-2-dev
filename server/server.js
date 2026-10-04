@@ -95,7 +95,7 @@ function ensureWorld(r,m){
       id,npcId:key(raw.npcId||""),shipId:key(raw.shipId||""),name:String(raw.name||"NPC").slice(0,80),
       x:Number(raw.x)||0,y:Number(raw.y)||0,rotation,direction:String(raw.direction||directionForRotation(rotation)).slice(0,8),
       vx:0,vy:0,speed,minSpeed:clamp(raw.minSpeed,0,speed),acceleration:clamp(raw.acceleration||speed*3.1,0,3000),
-      hp:maxHp,maxHp,boss:raw.boss===true,defeated:false,stopped:false,
+      hp:maxHp,maxHp,boss:raw.boss===true,hostile:raw.hostile!==false,defeated:false,stopped:false,
       respawn:raw.respawn===true,respawnDelayMs:clamp(raw.respawnDelayMs||30000,1000,86400000),
       respawnAt:0,spawnId:Math.max(1,Number(raw.spawnId)||1),contributors:{},
       attackRange:clamp(raw.attackRange||900,100,12000),
@@ -226,7 +226,7 @@ function resolveProjectile(r,p,now=Date.now()){
   return true;
 }
 function maybeFireNpc(r,e,now=Date.now()){
-  if(e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
+  if(e.hostile===false||e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
   let target=null,best=Infinity;
   for(const p of r.players.values()){
     if(!(p.hp>0))continue;
