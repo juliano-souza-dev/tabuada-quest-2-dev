@@ -190,6 +190,7 @@ export class WorldRuntime {
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
     this.getConsumableQuantity=typeof options.getConsumableQuantity==="function"?options.getConsumableQuantity:()=>0;
     this.onConsumeItem=typeof options.onConsumeItem==="function"?options.onConsumeItem:null;
+    this.onRuntimeStateChange=typeof options.onRuntimeStateChange==="function"?options.onRuntimeStateChange:null;
     this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
     this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
@@ -299,6 +300,17 @@ export class WorldRuntime {
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
     this.state=structuredClone(options.state||{});
+    const savedHullReinforcement=this.state.hullReinforcement&&typeof this.state.hullReinforcement==="object"
+      ?this.state.hullReinforcement
+      :null;
+    this.hullReinforcement=savedHullReinforcement
+      &&Number(savedHullReinforcement.hp)>0
+      &&Number(savedHullReinforcement.expiresAt)>Date.now()
+      ?{
+        hp:Math.max(0,Number(savedHullReinforcement.hp)||0),
+        expiresAt:Number(savedHullReinforcement.expiresAt)||0
+      }
+      :{hp:0,expiresAt:0};
     this.state.ammo=normalizeAmmoInventory(this.state.ammo||{});
     this.ammoCatalog=Array.isArray(options.ammoCatalog)?structuredClone(options.ammoCatalog):[];
     this.testAmmoUnlimited=false;
@@ -5071,13 +5083,24 @@ export class WorldRuntime {
     if(Math.max(0,Number(this.getConsumableQuantity("hull-reinforcement"))||0)<=0){
       this.showGameplayToast("Sem Reforço de Casco.",1300);return false;
     }
+
+    // Activate before consuming so the inventory checkpoint captures both sides
+    // of the transaction atomically: item removed + temporary effect active.
+    const previous={...(this.hullReinforcement||{hp:0,expiresAt:0})};
+    this.hullReinforcement={hp:1000000,expiresAt:Date.now()+300000};
     const consumed=this.onConsumeItem?.("hull-reinforcement");
-    if(consumed===false)return false;
-    return this.activateHullReinforcement();
+    if(consumed===false){
+      this.hullReinforcement=previous;
+      return false;
+    }
+    this.onRuntimeStateChange?.();
+    this.showGameplayToast("🛡 Reforço de Casco ativado · +1.000.000 HP · 5 min",2200);
+    return true;
   }
 
   activateHullReinforcement(){
     this.hullReinforcement={hp:1000000,expiresAt:Date.now()+300000};
+    this.onRuntimeStateChange?.();
     this.showGameplayToast("🛡 Reforço de Casco ativado · +1.000.000 HP · 5 min",2200);
     return true;
   }
@@ -5091,8 +5114,13 @@ export class WorldRuntime {
       const absorbed=Math.min(this.hullReinforcement.hp,incoming);
       this.hullReinforcement.hp-=absorbed;
       incoming-=absorbed;
+      this.onRuntimeStateChange?.();
       if(incoming<=0)return true;
-    }else if(this.hullReinforcement){this.hullReinforcement.hp=0;this.hullReinforcement.expiresAt=0}
+    }else if(this.hullReinforcement){
+      this.hullReinforcement.hp=0;
+      this.hullReinforcement.expiresAt=0;
+      this.onRuntimeStateChange?.();
+    }
     const previousHp=this.navalPlayerHp;
     this.navalPlayerHp=Math.max(0,Math.round((this.navalPlayerHp-incoming)*10)/10);
     this.showNavalDamageNumber({
@@ -5109,6 +5137,7 @@ export class WorldRuntime {
     }
     if(this.navalPlayerHp<=0){
       this.hullReinforcement={hp:0,expiresAt:0};
+      this.onRuntimeStateChange?.();
     this.followCombatTarget=false;
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
@@ -6938,6 +6967,12 @@ export class WorldRuntime {
       player:{x:this.player.x,y:this.player.y,vx:this.player.vx,vy:this.player.vy,rotation:this.player.rotation,direction:this.player.direction},
       collected:[...this.collected],
       navalPlayerHp:this.navalPlayerHp,
+      hullReinforcement:this.hullReinforcement?.hp>0&&Date.now()<Number(this.hullReinforcement.expiresAt||0)
+        ?{
+          hp:Math.max(0,Number(this.hullReinforcement.hp)||0),
+          expiresAt:Number(this.hullReinforcement.expiresAt)||0
+        }
+        :{hp:0,expiresAt:0},
       ammo:normalizeAmmoInventory(this.state.ammo||{}),
       combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
     };
