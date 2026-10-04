@@ -295,7 +295,7 @@ wss.on("connection",ws=>{
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server"});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -329,7 +329,9 @@ wss.on("connection",ws=>{
 
       const now=Date.now();
       const cooldown=clamp(cannon?.attackCooldownMs||m.attackCooldownMs||950,150,10000);
-      if(authoritative&&now<Number(p.nextFireAt||0)){
+      const volleyId=key(m.volleyId||m.shotId||"");
+      const sameVolley=authoritative&&volleyId&&volleyId===String(p.lastVolleyId||"");
+      if(authoritative&&!sameVolley&&now<Number(p.nextFireAt||0)){
         monitor.rejectedShots++;
         send(ws,{type:"fire.rejected",reason:"cooldown",targetId,retryAt:p.nextFireAt,at:now});
         return;
@@ -356,7 +358,10 @@ wss.on("connection",ws=>{
         ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,5),.1,5000)
         :clamp(Number(m.damage)||1,.1,5000);
 
-      if(authoritative)p.nextFireAt=now+cooldown;
+      if(authoritative&&!sameVolley){
+        p.lastVolleyId=volleyId;
+        p.nextFireAt=now+cooldown;
+      }
       const projectile=spawnProjectile(current,{
         shotId:key(m.shotId||projectileId("player")),
         ownerType:"player",ownerId:uid,ownerUid:uid,
