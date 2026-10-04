@@ -2308,9 +2308,12 @@ export class WorldRuntime {
 
     const joystickTouchStart=e=>{
       if(!touchCapable||this.mode!=="play"||this.challengeActive||!joystick||!e.changedTouches?.length)return;
-      e.preventDefault();
-      e.stopPropagation();
-      const touch=e.changedTouches[0];
+      // Multi-touch must remain available while steering: consume only the
+      // joystick finger. A second finger can still press HUD/fire controls.
+      const touch=[...(e.changedTouches||[])].find(item=>{
+        const target=document.elementFromPoint?.(item.clientX,item.clientY);
+        return target?.closest?.("[data-world-joystick]")===joystick;
+      })||e.changedTouches[0];
       this.clearNavigationTarget();
       this.clearTreasureTarget();
       this.joystick.active=true;
@@ -2322,14 +2325,14 @@ export class WorldRuntime {
       const touches=[...(e.touches||[])];
       const touch=touches.find(item=>item.identifier===this.joystick.pointerId);
       if(!touch)return;
-      e.preventDefault();
+      // Do not prevent the whole multi-touch event: that used to swallow
+      // taps from the second finger (Atirar, munição, etc.).
       updateJoystickPoint(touch.clientX,touch.clientY);
     };
     const joystickTouchEnd=e=>{
       if(!touchCapable||this.joystick.pointerId===null)return;
       const ended=[...(e.changedTouches||[])].some(item=>item.identifier===this.joystick.pointerId);
       if(!ended)return;
-      e.preventDefault();
       this.resetJoystick();
     };
 
