@@ -1,13 +1,13 @@
 {
   "schema": "tq.ammo-catalog",
-  "version": 3,
+  "version": 4,
   "defaultAmmoId": "cannonball-standard",
   "ammo": [
     {
       "id": "cannonball-standard",
       "name": "Bola de Canhão",
       "available": true,
-      "damage": 1,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -29,7 +29,7 @@
       "id": "cannonball-halloween-purple",
       "name": "Bola de Canhão Halloween Roxa",
       "available": true,
-      "damage": 7,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -54,7 +54,7 @@
       "id": "cannonball-piercing",
       "name": "Bala Perfurante",
       "available": true,
-      "damage": 5,
+      "damage": 25000,
       "projectileSpeed": 820,
       "size": 1,
       "effects": {
@@ -78,7 +78,7 @@
       "id": "cannonball-rusted-iron",
       "name": "Bola de Canhão de Ferro Enferrujado",
       "available": true,
-      "damage": 2,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -103,7 +103,7 @@
       "id": "orb-violet-crystal",
       "name": "Orbe Mágico de Cristal Violeta",
       "available": true,
-      "damage": 4,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -128,7 +128,7 @@
       "id": "orb-ocean-pearl",
       "name": "Orbe Mágico de Pérola Oceânica",
       "available": true,
-      "damage": 3,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -153,7 +153,7 @@
       "id": "orb-halloween-pumpkin",
       "name": "Orbe Místico de Abóbora Roxa",
       "available": true,
-      "damage": 8,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -179,7 +179,7 @@
       "id": "orb-volcanic-lava",
       "name": "Orbe Vulcânico de Lava Incandescente",
       "available": true,
-      "damage": 6,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -204,7 +204,7 @@
       "id": "terror-rose",
       "name": "Rosa do Terror",
       "available": true,
-      "damage": 9,
+      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
