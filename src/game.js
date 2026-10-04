@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1309-boss-stop-on-hit";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1617-boss-first-hit";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-auth-trace";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
