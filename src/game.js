@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2124-boss-reward-loop-hotfix";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2104-pc-ws-endpoint";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2129-authoritative-cannon-loadout";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2129-authoritative-cannon-loadout";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
