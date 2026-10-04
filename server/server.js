@@ -3,7 +3,7 @@ import http from "node:http";
 import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
-const PROTOCOL_VERSION="20261004-authoritative-v1";
+const PROTOCOL_VERSION="20261004-authoritative-v2";
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
@@ -33,6 +33,7 @@ function room(id){
     projectiles:new Map(),
     bounds:{left:0,top:0,right:60000,bottom:12000},
     initialized:false,
+    revision:"",
     emptySince:0,
     lastFullSnapshotAt:0
   });
@@ -100,7 +101,15 @@ function snapshot(r){
   };
 }
 function ensureWorld(r,m){
-  if(r.initialized)return false;
+  const incomingRevision=key(m.revision||"");
+  if(r.initialized&&incomingRevision&&incomingRevision===r.revision)return false;
+  if(r.initialized&&incomingRevision&&incomingRevision!==r.revision){
+    r.entities.clear();
+    r.projectiles.clear();
+    r.shots.clear();
+    r.initialized=false;
+    log("WORLD~ ",`world=${r.id} revision=${r.revision||"legacy"}->${incomingRevision}`);
+  }
   const bounds=m.bounds&&typeof m.bounds==="object"?m.bounds:{};
   r.bounds={
     left:Number(bounds.left)||0,
@@ -133,6 +142,7 @@ function ensureWorld(r,m){
       courseCycle:0,nextCourseAt:now+3500+(hashString(id)%5500),updatedAt:now
     });
   }
+  r.revision=incomingRevision||r.revision||"legacy";
   r.initialized=true;
   return true;
 }
@@ -307,9 +317,10 @@ wss.on("connection",ws=>{
     const p=current.players.get(uid);if(!p)return;
 
     if(m.type==="world.ensure"){
-      ensureWorld(current,m);
+      const changed=ensureWorld(current,m);
       current.lastFullSnapshotAt=Date.now();
-      send(ws,snapshot(current));
+      if(changed)broadcast(current,snapshot(current));
+      else send(ws,snapshot(current));
       return;
     }
     if(m.type==="state"){
