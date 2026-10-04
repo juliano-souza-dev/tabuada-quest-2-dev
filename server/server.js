@@ -100,7 +100,7 @@ function ensureWorld(r,m){
   const now=Date.now();
   for(const raw of Array.isArray(m.entities)?m.entities:[]){
     const id=key(raw.id);if(!id||r.entities.has(id))continue;
-    const maxHp=clamp(raw.maxHp??raw.hp,1,50000000);
+    const maxHp=clamp(raw.maxHp??raw.hp,1,500000000);
     const speed=clamp(raw.speed,0,1200);
     const rotation=Number(raw.rotation)||0;
     r.entities.set(id,{
