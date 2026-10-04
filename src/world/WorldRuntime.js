@@ -6343,7 +6343,8 @@ export class WorldRuntime {
   }
 
   applyAuthoritativeEntityHit(event={}){
-    const entity=this.entities.find(item=>String(item?.id||"")===String(event.entityId||""));
+    const eventEntityId=String(event.entityId||"");
+    const entity=this.entities.find(item=>String(item?.id||"")===eventEntityId||String(item?.serverEntityId||"")===eventEntityId);
     if(!entity)return false;
     const hp=Math.max(0,Number(event.hp)||0);
     this.navalHp.set(String(entity.id),hp);
