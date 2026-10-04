@@ -93,7 +93,7 @@
         "behavior": "stationary"
       },
       "combat": {
-        "hp": 1000000,
+        "hp": 100000000,
         "attitude": "hostile",
         "damage": 5,
         "maxTargets": 2,
