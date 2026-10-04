@@ -1,4 +1,4 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1604-room-revision-v2";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1912-authoritative-projectiles";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1604-room-revision-v2";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
