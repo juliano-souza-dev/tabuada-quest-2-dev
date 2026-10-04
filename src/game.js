@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1805-prod-sync-arena";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1826-r1-prod-multiplayer-test";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1430-delta-netcode";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1812-prod-arena-hard-route");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1826-r1-prod-multiplayer-test");
 
 if(flowTest){
   try{
@@ -134,8 +134,7 @@ if(flowTest){
   game.attachMultiplayer?.(services.multiplayer);
 }
 
-const productionTestRoute=!flowTest?{kind:"world",id:"teste-multiplayer-sync"}:null;
-await game.start(start||productionTestRoute);
+await game.start(start);
 
 }catch(error){showBootError(error);throw error}
 
