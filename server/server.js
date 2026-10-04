@@ -258,6 +258,7 @@ function spawnProjectile(r,data={}){
     resolvesAt:now+duration
   };
   r.projectiles.set(id,projectile);
+  broadcast(r,{type:"projectile.spawn",...publicProjectile(projectile,now)});
   return projectile;
 }
 function resolveProjectile(r,p,now=Date.now()){
@@ -377,7 +378,7 @@ wss.on("connection",ws=>{
       const targetId=key(m.targetId),target=current.entities.get(targetId);
       if(!target||target.defeated||target.hp<=0){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"invalid_target",shotId:key(m.shotId),targetId,at:Date.now()});
+        log("FIRE-X ",`uid=${uid} reason=invalid_target target=${targetId}`);\n        send(ws,{type:"fire.rejected",reason:"invalid_target",shotId:key(m.shotId),targetId,at:Date.now()});
         return;
       }
 
@@ -385,7 +386,7 @@ wss.on("connection",ws=>{
       const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
       if(authoritative&&(!ammo||ammo.available===false||!cannon||cannon.available===false)){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"invalid_loadout",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
+        log("FIRE-X ",`uid=${uid} reason=invalid_loadout ammo=${ammoId} cannon=${cannonId}`);\n        send(ws,{type:"fire.rejected",reason:"invalid_loadout",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
         return;
       }
 
@@ -432,7 +433,7 @@ wss.on("connection",ws=>{
         from,to:{x:intercept.x,y:intercept.y},ammoId,cannonId,damage,projectileSpeed,
         duration:Math.max(120,intercept.time*1000)
       });
-      if(projectile)send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
+      if(projectile){\n        log("FIRE+  ",`uid=${uid} target=${target.id} shot=${projectile.id} damage=${damage}`);\n        send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});\n      }
       return;
     }
     if(m.type==="shot"){
