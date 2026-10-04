@@ -4851,7 +4851,7 @@ export class WorldRuntime {
         const sent=this.coopTransport.fireProjectile({
           shotId:"player-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
           volleyId,
-          targetId:String(entity.id||""),
+          targetId:String(entity.serverEntityId||entity.id||""),
           from:muzzle,
           ammoId:selectedAmmoId,
           cannonId:String(cannon.id||"")
@@ -6281,6 +6281,7 @@ export class WorldRuntime {
         ||this.entities.find(item=>item?.runtimeGenerated&&String(item?.npcId||"")===String(state?.npcId||""));
       if(!entity)continue;
       entity.serverAuthoritative=true;
+      entity.serverEntityId=id;
       const targetX=Number(state.x)||0,targetY=Number(state.y)||0,targetRotation=Number(state.rotation)||0;
       const sampleMs=clamp(now-Number(entity.serverNetSampleAt||now-50),40,140);
       entity.serverNetFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
