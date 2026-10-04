@@ -4135,6 +4135,7 @@ export class WorldRuntime {
     }
 
     if(this.repairActive){
+      this.repairOptions?.querySelectorAll("button").forEach(button=>{button.disabled=true});
       const detail={
         entityId:"player-repair",
         challengeId:String(challenge.id||""),
