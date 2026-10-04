@@ -1,13 +1,13 @@
 {
   "schema": "tq.ammo-catalog",
-  "version": 1,
+  "version": 2,
   "defaultAmmoId": "cannonball-standard",
   "ammo": [
     {
       "id": "cannonball-standard",
       "name": "Bola de Canhão",
       "available": true,
-      "damage": 25000,
+      "damage": 1,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -17,7 +17,9 @@
       },
       "shop": {
         "purchasable": true,
-        "price": 1
+        "price": 8,
+        "currency": "gold",
+        "packQuantity": 10
       },
       "fx": {
         "preset": "standard"
@@ -27,7 +29,7 @@
       "id": "cannonball-halloween-purple",
       "name": "Bola de Canhão Halloween Roxa",
       "available": true,
-      "damage": 25000,
+      "damage": 1.7,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -37,12 +39,12 @@
         "texture": "./assets/cannons/bola_canhao_halloween_roxa.webp",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
-        "purchasable": true,
-        "price": 2
+        "purchasable": false,
+        "price": 0,
+        "currency": "event",
+        "packQuantity": 1
       },
       "fx": {
         "preset": "halloween"
@@ -52,7 +54,7 @@
       "id": "cannonball-piercing",
       "name": "Bala Perfurante",
       "available": true,
-      "damage": 25000,
+      "damage": 1.4,
       "projectileSpeed": 820,
       "size": 1,
       "effects": {
@@ -64,7 +66,9 @@
       },
       "shop": {
         "purchasable": true,
-        "price": 3
+        "price": 12,
+        "currency": "gold",
+        "packQuantity": 10
       },
       "fx": {
         "preset": "piercing"
@@ -74,7 +78,7 @@
       "id": "cannonball-rusted-iron",
       "name": "Bola de Canhão de Ferro Enferrujado",
       "available": true,
-      "damage": 25000,
+      "damage": 1.1,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -84,12 +88,12 @@
         "texture": "./assets/cannons/Bola de Canhão de Ferro Enferrujado.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
         "purchasable": true,
-        "price": 1
+        "price": 9,
+        "currency": "gold",
+        "packQuantity": 10
       },
       "fx": {
         "preset": "rusted-iron"
@@ -99,7 +103,7 @@
       "id": "orb-violet-crystal",
       "name": "Orbe Mágico de Cristal Violeta",
       "available": true,
-      "damage": 25000,
+      "damage": 1.3,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -109,12 +113,12 @@
         "texture": "./assets/cannons/Orbe Mágico de Cristal Violeta.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
         "purchasable": true,
-        "price": 2
+        "price": 11,
+        "currency": "gold",
+        "packQuantity": 10
       },
       "fx": {
         "preset": "violet-crystal"
@@ -124,7 +128,7 @@
       "id": "orb-ocean-pearl",
       "name": "Orbe Mágico de Pérola Oceânica",
       "available": true,
-      "damage": 25000,
+      "damage": 1.2,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -134,12 +138,12 @@
         "texture": "./assets/cannons/Orbe Mágico de Pérola Oceânica.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
         "purchasable": true,
-        "price": 2
+        "price": 10,
+        "currency": "gold",
+        "packQuantity": 10
       },
       "fx": {
         "preset": "ocean-pearl"
@@ -149,7 +153,7 @@
       "id": "orb-halloween-pumpkin",
       "name": "Orbe Místico de Abóbora Roxa",
       "available": true,
-      "damage": 25000,
+      "damage": 1.9,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -159,12 +163,12 @@
         "texture": "./assets/cannons/Orbe Místico de Abóbora Roxa.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
         "purchasable": true,
-        "price": 3
+        "price": 10,
+        "currency": "rubies",
+        "packQuantity": 10
       },
       "event": "halloween",
       "fx": {
@@ -175,7 +179,7 @@
       "id": "orb-volcanic-lava",
       "name": "Orbe Vulcânico de Lava Incandescente",
       "available": true,
-      "damage": 25000,
+      "damage": 1.5,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -185,12 +189,12 @@
         "texture": "./assets/cannons/Orbe Vulcânico de Lava Incandescente.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
-        "purchasable": true,
-        "price": 2
+        "purchasable": false,
+        "price": 0,
+        "currency": "event",
+        "packQuantity": 1000
       },
       "fx": {
         "preset": "volcanic-lava"
@@ -200,7 +204,7 @@
       "id": "terror-rose",
       "name": "Rosa do Terror",
       "available": true,
-      "damage": 25000,
+      "damage": 2,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -210,12 +214,12 @@
         "texture": "./assets/cannons/rosa do terror.png",
         "renderer": "webgl2"
       },
-      "test": {
-        "unlimited": true
-      },
+      "test": {},
       "shop": {
-        "purchasable": true,
-        "price": 3
+        "purchasable": false,
+        "price": 0,
+        "currency": "event",
+        "packQuantity": 1
       },
       "event": "halloween",
       "fx": {
