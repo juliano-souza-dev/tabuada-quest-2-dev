@@ -6849,7 +6849,10 @@ export class WorldRuntime {
   }
 
   tick(time){
-    const dt=Math.min(.04,Math.max(.001,(time-this.lastTime)/1000));
+    // Do not turn frame drops into slow motion. A 40 ms cap makes the whole
+    // simulation run slower whenever rendering falls below 25 FPS. Keep a
+    // broader safety cap so movement remains tied to real elapsed time.
+    const dt=Math.min(.10,Math.max(.001,(time-this.lastTime)/1000));
     this.lastTime=time;
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
