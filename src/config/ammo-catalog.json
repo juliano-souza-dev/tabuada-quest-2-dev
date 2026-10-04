@@ -27,7 +27,7 @@
       "id": "cannonball-halloween-purple",
       "name": "Bola de Canhão Halloween Roxa",
       "available": true,
-      "damage": 12,
+      "damage": 10000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
