@@ -205,6 +205,7 @@ export class MultiplayerRuntime extends EventTarget{
     return this.socketSend({
       type:"fire.request",
       shotId:safeKey(shot.shotId||uid+"-"+Date.now()),
+      volleyId:safeKey(shot.volleyId||""),
       targetId:safeKey(shot.targetId||""),
       from:shot.from||null,
       ammoId:String(shot.ammoId||""),
