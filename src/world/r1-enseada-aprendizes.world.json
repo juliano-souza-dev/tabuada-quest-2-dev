@@ -398,6 +398,23 @@
         "rewards": {
           "gold": 50
         }
+      },
+      {
+        "npcId": "boss-reward-test-15pct",
+        "shipId": "ship-halloween-dreadnought",
+        "count": 1,
+        "enabled": true,
+        "respawn": false,
+        "respawnDelaySec": 30,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 1000,
+          "minDistance": 700
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 250
+        }
       }
     ]
   },
