@@ -2005,7 +2005,9 @@ export class GameRuntime {
       if(this.playerStateStore){
         const account=this.exportAccountState();
         this.accountState=clone(account);
-        this.playerStateStore.save(account,{sync:true});
+        // Runtime autosaves are cache-only. Durable cloud writes happen through
+        // syncCloud()/explicit checkpoints, keeping Firestore out of live combat.
+        this.playerStateStore.save(account,{sync:false});
         return true;
       }
 
