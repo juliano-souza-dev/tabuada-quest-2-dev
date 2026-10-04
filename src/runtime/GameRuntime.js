@@ -584,6 +584,18 @@ export class GameRuntime {
     };
   }
 
+  consumeItem(id,{worldId=this.current?.id}={}){
+    const key=String(id||"");
+    const qty=Math.max(0,Math.floor(Number(this.consumables?.[key])||0));
+    if(!key||qty<=0)return false;
+    this.consumables[key]=qty-1;
+    if(worldId&&this.worldRuntime?.getState)this.worldStates[worldId]=clone(this.worldRuntime.getState());
+    this.saveState();
+    this.syncCloud("consume-item");
+    globalThis.dispatchEvent?.(new CustomEvent("tq:itemconsumed",{detail:{id:key,quantity:this.consumables[key]}}));
+    return true;
+  }
+
   async purchaseShopItem({item,quantity}={}, {worldId=this.current?.id}={}){
     const product=item&&typeof item==="object"?item:null;
     const amount=Math.max(1,Math.floor(Number(quantity)||1));
@@ -1656,6 +1668,8 @@ export class GameRuntime {
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
       shopBalances:()=>this.getWalletBalances(),
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
+      getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
+      onConsumeItem:id=>this.consumeItem(id,{worldId}),
       getShipyardState:()=>({
         ships:this.listOwnedShips().map(ship=>({id:ship.id,name:ship.name||ship.id,equipped:ship.id===this.playerShips.equippedShip,cannons:this.getShipCannons(ship.id).map(id=>this.cannonEntry(id)).filter(Boolean).map(c=>({id:c.id,name:c.name||c.id}))})),
         cannons:(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).map(c=>({id:c.id,name:c.name||c.id})),
