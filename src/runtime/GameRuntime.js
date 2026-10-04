@@ -155,19 +155,14 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      const forceAfterAuth=this.manifest.afterAuth?.force===true;
-      const authRoute=forceAfterAuth
-        ?clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"})
-        :(accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"}));
+      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
 
       if(!this.started){
         if(this.authenticated)this.pendingAuthRoute=authRoute;
         return;
       }
 
-      const route=forceAfterAuth&&wasLogin&&this.authenticated
-        ?authRoute
-        :(accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot()));
+      const route=accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot());
       if(!route)return;
       queueMicrotask(()=>{
         const task=route.kind==="world"
@@ -235,8 +230,7 @@ export class GameRuntime {
       return value&&typeof value==="object"?clone(value):null;
     };
 
-    const preserveForcedTestRoute=this.manifest.afterAuth?.force===true;
-    const manifest=preserveForcedTestRoute?null:load(this.manifestUrl||"./src/config/game.manifest.json");
+    const manifest=load(this.manifestUrl||"./src/config/game.manifest.json");
     if(manifest){
       this.manifest=manifest;
       this.restoreSession=this.manifest.persistence?.restoreSession!==false;
@@ -244,9 +238,9 @@ export class GameRuntime {
 
     const next={
       sceneCatalog:load(catalogs.scenes||"./src/config/scene-catalog.json"),
-      worldCatalog:preserveForcedTestRoute?null:load(catalogs.worlds||"./src/config/world-catalog.json"),
+      worldCatalog:load(catalogs.worlds||"./src/config/world-catalog.json"),
       shipCatalog:load(catalogs.ships||"./src/config/ship-catalog.json"),
-      npcCatalog:preserveForcedTestRoute?null:load(catalogs.npcs||"./src/config/npc-catalog.json"),
+      npcCatalog:load(catalogs.npcs||"./src/config/npc-catalog.json"),
       treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
       ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
@@ -1684,7 +1678,7 @@ export class GameRuntime {
 
     // Production sync arena: use the real inventory/loadout pipeline rather than
     // runtime-only test overrides, so combat behaves exactly like normal play.
-    if(worldId==="teste-multiplayer-sync"){
+    if(worldId==="r1-enseada-aprendizes"){
       const strongest=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
         .filter(cannon=>cannon?.available!==false)
         .sort((a,b)=>(Number(b.damageMultiplier)||0)-(Number(a.damageMultiplier)||0))[0]||null;
@@ -1881,14 +1875,11 @@ export class GameRuntime {
     }else if(authRequired&&!this.authenticated){
       requested=login;
     }else{
-      const forceAfterAuth=this.authenticated&&this.manifest.afterAuth?.force===true;
-      requested=forceAfterAuth
-        ?clone(this.manifest.afterAuth)
-        :(this.pendingAuthRoute
-          ||(this.restoreSession&&this.current?this.current:null)
-          ||(this.authenticated?this.manifest.afterAuth:null)
-          ||this.manifest.start
-          ||login);
+      requested=this.pendingAuthRoute
+        ||(this.restoreSession&&this.current?this.current:null)
+        ||(this.authenticated?this.manifest.afterAuth:null)
+        ||this.manifest.start
+        ||login;
     }
 
     this.pendingAuthRoute=null;
