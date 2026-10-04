@@ -6232,6 +6232,7 @@ export class WorldRuntime {
             hp:hp.current,
             maxHp:hp.max,
             boss:this.isCoopBoss(entity),
+            hostile:String(entity.npcAttitude||"")!=="peaceful",
             respawn:entity.respawn===true,
             respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||30000),
             spawnId:Math.max(1,Number(entity.npcSpawnCycle)||1),
