@@ -261,6 +261,8 @@ export class WorldRuntime {
     this.coopBossStates=new Map();
     this.coopBossRewardNotified=new Set();
     this.coopBossLocalDamage=new Map();
+    this.bossProjectileFxWindow=new Map();
+    this.bossDamageFxPending=new Map();
     this.coopLocalUid="";
     this.serverWorldAuthority=false;
     this.serverEntityStates=new Map();
@@ -6381,11 +6383,30 @@ export class WorldRuntime {
     const hp=Math.max(0,Number(event.hp)||0);
     this.navalHp.set(String(entity.id),hp);
     if(Number(event.damage)>0){
-      this.showNavalDamageNumber({
-        x:Number(entity.visualX??entity.x)||0,
-        y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
-        amount:Number(event.damage)||0
-      });
+      if(event.boss===true||this.isCoopBoss(entity)){
+        const id=String(entity.id);
+        const pending=this.bossDamageFxPending.get(id)||{amount:0,timer:0};
+        pending.amount+=Math.max(0,Number(event.damage)||0);
+        if(!pending.timer){
+          pending.timer=setTimeout(()=>{
+            const batch=this.bossDamageFxPending.get(id);
+            if(!batch)return;
+            this.bossDamageFxPending.delete(id);
+            this.showNavalDamageNumber({
+              x:Number(entity.visualX??entity.x)||0,
+              y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
+              amount:batch.amount
+            });
+          },140);
+        }
+        this.bossDamageFxPending.set(id,pending);
+      }else{
+        this.showNavalDamageNumber({
+          x:Number(entity.visualX??entity.x)||0,
+          y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
+          amount:Number(event.damage)||0
+        });
+      }
     }
     if(String(event.ownerUid||"")===this.coopLocalUid&&Number(event.damage)>0&&Number(event.rewardGold)>0){
       const rewardGold=Math.max(0,Math.floor(Number(event.rewardGold)||0));
@@ -6666,18 +6687,52 @@ export class WorldRuntime {
       const shotId=String(event.shotId||event.id||"");
       if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
       if(!shotId||!this.serverProjectileRendered.has(shotId)){
-        if(shotId)this.serverProjectileRendered.set(shotId,performance.now());
-        this.navalRenderer?.fire?.({
-          from:event.from,
-          to:event.to,
-          duration:Math.max(120,Number(event.duration)||620),
-          ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined
-        });
-        this.audio?.play("cannon-shot");
+        const now=performance.now();
+        if(shotId)this.serverProjectileRendered.set(shotId,now);
+        const target=this.entities.find(item=>String(item?.id||"")===String(event.targetId||"")||String(item?.serverEntityId||"")===String(event.targetId||""));
+        const bossTarget=Boolean(target&&this.isCoopBoss(target));
+        let allowFx=true;
+        let allowAudio=true;
+        if(bossTarget){
+          const key=String(event.targetId||target.id||"boss");
+          const window=this.bossProjectileFxWindow.get(key)||{startedAt:now,count:0,audio:false};
+          if(now-window.startedAt>320){
+            window.startedAt=now;
+            window.count=0;
+            window.audio=false;
+          }
+          allowFx=window.count<5;
+          allowAudio=!window.audio;
+          window.count+=1;
+          if(allowAudio)window.audio=true;
+          this.bossProjectileFxWindow.set(key,window);
+        }
+        if(allowFx){
+          this.navalRenderer?.fire?.({
+            from:event.from,
+            to:event.to,
+            duration:Math.max(120,Number(event.duration)||620),
+            ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined
+          });
+        }
+        if(allowAudio)this.audio?.play("cannon-shot");
       }
     }
     if(event.type==="projectile.hit"){
-      this.audio?.play("cannon-impact-ship");
+      const hitTarget=this.entities.find(item=>String(item?.id||"")===String(event.targetId||"")||String(item?.serverEntityId||"")===String(event.targetId||""));
+      const bossHit=Boolean(hitTarget&&this.isCoopBoss(hitTarget));
+      if(!bossHit){
+        this.audio?.play("cannon-impact-ship");
+      }else{
+        const key="impact:"+String(event.targetId||hitTarget?.id||"boss");
+        const now=performance.now();
+        const state=this.bossProjectileFxWindow.get(key)||{startedAt:0,count:0,audio:false};
+        if(now-state.startedAt>220){
+          state.startedAt=now;
+          this.audio?.play("cannon-impact-ship");
+        }
+        this.bossProjectileFxWindow.set(key,state);
+      }
       if(String(event.targetType||"")==="entity"){
         this.applyAuthoritativeEntityHit({
           ...event,
@@ -6804,6 +6859,9 @@ export class WorldRuntime {
     for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
     this.navalDestroyTimers.clear();
     this.navalDestroying.clear();
+    for(const pending of this.bossDamageFxPending.values())if(pending?.timer)clearTimeout(pending.timer);
+    this.bossDamageFxPending.clear();
+    this.bossProjectileFxWindow.clear();
     this.audio?.destroy?.();
     this.audio=null;
     this.navalRenderer?.destroy?.();
