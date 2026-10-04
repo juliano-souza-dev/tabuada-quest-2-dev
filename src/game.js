@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1053-cannon-hardpoints";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1101-moving-target-lead";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-auth-trace";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
