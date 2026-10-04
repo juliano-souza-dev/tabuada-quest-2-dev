@@ -1,5 +1,5 @@
 import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261003-2450";
-import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20260930-0018";
+import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261003-2350";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
 
@@ -79,11 +79,49 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
     return detail;
   };
 
+  const showLoginDiagnostic=(message,ok=false)=>{
+    let el=document.querySelector("[data-tq-auth-diagnostic]");
+    if(!el){
+      el=document.createElement("div");
+      el.dataset.tqAuthDiagnostic="true";
+      el.style.cssText="position:fixed;left:12px;right:12px;bottom:18px;z-index:2147483647;padding:10px 12px;border-radius:10px;background:rgba(5,12,20,.92);color:#fff;font:13px/1.35 system-ui;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.35)";
+      document.body.append(el);
+    }
+    el.textContent=String(message||"");
+    el.dataset.ok=ok?"true":"false";
+    if(ok)setTimeout(()=>el.remove(),1800);
+  };
+
   runtime.registerAction(
     "auth.google.signIn",
     async()=>{
+      showLoginDiagnostic("Conectando ao Google…",true);
       const status=await auth.signInWithGoogle();
-      if(status.authenticated)await signalReady("google_signed_in");
+      if(!status.authenticated){
+        const code=String(status.lastCode||"google_sign_in_failed");
+        console.error("[TQ auth] Google login did not create a Firebase session",{code,status});
+        showLoginDiagnostic("Login não concluído: "+code,false);
+        return;
+      }
+
+      showLoginDiagnostic("Login confirmado. Carregando o jogo…",true);
+      await signalReady("google_signed_in");
+
+      // Safety net: if authentication succeeded but the route event was unable
+      // to leave the login scene, enter the configured post-auth world directly.
+      setTimeout(()=>{
+        const current=runtime?.current;
+        if(current?.kind==="scene"&&current?.id==="login"&&auth.status().authenticated){
+          const target=runtime?.manifest?.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"};
+          const task=target.kind==="scene"
+            ?runtime.openScene?.(target,{pushHistory:false})
+            :runtime.openWorld?.(target,{pushHistory:false});
+          Promise.resolve(task).catch(error=>{
+            console.error("[TQ auth] Post-login fallback route failed",error);
+            showLoginDiagnostic("Login OK, mas falhou ao abrir o jogo: "+String(error?.message||error),false);
+          });
+        }
+      },1500);
     },
     {
       label:"Entrar com Google",
