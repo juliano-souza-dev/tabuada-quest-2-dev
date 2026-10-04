@@ -3209,56 +3209,20 @@ export class WorldRuntime {
     const vh=this.viewportSize.height;
 
     if(this.mode==="play"){
-      const combatCameraTarget=this.navalAutoFire===true
-        &&this.combatTarget
-        &&this.isClickableCombatShip(this.combatTarget)
-        ?this.combatTarget
-        :null;
+      // Keep gameplay camera scale fixed. Combat never changes zoom or entity size.
+      this.combatCameraZoom=this.playZoom;
+      this.zoom=this.playZoom;
 
-      let desiredZoom=this.playZoom;
-      if(combatCameraTarget){
-        const px=Number(this.player?.x)||0;
-        const py=Number(this.player?.y)||0;
-        const tx=Number(combatCameraTarget?.visualX??combatCameraTarget?.x)||0;
-        const ty=Number(combatCameraTarget?.visualY??combatCameraTarget?.y)||0;
-        const distance=Math.hypot(tx-px,ty-py);
-        const closeDistance=550;
-        const farDistance=2200;
-        const closeZoom=Math.max(this.playZoom,Math.min(.68,this.playZoom*1.42));
-        const farZoom=.30;
-        if(distance<=closeDistance){
-          desiredZoom=closeZoom;
-        }else if(distance>=farDistance){
-          desiredZoom=farZoom;
-        }else{
-          const t=clamp((distance-closeDistance)/(farDistance-closeDistance),0,1);
-          const eased=t*t*(3-2*t);
-          desiredZoom=closeZoom+(farZoom-closeZoom)*eased;
-        }
+      const halfW=Math.min(this.config.width/2,vw/(2*this.playZoom));
+      const halfH=Math.min(this.config.height/2,vh/(2*this.playZoom));
 
-        // Combat camera is always anchored to the local player. Manual camera
-        // detaching is suspended until combat ends.
+      if(this.playCameraDetached&&this.playCameraRecenterAt>0&&performance.now()>=this.playCameraRecenterAt){
         this.playCameraDetached=false;
         this.playCameraRecenterAt=0;
         if(this.recenterButton)this.recenterButton.hidden=true;
       }
 
-      const previousZoom=Number(this.combatCameraZoom)||this.playZoom;
-      const zoom=immediate
-        ?desiredZoom
-        :previousZoom+(desiredZoom-previousZoom)*(1-Math.exp(-Math.max(.001,dt)*3.8));
-      this.combatCameraZoom=clamp(zoom,.30,1.4);
-
-      const halfW=Math.min(this.config.width/2,vw/(2*this.combatCameraZoom));
-      const halfH=Math.min(this.config.height/2,vh/(2*this.combatCameraZoom));
-
-      if(!combatCameraTarget&&this.playCameraDetached&&this.playCameraRecenterAt>0&&performance.now()>=this.playCameraRecenterAt){
-        this.playCameraDetached=false;
-        this.playCameraRecenterAt=0;
-        if(this.recenterButton)this.recenterButton.hidden=true;
-      }
-
-      if(!combatCameraTarget&&this.playCameraDetached){
+      if(this.playCameraDetached){
         this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
         this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
       }else{
@@ -3270,12 +3234,11 @@ export class WorldRuntime {
           this.camera.x=target.x;
           this.camera.y=target.y;
         }else{
-          const next=cameraFollowStep(this.camera,target,dt,combatCameraTarget?6.2:4.5);
+          const next=cameraFollowStep(this.camera,target,dt,4.5);
           this.camera.x=next.x;
           this.camera.y=next.y;
         }
       }
-      this.zoom=this.combatCameraZoom;
     }else{
       this.clampEditorCamera();
     }
