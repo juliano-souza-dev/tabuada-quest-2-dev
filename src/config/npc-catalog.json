@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 5,
+  "version": 6,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -159,7 +159,7 @@
     },
     {
       "id": "npc-heavy-pumpkin-200k-test",
-      "name": "Corsário Pesado da Abóbora",
+      "name": "Corsário de Teste 15k",
       "shipId": "ship-halloween-pumpkin-corsair",
       "navigation": {
         "minSpeed": 45,
@@ -168,7 +168,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 200000,
+        "hp": 15000,
         "attitude": "hostile",
         "damage": 3,
         "maxTargets": 1,
@@ -184,7 +184,7 @@
     },
     {
       "id": "npc-heavy-galleon-200k-test",
-      "name": "Galeão Pesado de Teste",
+      "name": "Galeão de Teste 15k",
       "shipId": "ship-pirate-galleon-navio",
       "navigation": {
         "minSpeed": 40,
@@ -193,7 +193,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 200000,
+        "hp": 15000,
         "attitude": "hostile",
         "damage": 3,
         "maxTargets": 1,
