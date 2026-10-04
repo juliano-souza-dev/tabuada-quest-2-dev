@@ -9,7 +9,7 @@ import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261002-2118";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2055-boss-reward-lite-fx";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261004-1138-damage-hud-sync";
