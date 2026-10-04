@@ -81,7 +81,7 @@
     },
     {
       "id": "boss-sync-test-100m",
-      "name": "Boss de Teste de Sincronismo",
+      "name": "NPC de Teste de Sincronismo",
       "shipId": "ship-halloween-dreadnought",
       "boss": true,
       "coopBoss": true,
@@ -93,11 +93,11 @@
         "behavior": "stationary"
       },
       "combat": {
-        "hp": 100000000,
+        "hp": 1000000,
         "attitude": "hostile",
         "damage": 5,
         "maxTargets": 2,
-        "rewardMinDamageRatio": 0.15,
+        "rewardMinDamageRatio": 0,
         "cannonLoadout": [
           {
             "cannonId": "cannon-royal-golden-lion",
