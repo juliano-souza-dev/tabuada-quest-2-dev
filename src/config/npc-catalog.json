@@ -41,7 +41,15 @@
         "attackCooldownMs": 900,
         "damage": 5,
         "maxTargets": 2,
-        "rewardMinDamageRatio": 0.15
+        "rewardMinDamageRatio": 0.15,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-bronze",
+            "quantity": 15
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
       }
     },
     {
