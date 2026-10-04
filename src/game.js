@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2104-pc-ws-endpoint";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2112-real-equipped-cannons";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2104-pc-ws-endpoint";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
