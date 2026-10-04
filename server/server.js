@@ -31,6 +31,8 @@ function room(id){
   if(!rooms.has(id))rooms.set(id,{
     id,
     players:new Map(),
+    parties:new Map(),
+    partyInvites:new Map(),
     entities:new Map(),
     shots:new Map(),
     projectiles:new Map(),
@@ -42,7 +44,62 @@ function room(id){
   });
   return rooms.get(id);
 }
-function publicPlayer(p){return {uid:p.uid,name:p.name,shipId:p.shipId,x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true}}
+function publicPlayer(p){return {uid:p.uid,name:p.name,shipId:p.shipId,partyId:p.partyId||"",x:p.x,y:p.y,vx:p.vx||0,vy:p.vy||0,rotation:p.rotation,direction:p.direction,hp:p.hp,updatedAt:p.updatedAt,online:true}}
+function partyMembers(room,partyId){
+  const party=room?.parties?.get(key(partyId));
+  return party?[...party.members].filter(uid=>room.players.has(uid)):[];
+}
+function partyMembersForUid(room,uid){
+  const player=room?.players?.get(key(uid));
+  if(!player?.partyId)return [key(uid)].filter(Boolean);
+  const members=partyMembers(room,player.partyId);
+  return members.length?members:[key(uid)].filter(Boolean);
+}
+function sendPartyState(room,partyId){
+  const party=room?.parties?.get(key(partyId));
+  if(!party)return false;
+  const members=partyMembers(room,party.id);
+  if(!members.length){room.parties.delete(party.id);return false}
+  party.members=new Set(members);
+  const payload={type:"party.updated",partyId:party.id,members:members.map(uid=>{
+    const p=room.players.get(uid);
+    return {uid,name:p?.name||"Pirata",shipId:p?.shipId||""};
+  }),maxMembers:6,at:Date.now()};
+  for(const uid of members){const p=room.players.get(uid);if(p?.ws)send(p.ws,payload)}
+  return true;
+}
+function leaveParty(room,uid){
+  const p=room?.players?.get(key(uid));if(!p?.partyId)return false;
+  const partyId=p.partyId,party=room.parties.get(partyId);
+  p.partyId="";
+  if(party){
+    party.members.delete(uid);
+    if(party.members.size<2){
+      for(const memberUid of party.members){const member=room.players.get(memberUid);if(member)member.partyId=""}
+      room.parties.delete(partyId);
+    }else sendPartyState(room,partyId);
+  }
+  send(p.ws,{type:"party.updated",partyId:"",members:[],maxMembers:6,at:Date.now()});
+  return true;
+}
+function mergeIntoParty(room,fromUid,toUid){
+  const from=room.players.get(key(fromUid)),to=room.players.get(key(toUid));
+  if(!from||!to)return {ok:false,reason:"player_missing"};
+  const fromMembers=partyMembersForUid(room,from.uid);
+  const toMembers=partyMembersForUid(room,to.uid);
+  const combined=[...new Set([...fromMembers,...toMembers])];
+  if(combined.length>6)return {ok:false,reason:"party_full"};
+  const existingId=from.partyId||to.partyId;
+  const partyId=existingId||key("party-"+Date.now()+"-"+from.uid.slice(0,10));
+  const party={id:partyId,members:new Set(combined),createdAt:Date.now()};
+  room.parties.set(partyId,party);
+  for(const uid of combined){const p=room.players.get(uid);if(p)p.partyId=partyId}
+  if(from.partyId&&from.partyId!==partyId)room.parties.delete(from.partyId);
+  if(to.partyId&&to.partyId!==partyId)room.parties.delete(to.partyId);
+  sendPartyState(room,partyId);
+  return {ok:true,partyId,members:combined};
+}
+
 function directionForRotation(rotation){
   const names=["n","nne","ne","ene","e","ese","se","sse","s","ssw","sw","wsw","w","wnw","nw","nnw"];
   const n=((Number(rotation)||0)%360+360)%360;
@@ -359,7 +416,7 @@ wss.on("connection",ws=>{
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
       const cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:"",x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -395,6 +452,58 @@ wss.on("connection",ws=>{
       send(ws,{type:"state.ack",seq,x:p.x,y:p.y,vx:p.vx,vy:p.vy,rotation:p.rotation,direction:p.direction,serverTime:now});
       return;
     }
+    if(m.type==="party.invite"){
+      const targetUid=key(m.targetUid);
+      const target=current.players.get(targetUid);
+      if(!target||targetUid===uid){send(ws,{type:"party.error",reason:"player_unavailable",at:Date.now()});return}
+      const combined=[...new Set([...partyMembersForUid(current,uid),...partyMembersForUid(current,targetUid)])];
+      if(combined.length>6){send(ws,{type:"party.error",reason:"party_full",at:Date.now()});return}
+      const inviteId=key("invite-"+Date.now()+"-"+uid.slice(0,12)+"-"+targetUid.slice(0,12));
+      const seed=hashString(inviteId);
+      const a=2+(seed%8),b=2+((seed>>>4)%8);
+      current.partyInvites.set(inviteId,{inviteId,fromUid:uid,targetUid,a,b,expiresAt:Date.now()+30000});
+      send(target.ws,{type:"party.invite",inviteId,fromUid:uid,fromName:p.name||"Pirata",a,b,expiresAt:Date.now()+30000});
+      send(ws,{type:"party.invite.sent",inviteId,targetUid,at:Date.now()});
+      return;
+    }
+    if(m.type==="party.accept"){
+      const inviteId=key(m.inviteId),invite=current.partyInvites.get(inviteId);
+      if(!invite||invite.targetUid!==uid||Date.now()>invite.expiresAt){send(ws,{type:"party.error",reason:"invite_expired",at:Date.now()});return}
+      const answer=Math.floor(Number(m.answer));
+      if(answer!==invite.a*invite.b){
+        send(ws,{type:"party.challenge.failed",inviteId,a:invite.a,b:invite.b,at:Date.now()});
+        return;
+      }
+      current.partyInvites.delete(inviteId);
+      const result=mergeIntoParty(current,invite.fromUid,invite.targetUid);
+      if(!result.ok){send(ws,{type:"party.error",reason:result.reason,at:Date.now()});return}
+      return;
+    }
+    if(m.type==="party.decline"){
+      const inviteId=key(m.inviteId),invite=current.partyInvites.get(inviteId);
+      if(invite&&invite.targetUid===uid)current.partyInvites.delete(inviteId);
+      return;
+    }
+    if(m.type==="party.leave"){
+      leaveParty(current,uid);
+      return;
+    }
+    if(m.type==="party.reward"){
+      const claimKey=key(m.claimKey);
+      if(!claimKey)return;
+      const members=partyMembersForUid(current,uid);
+      const count=Math.max(1,members.length);
+      const gold=Math.max(0,Math.floor(Number(m.gold)||0));
+      const xp=Math.max(0,Math.floor(Number(m.xp)||0));
+      const shareGold=Math.floor(gold/count);
+      const shareXp=Math.floor(xp/count);
+      for(const memberUid of members){
+        const member=current.players.get(memberUid);
+        if(member?.ws)send(member.ws,{type:"party.reward",claimKey,sourceUid:uid,partyId:p.partyId||"",memberCount:count,gold:shareGold,xp:shareXp,at:Date.now()});
+      }
+      return;
+    }
+
     if(m.type==="fire.request"||m.type==="projectile.fire"){
       monitor.shots++;
       const authoritative=m.type==="fire.request";
@@ -501,6 +610,7 @@ wss.on("connection",ws=>{
   });
   ws.on("close",()=>{
     if(current&&uid){
+      leaveParty(current,uid);
       current.players.delete(uid);
       broadcast(current,{type:"player-left",uid,at:Date.now()});
       if(!current.players.size)current.emptySince=Date.now();
