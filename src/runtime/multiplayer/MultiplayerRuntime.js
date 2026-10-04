@@ -21,6 +21,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.timer=0;
     this.intentionalClose=false;
     this.offlineFallbackLocked=false;
+    this.protocolVersion="20261004-authoritative-v1";
   }
 
   status(){
@@ -76,14 +77,29 @@ export class MultiplayerRuntime extends EventTarget{
       }));
       if(this.pendingWorldEnsure)ws.send(JSON.stringify(this.pendingWorldEnsure));
       for(const payload of this.pendingBossEnsures.values())ws.send(JSON.stringify(payload));
-      this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket",authority:"server"}}));
     });
 
     ws.addEventListener("message",event=>{
       if(ws!==this.socket)return;
       let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==="joined"){
-        this.dispatchEvent(new CustomEvent("joined",{detail:data}));
+        const protocolOk=String(data.protocolVersion||"")===this.protocolVersion;
+        this.dispatchEvent(new CustomEvent("joined",{detail:{...data,protocolOk,expectedProtocol:this.protocolVersion}}));
+        if(!protocolOk){
+          console.error("[TQ WS] protocol mismatch",{expected:this.protocolVersion,received:data.protocolVersion||"legacy"});
+          this.socketReady=false;
+          this.offlineFallbackLocked=true;
+          this.dispatchEvent(new CustomEvent("transport",{detail:{
+            online:false,kind:"websocket",authority:"local",
+            reason:"protocol_mismatch",
+            expectedProtocol:this.protocolVersion,
+            receivedProtocol:String(data.protocolVersion||"legacy"),
+            fallback:"offline"
+          }}));
+          try{ws.close()}catch{}
+          return;
+        }
+        this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket",authority:"server",protocolVersion:data.protocolVersion}}));
         if(this.pendingWorldEnsure)this.socketSend(this.pendingWorldEnsure);
         return;
       }
