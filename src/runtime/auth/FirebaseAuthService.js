@@ -140,7 +140,14 @@ export class FirebaseAuthService extends EventTarget {
 
     const body=await response.json().catch(()=>({}));
     if(!response.ok||!body.localId||!body.idToken){
-      throw new Error(body?.error?.message||"firebase_google_sign_in_failed");
+      const code=String(body?.error?.message||"firebase_google_sign_in_failed");
+      console.error("[TQ auth] Firebase signInWithIdp failed",{
+        status:response.status,
+        code,
+        requestUri:String(globalThis.location?.origin||""),
+        providerId:"google.com"
+      });
+      throw new Error(code);
     }
 
     this.persistSession({
