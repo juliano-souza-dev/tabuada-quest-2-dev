@@ -19,6 +19,8 @@ export class MultiplayerRuntime extends EventTarget{
     this.pendingBossEnsures=new Map();
     this.snapshotHz=clamp(Number(options.snapshotHz||config.multiplayer?.snapshotHz)||20,5,20);
     this.timer=0;
+    this.intentionalClose=false;
+    this.offlineFallbackLocked=false;
   }
 
   status(){
@@ -50,8 +52,10 @@ export class MultiplayerRuntime extends EventTarget{
 
   connectSocket(){
     clearTimeout(this.socketReconnect);
+    if(this.offlineFallbackLocked)return false;
     if(!this.enabled||!this.socketUrl||!this.worldId||typeof WebSocket==="undefined")return false;
     try{this.socket?.close()}catch{}
+    this.intentionalClose=false;
     console.info("[TQ WS] connecting",this.socketUrl,this.worldId);
     const ws=new WebSocket(this.socketUrl);
     this.socket=ws;
@@ -109,11 +113,22 @@ export class MultiplayerRuntime extends EventTarget{
 
     const offline=()=>{
       if(ws!==this.socket)return;
-      console.warn("[TQ WS] closed",ws.readyState);
       this.socketReady=false;
-      this.dispatchEvent(new CustomEvent("transport",{detail:{online:false,kind:"websocket",authority:"local"}}));
       clearTimeout(this.socketReconnect);
-      if(this.worldId)this.socketReconnect=setTimeout(()=>this.connectSocket(),3000);
+      this.socketReconnect=0;
+      if(this.intentionalClose){
+        this.intentionalClose=false;
+        return;
+      }
+      console.warn("[TQ WS] server connection lost; switching to offline world");
+      this.offlineFallbackLocked=true;
+      this.dispatchEvent(new CustomEvent("transport",{detail:{
+        online:false,
+        kind:"websocket",
+        authority:"local",
+        reason:"server_disconnected",
+        fallback:"offline"
+      }}));
     };
     ws.addEventListener("close",offline);
     ws.addEventListener("error",()=>{try{ws.close()}catch{}});
@@ -130,6 +145,8 @@ export class MultiplayerRuntime extends EventTarget{
     await this.leaveWorld();
     this.worldId=safeKey(worldId);
     if(!this.worldId)return false;
+    this.offlineFallbackLocked=false;
+    this.intentionalClose=false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;
     this.shipId=String(shipId||"");
     this.displayName=String(displayName||"");
@@ -237,12 +254,14 @@ export class MultiplayerRuntime extends EventTarget{
     this.timer=0;
     this.socketReconnect=0;
     this.socketReady=false;
+    this.intentionalClose=true;
     try{this.socket?.close()}catch{}
     this.socket=null;
     this.worldId="";
     this.getLocalState=null;
     this.pendingWorldEnsure=null;
     this.pendingBossEnsures.clear();
+    this.offlineFallbackLocked=false;
     return true;
   }
 
