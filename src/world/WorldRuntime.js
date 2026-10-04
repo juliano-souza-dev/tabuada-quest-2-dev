@@ -4824,6 +4824,58 @@ export class WorldRuntime {
     const eligible=battery.filter(item=>targetDistance<=Math.max(1,Number(item.cannon?.range)||900));
     if(!eligible.length)return false;
 
+    const onlineAuthoritative=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.fireProjectile;
+    if(onlineAuthoritative){
+      const hp=this.navalHpState(entity);
+      const ammoUnlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
+      let ammoRemaining=ammoUnlimited?Number.POSITIVE_INFINITY:Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
+      if(!ammo||ammoRemaining<=0){
+        if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
+        return false;
+      }
+      let firedCount=0;
+      for(const batteryShot of eligible){
+        if(ammoRemaining<=0)break;
+        const cannon=batteryShot.cannon;
+        const muzzle=batteryShot.hardpoint;
+        const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
+        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
+        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,5000);
+        const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
+        const duration=clamp(intercept.time*1000,120,8000);
+        const sent=this.coopTransport.fireProjectile({
+          shotId:"player-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
+          targetId:String(entity.id||""),
+          from:muzzle,
+          ammoId:selectedAmmoId,
+          damage:shotDamage,
+          projectileSpeed,
+          duration,
+          range:Math.max(1,Number(cannon.range)||900)
+        })===true;
+        if(!sent)continue;
+        firedCount+=1;
+        if(!ammoUnlimited){
+          ammoRemaining=Math.max(0,ammoRemaining-1);
+          this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
+        }
+      }
+      if(!firedCount)return false;
+      if(!ammoUnlimited)this.onAmmoChange?.(structuredClone(this.state.ammo));
+      const id=String(entity.id);
+      if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
+        const hostile=this.navalHostile.get(id)||{nextShotAt:0};
+        this.navalHostile.set(id,hostile);
+      }
+      if(this.actionMessage){
+        this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
+          +" · "+firedCount+" canhão"+(firedCount===1?"":"ões")+" disparado"+(firedCount===1?"":"s")
+          +(ammoUnlimited?"":" · munição "+ammoRemaining)
+          +" · casco "+hp.current+"/"+hp.max;
+      }
+      return true;
+    }
+
     // Boss behavior: once a valid attack volley starts, stop navigation before
     // solving projectile interception. This prevents the coop boss from turning
     // away during the first projectile flight and makes the first valid volley
@@ -5100,6 +5152,8 @@ export class WorldRuntime {
         }
       }
     }
+
+    if(this.serverWorldAuthority===true)return;
 
     for(const entity of this.entities){
       if(!entity?.runtimeGenerated||entity.devFrozen||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
@@ -6180,7 +6234,20 @@ export class WorldRuntime {
             boss:this.isCoopBoss(entity),
             respawn:entity.respawn===true,
             respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||30000),
-            spawnId:Math.max(1,Number(entity.npcSpawnCycle)||1)
+            spawnId:Math.max(1,Number(entity.npcSpawnCycle)||1),
+            attackRange:this.entityNavalCombatStats(entity).attackRange,
+            attackCooldownMs:this.entityNavalCombatStats(entity).attackCooldownMs,
+            projectileSpeed:this.entityNavalCombatStats(entity).projectileSpeed,
+            damage:(()=>{
+              const stats=this.entityNavalCombatStats(entity);
+              const cannon=stats.loadout?.cannons?.[0];
+              const ammo=stats.loadout?.ammo;
+              const base=ammo?Math.max(.1,Number(ammo.damage)||1):Math.max(.1,Number(stats.damage)||1);
+              return Math.round(base*Math.max(.1,Number(cannon?.damageMultiplier)||1)*10)/10;
+            })(),
+            ammoId:String(this.entityNavalCombatStats(entity).loadout?.ammo?.id||entity.combat?.ammoId||""),
+            volleyCount:Math.max(1,Math.floor((this.entityNavalCombatStats(entity).cannonCount||1)/2)),
+            hitRadius:Math.max(36,Math.min(220,Math.max(Number(entity.width)||96,Number(entity.height)||96)*.36))
           };
         })
     };
@@ -6409,9 +6476,29 @@ export class WorldRuntime {
   }
 
   handleMultiplayerEvent(event={}){
-    if(event.type==="shot"&&event.from&&event.to){
-      this.navalRenderer?.fire?.({from:event.from,to:event.to,duration:Math.max(120,Number(event.duration)||620),ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined});
+    if((event.type==="shot"||event.type==="projectile.spawn")&&event.from&&event.to){
+      this.navalRenderer?.fire?.({
+        from:event.from,
+        to:event.to,
+        duration:Math.max(120,Number(event.duration)||620),
+        ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined
+      });
       this.audio?.play("cannon-shot");
+    }
+    if(event.type==="projectile.hit"){
+      this.audio?.play("cannon-impact-ship");
+      if(String(event.targetType||"")==="entity"){
+        this.applyAuthoritativeEntityHit({
+          ...event,
+          entityId:String(event.targetId||event.entityId||"")
+        });
+      }else if(String(event.targetType||"")==="player"&&String(event.targetId||"")===this.coopLocalUid){
+        const source=this.entities.find(item=>String(item?.id||"")===String(event.ownerId||""))||null;
+        this.applyDirectPlayerNavalDamage(Number(event.damage)||1,source);
+      }
+    }
+    if(event.type==="projectile.miss"){
+      this.audio?.play?.("cannon-impact-water");
     }
     if(event.type==="entity-hit"){
       this.applyAuthoritativeEntityHit(event);
