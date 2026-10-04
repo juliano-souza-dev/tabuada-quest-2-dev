@@ -4468,6 +4468,11 @@ export class WorldRuntime {
 
     if(entity.runtimeGenerated&&!this.isCoopBoss(entity)){
       const rewards=this.rollNpcRewards(entity);
+      // Halloween event reward: every defeated regular NPC ship grants 5 purple cannonballs.
+      rewards.ammo={
+        id:"cannonball-halloween-purple",
+        quantity:5
+      };
       const spawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1));
       const claimKey=String(this.config.id||"world")+":"+id+":spawn:"+spawnCycle;
       this.onRewardCollected?.({
@@ -4478,6 +4483,7 @@ export class WorldRuntime {
       const parts=[];
       if(Number(rewards.gold)>0)parts.push("+"+Number(rewards.gold)+" ouro");
       if(Number(rewards.rubies)>0)parts.push("+"+Number(rewards.rubies)+" rubi"+(Number(rewards.rubies)===1?"":"s"));
+      parts.push("+5 Bolas de Canhão Halloween Roxas");
       if(parts.length)this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído · "+parts.join(" · "),1900);
     }
 
