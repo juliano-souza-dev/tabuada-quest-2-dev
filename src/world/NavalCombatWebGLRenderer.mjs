@@ -170,6 +170,8 @@ export class NavalCombatWebGLRenderer{
     this.cssWidth=0;
     this.cssHeight=0;
     this.projectileTextures=new Map();
+    this.pointCpuBuffer=new Float32Array(2);
+    this.pointGpuCapacityBytes=0;
     this.reducedFx=false;
   }
 
@@ -217,6 +219,9 @@ export class NavalCombatWebGLRenderer{
       this.uniforms.glow=gl.getUniformLocation(program,"uGlow");
       this.uniforms.opacity=gl.getUniformLocation(program,"uOpacity");
       this.buffer=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
+      gl.bufferData(gl.ARRAY_BUFFER,this.pointCpuBuffer.byteLength,gl.DYNAMIC_DRAW);
+      this.pointGpuCapacityBytes=this.pointCpuBuffer.byteLength;
       const pointRange=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
       this.maxPointSize=Math.max(16,Number(pointRange?.[1])||256);
       gl.enable(gl.BLEND);
@@ -392,14 +397,34 @@ export class NavalCombatWebGLRenderer{
         }
       }
     }
-    this.shots=this.shots.filter(shot=>now-shot.startTime<=shot.duration);
-    this.muzzles=this.muzzles.filter(effect=>now-effect.startTime<=effect.duration);
-    this.impacts=this.impacts.filter(impact=>now-impact.startTime<=impact.duration);
-    this.destructions=this.destructions.filter(effect=>now-effect.startTime<=effect.duration);
-    const visibleDamage=Array.isArray(damagedShips)
-      ?damagedShips.filter(ship=>Number(ship?.damageRatio)>=.5&&Number(ship?.damageRatio)<1)
-      :[];
-    const visibleTreasures=Array.isArray(treasures)?treasures.filter(item=>item&&Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y))):[];
+    const compactActive=(list,isActive)=>{
+      let write=0;
+      for(let read=0;read<list.length;read++){
+        const item=list[read];
+        if(!isActive(item))continue;
+        if(write!==read)list[write]=item;
+        write++;
+      }
+      list.length=write;
+    };
+    compactActive(this.shots,shot=>now-shot.startTime<=shot.duration);
+    compactActive(this.muzzles,effect=>now-effect.startTime<=effect.duration);
+    compactActive(this.impacts,impact=>now-impact.startTime<=impact.duration);
+    compactActive(this.destructions,effect=>now-effect.startTime<=effect.duration);
+
+    const visibleDamage=[];
+    if(Array.isArray(damagedShips)){
+      for(const ship of damagedShips){
+        const ratio=Number(ship?.damageRatio);
+        if(ratio>=.5&&ratio<1)visibleDamage.push(ship);
+      }
+    }
+    const visibleTreasures=[];
+    if(Array.isArray(treasures)){
+      for(const item of treasures){
+        if(item&&Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y)))visibleTreasures.push(item);
+      }
+    }
     if(!this.shots.length&&!this.muzzles.length&&!this.impacts.length&&!this.destructions.length&&!visibleDamage.length&&!visibleTreasures.length)return true;
 
     gl.useProgram(this.program);
@@ -408,13 +433,11 @@ export class NavalCombatWebGLRenderer{
     gl.vertexAttribPointer(this.position,2,gl.FLOAT,false,0,0);
     gl.uniform1f(this.uniforms.pulse,.5+.5*Math.sin(now*.018));
 
-    const toClip=(x,y)=>{
+    const writeClip=(x,y)=>{
       const screenX=(x-(Number(camera.x)||0))*(Number(zoom)||1)+width*.5;
       const screenY=(y-(Number(camera.y)||0))*(Number(zoom)||1)+height*.5;
-      return [
-        screenX/Math.max(1,width)*2-1,
-        1-screenY/Math.max(1,height)*2
-      ];
+      this.pointCpuBuffer[0]=screenX/Math.max(1,width)*2-1;
+      this.pointCpuBuffer[1]=1-screenY/Math.max(1,height)*2;
     };
 
     const applyStyle=(style={})=>{
@@ -426,8 +449,8 @@ export class NavalCombatWebGLRenderer{
       gl.uniform1f(this.uniforms.opacity,clamp(Number(style.opacity??1),0,1));
     };
     const drawPoint=(x,y,size,effectType,progress=0,additive=true,style={})=>{
-      const point=toClip(x,y);
-      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
+      writeClip(x,y);
+      gl.bufferSubData(gl.ARRAY_BUFFER,0,this.pointCpuBuffer);
       gl.uniform1f(this.uniforms.pointSize,Math.min(this.maxPointSize,Math.max(2,size)*this.pixelRatio));
       gl.uniform1f(this.uniforms.effectType,effectType);
       gl.uniform1f(this.uniforms.progress,clamp(progress,0,1));
@@ -576,7 +599,7 @@ export class NavalCombatWebGLRenderer{
             }
           }
         }
-        const point=toClip(x,y);
+        writeClip(x,y);
         const textureEntry=this.projectileTextures.get(String(shot.ammo?.id||""));
         const textured=textureEntry?.ready&&textureEntry.texture;
         const assetSize=clamp((textured?14:10)*Number(shot.ammo?.size||1)*fx.projectile.scale,4,26);
@@ -648,7 +671,7 @@ export class NavalCombatWebGLRenderer{
           }
         }
 
-        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(point),gl.DYNAMIC_DRAW);
+        gl.bufferSubData(gl.ARRAY_BUFFER,0,this.pointCpuBuffer);
         gl.uniform1f(this.uniforms.pointSize,assetSize*this.pixelRatio);
         gl.uniform1f(this.uniforms.effectType,0);
         gl.uniform1f(this.uniforms.progress,0);
@@ -939,6 +962,8 @@ export class NavalCombatWebGLRenderer{
     this.muzzles.length=0;
     this.impacts.length=0;
     this.destructions.length=0;
+    this.pointCpuBuffer=new Float32Array(2);
+    this.pointGpuCapacityBytes=0;
     this.gl=null;
     this.ready=false;
   }
