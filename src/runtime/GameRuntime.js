@@ -1682,6 +1682,30 @@ export class GameRuntime {
     this.ensurePlayerAmmo();
     this.ensureStarterLoadout();
 
+    // Production sync arena: use the real inventory/loadout pipeline rather than
+    // runtime-only test overrides, so combat behaves exactly like normal play.
+    if(worldId==="teste-multiplayer-sync"){
+      const strongest=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
+        .filter(cannon=>cannon?.available!==false)
+        .sort((a,b)=>(Number(b.damageMultiplier)||0)-(Number(a.damageMultiplier)||0))[0]||null;
+      const shipId=String(this.playerShips.equippedShip||"");
+      if(strongest&&shipId){
+        const cid=String(strongest.id||"");
+        this.ensurePlayerCannons();
+        if((Number(this.playerCannons.owned?.[cid])||0)<1)this.playerCannons.owned[cid]=1;
+        this.playerCannons.equippedByShip[shipId]=[cid];
+        this.ensurePlayerCannons();
+      }
+      for(const ammo of Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]){
+        const ammoId=String(ammo?.id||"").trim();
+        if(ammoId&&ammo?.available!==false)this.playerAmmo.stock[ammoId]=Math.max(1000,Math.floor(Number(this.playerAmmo.stock[ammoId])||0));
+      }
+      if(!this.playerAmmo.selectedAmmoId){
+        this.playerAmmo.selectedAmmoId=String(this.ammoCatalog?.defaultAmmoId||this.ammoCatalog?.ammo?.[0]?.id||"");
+      }
+      this.ensurePlayerAmmo({migrateWorldStates:false});
+    }
+
     // Reconcile legacy reward claims with world collection state.
     //
     // Older builds regenerated deterministic treasure ids and removed them from
@@ -1746,13 +1770,7 @@ export class GameRuntime {
       soundCatalog:this.soundCatalog&&typeof this.soundCatalog==="object"?clone(this.soundCatalog):{sounds:[]},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
-      playerCannonIds:Array.isArray(world.test?.cannonIds)
-        ?clone(world.test.cannonIds)
-        :this.getShipCannons(this.playerShips.equippedShip),
-      initialAllTestAmmoQuantity:Number.isFinite(Number(world.test?.initialAllAmmoQuantity))
-        ?Math.max(0,Math.floor(Number(world.test.initialAllAmmoQuantity)))
-        :undefined,
-      testAmmoId:String(world.test?.ammoId||""),
+      playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
       onAmmoChange:ammo=>{
@@ -1863,11 +1881,14 @@ export class GameRuntime {
     }else if(authRequired&&!this.authenticated){
       requested=login;
     }else{
-      requested=this.pendingAuthRoute
-        ||(this.restoreSession&&this.current?this.current:null)
-        ||(this.authenticated?this.manifest.afterAuth:null)
-        ||this.manifest.start
-        ||login;
+      const forceAfterAuth=this.authenticated&&this.manifest.afterAuth?.force===true;
+      requested=forceAfterAuth
+        ?clone(this.manifest.afterAuth)
+        :(this.pendingAuthRoute
+          ||(this.restoreSession&&this.current?this.current:null)
+          ||(this.authenticated?this.manifest.afterAuth:null)
+          ||this.manifest.start
+          ||login);
     }
 
     this.pendingAuthRoute=null;
