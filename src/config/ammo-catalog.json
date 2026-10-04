@@ -1,13 +1,12 @@
 {
   "schema": "tq.ammo-catalog",
-  "version": 4,
+  "version": 5,
   "defaultAmmoId": "cannonball-standard",
   "ammo": [
     {
       "id": "cannonball-standard",
       "name": "Bola de Canhão",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -23,13 +22,13 @@
       },
       "fx": {
         "preset": "standard"
-      }
+      },
+      "damageFactor": 0.6
     },
     {
       "id": "cannonball-halloween-purple",
       "name": "Bola de Canhão Halloween Roxa",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -48,13 +47,13 @@
       },
       "fx": {
         "preset": "halloween"
-      }
+      },
+      "damageFactor": 0.9
     },
     {
       "id": "cannonball-piercing",
       "name": "Bala Perfurante",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 820,
       "size": 1,
       "effects": {
@@ -72,13 +71,13 @@
       },
       "fx": {
         "preset": "piercing"
-      }
+      },
+      "damageFactor": 1
     },
     {
       "id": "cannonball-rusted-iron",
       "name": "Bola de Canhão de Ferro Enferrujado",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -97,13 +96,13 @@
       },
       "fx": {
         "preset": "rusted-iron"
-      }
+      },
+      "damageFactor": 0.7
     },
     {
       "id": "orb-violet-crystal",
       "name": "Orbe Mágico de Cristal Violeta",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -122,13 +121,13 @@
       },
       "fx": {
         "preset": "violet-crystal"
-      }
+      },
+      "damageFactor": 0.9
     },
     {
       "id": "orb-ocean-pearl",
       "name": "Orbe Mágico de Pérola Oceânica",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -147,13 +146,13 @@
       },
       "fx": {
         "preset": "ocean-pearl"
-      }
+      },
+      "damageFactor": 0.8
     },
     {
       "id": "orb-halloween-pumpkin",
       "name": "Orbe Místico de Abóbora Roxa",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -173,13 +172,13 @@
       "event": "halloween",
       "fx": {
         "preset": "halloween-pumpkin"
-      }
+      },
+      "damageFactor": 0.95
     },
     {
       "id": "orb-volcanic-lava",
       "name": "Orbe Vulcânico de Lava Incandescente",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -198,13 +197,13 @@
       },
       "fx": {
         "preset": "volcanic-lava"
-      }
+      },
+      "damageFactor": 1
     },
     {
       "id": "terror-rose",
       "name": "Rosa do Terror",
       "available": true,
-      "damage": 25000,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -224,7 +223,8 @@
       "event": "halloween",
       "fx": {
         "preset": "terror-rose"
-      }
+      },
+      "damageFactor": 1
     }
   ]
 }
