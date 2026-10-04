@@ -72,7 +72,7 @@ const normalizeNpcPopulation=input=>{
         minDistance:clamp(Number(item?.spawn?.minDistance??spread.minDistance??360),0,1800),
         seed:Math.max(0,Math.floor(Number(item?.spawn?.seed)||0))
       },
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,50000000),
+      hp:clamp(Math.floor(Number(item?.hp)||3),1,500000000),
       respawn:item?.respawn===true,
       respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,86400),
       devFrozen:item?.devFrozen===true,
@@ -641,7 +641,7 @@ export class WorldRuntime {
       combatSprite:profile.combatSprite?structuredClone(profile.combatSprite):null,
       combatVisual:profile.combatVisual?structuredClone(profile.combatVisual):(profile.combat?structuredClone(profile.combat):null),
       combat:{
-        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,50000000),
+        hp:clamp(Math.floor(Number(profile.combat?.hp??typeConfig.hp)||3),1,500000000),
         attackRange:clamp(Number(profile.combat?.attackRange??profile.combatVisual?.attackRange??1200),200,6000),
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,200),
@@ -4447,7 +4447,7 @@ export class WorldRuntime {
   navalHpState(entity){
     if(!entity?.id)return {current:0,max:0};
     const id=String(entity.id);
-    const max=Math.max(1,Math.min(50000000,Number(entity.combat?.hp)||3));
+    const max=Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3));
     if(!this.navalHp.has(id))this.navalHp.set(id,max);
     return {current:Math.max(0,Number(this.navalHp.get(id))||0),max};
   }
@@ -4606,7 +4606,7 @@ export class WorldRuntime {
         entity.collision=normalizeCollision({
           ...(entity.collision||{}),active:true,action:"none"
         },entity);
-        this.navalHp.set(id,Math.max(1,Math.min(50000000,Number(entity.combat?.hp)||3)));
+        this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
         entity.npcSpawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1))+1;
         if(this.isCoopBoss(entity)){
           entity.bossSpawnCycle=Math.max(1,Number(entity.bossSpawnCycle)||1)+1;
