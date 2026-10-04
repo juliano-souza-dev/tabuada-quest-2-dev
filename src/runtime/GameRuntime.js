@@ -1656,8 +1656,9 @@ export class GameRuntime {
       },
       createPedagogyChallenge:({entity})=>{
         const starterRescue=entity?.type==="cannon-rescue"||entity?.type==="ammo-rescue";
+        const repairChallenge=entity?.type==="repair";
         return this.pedagogyRuntime.createChallenge({
-          kind:entity?.type==="treasure"?"treasure":(starterRescue?"combat":"world-interaction"),
+          kind:entity?.type==="treasure"?"treasure":((starterRescue||repairChallenge)?"combat":"world-interaction"),
           worldId,
           entityId:entity?.id,
           entityType:entity?.type,
