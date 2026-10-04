@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 1,
+  "version": 2,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -15,9 +15,15 @@
       "combat": {
         "hp": 949901,
         "attitude": "peaceful",
-        "attackRange": 1200,
-        "attackCooldownMs": 900,
-        "damage": 1
+        "damage": 1,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-basic",
+            "quantity": 1
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
       }
     },
     {
@@ -36,9 +42,6 @@
       "combat": {
         "hp": 5000000,
         "attitude": "hostile",
-        "attackRangeMode": "fixed",
-        "attackRange": 900,
-        "attackCooldownMs": 900,
         "damage": 5,
         "maxTargets": 2,
         "rewardMinDamageRatio": 0.15,
@@ -65,10 +68,15 @@
       "combat": {
         "hp": 3,
         "attitude": "hostile",
-        "attackRangeMode": "max-player-cannon",
-        "attackRange": 1600,
-        "attackCooldownMs": 900,
-        "damage": 2
+        "damage": 2,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-basic",
+            "quantity": 3
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
       }
     }
   ]
