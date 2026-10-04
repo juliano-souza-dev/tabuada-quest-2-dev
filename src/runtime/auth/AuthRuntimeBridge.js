@@ -1,6 +1,6 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1538-authoritative-live-state";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1542-authoritative-sync-fix";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
-import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1538-authoritative-live-state";
+import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1542-authoritative-sync-fix";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
 
 export async function createAuthRuntimeServices({configUrl="./src/config/firebase-public.json"}={}){
