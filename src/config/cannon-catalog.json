@@ -1,6 +1,6 @@
 {
   "schema": "tq.cannon-catalog",
-  "version": 6,
+  "version": 7,
   "defaultCannonId": "cannon-basic",
   "cannons": [
     {
@@ -30,7 +30,8 @@
         "shop": true,
         "shipBossReward": false,
         "event": false
-      }
+      },
+      "damagePerShot": 53.333
     },
     {
       "id": "cannon-bronze",
@@ -58,7 +59,8 @@
         "shop": true,
         "shipBossReward": false,
         "event": false
-      }
+      },
+      "damagePerShot": 63.333
     },
     {
       "id": "cannon-long-range",
@@ -86,7 +88,8 @@
         "shop": true,
         "shipBossReward": false,
         "event": false
-      }
+      },
+      "damagePerShot": 83.333
     },
     {
       "id": "cannon-royal-golden-lion",
@@ -114,7 +117,8 @@
         "shop": true,
         "shipBossReward": false,
         "event": false
-      }
+      },
+      "damagePerShot": 100
     },
     {
       "id": "cannon-necromantic-spectral",
@@ -133,18 +137,20 @@
       "attackCooldownMs": 1000,
       "event": "halloween",
       "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 1,
-        "gold": 1,
+        "purchasable": false,
+        "currency": "event",
+        "price": 0,
+        "gold": 0,
         "rubies": 0,
-        "label": "Evento"
+        "label": "Recompensa de missão"
       },
       "acquisition": {
-        "shop": true,
+        "shop": false,
         "shipBossReward": false,
-        "event": true
-      }
+        "event": true,
+        "missionReward": true
+      },
+      "damagePerShot": 166.667
     },
     {
       "id": "cannon-halloween-pumpkin-terror",
@@ -164,18 +170,20 @@
       "event": "halloween",
       "variantOf": "cannon-necromantic-spectral",
       "shop": {
-        "purchasable": true,
-        "currency": "gold",
-        "price": 1,
-        "gold": 1,
+        "purchasable": false,
+        "currency": "event",
+        "price": 0,
+        "gold": 0,
         "rubies": 0,
-        "label": "Evento"
+        "label": "Recompensa de missão"
       },
       "acquisition": {
-        "shop": true,
+        "shop": false,
         "shipBossReward": false,
-        "event": true
-      }
+        "event": true,
+        "missionReward": true
+      },
+      "damagePerShot": 166.667
     }
   ]
 }
