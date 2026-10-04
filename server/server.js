@@ -436,7 +436,7 @@ wss.on("connection",ws=>{
         duration:Math.max(120,intercept.time*1000)
       });
       if(projectile){
-        log("FIRE+  ",`uid=${uid} target=${target.id} shot=${projectile.id} damage=${damage}`);
+        log("FIRE+  ",`uid=${uid} target=${target.id} cannon=${cannonId} x${Number(cannon?.damageMultiplier)||1} ammo=${ammoId} damage=${damage} shot=${projectile.id}`);
         send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
         }
       return;
