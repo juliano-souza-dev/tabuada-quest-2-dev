@@ -228,6 +228,7 @@ export class MobileHudOverlay{
 
   openMissions(){
     this.closeAmmoMenu();
+    this.closeSettings();
     if(!this.drawer)return;
     this.renderMissions();
     this.drawer.hidden=false;
