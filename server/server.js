@@ -128,6 +128,7 @@ function ensureWorld(r,m){
       ammoId:key(raw.ammoId||""),
       volleyCount:clamp(raw.volleyCount||1,1,32),
       hitRadius:clamp(raw.hitRadius||90,24,260),
+      hitRewardGold:Math.max(0,Math.floor(Number(raw.hitRewardGold)||0)),
       nextAttackAt:now+500+(hashString(id)%900),
       courseCycle:0,nextCourseAt:now+3500+(hashString(id)%5500),updatedAt:now
     });
@@ -224,6 +225,7 @@ function resolveProjectile(r,p,now=Date.now()){
         event={
           type:"projectile.hit",shotId:p.id,ownerType:p.ownerType,ownerId:p.ownerId,ownerUid:p.ownerUid,
           targetType:"entity",targetId:e.id,npcId:e.npcId,boss:e.boss,
+          rewardGold:Math.max(0,Math.floor(Number(e.hitRewardGold)||0)),
           damage,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
           respawnAt:e.respawnAt||0,spawnId:e.spawnId,contributors:{...e.contributors},at:now
         };
