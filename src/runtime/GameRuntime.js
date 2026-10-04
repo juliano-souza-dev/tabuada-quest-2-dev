@@ -1498,6 +1498,7 @@ export class GameRuntime {
 
       const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
       const missionProgress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
+      const claimedMissionRewards=new Set(Array.isArray(missionState.claimedRewards)?missionState.claimedRewards.map(String):[]);
       const currentRegion=Math.max(0,Number(String(worldId).match(/^r(\d+)/i)?.[1])||0);
       if(cleanEntity.npcId){
         const missions=Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[];
@@ -1510,7 +1511,23 @@ export class GameRuntime {
           const target=Math.max(1,Math.floor(Number(objective.target)||1));
           const id=String(mission.id||"").trim();
           if(!id)continue;
-          missionProgress[id]=Math.min(target,Math.max(0,Math.floor(Number(missionProgress[id])||0))+1);
+          const previous=Math.max(0,Math.floor(Number(missionProgress[id])||0));
+          const next=Math.min(target,previous+1);
+          missionProgress[id]=next;
+
+          if(next>=target&&!claimedMissionRewards.has(id)){
+            const missionReward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
+            const cannonId=String(missionReward.cannonId||"").trim();
+            const cannonQuantity=Math.max(1,Math.floor(Number(missionReward.cannonQuantity)||1));
+            if(cannonId&&this.grantCannon(cannonId,cannonQuantity,{save:false})){
+              claimedMissionRewards.add(id);
+              globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
+                missionId:id,
+                cannonId,
+                quantity:cannonQuantity
+              }}));
+            }
+          }
         }
       }
 
@@ -1521,7 +1538,8 @@ export class GameRuntime {
           rewards:clone(this.rewards),
           missions:{
             ...missionState,
-            progress:missionProgress
+            progress:missionProgress,
+            claimedRewards:[...claimedMissionRewards]
           }
         }
       };
