@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1715-mp-npc-projectile-sync";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1724-offline-fallback";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1712-authoritative-projectiles";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
