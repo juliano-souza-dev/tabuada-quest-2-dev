@@ -60,6 +60,7 @@ export class GameRuntime {
     this.worldStates={};
     this.flags={};
     this.inventory=[];
+    this.consumables={};
     this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
     this.rewardClaimsInFlight=new Set();
     this.playerShips={ownedShips:[],equippedShip:null};
@@ -586,7 +587,7 @@ export class GameRuntime {
   async purchaseShopItem({item,quantity}={}, {worldId=this.current?.id}={}){
     const product=item&&typeof item==="object"?item:null;
     const amount=Math.max(1,Math.floor(Number(quantity)||1));
-    if(!product?.id||!["ammo","cannon","ship"].includes(String(product.type||""))){
+    if(!product?.id||!["ammo","cannon","ship","item"].includes(String(product.type||""))){
       return {ok:false,message:"Item inválido para compra."};
     }
     if(String(product.type)==="ship"&&amount!==1){
@@ -623,7 +624,10 @@ export class GameRuntime {
       return {ok:false,message:"Você já possui este navio."};
     }
 
-    if(product.type==="ammo"){
+    if(product.type==="item"){
+      const id=String(product.id);
+      this.consumables[id]=Math.max(0,Math.floor(Number(this.consumables[id])||0))+amount;
+    }else if(product.type==="ammo"){
       this.ensurePlayerAmmo();
       const id=String(product.id);
       this.playerAmmo.stock[id]=Math.max(0,Number(this.playerAmmo.stock[id])||0)+amount;
@@ -1772,6 +1776,7 @@ export class GameRuntime {
       worldStates:clone(this.worldStates),
       flags:clone(this.flags),
       inventory:clone(this.inventory),
+      consumables:clone(this.consumables),
       ammo:clone(this.playerAmmo),
       rewards:clone(this.rewards)
     };
@@ -1802,6 +1807,7 @@ export class GameRuntime {
       this.worldStates=state.worldStates&&typeof state.worldStates==="object"?clone(state.worldStates):{};
       this.flags=state.flags&&typeof state.flags==="object"?clone(state.flags):{};
       this.inventory=Array.isArray(state.inventory)?clone(state.inventory):[];
+      this.consumables=state.consumables&&typeof state.consumables==="object"?clone(state.consumables):{};
       this.rewards=state.rewards&&typeof state.rewards==="object"
         ?{
           coins:Math.max(0,Number(state.rewards.coins)||0),
