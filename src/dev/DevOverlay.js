@@ -3716,7 +3716,7 @@ export class DevOverlay {
     const params=new URLSearchParams();
     if(currentWorld)params.set("start","world:"+currentWorld);
     params.set("flowtest","1");
-    params.set("build","20261004-prod-parity");
+    params.set("build","20261004-1924-runtime-refresh");
     const url="./game.html"+(params.toString()?"?"+params.toString():"");
     window.open(url,"tq-production-flow");
   }
