@@ -13,6 +13,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.socketReady=false;
     this.socketUrl=String(config.multiplayer?.websocketURL||options.websocketURL||"").trim();
     this.socketReconnect=0;
+    this.reconnectAttempts=0;
     this.getLocalState=null;
     this.getCannonIds=null;
     this.shipId="";
@@ -104,6 +105,7 @@ export class MultiplayerRuntime extends EventTarget{
           try{ws.close()}catch{}
           return;
         }
+        this.reconnectAttempts=0;
         this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket",authority:"server",protocolVersion:data.protocolVersion}}));
         if(this.pendingWorldEnsure)this.socketSend(this.pendingWorldEnsure);
         return;
@@ -162,8 +164,7 @@ export class MultiplayerRuntime extends EventTarget{
         this.intentionalClose=false;
         return;
       }
-      console.warn("[TQ WS] server connection lost; switching to offline world");
-      this.offlineFallbackLocked=true;
+      console.warn("[TQ WS] server connection lost; switching temporarily to offline world");
       this.dispatchEvent(new CustomEvent("transport",{detail:{
         online:false,
         kind:"websocket",
@@ -171,6 +172,13 @@ export class MultiplayerRuntime extends EventTarget{
         reason:"server_disconnected",
         fallback:"offline"
       }}));
+      if(this.offlineFallbackLocked)return;
+      this.reconnectAttempts=(Number(this.reconnectAttempts)||0)+1;
+      const delay=Math.min(10000,500*(2**Math.min(6,this.reconnectAttempts-1)));
+      this.socketReconnect=setTimeout(()=>{
+        this.socketReconnect=0;
+        this.connectSocket();
+      },delay);
     };
     ws.addEventListener("close",offline);
     ws.addEventListener("error",()=>{try{ws.close()}catch{}});
@@ -188,6 +196,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.worldId=safeKey(worldId);
     if(!this.worldId)return false;
     this.offlineFallbackLocked=false;
+    this.reconnectAttempts=0;
     this.intentionalClose=false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;
     this.getCannonIds=typeof getCannonIds==="function"?getCannonIds:null;
@@ -302,6 +311,7 @@ export class MultiplayerRuntime extends EventTarget{
     clearTimeout(this.socketReconnect);
     this.timer=0;
     this.socketReconnect=0;
+    this.reconnectAttempts=0;
     this.socketReady=false;
     this.intentionalClose=true;
     try{this.socket?.close()}catch{}
