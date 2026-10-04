@@ -1,4 +1,4 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-2029-preserve-server-target-id";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-2129-authoritative-cannon-loadout";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1924-runtime-refresh";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
