@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 2,
+  "version": 3,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -73,6 +73,35 @@
           {
             "cannonId": "cannon-basic",
             "quantity": 3
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "boss-sync-test-100m",
+      "name": "Boss de Teste de Sincronismo",
+      "shipId": "ship-halloween-dreadnought",
+      "boss": true,
+      "coopBoss": true,
+      "coopBossId": "boss-sync-test-100m",
+      "navigation": {
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 100000000,
+        "attitude": "hostile",
+        "damage": 5,
+        "maxTargets": 2,
+        "rewardMinDamageRatio": 0.15,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-royal-golden-lion",
+            "quantity": 4
           }
         ],
         "ammoId": "cannonball-standard",
