@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1826-r1-prod-multiplayer-test";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1430-delta-netcode";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1542-authoritative-sync-fix";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1542-authoritative-sync-fix";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1826-r1-prod-multiplayer-test");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1542-authoritative-sync-fix");
 
 if(flowTest){
   try{
