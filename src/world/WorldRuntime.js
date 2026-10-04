@@ -4673,11 +4673,25 @@ export class WorldRuntime {
     return true;
   }
 
+  activateHullReinforcement(){
+    this.hullReinforcement={hp:1000000,expiresAt:Date.now()+300000};
+    this.showGameplayToast("🛡 Reforço de Casco ativado · +1.000.000 HP · 5 min",2200);
+    return true;
+  }
+
   applyDirectPlayerNavalDamage(amount=1,source=null){
     if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
+    let incoming=Math.max(1,Number(amount)||1);
+    const now=Date.now();
+    if(this.hullReinforcement?.hp>0&&now<this.hullReinforcement.expiresAt){
+      const absorbed=Math.min(this.hullReinforcement.hp,incoming);
+      this.hullReinforcement.hp-=absorbed;
+      incoming-=absorbed;
+      if(incoming<=0)return true;
+    }else if(this.hullReinforcement){this.hullReinforcement.hp=0;this.hullReinforcement.expiresAt=0}
     const previousHp=this.navalPlayerHp;
-    this.navalPlayerHp=Math.max(0,this.navalPlayerHp-Math.max(1,Number(amount)||1));
+    this.navalPlayerHp=Math.max(0,this.navalPlayerHp-incoming);
     this.showNavalDamageNumber({
       x:Number(this.player?.x)||0,
       y:(Number(this.player?.y)||0)-Math.max(22,(Number(this.config.player?.height)||150)*.36),
@@ -4691,6 +4705,7 @@ export class WorldRuntime {
         :"Seu navio foi derrotado.";
     }
     if(this.navalPlayerHp<=0){
+      this.hullReinforcement={hp:0,expiresAt:0};
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
       this.navalHostile.clear();
