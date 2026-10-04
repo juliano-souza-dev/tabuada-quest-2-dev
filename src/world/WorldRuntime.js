@@ -4620,7 +4620,7 @@ export class WorldRuntime {
       const duration=clamp(targetDistance/projectileSpeed*1000,220,2200);
       const fired=this.navalRenderer?.fire?.({
         from:{x:this.player.x,y:this.player.y},
-        to:{x:entity.x,y:entity.y},
+        to:{x:entity.x,y:entity.y,target:entity},
         duration,
         ammo
       })===true;
