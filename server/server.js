@@ -90,6 +90,7 @@ function maybeRespawnEntity(e,now=Date.now()){
   e.respawnAt=0;
   e.spawnId=Math.max(1,Number(e.spawnId)||1)+1;
   e.contributors={};
+  e.aggroUid="";
   const rng=seeded(hashString(e.id+"."+e.spawnId));
   e.rotation=rng()*360-180;
   e.direction=directionForRotation(e.rotation);
@@ -148,7 +149,7 @@ function ensureWorld(r,m){
       id,serverSlot:Math.max(0,Math.floor(Number(raw.serverSlot)||0)),npcId:key(raw.npcId||""),shipId:key(raw.shipId||""),name:String(raw.name||"NPC").slice(0,80),
       x:Number(raw.x)||0,y:Number(raw.y)||0,rotation,direction:String(raw.direction||directionForRotation(rotation)).slice(0,8),
       vx:0,vy:0,speed,minSpeed:clamp(raw.minSpeed,0,speed),acceleration:clamp(raw.acceleration||speed*3.1,0,3000),
-      hp:maxHp,maxHp,boss:raw.boss===true,hostile:raw.hostile!==false,defeated:false,stopped:false,
+      hp:maxHp,maxHp,boss:raw.boss===true,hostile:raw.hostile!==false,aggroUid:"",defeated:false,stopped:false,
       respawn:raw.respawn===true,respawnDelayMs:clamp(raw.respawnDelayMs||30000,1000,86400000),
       respawnAt:0,spawnId:Math.max(1,Number(raw.spawnId)||1),contributors:{},
       attackRange:clamp(raw.attackRange||900,100,12000),
@@ -195,6 +196,7 @@ function applyEntityDamage(r,uid,m){
   const damage=Math.min(requested,Math.max(0,e.hp));
   e.hp=Math.max(0,Math.round((e.hp-damage)*10)/10);
   e.contributors[uid]=Math.max(0,Number(e.contributors[uid])||0)+damage;
+  if(uid)e.aggroUid=uid;
   e.stopped=e.boss?true:e.stopped;
   if(e.stopped){e.vx=0;e.vy=0}
   e.defeated=e.hp<=0;
@@ -273,7 +275,10 @@ function resolveProjectile(r,p,now=Date.now()){
       if(hit){
         const damage=Math.min(p.damage,Math.max(0,e.hp));
         e.hp=Math.max(0,Math.round((e.hp-damage)*10)/10);
-        if(p.ownerUid)e.contributors[p.ownerUid]=Math.max(0,Number(e.contributors[p.ownerUid])||0)+damage;
+        if(p.ownerUid){
+          e.contributors[p.ownerUid]=Math.max(0,Number(e.contributors[p.ownerUid])||0)+damage;
+          e.aggroUid=p.ownerUid;
+        }
         e.defeated=e.hp<=0;
         e.updatedAt=now;
         if(e.defeated&&e.respawn)e.respawnAt=now+e.respawnDelayMs;
@@ -307,14 +312,11 @@ function resolveProjectile(r,p,now=Date.now()){
   return true;
 }
 function maybeFireNpc(r,e,now=Date.now()){
-  if(e.hostile===false||e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
-  let target=null,best=Infinity;
-  for(const p of r.players.values()){
-    if(!(p.hp>0))continue;
-    const d=Math.hypot((Number(p.x)||0)-e.x,(Number(p.y)||0)-e.y);
-    if(d<=e.attackRange&&d<best){best=d;target=p}
-  }
-  if(!target)return false;
+  if(e.hostile===false||!e.aggroUid||e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
+  const target=r.players.get(key(e.aggroUid));
+  if(!target||!(target.hp>0))return false;
+  const best=Math.hypot((Number(target.x)||0)-e.x,(Number(target.y)||0)-e.y);
+  if(best>e.attackRange)return false;
   e.nextAttackAt=now+e.attackCooldownMs;
   const shots=Math.max(1,Math.min(16,Math.floor(Number(e.volleyCount)||1)));
   for(let i=0;i<shots;i++){
