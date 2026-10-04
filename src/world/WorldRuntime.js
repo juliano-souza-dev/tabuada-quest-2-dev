@@ -613,7 +613,7 @@ export class WorldRuntime {
         minSpeed:String(profile.navigation?.behavior||profile.npcBehavior||"roam")==="stationary"?0:Math.max(0,Number(profile.navigation?.minSpeed??profile.minSpeed)||0),
         speed:String(profile.navigation?.behavior||profile.npcBehavior||"roam")==="stationary"?0:Math.max(0,Number(profile.navigation?.speed??profile.speed??population.movement.speed)||0),
         acceleration:String(profile.navigation?.behavior||profile.npcBehavior||"roam")==="stationary"?0:Math.max(0,Math.min(3000,Number(profile.navigation?.acceleration??profile.acceleration??((Math.max(0,Number(profile.navigation?.speed??profile.speed??population.movement.speed)||0))*3.1))||0)),
-        braking:.22,
+        braking:clamp(Number(profile.navigation?.braking??this.config.player?.braking??.12),.01,.98),
         heading,
         targetHeading:heading,
         vx:0,
@@ -755,7 +755,10 @@ export class WorldRuntime {
     const desiredY=-Math.cos(targetRad);
     const accel=Math.max(100,Number(nav.acceleration)||1100);
     const minSpeed=clamp(Number(nav.minSpeed)||0,0,maxSpeed);
-    const braking=clamp(Number(nav.braking??.22),.01,.98);
+    // Match NPC/boss damping to the player's ship physics. Previously NPCs
+    // defaulted to .22 while the player uses .12, making bosses retain much
+    // more velocity and visibly outrun an equally configured player ship.
+    const braking=clamp(Number(nav.braking??this.config.player?.braking??.12),.01,.98);
     const drag=Math.pow(braking,safeDt);
 
     nav.vx=((Number(nav.vx)||0)+desiredX*accel*safeDt)*drag;
