@@ -333,13 +333,8 @@ export class MobileHudOverlay{
 
     const follow=this.wrap.querySelector('[data-hud-action="follow"]');
     if(follow){
-      const canFollow=state.attacking===true&&targetVisible;
-      follow.hidden=!canFollow;
-      follow.disabled=!canFollow;
-      follow.classList.toggle("is-active",state.following===true);
-      follow.querySelector("span").textContent=state.following===true?"◎":"🎯";
-      follow.querySelector("small").textContent=state.following===true?"Seguindo":"Seguir";
-      follow.setAttribute("aria-label",state.following===true?"Parar de seguir alvo":"Seguir alvo");
+      follow.hidden=true;
+      follow.disabled=true;
     }
 
     const shield=this.wrap.querySelector('[data-hud-action="shield"]');
