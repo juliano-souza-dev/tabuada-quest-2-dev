@@ -1306,12 +1306,19 @@ export class WorldRuntime {
     const combat=entity?.combat&&typeof entity.combat==="object"?entity.combat:{};
     const loadout=this.npcCombatLoadout(entity);
     const equipped=loadout.cannons;
-    const maxRange=equipped.length
+    const configuredRange=Number(combat.attackRange??1200);
+    const cannonRange=equipped.length
       ?Math.max(...equipped.map(cannon=>Math.max(1,Number(cannon?.range)||0)))
-      :Number(combat.attackRange??1200);
-    const cooldown=equipped.length
+      :configuredRange;
+    const maxRange=String(combat.attackRangeMode||"")==="fixed"
+      ?configuredRange
+      :cannonRange;
+    const cannonCooldown=equipped.length
       ?Math.min(...equipped.map(cannon=>clamp(Number(cannon?.attackCooldownMs)||900,150,10000)))
       :Number(combat.attackCooldownMs??900);
+    const cooldown=Number.isFinite(Number(combat.attackCooldownMs))
+      ?Number(combat.attackCooldownMs)
+      :cannonCooldown;
     const projectileSpeed=Math.max(
       120,
       Number(loadout.ammo?.projectileSpeed)
