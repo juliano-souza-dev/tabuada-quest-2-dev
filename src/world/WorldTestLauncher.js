@@ -1,6 +1,6 @@
 import { WorldRuntime } from "./WorldRuntime.js?v=20261003-2054-global-loadout";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
-import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261001-0854";
+import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 
 export async function launchWorldTest(root,{worldId=""}={}){
   const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261001-2307",{cache:"no-store"});
@@ -37,7 +37,7 @@ export async function launchWorldTest(root,{worldId=""}={}){
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
   const pedagogyCurriculum=await pedagogyResponse.json();
   const pedagogyRuntime=new PedagogyRuntime({
-    getState:()=>({game:{pedagogy:{progress:{region:1,plannedCompleted:0}}}}),
+    getState:()=>({game:{pedagogy:{progress:{region:Math.max(1,Math.floor(Number(entry?.region)||1)),plannedCompleted:0}}}}),
     curriculum:pedagogyCurriculum
   });
 
@@ -54,12 +54,18 @@ export async function launchWorldTest(root,{worldId=""}={}){
       testAmmoUnlimited:true,
       cannonCatalog:availableCannons,
       testCannonIds:testCannonIds.length?testCannonIds:[defaultCannonId],
-      createPedagogyChallenge:({entity})=>pedagogyRuntime.createChallenge({
-        kind:entity?.type==="treasure"?"treasure":"world-interaction",
-        worldId:config.id,
-        entityId:entity?.id,
-        entityType:entity?.type
-      }),
+      createPedagogyChallenge:({entity})=>{
+        const repairChallenge=entity?.type==="repair";
+        const mapPedagogyRegion=repairChallenge?Math.max(0,Math.floor(Number(entry?.region)||0)):0;
+        return pedagogyRuntime.createChallenge({
+          kind:entity?.type==="treasure"?"treasure":(repairChallenge?"combat":"world-interaction"),
+          worldId:config.id,
+          entityId:entity?.id,
+          entityType:entity?.type,
+          pedagogyRegion:mapPedagogyRegion||undefined,
+          useRegionFamilies:repairChallenge&&mapPedagogyRegion>0
+        });
+      },
       onPedagogyResult:result=>{
         globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogytestresult",{detail:result}));
       },
