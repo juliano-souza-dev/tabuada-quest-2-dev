@@ -1729,8 +1729,8 @@ export class DevOverlay {
             '<small class="tq-world-editor-note">Use − e ＋ para definir quantos canhões de cada modelo ficam equipados. Loadout exclusivo do DEV.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>🧪 Teste do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
-            '<button type="button" class="tq-composition-action" data-world-test-activate>Ativar World Test</button>'+
-            '<small class="tq-world-editor-note">Abre a região atual no modo de teste sem precisar adicionar ?worldtest=1 à URL.</small>'+
+            '<button type="button" class="tq-composition-action" data-world-test-activate>Testar fluxo como produção</button>'+
+            '<small class="tq-world-editor-note">Executa o mesmo runtime de produção, sem ferramentas DEV. A única exceção é usar conta local de teste, sem login e sem gravar o progresso real.</small>'+
           '</div></section>'+
           '<section class="tq-config-area"><button type="button" class="tq-config-area__head" data-area-toggle aria-expanded="false"><strong>Câmera global do jogo</strong><span>▸</span></button><div class="tq-config-area__body" hidden>'+
             '<label class="tq-world-motion-range"><span><b>Zoom da câmera</b><output data-world-camera-output="playZoom">'+cameraPlayZoom.toFixed(4)+'x</output></span>'+
@@ -1821,11 +1821,7 @@ export class DevOverlay {
         '</div>';
 
       this.bindCollapsedAreas(content);
-    content.querySelector("[data-world-test-activate]")?.addEventListener("click",()=>{
-      const worldId=String(this.worldEditor?.entry?.id||this.worldEditor?.getWorld?.()?.id||"");
-      try{sessionStorage.setItem("tq.dev.worldtest.request.v1",JSON.stringify({worldId,requestedAt:Date.now()}));}catch{}
-      location.reload();
-    });
+    content.querySelector("[data-world-test-activate]")?.addEventListener("click",()=>this.testProductionFlow());
 
       content.querySelectorAll("[data-world-root-prop]").forEach(input=>input.addEventListener("change",()=>{
         const key=input.dataset.worldRootProp;
@@ -3718,7 +3714,7 @@ export class DevOverlay {
     const params=new URLSearchParams();
     if(currentWorld)params.set("start","world:"+currentWorld);
     params.set("flowtest","1");
-    params.set("build","20261003-2025-flowfix");
+    params.set("build","20261004-prod-parity");
     const url="./game.html"+(params.toString()?"?"+params.toString():"");
     window.open(url,"tq-production-flow");
   }
