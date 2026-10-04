@@ -150,6 +150,10 @@ export class MultiplayerRuntime extends EventTarget{
         this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
         return;
       }
+      if(["party.invite","party.invite.sent","party.updated","party.challenge.failed","party.reward","party.error"].includes(data.type)){
+        this.dispatchEvent(new CustomEvent("party",{detail:data}));
+        return;
+      }
       if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.rejected","player-left"].includes(data.type)){
         this.dispatchEvent(new CustomEvent("event",{detail:data}));
       }
@@ -264,6 +268,36 @@ export class MultiplayerRuntime extends EventTarget{
     // Compatibility alias. Authoritative servers receive only player intent;
     // damage/range/speed/cooldown are resolved from server-side catalogs.
     return this.fireRequest(shot);
+  }
+
+  inviteParty(targetUid){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({type:"party.invite",targetUid:safeKey(targetUid)});
+  }
+
+  acceptPartyInvite(inviteId,answer){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({type:"party.accept",inviteId:safeKey(inviteId),answer:Number(answer)});
+  }
+
+  declinePartyInvite(inviteId){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({type:"party.decline",inviteId:safeKey(inviteId)});
+  }
+
+  leaveParty(){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({type:"party.leave"});
+  }
+
+  sharePartyReward({claimKey="",gold=0,xp=0}={}){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({
+      type:"party.reward",
+      claimKey:safeKey(claimKey),
+      gold:Math.max(0,Math.floor(Number(gold)||0)),
+      xp:Math.max(0,Math.floor(Number(xp)||0))
+    });
   }
 
   async ensureBoss(boss={}){
