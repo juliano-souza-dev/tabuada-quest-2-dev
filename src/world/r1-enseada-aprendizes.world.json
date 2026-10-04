@@ -367,21 +367,6 @@
     },
     "types": [
       {
-        "npcId": "boss-sync-test-100m",
-        "shipId": "ship-halloween-dreadnought",
-        "count": 1,
-        "enabled": true,
-        "respawn": false,
-        "respawnDelaySec": 10,
-        "hp": 100000000,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 1200,
-          "minDistance": 900
-        },
-        "hitRewardGold": 100
-      },
-      {
         "npcId": "npc-passive-gold-test",
         "shipId": "ship-pirate-galleon-navio",
         "count": 3,
@@ -400,20 +385,21 @@
         }
       },
       {
-        "npcId": "boss-reward-test-15pct",
+        "npcId": "npc-heavy-200k-test",
         "shipId": "ship-halloween-dreadnought",
-        "count": 1,
+        "count": 5,
         "enabled": true,
-        "respawn": false,
-        "respawnDelaySec": 30,
+        "respawn": true,
+        "respawnDelaySec": 20,
+        "hp": 200000,
         "spawn": {
           "mode": "random-spaced",
-          "margin": 1000,
-          "minDistance": 700
+          "margin": 950,
+          "minDistance": 650
         },
         "hitRewardGold": 0,
         "rewards": {
-          "gold": 250
+          "gold": 150
         }
       }
     ]
@@ -426,7 +412,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "regions-halloween-20261002",
+    "sourceRevision": "20261004-2222-r1-200k-npc-test",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
