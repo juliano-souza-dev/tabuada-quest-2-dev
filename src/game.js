@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2029-preserve-server-target-id";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-2042-ammo-consumption-persist";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-2029-preserve-server-target-id";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
