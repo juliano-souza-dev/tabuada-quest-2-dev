@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1801-force-sync-cache";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1805-prod-sync-arena";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1430-delta-netcode";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
