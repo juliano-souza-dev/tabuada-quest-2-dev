@@ -456,7 +456,8 @@
         "hp": 5000000,
         "attackRange": 900,
         "attackCooldownMs": 1300,
-        "damage": 4
+        "damage": 4,
+        "rewardMinDamageRatio": 0.15
       },
       "collision": {
         "active": true,
@@ -609,7 +610,9 @@
         "gold": 5000,
         "rubies": 25,
         "xp": 1000
-      }
+      },
+      "rewardShipId": "ship-halloween-dreadnought",
+      "rewardEquipShip": true
     }
   ],
   "npcPopulation": {
