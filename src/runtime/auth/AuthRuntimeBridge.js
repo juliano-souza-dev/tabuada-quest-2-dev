@@ -1,4 +1,4 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1635-boss-offline-fallback";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261004-1658-node-world-authority";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261003-2350";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
