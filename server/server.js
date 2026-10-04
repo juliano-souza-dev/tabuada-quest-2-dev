@@ -323,7 +323,7 @@ wss.on("connection",ws=>{
       const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
       if(authoritative&&(!ammo||ammo.available===false||!cannon||cannon.available===false)){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"invalid_loadout",targetId,ammoId,cannonId,at:Date.now()});
+        send(ws,{type:"fire.rejected",reason:"invalid_loadout",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
         return;
       }
 
@@ -333,7 +333,7 @@ wss.on("connection",ws=>{
       const sameVolley=authoritative&&volleyId&&volleyId===String(p.lastVolleyId||"");
       if(authoritative&&!sameVolley&&now<Number(p.nextFireAt||0)){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"cooldown",targetId,retryAt:p.nextFireAt,at:now});
+        send(ws,{type:"fire.rejected",reason:"cooldown",shotId:key(m.shotId),targetId,ammoId,cannonId,retryAt:p.nextFireAt,at:now});
         return;
       }
 
@@ -341,7 +341,7 @@ wss.on("connection",ws=>{
       const playerDistance=Math.hypot((Number(p.x)||0)-target.x,(Number(p.y)||0)-target.y);
       if(playerDistance>range+180){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"out_of_range",targetId,range,distance:playerDistance,at:now});
+        send(ws,{type:"fire.rejected",reason:"out_of_range",shotId:key(m.shotId),targetId,ammoId,cannonId,range,distance:playerDistance,at:now});
         return;
       }
 
