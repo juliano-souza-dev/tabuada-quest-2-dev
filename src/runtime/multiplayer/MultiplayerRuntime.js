@@ -1,5 +1,6 @@
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 const safeKey=value=>String(value||"").replace(/[.#$\[\]\/]/g,"_").slice(0,96);
+const serverKey=value=>String(value||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
 
 export class MultiplayerRuntime extends EventTarget{
   constructor(auth,config={},options={}){
@@ -229,7 +230,7 @@ export class MultiplayerRuntime extends EventTarget{
       type:"fire.request",
       shotId:safeKey(shot.shotId||uid+"-"+Date.now()),
       volleyId:safeKey(shot.volleyId||""),
-      targetId:safeKey(shot.targetId||""),
+      targetId:serverKey(shot.targetId||""),
       from:shot.from||null,
       ammoId:String(shot.ammoId||""),
       cannonId:String(shot.cannonId||"")
@@ -258,7 +259,7 @@ export class MultiplayerRuntime extends EventTarget{
 
   async damageEntity(entityId,damage=1,meta={}){
     if(!this.worldId)return false;
-    entityId=safeKey(entityId);
+    entityId=serverKey(entityId);
     if(!entityId)return false;
     return this.socketSend({
       type:"entity.damage",
