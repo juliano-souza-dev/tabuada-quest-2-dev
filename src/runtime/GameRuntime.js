@@ -427,6 +427,7 @@ export class GameRuntime {
   stopMultiplayerWorld(){
     for(const cleanup of this.multiplayerCleanups.splice(0))cleanup();
     this.worldRuntime?.setServerWorldAuthority?.(false);
+    this.coopParty={partyId:"",members:[]};
     this.multiplayer?.leaveWorld?.().catch?.(()=>{});
   }
 
@@ -440,8 +441,8 @@ export class GameRuntime {
     const localClaim="party-share:"+claimKey;
     const claims=Array.isArray(this.rewards?.claims)?[...this.rewards.claims]:[];
     if(claims.includes(localClaim))return false;
-    const gold=Math.max(0,Math.floor(Number(event.gold)||0));
-    const xp=Math.max(0,Math.floor(Number(event.xp)||0));
+    const gold=Math.max(0,Math.round((Number(event.gold)||0)*100)/100);
+    const xp=Math.max(0,Math.round((Number(event.xp)||0)*100)/100);
     if(gold<=0&&xp<=0)return false;
     claims.push(localClaim);
     this.rewards={
