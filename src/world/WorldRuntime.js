@@ -4815,6 +4815,11 @@ export class WorldRuntime {
 
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    this.syncEquippedCannonsFromShipyard();
+    if(!Array.isArray(this.testCannonIds)||this.testCannonIds.length===0){
+      this.stopNavalAutoFire({keepTarget:true,message:"Nenhum canhão equipado neste navio."});
+      return false;
+    }
     const targetDistance=this.navalTargetDistance(entity);
     const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
     const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
