@@ -1,4 +1,9 @@
 
+const formatHp=value=>{
+  const rounded=Math.round((Number(value)||0)*10)/10;
+  return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1);
+};
+
 const objectiveLabel=(objective,progress=0)=>{
   const type=String(objective?.type||"");
   const target=Math.max(0,Number(objective?.target)||0);
@@ -242,7 +247,7 @@ export class MobileHudOverlay{
         const pct=Math.max(0,Math.min(100,hp/max*100));
         targetWrap.querySelector("[data-target-name]").textContent=String(state.target.name||"Navio inimigo");
         targetWrap.querySelector("[data-target-fill]").style.width=pct+"%";
-        targetWrap.querySelector("[data-target-hp]").textContent=hp+" / "+max;
+        targetWrap.querySelector("[data-target-hp]").textContent=formatHp(hp)+" / "+formatHp(max);
       }
     }
 
@@ -252,7 +257,7 @@ export class MobileHudOverlay{
     const playerFill=this.wrap.querySelector("[data-player-fill]");
     const playerHp=this.wrap.querySelector("[data-player-hp]");
     if(playerFill)playerFill.style.width=ppct+"%";
-    if(playerHp)playerHp.textContent=php+" / "+pmax;
+    if(playerHp)playerHp.textContent=formatHp(php)+" / "+formatHp(pmax);
 
     const fire=this.wrap.querySelector('[data-hud-action="fire"]');
     if(fire){
