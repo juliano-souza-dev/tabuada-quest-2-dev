@@ -4836,6 +4836,7 @@ export class WorldRuntime {
         return false;
       }
       let firedCount=0;
+      const volleyId="volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
       for(const batteryShot of eligible){
         if(ammoRemaining<=0)break;
         const cannon=batteryShot.cannon;
@@ -4847,13 +4848,11 @@ export class WorldRuntime {
         const duration=clamp(intercept.time*1000,120,8000);
         const sent=this.coopTransport.fireProjectile({
           shotId:"player-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
+          volleyId,
           targetId:String(entity.id||""),
           from:muzzle,
           ammoId:selectedAmmoId,
-          damage:shotDamage,
-          projectileSpeed,
-          duration,
-          range:Math.max(1,Number(cannon.range)||900)
+          cannonId:String(cannon.id||"")
         })===true;
         if(!sent)continue;
         firedCount+=1;
