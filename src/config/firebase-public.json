@@ -3,7 +3,7 @@
   "version": 1,
   "projectId": "tabuadaquest2",
   "apiKey": "AIzaSyA_fhXyVenMAtjyuva4PsxbRezkV2Z_oKo",
-  "googleWebClientId": "489461827440-rkapqc45m857of2fm4hb6tm10muhkg6c.apps.googleusercontent.com",
+  "googleWebClientId": "489461827440-8oppgul6ckcno0vhsb80mci6pslno4qi.apps.googleusercontent.com",
   "stateDocument": "players/{uid}/state/current",
   "databaseURL": "https://tabuadaquest2-default-rtdb.firebaseio.com",
   "multiplayer": {
