@@ -20,6 +20,14 @@ const normalizeGlobalAmmo=input=>{
   }
   return {selectedAmmoId:String(value.selectedAmmoId||""),stock};
 };
+const normalizeGraphicsSettings=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  return {
+    clouds:value.clouds!==false,
+    oceanWaves:value.oceanWaves!==false,
+    reducedAmmoFx:value.reducedAmmoFx===true
+  };
+};
 
 export class GameRuntime {
   static async load(root,manifestUrl="./src/config/game.manifest.json",options={}){
@@ -59,6 +67,7 @@ export class GameRuntime {
     this.history=[];
     this.worldStates={};
     this.flags={};
+    this.graphicsSettings=normalizeGraphicsSettings({});
     this.inventory=[];
     this.consumables={};
     this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
@@ -535,6 +544,7 @@ export class GameRuntime {
     const runtime=game.runtime&&typeof game.runtime==="object"
       ?game.runtime
       :(state.schema==="tq.game-state"?state:null);
+    this.graphicsSettings=normalizeGraphicsSettings(game.settings?.graphics||runtime?.settings?.graphics||{});
 
     if(runtime){
       this.current=runtime.current?clone(runtime.current):this.current;
@@ -594,6 +604,10 @@ export class GameRuntime {
       ...base,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
+        settings:{
+          ...((base.game?.settings&&typeof base.game.settings==="object")?base.game.settings:{}),
+          graphics:clone(this.graphicsSettings)
+        },
         runtime:this.runtimeSnapshot(),
         ships:{
           ownedShips:[...this.playerShips.ownedShips],
@@ -1793,6 +1807,12 @@ export class GameRuntime {
       soundCatalog:this.soundCatalog&&typeof this.soundCatalog==="object"?clone(this.soundCatalog):{sounds:[]},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
+      graphicsSettings:clone(this.graphicsSettings),
+      onGraphicsSettingsChange:settings=>{
+        this.graphicsSettings=normalizeGraphicsSettings(settings);
+        this.saveState();
+        this.syncCloud("graphics-settings");
+      },
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
@@ -1939,6 +1959,7 @@ export class GameRuntime {
       history:clone(this.history),
       worldStates:clone(this.worldStates),
       flags:clone(this.flags),
+      settings:{graphics:clone(this.graphicsSettings)},
       inventory:clone(this.inventory),
       consumables:clone(this.consumables),
       ammo:clone(this.playerAmmo),
@@ -1970,6 +1991,7 @@ export class GameRuntime {
       this.history=Array.isArray(state.history)?clone(state.history):[];
       this.worldStates=state.worldStates&&typeof state.worldStates==="object"?clone(state.worldStates):{};
       this.flags=state.flags&&typeof state.flags==="object"?clone(state.flags):{};
+      this.graphicsSettings=normalizeGraphicsSettings(state.settings?.graphics||{});
       this.inventory=Array.isArray(state.inventory)?clone(state.inventory):[];
       this.consumables=state.consumables&&typeof state.consumables==="object"?clone(state.consumables):{};
       this.rewards=state.rewards&&typeof state.rewards==="object"
