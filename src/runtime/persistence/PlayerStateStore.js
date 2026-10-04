@@ -149,6 +149,16 @@ export class PlayerStateStore extends EventTarget {
       if(!token)return {ok:false,code:"auth_required",claim:null};
 
       const documentId=hashClaimKey(key);
+      const existingResponse=await fetch(this.rewardClaimUrl(auth.uid,key),{
+        headers:{Authorization:"Bearer "+token}
+      });
+      if(existingResponse.ok){
+        const document=await existingResponse.json().catch(()=>null);
+        const result={ok:false,code:"duplicate",claim:parseClaimDocument(document)};
+        this.emit("reward-claim",result);
+        return result;
+      }
+
       const response=await fetch(
         this.rewardClaimsCollectionUrl(auth.uid)+"?documentId="+encodeURIComponent(documentId),
         {
