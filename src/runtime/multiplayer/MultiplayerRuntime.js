@@ -113,7 +113,7 @@ export class MultiplayerRuntime extends EventTarget{
         this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
         return;
       }
-      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","player-left"].includes(data.type)){
+      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.rejected","player-left"].includes(data.type)){
         this.dispatchEvent(new CustomEvent("event",{detail:data}));
       }
     });
@@ -198,21 +198,24 @@ export class MultiplayerRuntime extends EventTarget{
     });
   }
 
-  fireProjectile(shot={}){
+  fireRequest(shot={}){
     if(!this.worldId||!this.socketReady)return false;
     const uid=String(this.auth.status().uid||"");
     if(!uid)return false;
     return this.socketSend({
-      type:"projectile.fire",
+      type:"fire.request",
       shotId:safeKey(shot.shotId||uid+"-"+Date.now()),
       targetId:safeKey(shot.targetId||""),
       from:shot.from||null,
       ammoId:String(shot.ammoId||""),
-      damage:clamp(Number(shot.damage)||1,.1,5000),
-      projectileSpeed:clamp(Number(shot.projectileSpeed)||720,120,4000),
-      duration:clamp(Number(shot.duration)||620,120,8000),
-      range:clamp(Number(shot.range)||1200,100,12000)
+      cannonId:String(shot.cannonId||"")
     });
+  }
+
+  fireProjectile(shot={}){
+    // Compatibility alias. Authoritative servers receive only player intent;
+    // damage/range/speed/cooldown are resolved from server-side catalogs.
+    return this.fireRequest(shot);
   }
 
   async ensureBoss(boss={}){
