@@ -4950,7 +4950,7 @@ export class WorldRuntime {
         const muzzle=batteryShot.hardpoint;
         const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
         const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
-        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,5000);
+        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
         const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
         const duration=clamp(intercept.time*1000,120,8000);
         const sent=this.coopTransport.fireProjectile({
