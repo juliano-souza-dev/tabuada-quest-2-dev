@@ -1132,6 +1132,13 @@ export class WorldRuntime {
       el.dataset.entityId=entity.id;
       el.dataset.renderMode=presentation.renderMode;
       el.dataset.logicalType=entity.type||"object";
+      if(String(entity.type||"")==="region-exit"){
+        const dx=Number(entity.x||0)-Number(this.config.width||0)/2;
+        const dy=Number(entity.y||0)-Number(this.config.height||0)/2;
+        const direction=Math.abs(dx)>Math.abs(dy)?(dx<0?"left":"right"):(dy<0?"up":"down");
+        el.dataset.exitDirection=direction;
+        el.dataset.exitLabel=String(entity.destinationWorldName||entity.label||"Saída de região");
+      }
       el.style.zIndex=String(entity.z??10);
 
       if(presentation.hasSprite){
