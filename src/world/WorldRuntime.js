@@ -23,6 +23,8 @@ import {
   contourVelocity
 } from "./WorldCollision.mjs?v=20261001-1438";
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
+const shortestAngleDelta=(from,to)=>((((Number(to)||0)-(Number(from)||0)+540)%360)-180);
+const lerpAngle=(from,to,t)=>(Number(from)||0)+shortestAngleDelta(from,to)*clamp(Number(t)||0,0,1);
 const distance=(a,b)=>Math.hypot((a.x||0)-(b.x||0),(a.y||0)-(b.y||0));
 const hashString=value=>{
   let hash=2166136261;
@@ -6272,7 +6274,8 @@ export class WorldRuntime {
       const targetX=Number(state.x)||0,targetY=Number(state.y)||0,targetRotation=Number(state.rotation)||0;
       const sampleMs=clamp(now-Number(entity.serverNetSampleAt||now-50),40,140);
       entity.serverNetFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-      entity.serverNetTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(50,sampleMs*1.1)};
+      entity.serverNetTo={x:targetX,y:targetY,rotation:targetRotation,at:now+clamp(sampleMs*.9,35,55)};
+      entity.serverNetVelocity={vx:Number(state.vx)||0,vy:Number(state.vy)||0};
       entity.serverNetSampleAt=now;
       entity.direction=String(state.direction||entity.direction||"n");
       if(entity.npcNavigation){
@@ -6310,10 +6313,19 @@ export class WorldRuntime {
       if(!entity?.serverAuthoritative)continue;
       const a=entity.serverNetFrom,b=entity.serverNetTo;
       if(!a||!b)continue;
-      const t=clamp((time-a.at)/Math.max(1,b.at-a.at),0,1);
-      entity.x=a.x+(b.x-a.x)*t;
-      entity.y=a.y+(b.y-a.y)*t;
-      entity.rotation=a.rotation+(b.rotation-a.rotation)*t;
+      const rawT=(time-a.at)/Math.max(1,b.at-a.at);
+      if(rawT<=1){
+        const t=clamp(rawT,0,1);
+        entity.x=a.x+(b.x-a.x)*t;
+        entity.y=a.y+(b.y-a.y)*t;
+        entity.rotation=lerpAngle(a.rotation,b.rotation,t);
+      }else{
+        const extraSec=clamp((time-b.at)/1000,0,.12);
+        const velocity=entity.serverNetVelocity||{};
+        entity.x=b.x+(Number(velocity.vx)||0)*extraSec;
+        entity.y=b.y+(Number(velocity.vy)||0)*extraSec;
+        entity.rotation=b.rotation;
+      }
       entity.anchorX=entity.x;
       entity.anchorY=entity.y;
     }
@@ -6464,8 +6476,9 @@ export class WorldRuntime {
         entity.netFrom=null;entity.netTo=null;
       }else{
         entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(75,sampleMs*1.15)};
+        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+clamp(sampleMs*.9,35,55)};
       }
+      entity.netVelocity={vx:Number(remote.vx)||0,vy:Number(remote.vy)||0};
       entity.netSampleAt=now;
       entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");entity.netLastSeen=performance.now();
     }
@@ -6475,8 +6488,21 @@ export class WorldRuntime {
 
   updateRemotePlayers(time=performance.now()){
     for(const entity of this.remotePlayers.values()){
-      const a=entity.netFrom,b=entity.netTo;if(!a||!b)continue;const t=clamp((time-a.at)/Math.max(1,b.at-a.at),0,1);
-      entity.x=a.x+(b.x-a.x)*t;entity.y=a.y+(b.y-a.y)*t;entity.rotation=a.rotation+(b.rotation-a.rotation)*t;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;this.applyEntityVisual(entity);
+      const a=entity.netFrom,b=entity.netTo;if(!a||!b)continue;
+      const rawT=(time-a.at)/Math.max(1,b.at-a.at);
+      if(rawT<=1){
+        const t=clamp(rawT,0,1);
+        entity.x=a.x+(b.x-a.x)*t;
+        entity.y=a.y+(b.y-a.y)*t;
+        entity.rotation=lerpAngle(a.rotation,b.rotation,t);
+      }else{
+        const extraSec=clamp((time-b.at)/1000,0,.12);
+        const velocity=entity.netVelocity||{};
+        entity.x=b.x+(Number(velocity.vx)||0)*extraSec;
+        entity.y=b.y+(Number(velocity.vy)||0)*extraSec;
+        entity.rotation=b.rotation;
+      }
+      entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;this.applyEntityVisual(entity);
     }
   }
 
@@ -6594,7 +6620,7 @@ export class WorldRuntime {
 
   getState(){
     return {
-      player:{x:this.player.x,y:this.player.y,rotation:this.player.rotation,direction:this.player.direction},
+      player:{x:this.player.x,y:this.player.y,vx:this.player.vx,vy:this.player.vy,rotation:this.player.rotation,direction:this.player.direction},
       collected:[...this.collected],
       navalPlayerHp:this.navalPlayerHp,
       ammo:normalizeAmmoInventory(this.state.ammo||{}),
