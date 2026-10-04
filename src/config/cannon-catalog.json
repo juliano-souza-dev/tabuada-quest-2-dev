@@ -1,6 +1,6 @@
 {
   "schema": "tq.cannon-catalog",
-  "version": 4,
+  "version": 5,
   "defaultCannonId": "cannon-basic",
   "cannons": [
     {
@@ -13,7 +13,7 @@
         "unlock": "R1",
         "unlockRegion": 1
       },
-      "damageMultiplier": 1,
+      "damageMultiplier": 2.5,
       "function": "Canhão inicial",
       "range": 700,
       "projectileSpeed": 900,
@@ -42,7 +42,7 @@
         "unlock": "R2",
         "unlockRegion": 2
       },
-      "damageMultiplier": 1.1,
+      "damageMultiplier": 3.5,
       "function": "Primeiro upgrade",
       "range": 850,
       "projectileSpeed": 950,
@@ -70,7 +70,7 @@
         "unlock": "R4",
         "unlockRegion": 4
       },
-      "damageMultiplier": 1.2,
+      "damageMultiplier": 5,
       "function": "Combate pesado",
       "range": 1100,
       "projectileSpeed": 1050,
@@ -98,7 +98,7 @@
         "unlock": "R8",
         "unlockRegion": 8
       },
-      "damageMultiplier": 1.35,
+      "damageMultiplier": 7.5,
       "function": "Canhão de alto nível",
       "range": 1200,
       "projectileSpeed": 1100,
@@ -126,7 +126,7 @@
         "unlock": "Evento",
         "unlockRegion": null
       },
-      "damageMultiplier": 1.25,
+      "damageMultiplier": 6,
       "function": "Halloween",
       "range": 1050,
       "projectileSpeed": 1050,
@@ -156,7 +156,7 @@
         "unlock": "Evento",
         "unlockRegion": null
       },
-      "damageMultiplier": 1.25,
+      "damageMultiplier": 6,
       "function": "Variante visual Halloween",
       "range": 1050,
       "projectileSpeed": 1050,
