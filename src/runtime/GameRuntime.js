@@ -420,7 +420,18 @@ export class GameRuntime {
       const online=event.detail?.online===true&&event.detail?.authority==="server";
       this.worldRuntime?.setServerWorldAuthority?.(online);
       if(online&&this.worldRuntime){
+        this.worldRuntime?.showGameplayToast?.("🌐 Servidor online · mundo multiplayer sincronizado",1800);
         this.multiplayer?.ensureWorld?.(this.worldRuntime.dynamicWorldSeed?.()||{});
+        globalThis.dispatchEvent?.(new CustomEvent("tq:network-mode",{detail:{mode:"online",worldId}}));
+        return;
+      }
+      if(event.detail?.reason==="server_disconnected"){
+        this.worldRuntime?.showGameplayToast?.("⚠️ Servidor caiu · entrando no modo offline",4200);
+        globalThis.dispatchEvent?.(new CustomEvent("tq:network-mode",{detail:{
+          mode:"offline",
+          reason:"server_disconnected",
+          worldId
+        }}));
       }
     };
     this.multiplayer.addEventListener?.("players",onPlayers);
