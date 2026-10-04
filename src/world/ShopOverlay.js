@@ -5,6 +5,7 @@ const SHOP_BUTTON=new URL("../../assets/hud/halloween_hud_loja.webp",import.meta
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const money=value=>new Intl.NumberFormat("pt-BR").format(Math.max(0,Math.floor(Number(value)||0)));
 
+const HULL_REINFORCEMENT={id:"hull-reinforcement",type:"item",name:"Reforço de Casco",description:"+1.000.000 de proteção por até 5 min. Afundou, perdeu.",image:"",price:4,currency:"gold",purchasable:true};
 const normalizeItems=(source,type)=>{
   const list=Array.isArray(source)?source:[];
   return list.filter(item=>item&&item.available!==false&&item.shop?.purchasable===true).map(item=>({
@@ -31,7 +32,8 @@ export class ShopOverlay{
     this.catalogs={
       ammo:normalizeItems(options.ammoCatalog,"ammo"),
       cannons:normalizeItems(options.cannonCatalog,"cannon"),
-      ships:normalizeItems(options.shipCatalog,"ship")
+      ships:normalizeItems(options.shipCatalog,"ship"),
+      items:[HULL_REINFORCEMENT]
     };
     this.getBalances=typeof options.getBalances==="function"?options.getBalances:()=>({gold:0,rubies:0});
     this.onPurchase=typeof options.onPurchase==="function"?options.onPurchase:null;
@@ -76,7 +78,7 @@ export class ShopOverlay{
           <button type="button" data-shop-category="cannons" aria-label="Canhões"></button>
           <button type="button" data-shop-category="ships" aria-label="Navios"></button>
           <button type="button" data-shop-category="crew" aria-label="Tripulação" disabled></button>
-          <button type="button" data-shop-category="items" aria-label="Itens" disabled></button>
+          <button type="button" data-shop-category="items" aria-label="Itens"></button>
         </nav>
         <div class="tq-world-shop__list" data-shop-list></div>
         <div class="tq-world-shop__feedback" data-shop-feedback aria-live="polite" role="status" aria-atomic="true">
