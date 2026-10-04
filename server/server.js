@@ -55,6 +55,25 @@ function publicEntity(e){
     contributors:{...(e.contributors||{})},updatedAt:e.updatedAt
   };
 }
+function publicProjectile(p,now=Date.now()){
+  const createdAt=Number(p?.createdAt)||now;
+  const resolvesAt=Math.max(createdAt+1,Number(p?.resolvesAt)||createdAt+1);
+  const progress=clamp((now-createdAt)/(resolvesAt-createdAt),0,1);
+  const from=p?.from&&typeof p.from==="object"?p.from:{x:0,y:0};
+  const to=p?.to&&typeof p.to==="object"?p.to:from;
+  return {
+    id:p.id,shotId:p.shotId||p.id,
+    ownerType:p.ownerType,ownerId:p.ownerId,ownerUid:p.ownerUid,
+    targetType:p.targetType,targetId:p.targetId,
+    ammoId:p.ammoId,cannonId:p.cannonId,
+    damage:p.damage,projectileSpeed:p.projectileSpeed,duration:p.duration,
+    createdAt,resolvesAt,progress,
+    from:{x:Number(from.x)||0,y:Number(from.y)||0},
+    to:{x:Number(to.x)||0,y:Number(to.y)||0},
+    x:(Number(from.x)||0)+((Number(to.x)||0)-(Number(from.x)||0))*progress,
+    y:(Number(from.y)||0)+((Number(to.y)||0)-(Number(from.y)||0))*progress
+  };
+}
 function bossMap(r){
   const out={};
   for(const e of r.entities.values()){
@@ -87,7 +106,8 @@ function stateDelta(r,now=Date.now()){
       id:e.id,x:e.x,y:e.y,rotation:e.rotation,direction:e.direction,
       vx:e.vx,vy:e.vy,hp:e.hp,maxHp:e.maxHp,defeated:e.defeated,stopped:e.stopped,
       respawnAt:e.respawnAt||0,spawnId:e.spawnId,updatedAt:e.updatedAt
-    }]))
+    }])),
+    projectiles:Object.fromEntries([...r.projectiles].map(([id,p])=>[id,publicProjectile(p,now)]))
   };
 }
 function snapshot(r){
@@ -97,6 +117,7 @@ function snapshot(r){
     type:"snapshot",worldId:r.id,serverTime:now,
     players:[...r.players.values()].map(publicPlayer),
     entities:Object.fromEntries([...r.entities].map(([id,e])=>[id,publicEntity(e)])),
+    projectiles:Object.fromEntries([...r.projectiles].map(([id,p])=>[id,publicProjectile(p,now)])),
     bosses:bossMap(r)
   };
 }
@@ -213,7 +234,6 @@ function spawnProjectile(r,data={}){
     resolvesAt:now+duration
   };
   r.projectiles.set(id,projectile);
-  broadcast(r,{type:"projectile.spawn",...projectile});
   return projectile;
 }
 function resolveProjectile(r,p,now=Date.now()){
