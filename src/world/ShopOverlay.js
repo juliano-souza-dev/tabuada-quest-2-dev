@@ -13,13 +13,14 @@ const normalizeItems=(source,type)=>{
     type,
     name:String(item.name||item.id||"Item"),
     description:type==="ammo"
-      ?`Dano ${Number(item.damage)||0} · Velocidade ${Number(item.projectileSpeed)||0}`
+      ?`Dano ${Number(item.damage)||0} · Velocidade ${Number(item.projectileSpeed)||0} · Pacote ${Math.max(1,Math.floor(Number(item.shop?.packQuantity)||1))}`
       :type==="cannon"
         ?String(item.description||"Canhão para combate naval")
         :String(item.description||"Navio disponível"),
     image:String(item.effects?.texture||item.asset||item.image||item.sprite||""),
     price:Math.max(0,Number(item.shop?.price??item.price??0)||0),
     currency:String(item.shop?.currency||item.currency||"gold").toLowerCase(),
+    packQuantity:Math.max(1,Math.floor(Number(item.shop?.packQuantity)||1)),
     purchasable:true
   })).filter(item=>item.id);
 };
