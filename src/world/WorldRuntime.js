@@ -6214,11 +6214,12 @@ export class WorldRuntime {
       bounds:{left:area.left,top:area.top,right:area.right,bottom:area.bottom},
       entities:this.entities
         .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship")
-        .map(entity=>{
+        .map((entity,serverSlot)=>{
           const hp=this.navalHpState(entity);
           const nav=entity.npcNavigation||{};
           return {
             id:String(entity.id||""),
+            serverSlot,
             npcId:String(entity.npcId||""),
             shipId:String(entity.shipId||""),
             name:String(entity.label||entity.shipName||"NPC"),
@@ -6261,7 +6262,10 @@ export class WorldRuntime {
     for(const state of Object.values(states)){
       const id=String(state?.id||"");
       if(!id)continue;
+      const generatedShips=this.entities.filter(item=>item?.runtimeGenerated&&String(item.type||"")==="ship");
+      const slot=Number(state?.serverSlot);
       const entity=this.entities.find(item=>String(item?.id||"")===id)
+        ||(Number.isInteger(slot)&&slot>=0?generatedShips[slot]||null:null)
         ||this.entities.find(item=>item?.runtimeGenerated&&String(item?.npcId||"")===String(state?.npcId||""));
       if(!entity)continue;
       entity.serverAuthoritative=true;
