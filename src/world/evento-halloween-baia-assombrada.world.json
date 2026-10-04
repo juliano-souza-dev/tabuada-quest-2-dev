@@ -263,6 +263,23 @@
     },
     "types": [
       {
+        "npcId": "boss-halloween-dreadnought",
+        "shipId": "ship-halloween-dreadnought",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 300,
+        "hp": 5000000,
+        "rewards": {
+          "shipId": "ship-halloween-dreadnought"
+        },
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 420,
+          "minDistance": 900
+        }
+      },
+      {
         "npcId": "npc-halloween-pumpkin-corsair",
         "shipId": "ship-halloween-pumpkin-corsair",
         "count": 5,
