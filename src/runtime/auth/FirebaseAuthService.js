@@ -14,6 +14,7 @@ export class FirebaseAuthService extends EventTarget {
     this.busy=false;
     this.googleScriptPromise=null;
     this.refreshPromise=null;
+    this.lastCode="";
   }
 
   static async fromUrl(url){
@@ -55,12 +56,14 @@ export class FirebaseAuthService extends EventTarget {
       uid:String(this.session?.uid||""),
       email:String(this.session?.email||""),
       displayName:String(this.session?.displayName||""),
-      online:globalThis.navigator?.onLine!==false
+      online:globalThis.navigator?.onLine!==false,
+      lastCode:String(this.lastCode||"")
     });
   }
 
   emit(code,ok=true,extra={}){
-    const detail={ok:Boolean(ok),code:String(code||""),status:this.status(),...extra};
+    this.lastCode=String(code||"");
+    const detail={ok:Boolean(ok),code:this.lastCode,status:this.status(),...extra};
     this.dispatchEvent(new CustomEvent("change",{detail}));
     globalThis.dispatchEvent?.(new CustomEvent("tq:auth-change",{detail}));
     return detail;
