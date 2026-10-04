@@ -4610,7 +4610,9 @@ export class WorldRuntime {
     if(!this.entityLayer||!(Number(amount)>0))return;
     const el=document.createElement("span");
     el.className="tq-world-damage-number"+(received?" is-received":"");
-    el.textContent="-"+Math.max(1,Math.floor(Number(amount)||1));
+    const raw=Math.max(0.1,Number(amount)||0.1);
+    const display=Math.round(raw*10)/10;
+    el.textContent="-"+(Number.isInteger(display)?String(display):display.toFixed(1));
     el.style.left=(Number(x)||0)+"px";
     el.style.top=(Number(y)||0)+"px";
     this.entityLayer.append(el);
@@ -4622,9 +4624,10 @@ export class WorldRuntime {
   applyDirectNavalDamage(entity,amount=1,{burstIndex=0,burstTotal=1}={}){
     if(!entity||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
     const hp=this.navalHpState(entity);
-    const next=Math.max(0,hp.current-Math.max(1,Number(amount)||1));
+    const applied=Math.max(0.1,Number(amount)||0.1);
+    const next=Math.max(0,Math.round((hp.current-applied)*10)/10);
     this.navalHp.set(String(entity.id),next);
-    const dealt=Math.max(0,hp.current-next);
+    const dealt=Math.max(0,Math.round((hp.current-next)*10)/10);
     const total=Math.max(1,Number(burstTotal)||1);
     const index=Math.max(0,Math.min(total-1,Number(burstIndex)||0));
     // Um ataque com vários canhões chega quase no mesmo instante. Espalhar os
@@ -4906,11 +4909,11 @@ export class WorldRuntime {
       if(incoming<=0)return true;
     }else if(this.hullReinforcement){this.hullReinforcement.hp=0;this.hullReinforcement.expiresAt=0}
     const previousHp=this.navalPlayerHp;
-    this.navalPlayerHp=Math.max(0,this.navalPlayerHp-incoming);
+    this.navalPlayerHp=Math.max(0,Math.round((this.navalPlayerHp-incoming)*10)/10);
     this.showNavalDamageNumber({
       x:Number(this.player?.x)||0,
       y:(Number(this.player?.y)||0)-Math.max(22,(Number(this.config.player?.height)||150)*.36),
-      amount:Math.max(0,previousHp-this.navalPlayerHp),
+      amount:Math.max(0,Math.round((previousHp-this.navalPlayerHp)*10)/10),
       received:true
     });
     if(this.actionMessage){
