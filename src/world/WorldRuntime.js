@@ -189,6 +189,8 @@ export class WorldRuntime {
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
+    this.getConsumableQuantity=typeof options.getConsumableQuantity==="function"?options.getConsumableQuantity:()=>0;
+    this.onConsumeItem=typeof options.onConsumeItem==="function"?options.onConsumeItem:null;
     this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
     this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
@@ -233,6 +235,8 @@ export class WorldRuntime {
           missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
+          hullReinforcementQuantity:this.getConsumableQuantity("hull-reinforcement"),
+          hullReinforcementActive:Boolean(this.hullReinforcement?.hp>0&&Date.now()<this.hullReinforcement.expiresAt),
           target:{
             visible:targetInRange,
             name:target?String(target.label||target.shipName||target.name||"Navio inimigo"):"",
@@ -244,6 +248,8 @@ export class WorldRuntime {
       },
       onAttack:()=>this.activateNearby(),
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
+      onFollow:()=>this.toggleCombatFollow(), 
+      onUseHullReinforcement:()=>this.useHullReinforcement(),
       onRepair:()=>this.beginPlayerRepair({forced:false}),
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
       onShop:()=>this.shopOverlay?.open?.(),
@@ -4673,6 +4679,24 @@ export class WorldRuntime {
     return true;
   }
 
+  toggleCombatFollow(){
+    const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
+    if(!this.navalAutoFire||!target)return false;
+    this.followCombatTarget=!this.followCombatTarget;
+    this.showGameplayToast(this.followCombatTarget?"🎯 Seguindo alvo":"Seguimento desativado",1300);
+    return true;
+  }
+
+  useHullReinforcement(){
+    if(this.hullReinforcement?.hp>0&&Date.now()<this.hullReinforcement.expiresAt)return false;
+    if(Math.max(0,Number(this.getConsumableQuantity("hull-reinforcement"))||0)<=0){
+      this.showGameplayToast("Sem Reforço de Casco.",1300);return false;
+    }
+    const consumed=this.onConsumeItem?.("hull-reinforcement");
+    if(consumed===false)return false;
+    return this.activateHullReinforcement();
+  }
+
   activateHullReinforcement(){
     this.hullReinforcement={hp:1000000,expiresAt:Date.now()+300000};
     this.showGameplayToast("🛡 Reforço de Casco ativado · +1.000.000 HP · 5 min",2200);
@@ -4706,6 +4730,7 @@ export class WorldRuntime {
     }
     if(this.navalPlayerHp<=0){
       this.hullReinforcement={hp:0,expiresAt:0};
+    this.followCombatTarget=false;
       this.navalAutoFire=false;
       this.navalNextShotAt=0;
       this.navalHostile.clear();
