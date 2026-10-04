@@ -5873,7 +5873,7 @@ export class WorldRuntime {
     const visibleTypes=new Set(
       Array.isArray(config.types)&&config.types.length
         ?config.types.map(value=>String(value).toLowerCase())
-        :["location","island","ship"]
+        :["location","island","ship","region-exit"]
     );
     if(config.showLocations===false){
       visibleTypes.delete("location");
@@ -5970,6 +5970,27 @@ export class WorldRuntime {
         ctx.ellipse(0,0,radius,radius*.68,0,0,Math.PI*2);
         ctx.fillStyle="rgba(102,187,106,.98)";
         ctx.strokeStyle="rgba(226,255,210,.98)";
+        ctx.lineWidth=1.5;
+        ctx.fill();
+        ctx.stroke();
+      }else if(logicalType==="region-exit"){
+        const dx=Number(entity.x||0)-Number(this.config.width||0)/2;
+        const dy=Number(entity.y||0)-Number(this.config.height||0)/2;
+        const angle=Math.abs(dx)>Math.abs(dy)
+          ?(dx<0?-Math.PI/2:Math.PI/2)
+          :(dy<0?0:Math.PI);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0,-8);
+        ctx.lineTo(6,3);
+        ctx.lineTo(2.5,3);
+        ctx.lineTo(2.5,7);
+        ctx.lineTo(-2.5,7);
+        ctx.lineTo(-2.5,3);
+        ctx.lineTo(-6,3);
+        ctx.closePath();
+        ctx.fillStyle="rgba(126,231,255,.98)";
+        ctx.strokeStyle="rgba(232,252,255,.98)";
         ctx.lineWidth=1.5;
         ctx.fill();
         ctx.stroke();
