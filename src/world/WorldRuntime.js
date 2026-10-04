@@ -261,6 +261,8 @@ export class WorldRuntime {
     this.coopBossRewardNotified=new Set();
     this.coopBossLocalDamage=new Map();
     this.coopLocalUid="";
+    this.serverWorldAuthority=false;
+    this.serverEntityStates=new Map();
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -716,6 +718,7 @@ export class WorldRuntime {
 
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
+    if(this.serverWorldAuthority&&entity.serverAuthoritative===true)return;
     const nav=entity.npcNavigation;
     if(entity.devFrozen||entity.bossCombatStopped===true){
       if(nav){
@@ -4884,20 +4887,18 @@ export class WorldRuntime {
         this.audio?.play("cannon-impact-ship");
         const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
         const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
-        if(coopBoss){
+        const serverOwned=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.damageEntity;
+        if(serverOwned){
+          const shotId="entity-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+          // While the socket is authoritative there is no local HP fallback.
+          // If the transport drops, GameRuntime switches the world back to its
+          // independent offline simulation before subsequent shots.
+          this.coopTransport.damageEntity(String(entity.id||""),shotDamage,{shotId}).catch?.(()=>{});
+        }else if(coopBoss){
           const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
           Promise.resolve(this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}))
-            .then(sent=>{
-              // The boss must remain playable even when the local Node/WebSocket
-              // server is offline. Only skip local damage when the server
-              // explicitly accepted this hit and will broadcast authoritative HP.
-              if(sent!==true){
-                this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
-              }
-            })
-            .catch(()=>{
-              this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
-            });
+            .then(sent=>{if(sent!==true)this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount})})
+            .catch(()=>this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount}));
         }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
       },duration);
     }
@@ -6090,6 +6091,155 @@ export class WorldRuntime {
     if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
   }
 
+  setServerWorldAuthority(active=false){
+    this.serverWorldAuthority=active===true;
+    if(!this.serverWorldAuthority){
+      this.serverEntityStates.clear();
+      for(const entity of this.entities){
+        if(!entity?.runtimeGenerated)continue;
+        entity.serverAuthoritative=false;
+        entity.serverNetFrom=null;
+        entity.serverNetTo=null;
+      }
+    }
+    return this.serverWorldAuthority;
+  }
+
+  dynamicWorldSeed(){
+    const area=this.getPlayableBounds();
+    return {
+      bounds:{left:area.left,top:area.top,right:area.right,bottom:area.bottom},
+      entities:this.entities
+        .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship")
+        .map(entity=>{
+          const hp=this.navalHpState(entity);
+          const nav=entity.npcNavigation||{};
+          return {
+            id:String(entity.id||""),
+            npcId:String(entity.npcId||""),
+            shipId:String(entity.shipId||""),
+            name:String(entity.label||entity.shipName||"NPC"),
+            x:Number(entity.x)||0,
+            y:Number(entity.y)||0,
+            rotation:Number(entity.rotation)||0,
+            direction:String(entity.direction||"n"),
+            speed:Math.max(0,Number(nav.speed)||0),
+            minSpeed:Math.max(0,Number(nav.minSpeed)||0),
+            acceleration:Math.max(0,Number(nav.acceleration)||0),
+            hp:hp.current,
+            maxHp:hp.max,
+            boss:this.isCoopBoss(entity),
+            respawn:entity.respawn===true,
+            respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||30000),
+            spawnId:Math.max(1,Number(entity.npcSpawnCycle)||1)
+          };
+        })
+    };
+  }
+
+  syncServerEntities(states={}){
+    if(!states||typeof states!=="object")return false;
+    this.serverWorldAuthority=true;
+    const now=performance.now();
+    for(const state of Object.values(states)){
+      const id=String(state?.id||"");
+      if(!id)continue;
+      const entity=this.entities.find(item=>String(item?.id||"")===id)
+        ||this.entities.find(item=>item?.runtimeGenerated&&String(item?.npcId||"")===String(state?.npcId||""));
+      if(!entity)continue;
+      entity.serverAuthoritative=true;
+      const targetX=Number(state.x)||0,targetY=Number(state.y)||0,targetRotation=Number(state.rotation)||0;
+      const sampleMs=clamp(now-Number(entity.serverNetSampleAt||now-50),40,140);
+      entity.serverNetFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
+      entity.serverNetTo={x:targetX,y:targetY,rotation:targetRotation,at:now+Math.max(50,sampleMs*1.1)};
+      entity.serverNetSampleAt=now;
+      entity.direction=String(state.direction||entity.direction||"n");
+      if(entity.npcNavigation){
+        entity.npcNavigation.vx=Number(state.vx)||0;
+        entity.npcNavigation.vy=Number(state.vy)||0;
+      }
+      const hp=Math.max(0,Number(state.hp)||0);
+      this.navalHp.set(String(entity.id),hp);
+      entity.serverSpawnId=Math.max(1,Number(state.spawnId)||1);
+      entity.bossCombatStopped=state.stopped===true;
+      const defeated=state.defeated===true||hp<=0;
+      if(defeated){
+        this.navalDestroying.add(String(entity.id));
+        if(entity.el)entity.el.hidden=true;
+        if(entity.nameEl)entity.nameEl.hidden=true;
+        entity.collision=normalizeCollision({...entity.collision,active:false,action:"none"},entity);
+      }else{
+        const wasDown=this.navalDestroying.delete(String(entity.id));
+        if(entity.el)entity.el.hidden=false;
+        if(entity.nameEl)entity.nameEl.hidden=false;
+        if(wasDown||entity.collision?.active===false){
+          entity.collision=normalizeCollision({...entity.collision,active:true,action:"none"},entity);
+          this.syncCombatClickableEntity(entity);
+          this.syncCollisionVisual(entity);
+        }
+      }
+      this.serverEntityStates.set(id,state);
+    }
+    return true;
+  }
+
+  updateServerEntities(time=performance.now()){
+    if(!this.serverWorldAuthority)return;
+    for(const entity of this.entities){
+      if(!entity?.serverAuthoritative)continue;
+      const a=entity.serverNetFrom,b=entity.serverNetTo;
+      if(!a||!b)continue;
+      const t=clamp((time-a.at)/Math.max(1,b.at-a.at),0,1);
+      entity.x=a.x+(b.x-a.x)*t;
+      entity.y=a.y+(b.y-a.y)*t;
+      entity.rotation=a.rotation+(b.rotation-a.rotation)*t;
+      entity.anchorX=entity.x;
+      entity.anchorY=entity.y;
+    }
+  }
+
+  applyAuthoritativeEntityHit(event={}){
+    const entity=this.entities.find(item=>String(item?.id||"")===String(event.entityId||""));
+    if(!entity)return false;
+    const hp=Math.max(0,Number(event.hp)||0);
+    this.navalHp.set(String(entity.id),hp);
+    if(Number(event.damage)>0){
+      this.showNavalDamageNumber({
+        x:Number(entity.visualX??entity.x)||0,
+        y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36),
+        amount:Number(event.damage)||0
+      });
+    }
+    if(event.boss===true){
+      const bossId=this.coopBossId(entity);
+      const state=this.coopBossStates.get(bossId)||{};
+      this.coopBossStates.set(bossId,{...state,...event});
+      this.coopBossLocalDamage.set(bossId,Math.max(0,Number(event.contributors?.[this.coopLocalUid])||0));
+    }
+    if(event.defeated===true||hp<=0){
+      const id=String(entity.id);
+      if(!this.navalDestroying.has(id)){
+        this.navalDestroying.add(id);
+        this.navalRenderer?.destroyShip?.({
+          at:{x:Number(entity.visualX??entity.x)||0,y:Number(entity.visualY??entity.y)||0},
+          size:Math.max(48,Number(entity.width)||96,Number(entity.height)||96),
+          duration:1100
+        });
+      }
+      if(entity.el)entity.el.hidden=true;
+      if(entity.nameEl)entity.nameEl.hidden=true;
+      if(event.boss===true){
+        this.notifyCoopBossDefeated(entity);
+      }else if(String(event.uid||"")===this.coopLocalUid){
+        const rewards=this.rollNpcRewards(entity);
+        rewards.ammo={id:"cannonball-halloween-purple",quantity:5};
+        const claimKey=String(this.config.id||"world")+":"+id+":server-spawn:"+Math.max(1,Number(event.spawnId)||1);
+        this.onRewardCollected?.({entity:this.cleanEntity(entity),rewards:structuredClone(rewards),claimKey});
+      }
+    }
+    return true;
+  }
+
   setCoopTransport(transport=null){
     this.coopTransport=transport||null;
     this.coopLocalUid=String(transport?.uid||"");
@@ -6214,6 +6364,9 @@ export class WorldRuntime {
       this.navalRenderer?.fire?.({from:event.from,to:event.to,duration:Math.max(120,Number(event.duration)||620),ammo:this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||undefined});
       this.audio?.play("cannon-shot");
     }
+    if(event.type==="entity-hit"){
+      this.applyAuthoritativeEntityHit(event);
+    }
     if(event.type==="boss-hit"){
       const bossId=String(event.bossId||"");
       const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);
@@ -6250,6 +6403,7 @@ export class WorldRuntime {
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     this.updatePlayerVisual(time,dt);
     this.updateRemotePlayers(time);
+    this.updateServerEntities(time);
     this.updatePlayerWaterEffects(time);
     // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
