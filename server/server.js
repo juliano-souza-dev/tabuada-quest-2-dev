@@ -3,6 +3,7 @@ import http from "node:http";
 import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
+const PROTOCOL_VERSION="20261004-authoritative-v1";
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
@@ -280,7 +281,7 @@ const server=http.createServer((req,res)=>{
     const entities=[...rooms.values()].reduce((sum,r)=>sum+r.entities.size,0);
     const projectiles=[...rooms.values()].reduce((sum,r)=>sum+r.projectiles.size,0);
     res.writeHead(200,{"content-type":"application/json"});
-    res.end(JSON.stringify({ok:true,rooms:rooms.size,players,entities,projectiles,uptime:process.uptime()}));
+    res.end(JSON.stringify({ok:true,protocolVersion:PROTOCOL_VERSION,rooms:rooms.size,players,entities,projectiles,uptime:process.uptime()}));
     return;
   }
   res.writeHead(404);res.end();
@@ -296,7 +297,7 @@ wss.on("connection",ws=>{
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
       current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
-      send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server"});
+      send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
     }
