@@ -11,7 +11,7 @@
     "authority": "node-websocket",
     "maxPlayersPerRoom": 5,
     "snapshotHz": 20,
-    "websocketURL": "wss://ws.ihubenglish.com"
+    "websocketURL": "wss://ws2.ihubenglish.com"
   },
   "gameContent": {
     "enabled": true,
