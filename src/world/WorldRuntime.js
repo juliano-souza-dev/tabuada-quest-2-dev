@@ -5203,12 +5203,6 @@ export class WorldRuntime {
 
     if(this.serverWorldAuthority===true)return;
 
-    for(const entity of this.entities){
-      if(!entity?.runtimeGenerated||entity.devFrozen||entity.npcAttitude!=="hostile"||!this.isClickableCombatShip(entity))continue;
-      const id=String(entity.id);
-      if(!this.navalHostile.has(id))this.navalHostile.set(id,{nextShotAt:0});
-    }
-
     for(const [id,state] of [...this.navalHostile.entries()]){
       const entity=this.entityByIdGet(id);
       if(!entity||entity.devFrozen||!this.isClickableCombatShip(entity)||this.collected.has(entity.id)||this.navalDestroying.has(entity.id)){
