@@ -196,6 +196,8 @@ export class WorldRuntime {
     this.getConsumableQuantity=typeof options.getConsumableQuantity==="function"?options.getConsumableQuantity:()=>0;
     this.onConsumeItem=typeof options.onConsumeItem==="function"?options.onConsumeItem:null;
     this.onRuntimeStateChange=typeof options.onRuntimeStateChange==="function"?options.onRuntimeStateChange:null;
+    this.onInviteParty=typeof options.onInviteParty==="function"?options.onInviteParty:null;
+    this.onPartyNpcDefeat=typeof options.onPartyNpcDefeat==="function"?options.onPartyNpcDefeat:null;
     this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
     this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
@@ -1284,13 +1286,22 @@ export class WorldRuntime {
   syncCombatClickableEntity(entity){
     const el=entity?.el;
     if(!el)return;
+    const multiplayerInvite=entity.runtimeMultiplayer===true;
     const clickable=this.isClickableCombatShip(entity);
     el.dataset.combatClickable=clickable?"true":"false";
-    el.classList.toggle("is-combat-clickable",clickable);
+    el.dataset.partyClickable=multiplayerInvite?"true":"false";
+    el.classList.toggle("is-combat-clickable",clickable||multiplayerInvite);
     if(el.dataset.combatClickBound==="1")return;
     el.dataset.combatClickBound="1";
     el.addEventListener("click",event=>{
       if(this.mode!=="play"||this.challengeActive||this.combatActive)return;
+      if(entity.runtimeMultiplayer===true){
+        event.preventDefault();
+        event.stopPropagation();
+        const uid=String(entity.id||"").replace(/^multiplayer\./,"");
+        if(uid)this.onInviteParty?.({uid,name:String(entity.label||"Pirata"),shipId:String(entity.shipId||"")});
+        return;
+      }
       if(!this.isClickableCombatShip(entity))return;
       event.preventDefault();
       event.stopPropagation();
@@ -6529,7 +6540,10 @@ export class WorldRuntime {
         });
       }
     }
-    if(String(event.ownerUid||"")===this.coopLocalUid&&Number(event.damage)>0&&Number(event.rewardGold)>0){
+    const eventPartyMembers=Array.isArray(event.partyMembers)?event.partyMembers.map(String):[];
+    const localInParty=eventPartyMembers.includes(this.coopLocalUid);
+    const localOwnsShot=String(event.ownerUid||"")===this.coopLocalUid;
+    if(localOwnsShot&&Number(event.damage)>0&&Number(event.rewardGold)>0){
       const rewardGold=Math.max(0,Math.floor(Number(event.rewardGold)||0));
       const claimKey="hit:"+String(event.shotId||"");
       if(rewardGold>0&&claimKey!=="hit:"){
@@ -6538,7 +6552,6 @@ export class WorldRuntime {
           rewards:{gold:rewardGold},
           claimKey
         });
-        this.showGameplayToast("Acerto confirmado · +"+rewardGold+" ouro",1100);
       }
     }
     if(event.boss===true){
@@ -6562,11 +6575,21 @@ export class WorldRuntime {
       if(entity.nameEl)entity.nameEl.hidden=true;
       if(event.boss===true){
         this.notifyCoopBossDefeated(entity);
-      }else if(String(event.uid||"")===this.coopLocalUid){
-        const rewards=this.rollNpcRewards(entity);
-        rewards.ammo={id:"cannonball-halloween-purple",quantity:5};
-        const claimKey=String(this.config.id||"world")+":"+id+":server-spawn:"+Math.max(1,Number(event.spawnId)||1);
-        this.onRewardCollected?.({entity:this.cleanEntity(entity),rewards:structuredClone(rewards),claimKey});
+      }else{
+        if(localOwnsShot||localInParty){
+          this.onPartyNpcDefeat?.({
+            entity:this.cleanEntity(entity),
+            partyMembers:eventPartyMembers,
+            killerUid:String(event.ownerUid||event.uid||""),
+            spawnId:Math.max(1,Number(event.spawnId)||1)
+          });
+        }
+        if(localOwnsShot){
+          const rewards=this.rollNpcRewards(entity);
+          rewards.ammo={id:"cannonball-halloween-purple",quantity:5};
+          const claimKey=String(this.config.id||"world")+":"+id+":server-spawn:"+Math.max(1,Number(event.spawnId)||1);
+          this.onRewardCollected?.({entity:this.cleanEntity(entity),rewards:structuredClone(rewards),claimKey});
+        }
       }
     }
     return true;
