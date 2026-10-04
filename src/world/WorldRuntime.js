@@ -482,7 +482,7 @@ export class WorldRuntime {
 
   rollTreasureRewards(entity){
     const source=entity?.treasureRewards||{};
-    const result={gold:0,rubies:0};
+    const result={gold:0,rubies:0,ammoRewards:[]};
     const roll=(key)=>{
       const rule=source[key]&&typeof source[key]==="object"?source[key]:{};
       const chance=clamp(Number(rule.chance)||0,0,100);
@@ -490,7 +490,18 @@ export class WorldRuntime {
       const min=Math.max(0,Math.floor(Number(rule.min)||0)),max=Math.max(min,Math.floor(Number(rule.max)||min));
       return min+Math.floor(Math.random()*(max-min+1));
     };
-    result.gold=roll("gold");result.rubies=roll("rubies");return result;
+    result.gold=roll("gold");
+    result.rubies=roll("rubies");
+    for(const rule of Array.isArray(source.ammo)?source.ammo:[]){
+      const chance=clamp(Number(rule?.chance)||0,0,100);
+      if(Math.random()*100>=chance)continue;
+      const min=Math.max(0,Math.floor(Number(rule?.min)||0));
+      const max=Math.max(min,Math.floor(Number(rule?.max)||min));
+      const quantity=min+Math.floor(Math.random()*(max-min+1));
+      const id=String(rule?.id||rule?.ammoId||"").trim();
+      if(id&&quantity>0)result.ammoRewards.push({id,quantity});
+    }
+    return result;
   }
 
   updateTreasurePopulation(time=performance.now()){
@@ -4166,6 +4177,10 @@ export class WorldRuntime {
     if(gold)rewardParts.push("+"+gold+" ouro");
     if(rubies)rewardParts.push("+"+rubies+" rubi"+(rubies===1?"":"s"));
     if(xp)rewardParts.push("+"+xp+" XP");
+    for(const ammoReward of Array.isArray(rewards?.ammoRewards)?rewards.ammoRewards:[]){
+      const qty=Math.max(0,Math.floor(Number(ammoReward?.quantity)||0));
+      if(qty>0)rewardParts.push("+"+qty+" munições");
+    }
     if(rewards?.itemName||rewards?.itemId)rewardParts.push(String(rewards.itemName||rewards.itemId));
     if(rewards?.shipName||rewards?.shipId)rewardParts.push(String(rewards.shipName||rewards.shipId));
     const collectedLabel=entity.type==="treasure"?"Tesouro encontrado":String(entity.label||"Item")+" coletado";
@@ -4687,7 +4702,7 @@ export class WorldRuntime {
     const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
     const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId)
       ||(selectedAmmoId==="cannonball-halloween-purple"?HALLOWEEN_TEST_AMMO:null);
-    const ammoDamage=clamp(Math.floor(Number(ammo?.damage)||1),1,100000000);
+    const ammoDamage=clamp(Number(ammo?.damage)||1,0.1,100000000);
     const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
@@ -4741,7 +4756,7 @@ export class WorldRuntime {
         }
         this.audio?.play("cannon-impact-ship");
         const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,5);
-        const shotDamage=clamp(Math.round(ammoDamage*multiplier),1,100000000);
+        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
         if(coopBoss){
           const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
           this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}).catch?.(()=>{});
@@ -4891,7 +4906,10 @@ export class WorldRuntime {
             if(this.navalPlayerHp<=0||this.repairActive?.forced===true||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
             this.audio?.play("cannon-impact-ship");
             const multiplier=clamp(Number(cannon?.damageMultiplier)||1,.1,5);
-            const shotDamage=clamp(Math.round(stats.damage*multiplier),1,100000000);
+            const baseDamage=loadout.ammo
+              ?clamp(Number(loadout.ammo?.damage)||1,.1,100000000)
+              :clamp(Number(stats.damage)||1,.1,100000000);
+            const shotDamage=clamp(Math.round(baseDamage*multiplier*10)/10,.1,100000000);
             this.applyDirectPlayerNavalDamage(shotDamage,entity);
           },duration);
         }
