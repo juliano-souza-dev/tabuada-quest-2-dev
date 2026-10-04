@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1724-offline-fallback";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1724-offline-fallback";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1430-delta-netcode";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-1430-delta-netcode";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
