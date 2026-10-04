@@ -341,6 +341,7 @@ export class WorldRuntime {
     this.zoom=Number(config.editor?.zoom??0.58);
     this.globalCameraLocked=Number.isFinite(Number(options.globalCamera?.playZoom));
     this.playZoom=clamp(Number(options.globalCamera?.playZoom??config.camera?.playZoom??0.4841),.30,1.4);
+    this.combatCameraZoom=this.playZoom;
     this.playCameraOffset={x:0,y:0};
     this.playCameraDetached=false;
     this.playCameraRecenterAt=0;
@@ -3188,43 +3189,73 @@ export class WorldRuntime {
     const vh=this.viewportSize.height;
 
     if(this.mode==="play"){
-      const zoom=this.playZoom;
-      const halfW=Math.min(this.config.width/2,vw/(2*zoom));
-      const halfH=Math.min(this.config.height/2,vh/(2*zoom));
+      const combatCameraTarget=this.navalAutoFire===true
+        &&this.combatTarget
+        &&this.isClickableCombatShip(this.combatTarget)
+        ?this.combatTarget
+        :null;
 
-      if(this.playCameraDetached&&this.playCameraRecenterAt>0&&performance.now()>=this.playCameraRecenterAt){
+      let desiredZoom=this.playZoom;
+      if(combatCameraTarget){
+        const px=Number(this.player?.x)||0;
+        const py=Number(this.player?.y)||0;
+        const tx=Number(combatCameraTarget?.visualX??combatCameraTarget?.x)||0;
+        const ty=Number(combatCameraTarget?.visualY??combatCameraTarget?.y)||0;
+        const distance=Math.hypot(tx-px,ty-py);
+        const closeDistance=550;
+        const farDistance=2200;
+        const closeZoom=Math.max(this.playZoom,Math.min(.68,this.playZoom*1.42));
+        const farZoom=.30;
+        if(distance<=closeDistance){
+          desiredZoom=closeZoom;
+        }else if(distance>=farDistance){
+          desiredZoom=farZoom;
+        }else{
+          const t=clamp((distance-closeDistance)/(farDistance-closeDistance),0,1);
+          const eased=t*t*(3-2*t);
+          desiredZoom=closeZoom+(farZoom-closeZoom)*eased;
+        }
+
+        // Combat camera is always anchored to the local player. Manual camera
+        // detaching is suspended until combat ends.
         this.playCameraDetached=false;
         this.playCameraRecenterAt=0;
         if(this.recenterButton)this.recenterButton.hidden=true;
       }
 
-      if(this.playCameraDetached){
+      const previousZoom=Number(this.combatCameraZoom)||this.playZoom;
+      const zoom=immediate
+        ?desiredZoom
+        :previousZoom+(desiredZoom-previousZoom)*(1-Math.exp(-Math.max(.001,dt)*3.8));
+      this.combatCameraZoom=clamp(zoom,.30,1.4);
+
+      const halfW=Math.min(this.config.width/2,vw/(2*this.combatCameraZoom));
+      const halfH=Math.min(this.config.height/2,vh/(2*this.combatCameraZoom));
+
+      if(!combatCameraTarget&&this.playCameraDetached&&this.playCameraRecenterAt>0&&performance.now()>=this.playCameraRecenterAt){
+        this.playCameraDetached=false;
+        this.playCameraRecenterAt=0;
+        if(this.recenterButton)this.recenterButton.hidden=true;
+      }
+
+      if(!combatCameraTarget&&this.playCameraDetached){
         this.camera.x=clamp(this.camera.x,halfW,this.config.width-halfW);
         this.camera.y=clamp(this.camera.y,halfH,this.config.height-halfH);
       }else{
-        // During an active naval attack, frame the ship receiving the attack.
-        // Outside combat the camera keeps following the player as before.
-        const combatCameraTarget=this.navalAutoFire===true
-          &&this.combatTarget
-          &&this.isClickableCombatShip(this.combatTarget)
-          ?this.combatTarget
-          :null;
-        const focusX=Number(combatCameraTarget?.visualX??combatCameraTarget?.x??this.player.x);
-        const focusY=Number(combatCameraTarget?.visualY??combatCameraTarget?.y??this.player.y);
         const target={
-          x:clamp(focusX,halfW,this.config.width-halfW),
-          y:clamp(focusY,halfH,this.config.height-halfH)
+          x:clamp(Number(this.player?.x)||0,halfW,this.config.width-halfW),
+          y:clamp(Number(this.player?.y)||0,halfH,this.config.height-halfH)
         };
         if(immediate){
           this.camera.x=target.x;
           this.camera.y=target.y;
         }else{
-          const next=cameraFollowStep(this.camera,target,dt,4.5);
+          const next=cameraFollowStep(this.camera,target,dt,combatCameraTarget?6.2:4.5);
           this.camera.x=next.x;
           this.camera.y=next.y;
         }
       }
-      this.zoom=zoom;
+      this.zoom=this.combatCameraZoom;
     }else{
       this.clampEditorCamera();
     }
@@ -4999,11 +5030,9 @@ export class WorldRuntime {
   }
 
   toggleCombatFollow(){
-    const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
-    if(!this.navalAutoFire||!target)return false;
-    this.followCombatTarget=!this.followCombatTarget;
-    this.showGameplayToast(this.followCombatTarget?"🎯 Seguindo alvo":"Seguimento desativado",1300);
-    return true;
+    this.followCombatTarget=false;
+    this.showGameplayToast("📷 A câmera acompanha seu navio automaticamente.",1300);
+    return false;
   }
 
   useHullReinforcement(){
