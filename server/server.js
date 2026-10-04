@@ -18,6 +18,9 @@ const ammoById=new Map((Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).map
 const cannonById=new Map((Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).map(item=>[String(item?.id||""),item]));
 const log=(event,detail="")=>console.log(`[RT ${new Date().toISOString()}] ${event}${detail?` ${detail}`:""}`);
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
+const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
+const cannonDamagePerShot=cannon=>Math.max(.1,Number(cannon?.damagePerShot)||1);
+const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*10)/10;
 const key=v=>String(v||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
 const send=(ws,data)=>{if(ws.readyState===ws.OPEN)ws.send(JSON.stringify(data))};
 const broadcast=(room,data,except=null)=>{const raw=JSON.stringify(data);for(const p of room.players.values())if(p.ws!==except&&p.ws.readyState===p.ws.OPEN)p.ws.send(raw)};
@@ -447,7 +450,7 @@ wss.on("connection",ws=>{
         120,4000
       );
       const damage=authoritative
-        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,100),.1,100000000)
+        ?navalShotDamage(cannon,ammo)
         :clamp(Number(m.damage)||1,.1,100000000);
 
       if(authoritative&&!sameVolley){
@@ -463,7 +466,7 @@ wss.on("connection",ws=>{
         duration:Math.max(120,intercept.time*1000)
       });
       if(projectile){
-        log("FIRE+  ",`uid=${uid} target=${target.id} cannon=${cannonId} x${Number(cannon?.damageMultiplier)||1} ammo=${ammoId} damage=${damage} shot=${projectile.id}`);
+        log("FIRE+  ",`uid=${uid} target=${target.id} cannon=${cannonId} base=${cannonDamagePerShot(cannon)} ammo=${ammoId} factor=${ammoDamageFactor(ammo)} damage=${damage} shot=${projectile.id}`);
         send(ws,{type:"fire.accepted",shotId:projectile.id,targetId:target.id,ammoId,cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
         }
       return;
