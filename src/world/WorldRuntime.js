@@ -6576,7 +6576,7 @@ export class WorldRuntime {
       if(event.boss===true){
         this.notifyCoopBossDefeated(entity);
       }else{
-        if(localOwnsShot||localInParty){
+        if(localInParty&&!localOwnsShot){
           this.onPartyNpcDefeat?.({
             entity:this.cleanEntity(entity),
             partyMembers:eventPartyMembers,
