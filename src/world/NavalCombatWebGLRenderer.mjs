@@ -344,7 +344,7 @@ export class NavalCombatWebGLRenderer{
     return true;
   }
 
-  render({time=performance.now(),camera={x:0,y:0},zoom=1,width=1,height=1,damagedShips=[]}={}){
+  render({time=performance.now(),camera={x:0,y:0},zoom=1,width=1,height=1,damagedShips=[],treasures=[]}={}){
     if(!this.init()||!this.gl)return false;
     this.resize(width,height);
     const gl=this.gl;
@@ -382,7 +382,8 @@ export class NavalCombatWebGLRenderer{
     const visibleDamage=Array.isArray(damagedShips)
       ?damagedShips.filter(ship=>Number(ship?.damageRatio)>=.5&&Number(ship?.damageRatio)<1)
       :[];
-    if(!this.shots.length&&!this.muzzles.length&&!this.impacts.length&&!this.destructions.length&&!visibleDamage.length)return true;
+    const visibleTreasures=Array.isArray(treasures)?treasures.filter(item=>item&&Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y))):[];
+    if(!this.shots.length&&!this.muzzles.length&&!this.impacts.length&&!this.destructions.length&&!visibleDamage.length&&!visibleTreasures.length)return true;
 
     gl.useProgram(this.program);
     gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
@@ -418,6 +419,32 @@ export class NavalCombatWebGLRenderer{
       gl.blendFunc(gl.SRC_ALPHA,additive?gl.ONE:gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.POINTS,0,1);
     };
+
+    // Persistent treasure glow. It uses the same additive WebGL pass as combat FX,
+    // so treasure sprites remain untouched and no extra canvas/filter layer is needed.
+    for(const treasure of visibleTreasures){
+      const phase=now*.0026+(Number(treasure.phase)||0);
+      const pulse=.5+.5*Math.sin(phase);
+      const baseSize=clamp(Number(treasure.size)||76,36,220)*(Number(zoom)||1);
+      drawPoint(
+        Number(treasure.x)||0,
+        Number(treasure.y)||0,
+        baseSize*(1.05+pulse*.34),
+        0,
+        pulse,
+        true,
+        {color:"#f6a623",coreColor:"#fff3a3",glow:1.35,opacity:.16+pulse*.13}
+      );
+      drawPoint(
+        Number(treasure.x)||0,
+        Number(treasure.y)||0,
+        baseSize*(.48+pulse*.12),
+        0,
+        pulse,
+        true,
+        {color:"#ffd45a",coreColor:"#fffbd2",glow:1.65,opacity:.20+pulse*.16}
+      );
+    }
 
     for(const muzzle of this.muzzles){
       const progress=clamp((now-muzzle.startTime)/muzzle.duration,0,1);
