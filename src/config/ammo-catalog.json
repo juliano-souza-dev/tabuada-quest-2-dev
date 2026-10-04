@@ -27,7 +27,7 @@
       "id": "cannonball-halloween-purple",
       "name": "Bola de Canhão Halloween Roxa",
       "available": true,
-      "damage": 10,
+      "damage": 12,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -41,8 +41,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 2
       },
       "fx": {
         "preset": "halloween"
@@ -88,8 +88,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 1
       },
       "fx": {
         "preset": "rusted-iron"
@@ -113,8 +113,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 2
       },
       "fx": {
         "preset": "violet-crystal"
@@ -138,8 +138,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 2
       },
       "fx": {
         "preset": "ocean-pearl"
@@ -149,7 +149,7 @@
       "id": "orb-halloween-pumpkin",
       "name": "Orbe Místico de Abóbora Roxa",
       "available": true,
-      "damage": 10,
+      "damage": 13,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -163,8 +163,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 3
       },
       "event": "halloween",
       "fx": {
@@ -189,8 +189,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 2
       },
       "fx": {
         "preset": "volcanic-lava"
@@ -200,7 +200,7 @@
       "id": "terror-rose",
       "name": "Rosa do Terror",
       "available": true,
-      "damage": 10,
+      "damage": 13,
       "projectileSpeed": 720,
       "size": 1,
       "effects": {
@@ -214,8 +214,8 @@
         "unlimited": true
       },
       "shop": {
-        "purchasable": false,
-        "price": 0
+        "purchasable": true,
+        "price": 3
       },
       "event": "halloween",
       "fx": {
