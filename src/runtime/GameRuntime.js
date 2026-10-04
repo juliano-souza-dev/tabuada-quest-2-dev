@@ -71,6 +71,7 @@ export class GameRuntime {
     this.contentSource=this.contentStore?.status?.().ready?"canonical":"bootstrap";
     this.multiplayer=null;
     this.multiplayerCleanups=[];
+    this.ammoSyncTimer=0;
     this.accountState={};
     this.pedagogyRuntime=new PedagogyRuntime({getState:()=>this.accountState});
     this.authenticated=false;
@@ -1722,11 +1723,15 @@ export class GameRuntime {
         this.ensurePlayerCannons();
       }
       const ammoFloor=Math.max(0,Math.floor(Number(testConfig.grantAllAmmo)||0));
-      if(ammoFloor>0){
+      const ammoGrantVersion=1;
+      const alreadyGranted=Math.floor(Number(this.flags?.multiplayerTestAmmoGrantVersion)||0)>=ammoGrantVersion;
+      if(ammoFloor>0&&!alreadyGranted){
         for(const ammo of Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]){
           const ammoId=String(ammo?.id||"").trim();
           if(ammoId&&ammo?.available!==false)this.playerAmmo.stock[ammoId]=Math.max(ammoFloor,Math.floor(Number(this.playerAmmo.stock[ammoId])||0));
         }
+        this.flags=this.flags&&typeof this.flags==="object"?this.flags:{};
+        this.flags.multiplayerTestAmmoGrantVersion=ammoGrantVersion;
       }
       if(!this.playerAmmo.selectedAmmoId){
         this.playerAmmo.selectedAmmoId=String(this.ammoCatalog?.defaultAmmoId||this.ammoCatalog?.ammo?.[0]?.id||"");
@@ -1804,6 +1809,19 @@ export class GameRuntime {
       onAmmoChange:ammo=>{
         this.playerAmmo=normalizeGlobalAmmo(ammo);
         this.ensurePlayerAmmo({migrateWorldStates:false});
+        if(this.current?.kind==="world"&&this.worldRuntime?.getState){
+          const snapshot=this.worldRuntime.getState();
+          if(snapshot&&typeof snapshot==="object"){
+            delete snapshot.ammo;
+            this.worldStates[worldId]=clone(snapshot);
+          }
+        }
+        this.saveState();
+        clearTimeout(this.ammoSyncTimer);
+        this.ammoSyncTimer=setTimeout(()=>{
+          this.ammoSyncTimer=0;
+          this.syncCloud("ammo-consumed");
+        },900);
       },
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
@@ -2053,6 +2071,8 @@ export class GameRuntime {
   }
 
   destroy(){
+    clearTimeout(this.ammoSyncTimer);
+    this.ammoSyncTimer=0;
     this.captureCurrentState();
     this.saveState();
     this.stopMultiplayerWorld();
