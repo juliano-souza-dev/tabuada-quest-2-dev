@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 2,
+  "version": 3,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -242,7 +242,7 @@
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
-      "asset": "./assets/ships/events/halloween/navio_halloween_16_direcoes_transparente.webp",
+      "asset": "./assets/ships/events/halloween/galeão_halloween.webp",
       "shop": {
         "purchasable": false,
         "currency": "event",
@@ -269,9 +269,9 @@
         "periodMs": 3600,
         "wake": true,
         "shadow": true,
-        "src": "./assets/ships/events/halloween/navio_halloween_16_direcoes_transparente.webp",
+        "src": "./assets/ships/events/halloween/galeão_halloween.webp",
         "sprite": {
-          "src": "./assets/ships/events/halloween/navio_halloween_16_direcoes_transparente.webp",
+          "src": "./assets/ships/events/halloween/galeão_halloween.webp",
           "columns": 4,
           "rows": 4,
           "imageWidth": 1600,
