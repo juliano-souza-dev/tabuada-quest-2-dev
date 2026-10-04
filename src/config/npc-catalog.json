@@ -107,6 +107,25 @@
         "ammoId": "cannonball-standard",
         "ammoUnlimited": true
       }
+    },
+    {
+      "id": "npc-passive-gold-test",
+      "name": "Mercante de Treino",
+      "shipId": "ship-pirate-galleon-navio",
+      "navigation": {
+        "minSpeed": 35,
+        "speed": 90,
+        "acceleration": 360,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 20,
+        "attitude": "peaceful",
+        "damage": 1,
+        "cannonLoadout": [],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
     }
   ]
 }
