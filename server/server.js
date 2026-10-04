@@ -3,7 +3,7 @@ import http from "node:http";
 import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
-const PROTOCOL_VERSION="20261004-authoritative-v3";
+const PROTOCOL_VERSION="20261004-authoritative-v4";
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=15000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
@@ -353,7 +353,8 @@ wss.on("connection",ws=>{
     if(m.type==="join"){
       const worldId=key(m.worldId),id=key(m.uid);if(!worldId||!id)return;
       current=room(worldId);uid=id;
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
+      const cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -370,7 +371,7 @@ wss.on("connection",ws=>{
     }
     if(m.type==="state"){
       monitor.stateUpdates++;
-      p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
+      p.shipId=key(m.shipId||p.shipId);p.cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
     }
     if(m.type==="fire.request"||m.type==="projectile.fire"){
       monitor.shots++;
@@ -385,6 +386,13 @@ wss.on("connection",ws=>{
 
       const ammoId=key(m.ammoId),cannonId=key(m.cannonId);
       const ammo=ammoById.get(ammoId),cannon=cannonById.get(cannonId);
+      const equippedCannons=Array.isArray(p.cannonIds)?p.cannonIds:[];
+      if(authoritative&&(!cannonId||!equippedCannons.includes(cannonId))){
+        monitor.rejectedShots++;
+        log("FIRE-X ",`uid=${uid} reason=cannon_not_equipped cannon=${cannonId||"none"} ship=${p.shipId||"none"}`);
+        send(ws,{type:"fire.rejected",reason:"cannon_not_equipped",shotId:key(m.shotId),targetId,ammoId,cannonId,at:Date.now()});
+        return;
+      }
       if(authoritative&&(!ammo||ammo.available===false||!cannon||cannon.available===false)){
         monitor.rejectedShots++;
         log("FIRE-X ",`uid=${uid} reason=invalid_loadout ammo=${ammoId} cannon=${cannonId}`);
