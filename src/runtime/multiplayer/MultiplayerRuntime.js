@@ -14,7 +14,7 @@ export class MultiplayerRuntime extends EventTarget{
     super();
     this.auth=auth;this.config=config||{};this.enabled=options.enabled!==false;
     this.databaseURL=String(config.databaseURL||("https://"+config.projectId+"-default-rtdb.firebaseio.com")).replace(/\/$/,"");
-    this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";this.socket=null;this.socketReady=false;this.socketUrl=String(config.multiplayer?.websocketURL||options.websocketURL||"").trim();this.socketReconnect=0;
+    this.worldId="";this.timer=0;this.pollTimer=0;this.lastPush=0;this.lastEventKey="";this.socket=null;this.socketReady=false;this.socketUrl=String(config.multiplayer?.websocketURL||options.websocketURL||"").trim();this.socketReconnect=0;this.pendingBossEnsures=new Map();
     this.snapshotHz=clamp(Number(options.snapshotHz)||10,5,20);this.pollMs=Math.max(80,Number(options.pollMs)||100);
     this.getLocalState=null;this.shipId="";this.displayName="";this.lastBossSnapshot="";this.pushInFlight=false;this.pollInFlight=false;
   }
@@ -30,7 +30,7 @@ export class MultiplayerRuntime extends EventTarget{
     if(!this.socketUrl||!this.worldId||typeof WebSocket==="undefined")return false;
     try{this.socket?.close()}catch{}
     console.info("[TQ WS] connecting",this.socketUrl,this.worldId);const ws=new WebSocket(this.socketUrl);this.socket=ws;this.socketReady=false;
-    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;console.info("[TQ WS] open",this.worldId);const st=this.auth.status(),local=this.localPayload();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId,x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp}));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
+    ws.addEventListener("open",()=>{if(ws!==this.socket)return;this.socketReady=true;console.info("[TQ WS] open",this.worldId);const st=this.auth.status(),local=this.localPayload();ws.send(JSON.stringify({type:"join",worldId:this.worldId,uid:st.uid,name:this.displayName||st.displayName||"Pirata",shipId:this.shipId,x:local.x,y:local.y,rotation:local.rotation,direction:local.direction,hp:local.hp}));for(const payload of this.pendingBossEnsures.values())ws.send(JSON.stringify(payload));this.dispatchEvent(new CustomEvent("transport",{detail:{online:true,kind:"websocket"}}))});
     ws.addEventListener("message",event=>{if(ws!==this.socket)return;let data;try{data=JSON.parse(event.data)}catch{return}
       if(data.type==="snapshot"){const uid=String(this.auth.status().uid||"");console.info("[TQ WS] snapshot","players="+(Array.isArray(data.players)?data.players.length:0),"bosses="+Object.keys(data.bosses||{}).length);this.dispatchEvent(new CustomEvent("players",{detail:{worldId:this.worldId,players:(data.players||[]).filter(p=>p.uid!==uid)}}));this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:data.bosses||{}}}));}
       else if(data.type==="boss.state"&&data.boss)this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
@@ -97,15 +97,17 @@ export class MultiplayerRuntime extends EventTarget{
     return false;
   }
   async ensureBoss(boss={}){
-    if(!this.worldId)return null;const bossId=safeKey(boss.bossId);if(!bossId)return null;
-    this.socketSend({
+    const bossId=safeKey(boss.bossId);if(!bossId)return null;
+    const payload={
       type:"boss.ensure",
       bossId,
       entityId:String(boss.entityId||boss.bossId||""),
       name:String(boss.name||"Boss"),
       maxHp:Math.max(1,Number(boss.maxHp)||1),
       respawnDelayMs:Math.max(1000,Number(boss.respawnDelayMs)||300000)
-    });
+    };
+    this.pendingBossEnsures.set(bossId,payload);
+    if(this.worldId)this.socketSend(payload);
     return null;
   }
   async damageBoss(bossId,damage=1,meta={}){
@@ -119,7 +121,7 @@ export class MultiplayerRuntime extends EventTarget{
   async leaveWorld(){
     clearInterval(this.timer);clearInterval(this.pollTimer);clearTimeout(this.socketReconnect);this.timer=0;this.pollTimer=0;this.socketReady=false;try{this.socket?.close()}catch{}this.socket=null;
     if(this.worldId&&this.auth?.status?.().authenticated){const uid=safeKey(this.auth.status().uid);if(uid)await this.request("multiplayer/rooms/"+this.worldId+"/players/"+uid,{method:"DELETE"}).catch(()=>{});}
-    this.worldId="";this.getLocalState=null;this.lastEventKey="";
+    this.worldId="";this.getLocalState=null;this.lastEventKey="";this.pendingBossEnsures.clear();
   }
   destroy(){return this.leaveWorld()}
 }
