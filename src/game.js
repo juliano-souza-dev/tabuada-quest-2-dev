@@ -1,5 +1,5 @@
 import { GameRuntime } from "./runtime/GameRuntime.js?v=20261004-1053-cannon-hardpoints";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-auth-route";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-auth-trace";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
