@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1801-force-sync-cache");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1812-prod-arena-hard-route");
 
 if(flowTest){
   try{
@@ -134,7 +134,8 @@ if(flowTest){
   game.attachMultiplayer?.(services.multiplayer);
 }
 
-await game.start(start);
+const productionTestRoute=!flowTest?{kind:"world",id:"teste-multiplayer-sync"}:null;
+await game.start(start||productionTestRoute);
 
 }catch(error){showBootError(error);throw error}
 
