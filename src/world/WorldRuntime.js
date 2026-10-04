@@ -619,6 +619,7 @@ export class WorldRuntime {
       boss:profile.boss===true||profile.coopBoss===true||profile.combat?.boss===true,
       coopBoss:profile.coopBoss===true||profile.boss===true||profile.combat?.boss===true,
       coopBossId:String(profile.coopBossId||npcId||""),
+      rewardShipId:String(profile.rewardShipId||typeConfig?.rewardShipId||""),
       bossSpawnCycle:1,
       npcSpawnCycle:1,
       devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
