@@ -1549,9 +1549,13 @@ export class GameRuntime {
     }
   }
 
-  async handleBossDefeated({bossId,spawnId,entity,rewards,contribution}={}){
+  async handleBossDefeated({bossId,spawnId,entity,rewards,contribution,defeated=false,hp=null,maxHp=null}={}){
     const stableBossId=String(bossId||entity?.coopBossId||entity?.id||"").trim();
     if(!stableBossId)return false;
+    if(defeated!==true||Math.max(0,Number(hp))>0){
+      console.warn("[TQ boss reward] blocked non-authoritative defeat",{bossId:stableBossId,defeated,hp,maxHp});
+      return false;
+    }
     const minimumRatio=Math.max(0,Math.min(1,Number(contribution?.minimumRatio??entity?.combat?.rewardMinDamageRatio)||0));
     const damageRatio=Math.max(0,Math.min(1,Number(contribution?.damageRatio)||0));
     if(minimumRatio>0&&damageRatio<minimumRatio){
@@ -1571,11 +1575,12 @@ export class GameRuntime {
     if(stableBossId==="boss-halloween-dreadnought")ammoRewards.push({id:"terror-rose",quantity:1000});
     configuredRewards.ammoRewards=ammoRewards;
     const rewardResult=await this.handleCombatVictory({entity,rewards:configuredRewards,claimKey});
+    if(!rewardResult)return false;
+
     const rewardShipId=String(entity?.rewardShipId||"").trim();
-    if(rewardShipId){
+    const alreadyOwned=rewardShipId&&this.playerShips.ownedShips.includes(rewardShipId);
+    if(rewardShipId&&!alreadyOwned){
       const granted=await this.grantShip(rewardShipId,{equip:true,save:false});
-      // Force the event reward as the active ship before persisting. This is
-      // intentionally explicit instead of relying only on the shipyard grant.
       if(granted){
         this.playerShips.equippedShip=rewardShipId;
         this.ensurePlayerShips();
@@ -1590,13 +1595,9 @@ export class GameRuntime {
           damageRatio,
           minimumRatio
         }}));
-        if(this.current?.kind==="world"){
-          const route=this.routeSnapshot();
-          await this.openWorld(route,{pushHistory:false});
-        }
       }
     }
-    return rewardResult||true;
+    return rewardResult;
   }
 
   async handleTreasureCollected({entity,challenge,rewards}={}){
