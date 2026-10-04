@@ -428,7 +428,7 @@
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
-      "asset": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
+      "asset": "./assets/ships/events/halloween/galeão_halloween.webp",
       "navigation": {
         "width": 230,
         "height": 230,
@@ -442,9 +442,9 @@
         "periodMs": 3600,
         "wake": true,
         "shadow": true,
-        "src": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
+        "src": "./assets/ships/events/halloween/galeão_halloween.webp",
         "sprite": {
-          "src": "./assets/ships/events/halloween/navio_spritesheet_4x4_1600.png",
+          "src": "./assets/ships/events/halloween/galeão_halloween.webp",
           "columns": 4,
           "rows": 4,
           "imageWidth": 1600,
