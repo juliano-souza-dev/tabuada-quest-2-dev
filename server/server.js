@@ -20,7 +20,7 @@ const log=(event,detail="")=>console.log(`[RT ${new Date().toISOString()}] ${eve
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
 const cannonDamagePerShot=cannon=>Math.max(.1,Number(cannon?.damagePerShot)||1);
-const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*10)/10;
+const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*100)/100;
 const key=v=>String(v||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
 const send=(ws,data)=>{if(ws.readyState===ws.OPEN)ws.send(JSON.stringify(data))};
 const broadcast=(room,data,except=null)=>{const raw=JSON.stringify(data);for(const p of room.players.values())if(p.ws!==except&&p.ws.readyState===p.ws.OPEN)p.ws.send(raw)};
