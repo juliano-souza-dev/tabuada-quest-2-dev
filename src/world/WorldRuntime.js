@@ -6395,7 +6395,9 @@ export class WorldRuntime {
       }
       const hp=Math.max(0,Number(state.hp)||0);
       this.navalHp.set(String(entity.id),hp);
+      const previousServerSpawnId=Math.max(1,Number(entity.serverSpawnId)||1);
       entity.serverSpawnId=Math.max(1,Number(state.spawnId)||1);
+      if(entity.serverSpawnId>previousServerSpawnId)this.navalHostile.delete(String(entity.id));
       entity.bossCombatStopped=state.stopped===true;
       const defeated=state.defeated===true||hp<=0;
       if(defeated){
@@ -6494,6 +6496,7 @@ export class WorldRuntime {
     }
     if(event.defeated===true&&hp<=0){
       const id=String(entity.id);
+      this.navalHostile.delete(id);
       if(!this.navalDestroying.has(id)){
         this.navalDestroying.add(id);
         this.navalRenderer?.destroyShip?.({
@@ -6732,6 +6735,23 @@ export class WorldRuntime {
     }
   }
 
+  multiplayerNpcSource(event={}){
+    const ownerId=String(event.ownerId||"");
+    if(!ownerId)return null;
+    return this.entityByIdGet(ownerId)
+      ||this.entities.find(item=>String(item?.serverEntityId||"")===ownerId)
+      ||null;
+  }
+
+  multiplayerNpcCanRetaliateLocally(event={}){
+    if(String(event.ownerType||"")!=="entity")return true;
+    if(String(event.targetType||"")!=="player")return true;
+    if(String(event.targetId||"")!==String(this.coopLocalUid||""))return true;
+    const source=this.multiplayerNpcSource(event);
+    if(!source)return false;
+    return this.navalHostile.has(String(source.id||""));
+  }
+
   handleMultiplayerEvent(event={}){
     if(event.type==="fire.rejected"){
       const ammoId=String(event.ammoId||"");
@@ -6750,6 +6770,7 @@ export class WorldRuntime {
       }
     }
     if((event.type==="shot"||event.type==="projectile.spawn")&&event.from&&event.to){
+      if(!this.multiplayerNpcCanRetaliateLocally(event))return;
       const shotId=String(event.shotId||event.id||"");
       if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
       if(!shotId||!this.serverProjectileRendered.has(shotId)){
@@ -6787,6 +6808,7 @@ export class WorldRuntime {
       }
     }
     if(event.type==="projectile.hit"){
+      if(!this.multiplayerNpcCanRetaliateLocally(event))return;
       const hitTargetId=String(event.targetId||"");
       const hitTarget=this.entityByIdGet(hitTargetId)
         ||this.entities.find(item=>String(item?.serverEntityId||"")===hitTargetId);
