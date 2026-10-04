@@ -4912,7 +4912,12 @@ export class WorldRuntime {
       if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
       return false;
     }
+
+    const volleyShots=[];
+    const visualShotLimit=this.graphicsSettings?.reducedAmmoFx===true?3:5;
     let firedCount=0;
+    let maxDuration=0;
+
     for(const batteryShot of eligible){
       if(ammoRemaining<=0)break;
       const cannon=batteryShot.cannon;
@@ -4920,57 +4925,63 @@ export class WorldRuntime {
       const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
       const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
       const duration=clamp(intercept.time*1000,80,8000);
-      const fired=this.navalRenderer?.fire?.({
-        from:muzzle,
-        to:{x:intercept.x,y:intercept.y},
-        duration,
-        ammo
-      })===true;
-      if(!fired)continue;
-      const burstIndex=firedCount;
-      this.audio?.play("cannon-shot");
-      firedCount+=1;
-      if(!ammoUnlimited){
-        ammoRemaining=Math.max(0,ammoRemaining-1);
-        this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
+      const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
+      const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
+      const predictedImpact={x:intercept.x,y:intercept.y};
+
+      volleyShots.push({cannon,muzzle,predictedImpact,duration,shotDamage});
+      maxDuration=Math.max(maxDuration,duration);
+
+      if(firedCount<visualShotLimit){
+        this.navalRenderer?.fire?.({
+          from:muzzle,
+          to:{x:intercept.x,y:intercept.y},
+          duration,
+          ammo
+        });
       }
+
+      firedCount+=1;
+      ammoRemaining=Math.max(0,ammoRemaining-1);
+      this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
+    }
+
+    if(!firedCount)return false;
+    this.audio?.play("cannon-shot");
+    this.onAmmoChange?.(structuredClone(this.state.ammo));
+
+    const resolveVolley=()=>{
+      if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
+      let totalDamage=0;
+      let hitCount=0;
+      for(const shot of volleyShots){
+        if(!this.navalPointHitsHull(shot.predictedImpact,entity))continue;
+        totalDamage+=shot.shotDamage;
+        hitCount+=1;
+      }
+      if(hitCount<=0){
+        this.audio?.play?.("cannon-impact-water");
+        return;
+      }
+      this.audio?.play("cannon-impact-ship");
+
       const coopBoss=this.isCoopBoss(entity)&&this.coopTransport?.damageBoss;
       const coopBossId=coopBoss?this.coopBossId(entity):"";
-      if(coopBoss){
-        const bossHp=this.navalHpState(entity);
-        this.coopTransport?.ensureBoss?.({bossId:coopBossId,entityId:entity.id,name:entity.label||entity.shipName||"Boss",maxHp:bossHp.max,respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)}).catch?.(()=>{});
+      const serverOwned=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.damageEntity;
+      if(serverOwned){
+        const shotId="entity-volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+        this.coopTransport.damageEntity(String(entity.id||""),totalDamage,{shotId}).catch?.(()=>{});
+      }else if(coopBoss){
+        const shotId="coop-volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
+        Promise.resolve(this.coopTransport.damageBoss(coopBossId,totalDamage,{shotId}))
+          .then(sent=>{if(sent!==true)this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1})})
+          .catch(()=>this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1}));
+      }else{
+        this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1});
       }
-      // Phase 1 of the combat rebuild: damage is resolved from the projectile
-      // impact, never from the fire button. The shot keeps its predicted impact
-      // point; a ship that maneuvers away can make the projectile hit the water.
-      const predictedImpact={x:intercept.x,y:intercept.y};
-      setTimeout(()=>{
-        if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-        const hit=this.navalPointHitsHull(predictedImpact,entity);
-        if(!hit){
-          this.audio?.play?.("cannon-impact-water");
-          return;
-        }
-        this.audio?.play("cannon-impact-ship");
-        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
-        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
-        const serverOwned=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.damageEntity;
-        if(serverOwned){
-          const shotId="entity-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-          // While the socket is authoritative there is no local HP fallback.
-          // If the transport drops, GameRuntime switches the world back to its
-          // independent offline simulation before subsequent shots.
-          this.coopTransport.damageEntity(String(entity.id||""),shotDamage,{shotId}).catch?.(()=>{});
-        }else if(coopBoss){
-          const shotId="coop-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-          Promise.resolve(this.coopTransport.damageBoss(coopBossId,shotDamage,{shotId}))
-            .then(sent=>{if(sent!==true)this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount})})
-            .catch(()=>this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount}));
-        }else this.applyDirectNavalDamage(entity,shotDamage,{burstIndex,burstTotal:firedCount});
-      },duration);
-    }
-    if(!firedCount)return false;
-    if(!ammoUnlimited)this.onAmmoChange?.(structuredClone(this.state.ammo));
+    };
+
+    setTimeout(resolveVolley,Math.max(80,maxDuration));
 
     const id=String(entity.id);
     if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
