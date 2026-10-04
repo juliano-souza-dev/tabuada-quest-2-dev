@@ -810,7 +810,54 @@
   white-space:nowrap;
   pointer-events:none;
 }
-.tq-world-host.is-play .tq-world-entity--region-exit{visibility:hidden!important}
+.tq-world-host.is-play .tq-world-entity--region-exit{
+  visibility:visible!important;
+  pointer-events:none;
+  border:2px dashed rgba(126,231,255,.72);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(66,190,235,.06),rgba(66,190,235,.16),rgba(66,190,235,.06));
+  box-shadow:inset 0 0 26px rgba(126,231,255,.08),0 0 28px rgba(43,176,230,.10);
+  animation:tq-region-exit-pulse 2.2s ease-in-out infinite;
+}
+.tq-world-host.is-play .tq-world-entity--region-exit::before{
+  content:attr(data-exit-label);
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  min-width:max-content;
+  max-width:min(72vw,520px);
+  padding:9px 14px;
+  border-radius:999px;
+  background:rgba(4,28,43,.9);
+  border:1px solid rgba(126,231,255,.62);
+  color:#d8f8ff;
+  box-shadow:0 5px 18px rgba(0,18,30,.34);
+  font:800 12px/1 system-ui,sans-serif;
+  letter-spacing:.045em;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tq-world-host.is-play .tq-world-entity--region-exit::after{
+  position:absolute;
+  left:50%;top:calc(50% - 38px);
+  transform:translateX(-50%);
+  color:#9cecff;
+  font:900 30px/1 system-ui,sans-serif;
+  text-shadow:0 2px 10px rgba(17,176,229,.55);
+}
+.tq-world-host.is-play .tq-world-entity--region-exit[data-exit-direction="up"]::after{content:"↑"}
+.tq-world-host.is-play .tq-world-entity--region-exit[data-exit-direction="down"]::after{content:"↓"}
+.tq-world-host.is-play .tq-world-entity--region-exit[data-exit-direction="left"]::after{content:"←"}
+.tq-world-host.is-play .tq-world-entity--region-exit[data-exit-direction="right"]::after{content:"→"}
+@keyframes tq-region-exit-pulse{
+  0%,100%{opacity:.68}
+  50%{opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .tq-world-host.is-play .tq-world-entity--region-exit{animation:none}
+}
 
 .tq-world-region-transition{
   position:fixed;inset:0;z-index:820;
