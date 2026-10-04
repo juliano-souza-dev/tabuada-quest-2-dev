@@ -360,6 +360,7 @@ export class WorldRuntime {
     this.treasureTarget=null;
     this.entityEffectRenderers=new Map();
     this.entityEffectOrigins=new Map();
+    this.entityById=new Map();
     this.entities=(config.entities||[]).map((entity,index)=>{
       const normalized={
         ...structuredClone(entity),
@@ -394,6 +395,7 @@ export class WorldRuntime {
     });
     this.rebuildNpcPopulation({render:false});
     this.rebuildTreasurePopulation({render:false});
+    this.rebuildEntityIndex();
     this.selectedId=null;
     this.lastTime=0;
     this.raf=0;
@@ -425,6 +427,21 @@ export class WorldRuntime {
     this.cleanups=[];
   }
 
+
+  rebuildEntityIndex(){
+    if(!(this.entityById instanceof Map))this.entityById=new Map();
+    this.entityById.clear();
+    for(const entity of this.entities||[]){
+      if(entity?.id)this.entityById.set(String(entity.id),entity);
+    }
+    return this.entityById;
+  }
+
+  entityByIdGet(id){
+    const key=String(id||"");
+    if(!key)return null;
+    return this.entityById?.get(key)||null;
+  }
 
   treasureSpawnPoint(random,occupied,population){
     const area=this.getPlayableBounds();
@@ -484,6 +501,7 @@ export class WorldRuntime {
       }
     }
     this.entities.forEach((e,i)=>e.index=i);
+    this.rebuildEntityIndex();
     if(render&&this.entityLayer)this.renderEntities();
   }
 
@@ -1983,7 +2001,7 @@ export class WorldRuntime {
   }
 
   clearDepthMask(id){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return false;
     entity.depthMask={active:true,points:[]};
     this.applyEntityVisual(entity);
@@ -3048,13 +3066,13 @@ export class WorldRuntime {
   }
 
   getEntityMotion(id){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     return normalizeEntityMotion(entity.motion||defaultEntityMotion(entity.type),entity.type);
   }
 
   updateEntityMotion(id,patch={},commit=true){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     const current=this.getEntityMotion(id)||defaultEntityMotion(entity.type);
     const next=patch.preset&&patch.preset!==current.preset
@@ -3069,7 +3087,7 @@ export class WorldRuntime {
   }
 
   getEntityEffect(id){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     entity.effect=normalizeEntityEffect(entity.effect||{},entity);
     return structuredClone(entity.effect);
@@ -3082,7 +3100,7 @@ export class WorldRuntime {
   }
 
   updateEntityEffect(id,patch={},commit=true){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     const current=this.getEntityEffect(id)||normalizeEntityEffect({},entity);
     const base=patch.preset&&patch.preset!==current.preset
@@ -5216,7 +5234,7 @@ export class WorldRuntime {
     }
 
     for(const [id,state] of [...this.navalHostile.entries()]){
-      const entity=this.entities.find(item=>String(item.id)===String(id));
+      const entity=this.entityByIdGet(id);
       if(!entity||entity.devFrozen||!this.isClickableCombatShip(entity)||this.collected.has(entity.id)||this.navalDestroying.has(entity.id)){
         this.navalHostile.delete(id);
         continue;
@@ -5876,7 +5894,7 @@ export class WorldRuntime {
   }
 
   getEntity(id){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     return entity?structuredClone(this.cleanEntity(entity)):null;
   }
 
@@ -5898,7 +5916,7 @@ export class WorldRuntime {
   }
 
   updateEntity(id,patch={},commit=true){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     const previousType=entity.type;
     const effectPatch=patch.effect&&typeof patch.effect==="object"?structuredClone(patch.effect):null;
@@ -5940,14 +5958,14 @@ export class WorldRuntime {
   }
 
   getEntityCollision(id){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     entity.collision=normalizeCollision(entity.collision||{},entity);
     return structuredClone(entity.collision);
   }
 
   updateEntityCollision(id,patch={},commit=true){
-    const entity=this.entities.find(item=>item.id===id);
+    const entity=this.entityByIdGet(id);
     if(!entity)return null;
     entity.collision=normalizeCollision({...entity.collision,...structuredClone(patch)},entity);
     this.syncCollisionVisual(entity);
@@ -5984,6 +6002,7 @@ export class WorldRuntime {
     entity.visualX=entity.x;
     entity.visualY=entity.y;
     this.entities.push(entity);
+    this.entityById?.set(String(entity.id),entity);
     this.renderEntities();
     this.selectEntity(id);
     const clean=this.getEntity(id);
@@ -5994,7 +6013,8 @@ export class WorldRuntime {
   deleteEntity(id){
     const index=this.entities.findIndex(entity=>entity.id===id);
     if(index<0)return false;
-    this.entities.splice(index,1);
+    const [removed]=this.entities.splice(index,1);
+    if(removed?.id)this.entityById?.delete(String(removed.id));
     this.entities.forEach((entity,i)=>entity.index=i);
     if(this.selectedId===id)this.selectedId=null;
     this.renderEntities();
