@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 3,
+  "version": 4,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -151,6 +151,31 @@
           {
             "cannonId": "cannon-basic",
             "quantity": 1
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "npc-heavy-200k-test",
+      "name": "Corsário Pesado de Teste",
+      "shipId": "ship-halloween-dreadnought",
+      "navigation": {
+        "minSpeed": 35,
+        "speed": 95,
+        "acceleration": 360,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 200000,
+        "attitude": "hostile",
+        "damage": 3,
+        "maxTargets": 1,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-bronze",
+            "quantity": 4
           }
         ],
         "ammoId": "cannonball-standard",
