@@ -175,7 +175,40 @@ export class PedagogyRuntime {
     );
   }
 
+  factsForRegionFamilies(region){
+    const maxRegion=Math.max(1,finiteInteger(this.curriculum?.regions)??10);
+    const value=clamp(finiteInteger(region)??1,1,maxRegion);
+    const configs=Array.isArray(this.curriculum?.regionsConfig)?this.curriculum.regionsConfig:[];
+    const config=configs.find(item=>finiteInteger(item?.region)===value)||null;
+    const factorMin=finiteInteger(this.curriculum?.factors?.min)??1;
+    const factorMax=finiteInteger(this.curriculum?.factors?.max)??10;
+    const families=[...new Set(
+      (Array.isArray(config?.families)?config.families:[])
+        .map(finiteInteger)
+        .filter(factor=>factor!==null&&factor>=factorMin&&factor<=factorMax)
+    )];
+
+    if(!families.length)return this.factsForRegion(value);
+
+    const facts=[];
+    for(const family of families){
+      for(let factor=factorMin;factor<=factorMax;factor++){
+        facts.push({a:family,b:factor});
+      }
+    }
+    return uniqueFacts(facts);
+  }
+
   allowedFacts(context={}){
+    const mapRegion=finiteInteger(context.pedagogyRegion);
+    if(context.useRegionFamilies===true&&mapRegion!==null&&mapRegion>0){
+      return {
+        facts:this.factsForRegionFamilies(mapRegion),
+        source:"curriculum-map-region-families",
+        region:mapRegion
+      };
+    }
+
     const explicit=this.explicitAllowedFacts();
     if(explicit.length)return {facts:explicit,source:"player-pedagogy",region:this.progress().region};
 
