@@ -2,7 +2,7 @@
   "schema": "tq.firebase-public",
   "version": 1,
   "projectId": "tabuadaquest2",
-  "apiKey": "AIzaSyA_fhXyVenMAtjyuva4PsxbRezkV2Z_oKo",
+  "apiKey": "AIzaSyA0KEWGpHqzJMsZrsAuzGKV9gfxqpHu-Q8",
   "googleWebClientId": "489461827440-8oppgul6ckcno0vhsb80mci6pslno4qi.apps.googleusercontent.com",
   "stateDocument": "players/{uid}/state/current",
   "databaseURL": "https://tabuadaquest2-default-rtdb.firebaseio.com",
@@ -22,5 +22,8 @@
     "requireAuthenticatedSession": true,
     "allowOfflineCachedRelease": true,
     "runtimeJsonFallbackInProduction": false
-  }
+  },
+  "authDomain": "tabuadaquest2.firebaseapp.com",
+  "appId": "1:489461827440:web:b176e51d8d41a8525871b5",
+  "messagingSenderId": "489461827440"
 }
