@@ -31,7 +31,7 @@
   },
   "persistence": {
     "restoreSession": true,
-    "sessionKey": "tq.game.runtime:v1"
+    "sessionKey": "tq.game.runtime:v2"
   },
   "player": {
     "defaultShipId": "ship-pirate-galleon-navio",
