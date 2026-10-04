@@ -37,6 +37,7 @@ export class MobileHudOverlay{
     this.onAttack=typeof options.onAttack==="function"?options.onAttack:null;
     this.onRepair=typeof options.onRepair==="function"?options.onRepair:null;
     this.onCancel=typeof options.onCancel==="function"?options.onCancel:null;
+    this.onFollow=typeof options.onFollow==="function"?options.onFollow:null;
     this.onSelectAmmo=typeof options.onSelectAmmo==="function"?options.onSelectAmmo:null;
     this.onShop=typeof options.onShop==="function"?options.onShop:null;
     this.onShipyard=typeof options.onShipyard==="function"?options.onShipyard:null;
@@ -73,12 +74,14 @@ export class MobileHudOverlay{
     const dock=wrap.querySelector("[data-combat-dock]");
     const ammo=iconButton("ammo","Munição","💣");
     const fire=iconButton("fire","Atirar","🔥");
+    const follow=iconButton("follow","Seguir","🎯");
     const repair=iconButton("repair","Reparar","🔧");
     const missions=iconButton("missions","Missões","📜");
     const shop=iconButton("shop","Loja","🪙");
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
     fire.classList.add("is-primary");
-    dock.append(ammo,fire,repair,missions,shop,shipyard);
+    dock.append(ammo,fire,follow,repair,missions,shop,shipyard);
+    follow.hidden=true;
 
     const drawer=document.createElement("section");
     drawer.className="tq-mobile-hud__missions";
@@ -107,6 +110,7 @@ export class MobileHudOverlay{
       if(state.attacking===true)this.onCancel?.();
       else this.onAttack?.();
     });
+    bind(follow,()=>this.onFollow?.());
     bind(repair,()=>this.onRepair?.());
     bind(missions,()=>this.openMissions());
     bind(shop,()=>this.onShop?.());
@@ -257,6 +261,17 @@ export class MobileHudOverlay{
       fire.querySelector("span").textContent=attacking?"✕":"🔥";
       fire.querySelector("small").textContent=attacking?"Cancelar":"Atirar";
       fire.setAttribute("aria-label",attacking?"Cancelar ataque":"Atirar");
+    }
+
+    const follow=this.wrap.querySelector('[data-hud-action="follow"]');
+    if(follow){
+      const canFollow=state.attacking===true&&targetVisible;
+      follow.hidden=!canFollow;
+      follow.disabled=!canFollow;
+      follow.classList.toggle("is-active",state.following===true);
+      follow.querySelector("span").textContent=state.following===true?"◎":"🎯";
+      follow.querySelector("small").textContent=state.following===true?"Seguindo":"Seguir";
+      follow.setAttribute("aria-label",state.following===true?"Parar de seguir alvo":"Seguir alvo");
     }
 
     const repair=this.wrap.querySelector('[data-hud-action="repair"]');
