@@ -170,6 +170,12 @@ export class WorldRuntime {
     this.config.ocean=normalizeOceanConfig(this.config.ocean||{});
     this.editorEnabled=options.editorEnabled===true;
     this.audio=new GameAudio(options.soundCatalog||{sounds:[]});
+    this.graphicsSettings={
+      clouds:options.graphicsSettings?.clouds!==false,
+      oceanWaves:options.graphicsSettings?.oceanWaves!==false,
+      reducedAmmoFx:options.graphicsSettings?.reducedAmmoFx===true
+    };
+    this.onGraphicsSettingsChange=typeof options.onGraphicsSettingsChange==="function"?options.onGraphicsSettingsChange:null;
     this.depthMaskEditId=null;
     this.mode=this.editorEnabled?"edit":"play";
     this.environmentCycleStartedAt=performance.now();
@@ -234,6 +240,7 @@ export class WorldRuntime {
           attacking:this.navalAutoFire===true,
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
+          graphicsSettings:structuredClone(this.graphicsSettings),
           repairAvailable:!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
@@ -256,7 +263,8 @@ export class WorldRuntime {
       onRepair:()=>this.beginPlayerRepair({forced:false}),
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
       onShop:()=>this.shopOverlay?.open?.(),
-      onShipyard:()=>{this.shipyardOverlay?.open?.();return true;}
+      onShipyard:()=>{this.shipyardOverlay?.open?.();return true;},
+      onGraphicsSettingsChange:settings=>this.applyGraphicsSettings(settings,{persist:true})
     });
     this.remotePlayers=new Map();
     this.coopTransport=null;
@@ -1104,6 +1112,7 @@ export class WorldRuntime {
     this.applyOceanStatic();
     this.initOceanRenderer();
     this.applyEnvironmentVisual();
+    this.applyGraphicsSettings(this.graphicsSettings,{persist:false});
     this.playerEl.style.backgroundRepeat="no-repeat";
     if(this.config.player?.width)this.playerEl.style.width=Math.max(24,Number(this.config.player.width)||108)+"px";
     if(this.config.player?.height)this.playerEl.style.height=Math.max(24,Number(this.config.player.height)||150)+"px";
@@ -5666,6 +5675,27 @@ export class WorldRuntime {
     return this.getWorld();
   }
 
+  applyGraphicsSettings(next={}, {persist=false}={}){
+    const current=this.graphicsSettings||{};
+    this.graphicsSettings={
+      clouds:next.clouds!==undefined?next.clouds!==false:current.clouds!==false,
+      oceanWaves:next.oceanWaves!==undefined?next.oceanWaves!==false:current.oceanWaves!==false,
+      reducedAmmoFx:next.reducedAmmoFx!==undefined?next.reducedAmmoFx===true:current.reducedAmmoFx===true
+    };
+    if(this.cloudsEl)this.cloudsEl.hidden=this.graphicsSettings.clouds===false;
+    if(this.oceanCanvas)this.oceanCanvas.hidden=this.graphicsSettings.oceanWaves===false;
+    this.navalRenderer?.setReducedFx?.(this.graphicsSettings.reducedAmmoFx===true);
+    if(this.graphicsSettings.oceanWaves===false){
+      for(const el of Object.values(this.oceanEls||{})){
+        if(el)el.style.transform="none";
+      }
+    }else{
+      this.initOceanRenderer();
+    }
+    if(persist)this.onGraphicsSettingsChange?.(structuredClone(this.graphicsSettings));
+    return structuredClone(this.graphicsSettings);
+  }
+
   updateOcean(patch={}){
     const current=this.config.ocean||{};
     const preset=patch.preset;
@@ -5761,6 +5791,7 @@ export class WorldRuntime {
   }
 
   updateOceanFrame(time){
+    if(this.graphicsSettings?.oceanWaves===false)return;
     const ocean=this.config.ocean||normalizeOceanConfig({});
     const webglRendered=ocean.renderer==="webgl"
       &&this.oceanRenderer?.render?.({
@@ -6715,7 +6746,7 @@ export class WorldRuntime {
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     this.updateEnvironmentCycle(time);
-    if(this.cloudsEl&&!this.cloudsEl.hidden){
+    if(this.graphicsSettings?.clouds!==false&&this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
       this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
       this.cloudsEl.style.setProperty("--cloud-camera-y",(-this.camera.y*parallax)+"px");
