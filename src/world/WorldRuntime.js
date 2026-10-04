@@ -633,7 +633,10 @@ export class WorldRuntime {
         attackCooldownMs:clamp(Number(profile.combat?.attackCooldownMs??profile.combatVisual?.attackCooldownMs??900),300,5000),
         damage:clamp(Math.floor(Number(profile.combat?.damage??profile.combatVisual?.damage)||1),1,200),
         maxTargets:clamp(Math.floor(Number(profile.combat?.maxTargets)||1),1,2),
-        rewardMinDamageRatio:clamp(Number(profile.combat?.rewardMinDamageRatio)||0,0,1)
+        rewardMinDamageRatio:clamp(Number(profile.combat?.rewardMinDamageRatio)||0,0,1),
+        cannonLoadout:Array.isArray(profile.combat?.cannonLoadout)?structuredClone(profile.combat.cannonLoadout):[],
+        ammoId:String(profile.combat?.ammoId||""),
+        ammoUnlimited:profile.combat?.ammoUnlimited===true
       },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
       effect:{category:"ship",preset:"none",active:false},
@@ -1268,12 +1271,49 @@ export class WorldRuntime {
     };
   }
 
+  npcCombatLoadout(entity){
+    const combat=entity?.combat&&typeof entity.combat==="object"?entity.combat:{};
+    const raw=Array.isArray(combat.cannonLoadout)?combat.cannonLoadout:[];
+    const cannons=[];
+    for(const item of raw){
+      const cannonId=String(item?.cannonId||item?.id||"").trim();
+      const cannon=this.cannonCatalog.find(entry=>String(entry?.id||"")===cannonId);
+      const quantity=clamp(Math.floor(Number(item?.quantity)||0),0,64);
+      if(!cannon||quantity<=0)continue;
+      for(let i=0;i<quantity;i++)cannons.push(cannon);
+    }
+    const ammoId=String(combat.ammoId||"").trim();
+    const ammo=this.ammoCatalog.find(entry=>String(entry?.id||"")===ammoId)||null;
+    return {
+      cannons,
+      ammo,
+      ammoUnlimited:combat.ammoUnlimited===true
+    };
+  }
+
   entityNavalCombatStats(entity){
     const combat=entity?.combat&&typeof entity.combat==="object"?entity.combat:{};
+    const loadout=this.npcCombatLoadout(entity);
+    const equipped=loadout.cannons;
+    const maxRange=equipped.length
+      ?Math.max(...equipped.map(cannon=>Math.max(1,Number(cannon?.range)||0)))
+      :Number(combat.attackRange??1200);
+    const cooldown=equipped.length
+      ?Math.min(...equipped.map(cannon=>clamp(Number(cannon?.attackCooldownMs)||900,150,10000)))
+      :Number(combat.attackCooldownMs??900);
+    const projectileSpeed=Math.max(
+      120,
+      Number(loadout.ammo?.projectileSpeed)
+      ||(equipped.length?Math.max(...equipped.map(cannon=>Number(cannon?.projectileSpeed)||0)):0)
+      ||620
+    );
     return {
-      attackRange:clamp(Number(combat.attackRange??1200),200,6000),
-      attackCooldownMs:clamp(Number(combat.attackCooldownMs??900),300,5000),
-      damage:clamp(Math.floor(Number(combat.damage)||1),1,20)
+      attackRange:clamp(maxRange,200,6000),
+      attackCooldownMs:clamp(cooldown,150,10000),
+      damage:clamp(Math.floor(Number(combat.damage)||1),1,200),
+      projectileSpeed,
+      cannonCount:Math.max(1,equipped.length||1),
+      loadout
     };
   }
 
@@ -4771,6 +4811,7 @@ export class WorldRuntime {
   fireNpcNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||entity.devFrozen)return false;
     const stats=this.entityNavalCombatStats(entity);
+    const loadout=stats.loadout||{cannons:[],ammo:null,ammoUnlimited:false};
     const maxTargets=this.isCoopBoss(entity)?clamp(Math.floor(Number(entity.combat?.maxTargets)||1),1,2):1;
     const candidates=[
       ...(this.navalPlayerHp>0&&this.repairActive?.forced!==true?[{
@@ -4793,29 +4834,37 @@ export class WorldRuntime {
       .slice(0,maxTargets);
     if(!candidates.length)return false;
 
-    candidates.forEach((target,index)=>{
-      const delay=index*170;
+    const volleyCount=Math.max(1,stats.cannonCount||1);
+    let firedCount=0;
+    for(let shotIndex=0;shotIndex<volleyCount;shotIndex++){
+      const target=candidates[shotIndex%candidates.length];
+      const cannon=loadout.cannons[shotIndex]||null;
+      const delay=shotIndex*55;
       setTimeout(()=>{
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
-        const duration=620;
+        const targetDistance=Math.hypot((Number(entity.x)||0)-target.x,(Number(entity.y)||0)-target.y);
+        const duration=clamp(targetDistance/Math.max(120,stats.projectileSpeed||620)*1000,220,2200);
         const fired=this.navalRenderer?.fire?.({
           from:{x:entity.x,y:entity.y},
           to:{x:target.x,y:target.y},
-          duration
+          duration,
+          ammo:loadout.ammo||undefined
         })===true;
         if(!fired)return;
+        firedCount+=1;
         this.audio?.play("cannon-shot");
         if(target.local){
           setTimeout(()=>{
-            if(this.navalPlayerHp>0&&this.repairActive?.forced!==true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)){
-              this.audio?.play("cannon-impact-ship");
-              this.applyDirectPlayerNavalDamage(stats.damage,entity);
-            }
+            if(this.navalPlayerHp<=0||this.repairActive?.forced===true||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
+            this.audio?.play("cannon-impact-ship");
+            const multiplier=clamp(Number(cannon?.damageMultiplier)||1,.1,5);
+            const shotDamage=clamp(Math.round(stats.damage*multiplier),1,100000000);
+            this.applyDirectPlayerNavalDamage(shotDamage,entity);
           },duration);
         }
       },delay);
-    });
-    return candidates.length>0;
+    }
+    return volleyCount>0;
   }
 
   updateDirectNavalCombat(time=performance.now()){
