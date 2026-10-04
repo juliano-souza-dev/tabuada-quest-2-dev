@@ -717,8 +717,12 @@ export class WorldRuntime {
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
-    if(entity.devFrozen){
-      if(nav){nav.vx=0;nav.vy=0}
+    if(entity.devFrozen||entity.bossCombatStopped===true){
+      if(nav){
+        nav.vx=0;
+        nav.vy=0;
+        nav.targetHeading=Number(entity.rotation)||Number(nav.heading)||0;
+      }
       entity.anchorX=entity.x;
       entity.anchorY=entity.y;
       return;
@@ -4583,6 +4587,7 @@ export class WorldRuntime {
         entity.rotation=heading;
         entity.visualRotation=heading;
         entity.direction=directionForHeading(heading,null,{hysteresis:0});
+        entity.bossCombatStopped=false;
         if(entity.npcNavigation){
           entity.npcNavigation.heading=heading;
           entity.npcNavigation.targetHeading=heading;
@@ -4635,6 +4640,14 @@ export class WorldRuntime {
     const next=Math.max(0,Math.round((hp.current-applied)*10)/10);
     this.navalHp.set(String(entity.id),next);
     const dealt=Math.max(0,Math.round((hp.current-next)*10)/10);
+    if(dealt>0&&this.isCoopBoss(entity)){
+      entity.bossCombatStopped=true;
+      if(entity.npcNavigation){
+        entity.npcNavigation.vx=0;
+        entity.npcNavigation.vy=0;
+        entity.npcNavigation.targetHeading=Number(entity.rotation)||Number(entity.npcNavigation.heading)||0;
+      }
+    }
     const total=Math.max(1,Number(burstTotal)||1);
     const index=Math.max(0,Math.min(total-1,Number(burstIndex)||0));
     // Um ataque com vários canhões chega quase no mesmo instante. Espalhar os
@@ -6097,6 +6110,13 @@ export class WorldRuntime {
     for(const entity of this.entities){
       if(!this.isCoopBoss(entity))continue;const bossId=this.coopBossId(entity),state=this.coopBossStates.get(bossId);if(!state)continue;
       const hp=Math.max(0,Number(state.hp)||0);this.navalHp.set(String(entity.id),hp);
+      const maxHp=Math.max(1,Number(state.maxHp)||Number(entity.combat?.hp)||1);
+      entity.bossCombatStopped=hp<maxHp&&hp>0;
+      if(entity.bossCombatStopped&&entity.npcNavigation){
+        entity.npcNavigation.vx=0;
+        entity.npcNavigation.vy=0;
+        entity.npcNavigation.targetHeading=Number(entity.rotation)||Number(entity.npcNavigation.heading)||0;
+      }
       const contribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
       this.coopBossLocalDamage.set(bossId,contribution);
       if(state.defeated===true||hp<=0){
@@ -6167,6 +6187,14 @@ export class WorldRuntime {
       const entity=this.entities.find(item=>this.isCoopBoss(item)&&this.coopBossId(item)===bossId);
       if(entity){
         this.navalHp.set(String(entity.id),Math.max(0,Number(event.hp)||0));
+        if(Math.max(0,Number(event.damage)||0)>0){
+          entity.bossCombatStopped=true;
+          if(entity.npcNavigation){
+            entity.npcNavigation.vx=0;
+            entity.npcNavigation.vy=0;
+            entity.npcNavigation.targetHeading=Number(entity.rotation)||Number(entity.npcNavigation.heading)||0;
+          }
+        }
         if(event.contributors&&typeof event.contributors==="object"){
           const state=this.coopBossStates.get(bossId)||{};
           this.coopBossStates.set(bossId,{...state,...event,contributors:{...event.contributors}});
