@@ -6506,6 +6506,23 @@ export class WorldRuntime {
   }
 
   handleMultiplayerEvent(event={}){
+    if(event.type==="fire.rejected"){
+      const ammoId=String(event.ammoId||"");
+      const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId);
+      const unlimited=this.testAmmoUnlimited===true||ammo?.test?.unlimited===true;
+      if(ammoId&&!unlimited){
+        this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1;
+        this.onAmmoChange?.(structuredClone(this.state.ammo));
+      }
+      if(this.actionMessage){
+        const reason=String(event.reason||"");
+        this.actionMessage.textContent=reason==="cooldown"
+          ?"Canhões recarregando."
+          :reason==="out_of_range"
+            ?"Alvo fora do alcance do canhão."
+            :"Disparo rejeitado pelo servidor.";
+      }
+    }
     if((event.type==="shot"||event.type==="projectile.spawn")&&event.from&&event.to){
       this.navalRenderer?.fire?.({
         from:event.from,
