@@ -47,11 +47,13 @@ export class MobileHudOverlay{
     this.onSelectAmmo=typeof options.onSelectAmmo==="function"?options.onSelectAmmo:null;
     this.onShop=typeof options.onShop==="function"?options.onShop:null;
     this.onShipyard=typeof options.onShipyard==="function"?options.onShipyard:null;
+    this.onGraphicsSettingsChange=typeof options.onGraphicsSettingsChange==="function"?options.onGraphicsSettingsChange:null;
     this.missions=Array.isArray(options.missions)?options.missions:[];
     this.region=Math.max(1,Number(options.region)||1);
     this.root=null;
     this.wrap=null;
     this.drawer=null;
+    this.settingsDrawer=null;
     this.ammoMenu=null;
     this.timer=0;
     this.lastAmmoSignature="";
@@ -86,8 +88,9 @@ export class MobileHudOverlay{
     const missions=iconButton("missions","Missões","📜");
     const shop=iconButton("shop","Loja","🪙");
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
+    const settings=iconButton("settings","Config","⚙️");
     fire.classList.add("is-primary");
-    dock.append(ammo,fire,follow,shield,repair,missions,shop,shipyard);
+    dock.append(ammo,fire,follow,shield,repair,missions,shop,shipyard,settings);
     follow.hidden=true;
     shield.hidden=true;
 
@@ -101,9 +104,24 @@ export class MobileHudOverlay{
         '<div class="tq-mobile-hud__missions-list"></div>'+
       '</div>';
 
-    root.append(wrap,drawer);
+    const settingsDrawer=document.createElement("section");
+    settingsDrawer.className="tq-mobile-hud__settings";
+    settingsDrawer.hidden=true;
+    settingsDrawer.innerHTML=
+      '<button type="button" class="tq-mobile-hud__settings-scrim" data-settings-close aria-label="Fechar configurações"></button>'+
+      '<div class="tq-mobile-hud__settings-card" role="dialog" aria-modal="true" aria-label="Configurações">'+
+        '<header><div><small>DESEMPENHO</small><strong>Configurações</strong></div><button type="button" data-settings-close aria-label="Fechar">×</button></header>'+
+        '<div class="tq-mobile-hud__settings-list">'+
+          '<label><span><strong>Nuvens</strong><small>Exibir camada de nuvens</small></span><input type="checkbox" data-setting-key="clouds"></label>'+
+          '<label><span><strong>Ondas do mar</strong><small>Animar o oceano em WebGL</small></span><input type="checkbox" data-setting-key="oceanWaves"></label>'+
+          '<label><span><strong>Efeitos de munição reduzidos</strong><small>Menos partículas, trilhas e brilho</small></span><input type="checkbox" data-setting-key="reducedAmmoFx"></label>'+
+        '</div>'+
+      '</div>';
+
+    root.append(wrap,drawer,settingsDrawer);
     this.wrap=wrap;
     this.drawer=drawer;
+    this.settingsDrawer=settingsDrawer;
     this.ammoMenu=wrap.querySelector("[data-ammo-popover]");
 
     const bind=(el,fn)=>{
@@ -122,12 +140,19 @@ export class MobileHudOverlay{
     bind(shield,()=>this.onUseHullReinforcement?.());
     bind(repair,()=>this.onRepair?.());
     bind(missions,()=>this.openMissions());
+    bind(settings,()=>this.openSettings());
     bind(shop,()=>this.onShop?.());
     bind(shipyard,()=>{
       const result=this.onShipyard?.();
       if(result===false||result==null)this.toast("Estaleiro em preparação.");
     });
     drawer.querySelectorAll("[data-mission-close]").forEach(el=>bind(el,()=>this.closeMissions()));
+    settingsDrawer.querySelectorAll("[data-settings-close]").forEach(el=>bind(el,()=>this.closeSettings()));
+    settingsDrawer.querySelectorAll("[data-setting-key]").forEach(input=>{
+      const handler=()=>this.changeGraphicsSetting(String(input.dataset.settingKey||""),input.checked===true);
+      input.addEventListener("change",handler);
+      this.cleanups.push(()=>input.removeEventListener("change",handler));
+    });
 
     this.renderMissions();
     this.sync();
@@ -166,6 +191,39 @@ export class MobileHudOverlay{
       card.querySelector(".tq-mobile-hud__mission-reward").textContent=rewards.join("  ");
       host.append(card);
     }
+  }
+
+  openSettings(){
+    this.closeAmmoMenu();
+    this.closeMissions();
+    if(!this.settingsDrawer)return;
+    const settings=this.getState()?.graphicsSettings||{};
+    this.settingsDrawer.querySelectorAll("[data-setting-key]").forEach(input=>{
+      const key=String(input.dataset.settingKey||"");
+      input.checked=key==="reducedAmmoFx"?settings[key]===true:settings[key]!==false;
+    });
+    this.settingsDrawer.hidden=false;
+    document.documentElement.classList.add("tq-settings-open");
+  }
+
+  closeSettings(){
+    if(!this.settingsDrawer)return;
+    this.settingsDrawer.hidden=true;
+    document.documentElement.classList.remove("tq-settings-open");
+  }
+
+  changeGraphicsSetting(key,value){
+    const current=this.getState()?.graphicsSettings||{};
+    if(!["clouds","oceanWaves","reducedAmmoFx"].includes(key))return false;
+    const next={
+      clouds:current.clouds!==false,
+      oceanWaves:current.oceanWaves!==false,
+      reducedAmmoFx:current.reducedAmmoFx===true,
+      [key]:value===true
+    };
+    this.onGraphicsSettingsChange?.(next);
+    this.toast("Configuração atualizada.");
+    return true;
   }
 
   openMissions(){
@@ -313,12 +371,15 @@ export class MobileHudOverlay{
 
   destroy(){
     this.closeMissions();
+    this.closeSettings();
     this.closeAmmoMenu();
     for(const cleanup of this.cleanups.splice(0)){try{cleanup()}catch{}}
     this.wrap?.remove();
     this.drawer?.remove();
+    this.settingsDrawer?.remove();
     this.wrap=null;
     this.drawer=null;
+    this.settingsDrawer=null;
     this.root=null;
   }
 }
