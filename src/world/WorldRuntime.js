@@ -6213,9 +6213,17 @@ export class WorldRuntime {
 
   dynamicWorldSeed(){
     const area=this.getPlayableBounds();
+    const dynamicShips=this.entities
+      .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship");
+    const revisionPayload=dynamicShips.map(entity=>[
+      String(entity.id||""),String(entity.npcId||""),Math.max(0,Number(entity.npcNavigation?.speed)||0),
+      Math.max(1,Number(this.navalHpState(entity).max)||1),Math.max(0,Number(entity.hitRewardGold)||0)
+    ]);
+    const revision=String(this.config.id||"world")+"-"+hashString(JSON.stringify(revisionPayload)).toString(36);
     return {
+      revision,
       bounds:{left:area.left,top:area.top,right:area.right,bottom:area.bottom},
-      entities:this.entities
+      entities:dynamicShips
         .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship")
         .map((entity,serverSlot)=>{
           const hp=this.navalHpState(entity);
@@ -6481,18 +6489,21 @@ export class WorldRuntime {
         entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;entity.skewX=0;entity.skewY=0;entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);this.entities.push(entity);this.remotePlayers.set(uid,entity);
         if(this.entityLayer)this.renderEntities();
       }
-      const now=performance.now(),targetX=Number(remote.x)||0,targetY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
-      const sampleMs=clamp(now-Number(entity.netSampleAt||now-100),70,180);
+      const now=performance.now(),rawX=Number(remote.x)||0,rawY=Number(remote.y)||0,targetRotation=Number(remote.rotation)||0;
+      const vx=Number(remote.vx)||0,vy=Number(remote.vy)||0;
+      const leadSec=.08;
+      const targetX=rawX+vx*leadSec,targetY=rawY+vy*leadSec;
+      const sampleMs=clamp(now-Number(entity.netSampleAt||now-50),35,90);
       const dx=targetX-Number(entity.x||0),dy=targetY-Number(entity.y||0);
       const distance=Math.hypot(dx,dy);
-      if(distance>900){
+      if(distance>700){
         entity.x=targetX;entity.y=targetY;entity.rotation=targetRotation;
         entity.netFrom=null;entity.netTo=null;
       }else{
         entity.netFrom={x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,at:now};
-        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+clamp(sampleMs*.9,35,55)};
+        entity.netTo={x:targetX,y:targetY,rotation:targetRotation,at:now+clamp(sampleMs*.72,24,42)};
       }
-      entity.netVelocity={vx:Number(remote.vx)||0,vy:Number(remote.vy)||0};
+      entity.netVelocity={vx,vy};
       entity.netSampleAt=now;
       entity.remoteHp=Math.max(0,Number(remote.hp)||0);entity.label=String(remote.name||entity.label||"Pirata");entity.netLastSeen=performance.now();
     }
