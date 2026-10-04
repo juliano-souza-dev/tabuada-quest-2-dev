@@ -428,7 +428,7 @@ wss.on("connection",ws=>{
         120,4000
       );
       const damage=authoritative
-        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,5),.1,5000)
+        ?clamp((Number(ammo?.damage)||1)*clamp(Number(cannon?.damageMultiplier)||1,.1,100),.1,5000)
         :clamp(Number(m.damage)||1,.1,5000);
 
       if(authoritative&&!sameVolley){
