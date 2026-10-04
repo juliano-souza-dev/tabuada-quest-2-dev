@@ -155,14 +155,19 @@ export class GameRuntime {
         this.importAccountState(state);
       }
 
-      const authRoute=accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"});
+      const forceAfterAuth=this.manifest.afterAuth?.force===true;
+      const authRoute=forceAfterAuth
+        ?clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"})
+        :(accountRoute||clone(this.manifest.afterAuth||{kind:"world",id:"r1-enseada-aprendizes"}));
 
       if(!this.started){
         if(this.authenticated)this.pendingAuthRoute=authRoute;
         return;
       }
 
-      const route=accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot());
+      const route=forceAfterAuth&&wasLogin&&this.authenticated
+        ?authRoute
+        :(accountRoute||(wasLogin&&this.authenticated?authRoute:this.routeSnapshot()));
       if(!route)return;
       queueMicrotask(()=>{
         const task=route.kind==="world"
@@ -1740,7 +1745,13 @@ export class GameRuntime {
       soundCatalog:this.soundCatalog&&typeof this.soundCatalog==="object"?clone(this.soundCatalog):{sounds:[]},
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
-      playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
+      playerCannonIds:Array.isArray(world.test?.cannonIds)
+        ?clone(world.test.cannonIds)
+        :this.getShipCannons(this.playerShips.equippedShip),
+      initialAllTestAmmoQuantity:Number.isFinite(Number(world.test?.initialAllAmmoQuantity))
+        ?Math.max(0,Math.floor(Number(world.test.initialAllAmmoQuantity)))
+        :undefined,
+      testAmmoId:String(world.test?.ammoId||""),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
       onAmmoChange:ammo=>{
