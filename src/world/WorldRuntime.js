@@ -123,7 +123,7 @@ const normalizeNpcAmmoIds=input=>{
 
 const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
 const cannonDamagePerShot=cannon=>Math.max(.1,Number(cannon?.damagePerShot)||1);
-const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*10)/10;
+const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*100)/100;
 
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
   const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
@@ -4927,7 +4927,6 @@ export class WorldRuntime {
       this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+"."});
       return false;
     }
-    const ammoFactor=ammoDamageFactor(ammo);
     const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
