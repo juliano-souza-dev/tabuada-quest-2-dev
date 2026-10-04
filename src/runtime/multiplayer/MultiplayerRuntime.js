@@ -14,6 +14,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.socketUrl=String(config.multiplayer?.websocketURL||options.websocketURL||"").trim();
     this.socketReconnect=0;
     this.getLocalState=null;
+    this.getCannonIds=null;
     this.shipId="";
     this.displayName="";
     this.pendingWorldEnsure=null;
@@ -22,7 +23,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.timer=0;
     this.intentionalClose=false;
     this.offlineFallbackLocked=false;
-    this.protocolVersion="20261004-authoritative-v3";
+    this.protocolVersion="20261004-authoritative-v4";
   }
 
   status(){
@@ -42,6 +43,7 @@ export class MultiplayerRuntime extends EventTarget{
       uid:String(status.uid||""),
       name:this.displayName||status.displayName||"Pirata",
       shipId:this.shipId,
+      cannonIds:(typeof this.getCannonIds==="function"?this.getCannonIds():[]).map(String).filter(Boolean).slice(0,64),
       x:Number(p.x)||0,
       y:Number(p.y)||0,
       vx:Number(p.vx)||0,
@@ -73,7 +75,7 @@ export class MultiplayerRuntime extends EventTarget{
       ws.send(JSON.stringify({
         type:"join",worldId:this.worldId,uid:st.uid,
         name:this.displayName||st.displayName||"Pirata",
-        shipId:this.shipId,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
+        shipId:this.shipId,cannonIds:local.cannonIds,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
         direction:local.direction,hp:local.hp
       }));
       if(this.pendingWorldEnsure)ws.send(JSON.stringify(this.pendingWorldEnsure));
@@ -171,13 +173,14 @@ export class MultiplayerRuntime extends EventTarget{
     return true;
   }
 
-  async joinWorld(worldId,{getLocalState,shipId="",displayName=""}={}){
+  async joinWorld(worldId,{getLocalState,getCannonIds,shipId="",displayName=""}={}){
     await this.leaveWorld();
     this.worldId=safeKey(worldId);
     if(!this.worldId)return false;
     this.offlineFallbackLocked=false;
     this.intentionalClose=false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;
+    this.getCannonIds=typeof getCannonIds==="function"?getCannonIds:null;
     this.shipId=String(shipId||"");
     this.displayName=String(displayName||"");
     console.info("[TQ Multiplayer] joining authoritative world",this.worldId);
@@ -202,7 +205,7 @@ export class MultiplayerRuntime extends EventTarget{
     if(!this.worldId||!this.socketReady)return false;
     const local=this.localPayload();
     return this.socketSend({
-      type:"state",x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
+      type:"state",shipId:local.shipId,cannonIds:local.cannonIds,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
       direction:local.direction,hp:local.hp
     });
   }
@@ -294,6 +297,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.socket=null;
     this.worldId="";
     this.getLocalState=null;
+    this.getCannonIds=null;
     this.pendingWorldEnsure=null;
     this.pendingBossEnsures.clear();
     this.offlineFallbackLocked=false;
