@@ -121,6 +121,10 @@ const normalizeNpcAmmoIds=input=>{
   return [...new Set(values.map(value=>String(value||"").trim()).filter(Boolean))];
 };
 
+const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
+const cannonDamagePerShot=cannon=>Math.max(.1,Number(cannon?.damagePerShot)||1);
+const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*10)/10;
+
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
   const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
   const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
@@ -4923,7 +4927,7 @@ export class WorldRuntime {
       this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+"."});
       return false;
     }
-    const ammoDamage=clamp(Number(ammo.damage)||1,0.1,100000000);
+    const ammoFactor=ammoDamageFactor(ammo);
     const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
@@ -4949,8 +4953,7 @@ export class WorldRuntime {
         const cannon=batteryShot.cannon;
         const muzzle=batteryShot.hardpoint;
         const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-        const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
-        const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
+        const shotDamage=navalShotDamage(cannon,ammo);
         const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
         const duration=clamp(intercept.time*1000,120,8000);
         const sent=this.coopTransport.fireProjectile({
@@ -5019,8 +5022,7 @@ export class WorldRuntime {
       const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
       const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
       const duration=clamp(intercept.time*1000,80,8000);
-      const multiplier=clamp(Number(cannon.damageMultiplier)||1,.1,100);
-      const shotDamage=clamp(Math.round(ammoDamage*multiplier*10)/10,0.1,100000000);
+      const shotDamage=navalShotDamage(cannon,ammo);
       const predictedImpact={x:intercept.x,y:intercept.y};
 
       volleyShots.push({cannon,muzzle,predictedImpact,duration,shotDamage});
@@ -5236,11 +5238,9 @@ export class WorldRuntime {
           setTimeout(()=>{
             if(this.navalPlayerHp<=0||this.repairActive?.forced===true||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
             this.audio?.play("cannon-impact-ship");
-            const multiplier=clamp(Number(cannon?.damageMultiplier)||1,.1,5);
-            const baseDamage=loadout.ammo
-              ?clamp(Number(loadout.ammo?.damage)||1,.1,100000000)
+            const shotDamage=loadout.ammo
+              ?navalShotDamage(cannon,loadout.ammo)
               :clamp(Number(stats.damage)||1,.1,100000000);
-            const shotDamage=clamp(Math.round(baseDamage*multiplier*10)/10,.1,100000000);
             this.applyDirectPlayerNavalDamage(shotDamage,entity);
           },duration);
         }
@@ -6408,8 +6408,9 @@ export class WorldRuntime {
               const stats=this.entityNavalCombatStats(entity);
               const cannon=stats.loadout?.cannons?.[0];
               const ammo=stats.loadout?.ammo;
-              const base=ammo?Math.max(.1,Number(ammo.damage)||1):Math.max(.1,Number(stats.damage)||1);
-              return Math.round(base*Math.max(.1,Number(cannon?.damageMultiplier)||1)*10)/10;
+              return ammo&&cannon
+                ?navalShotDamage(cannon,ammo)
+                :Math.max(.1,Number(stats.damage)||1);
             })(),
             ammoId:String(this.entityNavalCombatStats(entity).loadout?.ammo?.id||entity.combat?.ammoId||""),
             volleyCount:Math.max(1,Math.floor((this.entityNavalCombatStats(entity).cannonCount||1)/2)),
