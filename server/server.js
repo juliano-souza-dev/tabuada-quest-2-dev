@@ -373,7 +373,24 @@ wss.on("connection",ws=>{
     }
     if(m.type==="state"){
       monitor.stateUpdates++;
-      p.shipId=key(m.shipId||p.shipId);p.cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];p.x=Number(m.x)||0;p.y=Number(m.y)||0;p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=Date.now();return;
+      const now=Date.now();
+      const seq=Math.max(0,Math.floor(Number(m.seq)||0));
+      const requestedX=Number(m.x),requestedY=Number(m.y);
+      const nextX=Number.isFinite(requestedX)?requestedX:p.x;
+      const nextY=Number.isFinite(requestedY)?requestedY:p.y;
+      const elapsed=Math.max(.02,Math.min(.25,(now-Number(p.updatedAt||now-50))/1000));
+      const dx=nextX-p.x,dy=nextY-p.y,distance=Math.hypot(dx,dy);
+      const maxTravel=1800*elapsed+90;
+      const travelScale=distance>maxTravel?maxTravel/Math.max(1,distance):1;
+      p.shipId=key(m.shipId||p.shipId);
+      p.cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
+      p.x=clamp(p.x+dx*travelScale,current.bounds.left,current.bounds.right);
+      p.y=clamp(p.y+dy*travelScale,current.bounds.top,current.bounds.bottom);
+      p.vx=Number(m.vx)||0;p.vy=Number(m.vy)||0;
+      p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);
+      p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=now;
+      send(ws,{type:"state.ack",seq,x:p.x,y:p.y,vx:p.vx,vy:p.vy,rotation:p.rotation,direction:p.direction,serverTime:now});
+      return;
     }
     if(m.type==="fire.request"||m.type==="projectile.fire"){
       monitor.shots++;
