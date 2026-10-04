@@ -21,8 +21,8 @@
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 0,
-        "gold": 0,
+        "price": 1,
+        "gold": 1,
         "rubies": 0,
         "label": "Inicial"
       },
@@ -50,8 +50,8 @@
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 400,
-        "gold": 400,
+        "price": 1,
+        "gold": 1,
         "rubies": 0
       },
       "acquisition": {
@@ -78,9 +78,9 @@
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 650,
-        "gold": 650,
-        "rubies": 3
+        "price": 1,
+        "gold": 1,
+        "rubies": 0
       },
       "acquisition": {
         "shop": true,
@@ -106,9 +106,9 @@
       "shop": {
         "purchasable": true,
         "currency": "gold",
-        "price": 1800,
-        "gold": 1800,
-        "rubies": 10
+        "price": 1,
+        "gold": 1,
+        "rubies": 0
       },
       "acquisition": {
         "shop": true,
@@ -133,15 +133,15 @@
       "attackCooldownMs": 1150,
       "event": "halloween",
       "shop": {
-        "purchasable": false,
-        "currency": "event",
-        "price": 0,
-        "gold": 0,
+        "purchasable": true,
+        "currency": "gold",
+        "price": 1,
+        "gold": 1,
         "rubies": 0,
         "label": "Evento"
       },
       "acquisition": {
-        "shop": false,
+        "shop": true,
         "shipBossReward": false,
         "event": true
       }
@@ -164,15 +164,15 @@
       "event": "halloween",
       "variantOf": "cannon-necromantic-spectral",
       "shop": {
-        "purchasable": false,
-        "currency": "event",
-        "price": 0,
-        "gold": 0,
+        "purchasable": true,
+        "currency": "gold",
+        "price": 1,
+        "gold": 1,
         "rubies": 0,
         "label": "Evento"
       },
       "acquisition": {
-        "shop": false,
+        "shop": true,
         "shipBossReward": false,
         "event": true
       }
