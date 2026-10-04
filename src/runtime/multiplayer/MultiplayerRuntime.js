@@ -102,7 +102,7 @@ export class MultiplayerRuntime extends EventTarget{
         this.dispatchEvent(new CustomEvent("bosses",{detail:{worldId:this.worldId,bosses:{[data.boss.bossId]:data.boss}}}));
         return;
       }
-      if(["shot","entity-hit","boss-hit","player-left"].includes(data.type)){
+      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","player-left"].includes(data.type)){
         this.dispatchEvent(new CustomEvent("event",{detail:data}));
       }
     });
@@ -171,6 +171,23 @@ export class MultiplayerRuntime extends EventTarget{
       damage:Math.max(0,Number(shot.damage)||0),
       duration:Math.max(120,Number(shot.duration)||620),
       at:Date.now()
+    });
+  }
+
+  fireProjectile(shot={}){
+    if(!this.worldId||!this.socketReady)return false;
+    const uid=String(this.auth.status().uid||"");
+    if(!uid)return false;
+    return this.socketSend({
+      type:"projectile.fire",
+      shotId:safeKey(shot.shotId||uid+"-"+Date.now()),
+      targetId:safeKey(shot.targetId||""),
+      from:shot.from||null,
+      ammoId:String(shot.ammoId||""),
+      damage:clamp(Number(shot.damage)||1,.1,5000),
+      projectileSpeed:clamp(Number(shot.projectileSpeed)||720,120,4000),
+      duration:clamp(Number(shot.duration)||620,120,8000),
+      range:clamp(Number(shot.range)||1200,100,12000)
     });
   }
 
