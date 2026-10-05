@@ -1,4 +1,4 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-stable-v9";
+import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-halloween-v10";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
@@ -94,8 +94,10 @@ export class MobileHudOverlay{
     const shop=iconButton("shop","Loja","🪙");
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
     const settings=iconButton("settings","Config","⚙️");
+    const groups=iconButton("groups","Grupos","☠");
     fire.classList.add("is-primary");
-    dock.append(ammo,fire,follow,center,shield,repair,missions,shop,shipyard,settings);
+    dock.append(ammo,fire,follow,center,shield,repair,missions,shop,shipyard,groups,settings);
+    groups.hidden=true;
     follow.hidden=true;
     center.hidden=true;
     shield.hidden=true;
@@ -153,6 +155,7 @@ export class MobileHudOverlay{
       const result=this.onShipyard?.();
       if(result===false||result==null)this.toast("Estaleiro em preparação.");
     });
+    bind(groups,()=>this.toast("Grupos em preparação."));
     drawer.querySelectorAll("[data-mission-close]").forEach(el=>bind(el,()=>this.closeMissions()));
     settingsDrawer.querySelectorAll("[data-settings-close]").forEach(el=>bind(el,()=>this.closeSettings()));
     settingsDrawer.querySelectorAll("[data-setting-key]").forEach(input=>{
@@ -310,6 +313,10 @@ export class MobileHudOverlay{
   sync(){
     if(!this.wrap)return;
     const state=this.getState()||{};
+    const halloweenHud=String(state.hudTheme||"standard")==="halloween";
+    this.wrap.classList.toggle("is-halloween-hud",halloweenHud);
+    const groupsButton=this.wrap.querySelector('[data-hud-action="groups"]');
+    if(groupsButton)groupsButton.hidden=!halloweenHud;
     if(this.pixiHud?.ready){
       this.pixiHud.sync(state);
       this.syncPixiHitAreas();
@@ -410,7 +417,10 @@ export class MobileHudOverlay{
       fire:"fire",
       follow:"follow",
       center:"center",
+      repair:"repair",
+      shield:"shield",
       shipyard:"shipyard",
+      groups:"groups",
       missions:"missions",
       shop:"shop",
       settings:"config"
