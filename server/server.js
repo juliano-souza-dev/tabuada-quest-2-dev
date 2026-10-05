@@ -525,6 +525,102 @@ wss.on("connection",ws=>{
       return;
     }
 
+    if(m.type==="fire.volley"){
+      monitor.shots++;
+      const targetId=key(m.targetId),target=current.entities.get(targetId);
+      const ammoId=key(m.ammoId),ammo=ammoById.get(ammoId);
+      const volleyId=key(m.volleyId||("volley-"+Date.now()));
+      const requested=Array.isArray(m.shots)?m.shots.slice(0,64):[];
+      if(!target||target.defeated||target.hp<=0){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"invalid_target",volleyId,targetId,at:Date.now()});
+        return;
+      }
+      if(!ammo||ammo.available===false||!requested.length){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,targetId,ammoId,at:Date.now()});
+        return;
+      }
+
+      const equippedCounts=new Map();
+      for(const id of Array.isArray(p.cannonIds)?p.cannonIds:[]){
+        const cid=key(id);
+        equippedCounts.set(cid,(equippedCounts.get(cid)||0)+1);
+      }
+      const requestedCounts=new Map();
+      const normalized=[];
+      for(let i=0;i<requested.length;i++){
+        const raw=requested[i]||{};
+        const cannonId=key(raw.cannonId);
+        const cannon=cannonById.get(cannonId);
+        if(!cannonId||!cannon||cannon.available===false){
+          monitor.rejectedShots++;
+          send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,targetId,ammoId,cannonId,at:Date.now()});
+          return;
+        }
+        const used=(requestedCounts.get(cannonId)||0)+1;
+        if(used>(equippedCounts.get(cannonId)||0)){
+          monitor.rejectedShots++;
+          send(ws,{type:"fire.rejected",reason:"cannon_count_mismatch",volleyId,targetId,ammoId,cannonId,at:Date.now()});
+          return;
+        }
+        requestedCounts.set(cannonId,used);
+        normalized.push({shotId:key(raw.shotId||volleyId+"-"+i),cannonId,cannon,from:raw.from&&typeof raw.from==="object"?raw.from:null});
+      }
+
+      const now=Date.now();
+      if(now<Number(p.nextFireAt||0)){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"cooldown",volleyId,targetId,ammoId,retryAt:p.nextFireAt,at:now});
+        return;
+      }
+
+      const playerDistance=Math.hypot((Number(p.x)||0)-target.x,(Number(p.y)||0)-target.y);
+      for(const shot of normalized){
+        const range=clamp(shot.cannon?.range||1200,100,12000);
+        if(playerDistance>range+180){
+          monitor.rejectedShots++;
+          send(ws,{type:"fire.rejected",reason:"out_of_range",volleyId,targetId,ammoId,cannonId:shot.cannonId,range,distance:playerDistance,at:now});
+          return;
+        }
+      }
+
+      const cooldown=Math.min(...normalized.map(shot=>clamp(shot.cannon?.attackCooldownMs||950,150,10000)));
+      p.lastVolleyId=volleyId;
+      p.nextFireAt=now+cooldown;
+      if(target.boss){target.stopped=true;target.vx=0;target.vy=0}
+
+      let spawned=0,totalDamage=0;
+      const accepted=[];
+      for(const shot of normalized){
+        const rawFrom={x:Number(shot.from?.x)||Number(p.x)||0,y:Number(shot.from?.y)||Number(p.y)||0};
+        const fromDistance=Math.hypot(rawFrom.x-(Number(p.x)||0),rawFrom.y-(Number(p.y)||0));
+        const from=fromDistance<=320?rawFrom:{x:Number(p.x)||0,y:Number(p.y)||0};
+        const projectileSpeed=clamp(Number(ammo?.projectileSpeed)||Number(shot.cannon?.projectileSpeed)||720,120,4000);
+        const damage=navalShotDamage(shot.cannon,ammo);
+        const intercept=predictProjectileIntercept(from,target,projectileSpeed);
+        const projectile=spawnProjectile(current,{
+          shotId:shot.shotId||projectileId("player"),
+          ownerType:"player",ownerId:uid,ownerUid:uid,
+          targetType:"entity",targetId:target.id,
+          from,to:{x:intercept.x,y:intercept.y},
+          ammoId,cannonId:shot.cannonId,damage,projectileSpeed,
+          duration:Math.max(120,intercept.time*1000)
+        });
+        if(!projectile)continue;
+        spawned++;
+        totalDamage+=damage;
+        accepted.push({shotId:projectile.id,cannonId:shot.cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
+      }
+      if(!spawned){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"spawn_failed",volleyId,targetId,ammoId,at:now});
+        return;
+      }
+      log("VOLLEY+ ","uid="+uid+" target="+target.id+" cannons="+spawned+" damage="+(Math.round(totalDamage*100)/100)+" volley="+volleyId);
+      send(ws,{type:"fire.volley.accepted",volleyId,targetId:target.id,ammoId,count:spawned,totalDamage:Math.round(totalDamage*100)/100,shots:accepted,at:now});
+      return;
+    }
     if(m.type==="fire.request"||m.type==="projectile.fire"){
       monitor.shots++;
       const authoritative=m.type==="fire.request";
