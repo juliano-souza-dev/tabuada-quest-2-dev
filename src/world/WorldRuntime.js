@@ -13,7 +13,7 @@ import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-forcecache-v1";
-import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-ammo-sync-cache-v2";
+import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-seafight-vfx-v1";
 import {
   normalizeCollision,
   inferCollisionAction,
@@ -4884,7 +4884,7 @@ export class WorldRuntime {
     el.className="tq-world-damage-number"+(received?" is-received":"");
     const raw=Math.max(0.1,Number(amount)||0.1);
     const display=Math.round(raw*10)/10;
-    el.textContent="-"+(Number.isInteger(display)?String(display):display.toFixed(1));
+    el.textContent=Number.isInteger(display)?String(display):display.toFixed(1);
     el.style.left=(Number(x)||0)+"px";
     el.style.top=(Number(y)||0)+"px";
     this.entityLayer.append(el);
@@ -5076,9 +5076,25 @@ export class WorldRuntime {
   }
 
   renderCannonProjectile({from,to,duration=620,ammo=null}={}){
-    const shot={from,to,duration};
+    const shot={
+      from,
+      to,
+      duration,
+      ammo,
+      size:Math.max(6,7*Math.max(.6,Number(ammo?.size)||1))
+    };
     if(this.pixiRenderer?.fireCannonProjectile?.(shot)===true)return true;
     return this.navalRenderer?.fire?.({from,to,duration,ammo})===true;
+  }
+
+  renderCannonImpact({at,ammo=null,kind="ship",size=1}={}){
+    if(!at)return false;
+    return this.pixiRenderer?.playImpactFx?.({
+      at:{x:Number(at.x)||0,y:Number(at.y)||0},
+      ammo,
+      kind:kind==="water"?"water":"ship",
+      size:clamp(Number(size)||1,.55,2.2)
+    })===true;
   }
 
   fireDirectNavalProjectile(entity){
@@ -5230,9 +5246,17 @@ export class WorldRuntime {
       }
       if(hitCount<=0){
         this.audio?.play?.("cannon-impact-water");
+        const missAt=volleyShots[0]?.predictedImpact;
+        if(missAt)this.renderCannonImpact({at:missAt,ammo,kind:"water",size:.9});
         return;
       }
       this.audio?.play("cannon-impact-ship");
+      this.renderCannonImpact({
+        at:{x:Number(entity.visualX??entity.x)||0,y:Number(entity.visualY??entity.y)||0},
+        ammo,
+        kind:"ship",
+        size:clamp(Math.max(Number(entity.width)||96,Number(entity.height)||96)/150,.75,1.55)
+      });
 
       const coopBoss=this.isCoopBoss(entity)&&this.coopTransport?.damageBoss;
       const coopBossId=coopBoss?this.coopBossId(entity):"";
@@ -5412,6 +5436,12 @@ export class WorldRuntime {
           setTimeout(()=>{
             if(this.navalPlayerHp<=0||this.repairActive?.forced===true||this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
             this.audio?.play("cannon-impact-ship");
+            this.renderCannonImpact({
+              at:{x:Number(this.player?.x)||shotTarget.x,y:Number(this.player?.y)||shotTarget.y},
+              ammo:loadout.ammo||null,
+              kind:"ship",
+              size:clamp(Math.max(Number(this.config.player?.width)||108,Number(this.config.player?.height)||150)/150,.75,1.45)
+            });
             const shotDamage=loadout.ammo
               ?navalShotDamage(cannon,loadout.ammo)
               :clamp(Number(stats.damage)||1,.1,100000000);
@@ -7063,6 +7093,7 @@ export class WorldRuntime {
       const hitTarget=this.entityByIdGet(hitTargetId)
         ||this.entities.find(item=>String(item?.serverEntityId||"")===hitTargetId);
       const bossHit=Boolean(hitTarget&&this.isCoopBoss(hitTarget));
+      let allowImpact=true;
       if(!bossHit){
         this.audio?.play("cannon-impact-ship");
       }else{
@@ -7071,9 +7102,33 @@ export class WorldRuntime {
         const state=this.bossProjectileFxWindow.get(key)||{startedAt:0,count:0,audio:false};
         if(now-state.startedAt>220){
           state.startedAt=now;
-          this.audio?.play("cannon-impact-ship");
+          state.count=0;
+          state.audio=false;
         }
+        allowImpact=state.count<4;
+        if(!state.audio){
+          this.audio?.play("cannon-impact-ship");
+          state.audio=true;
+        }
+        state.count+=1;
         this.bossProjectileFxWindow.set(key,state);
+      }
+      if(allowImpact){
+        const localTarget=String(event.targetType||"")==="player"&&String(event.targetId||"")===this.coopLocalUid;
+        const impactAt=hitTarget
+          ?{x:Number(hitTarget.visualX??hitTarget.x)||0,y:Number(hitTarget.visualY??hitTarget.y)||0}
+          :localTarget
+            ?{x:Number(this.player?.x)||0,y:Number(this.player?.y)||0}
+            :event.to;
+        const impactAmmo=this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||null;
+        if(impactAt)this.renderCannonImpact({
+          at:impactAt,
+          ammo:impactAmmo,
+          kind:"ship",
+          size:hitTarget
+            ?clamp(Math.max(Number(hitTarget.width)||96,Number(hitTarget.height)||96)/150,.75,1.55)
+            :1
+        });
       }
       if(String(event.targetType||"")==="entity"){
         this.applyAuthoritativeEntityHit({
@@ -7087,6 +7142,8 @@ export class WorldRuntime {
     }
     if(event.type==="projectile.miss"){
       this.audio?.play?.("cannon-impact-water");
+      const missAmmo=this.ammoCatalog.find(item=>String(item?.id||"")===String(event.ammoId||""))||null;
+      if(event.to)this.renderCannonImpact({at:event.to,ammo:missAmmo,kind:"water",size:.9});
     }
     if(event.type==="entity-hit"){
       this.applyAuthoritativeEntityHit(event);
