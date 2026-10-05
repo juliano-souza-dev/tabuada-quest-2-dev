@@ -235,7 +235,26 @@ export class WorldRuntime {
             selected:String(this.state?.ammo?.selectedAmmoId||"")===id
           };
         }).filter(item=>item.id&&item.quantity>0);
+        const balances=this.shopBalances?.()||{};
+        const minimapPoints=[
+          {x:Number(this.player.x)||0,y:Number(this.player.y)||0,player:true},
+          ...this.entities
+            .filter(entity=>String(entity?.type||"")==="ship"&&!this.collected.has(entity.id))
+            .slice(0,40)
+            .map(entity=>({
+              x:Number(entity.visualX??entity.x)||0,
+              y:Number(entity.visualY??entity.y)||0,
+              hostile:Boolean(this.navalHostile.has(String(entity.id||""))||entity.boss===true)
+            }))
+        ];
         return {
+          gold:Math.max(0,Number(balances.gold)||0),
+          rubies:Math.max(0,Number(balances.rubies)||0),
+          level:Math.max(1,regionNumber),
+          minimap:{
+            bounds:{width:Number(this.config.width)||1,height:Number(this.config.height)||1},
+            points:minimapPoints
+          },
           attacking:this.navalAutoFire===true,
           hasCannons:Array.isArray(this.playerCannonIds)&&this.playerCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
