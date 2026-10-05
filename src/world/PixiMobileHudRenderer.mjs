@@ -1,6 +1,6 @@
 const PIXI_URL="https://cdn.jsdelivr.net/npm/pixi.js@8.21.0/dist/pixi.min.mjs";
 
-const HUD_V="20261005-hud-halloween-v12";
+const HUD_V="20261005-hud-halloween-v13";
 
 const ASSETS={
   ammo:"./assets/hud/municao.webp?v="+HUD_V,
@@ -446,45 +446,48 @@ export class PixiMobileHudRenderer{
       r.shieldIcon.visible=false;
       r.ammoIcon.visible=false;
     }else{
-      // Mobile-first right rail. On desktop it scales up but keeps the same hierarchy.
-      const menu=mobile?clamp(w*.13,46,56):clamp(Math.min(w,h)*.078,58,72);
-      const right=w-9-menu/2;
-      const left=right-menu-gap;
-      const row1=mapY+mapR+9+menu/2;
-      const row2=row1+menu+gap;
+      // Reference-driven layout: large bottom controls and expanded mobile touch targets.
+      const menu=mobile?clamp(w*.165,60,72):clamp(Math.min(w,h)*.086,64,82);
+      const menuGap=mobile?6:9;
+      const right=w-10-menu/2;
+      const left=right-menu-menuGap;
+      const row1=mapY+mapR+10+menu/2;
+      const row2=row1+menu+menuGap;
 
       this.fitSprite(r.halloweenSprites.hShipyard,left,row1,menu,menu,"shipyard");
       this.fitSprite(r.halloweenSprites.hGroups,right,row1,menu,menu,"groups");
       this.fitSprite(r.halloweenSprites.hMissions,left,row2,menu,menu,"missions");
       this.fitSprite(r.halloweenSprites.hShop,right,row2,menu,menu,"shop");
 
-      const configSize=mobile?38:44;
+      const configSize=mobile?clamp(w*.145,54,64):50;
       const configX=right;
-      const configY=row2+menu/2+gap+configSize/2;
+      const configY=row2+menu/2+menuGap+configSize/2;
       this.buttonRects.config={left:configX-configSize/2,top:configY-configSize/2,width:configSize,height:configSize};
-      r.configBack.clear().roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,10).fill({color:0x171019,alpha:.92}).stroke({color:0xd09b3f,width:3});
+      r.configBack.clear().roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,12).fill({color:0x171019,alpha:.94}).stroke({color:0xd09b3f,width:4});
       r.configIcon.position.set(configX,configY);
 
-      const cell=mobile?clamp(w*.145,52,62):clamp(Math.min(w,h)*.082,62,78);
-      const fireSize=cell*1.08;
-      const bottom=9;
+      const cell=mobile?clamp(w*.185,68,80):clamp(Math.min(w,h)*.095,72,88);
+      const fireSize=cell*1.12;
+      const bottom=mobile?12:14;
+      const combatGap=mobile?7:10;
       const yBottom=h-bottom-cell/2;
-      const xCenter=w-9-cell/2;
-      const xFire=xCenter-cell/2-gap-fireSize/2;
-      const xAmmo=xFire-fireSize/2-gap-cell/2;
-      const yTop=yBottom-cell-gap;
+      const rightEdge=w-10;
+      const centerX=rightEdge-cell/2;
+      const fireX=centerX-cell/2-combatGap-fireSize/2;
+      const ammoX=fireX-fireSize/2-combatGap-cell/2;
+      const yTop=yBottom-cell-combatGap;
 
-      this.fitSprite(r.halloweenSprites.hAmmo,xAmmo,yBottom,cell,cell,"ammo");
-      this.setSquare("fire",r.sprites.fire,xFire,h-bottom-fireSize/2,fireSize);
-      this.fitSprite(r.halloweenSprites.hCancel,xFire,h-bottom-fireSize/2,fireSize,fireSize);
-      this.fitSprite(r.halloweenSprites.hCenter,xCenter,yBottom,cell,cell,"center");
+      this.fitSprite(r.halloweenSprites.hAmmo,ammoX,yBottom,cell,cell,"ammo");
+      this.setSquare("fire",r.sprites.fire,fireX,h-bottom-fireSize/2,fireSize);
+      this.fitSprite(r.halloweenSprites.hCancel,fireX,h-bottom-fireSize/2,fireSize,fireSize);
+      this.fitSprite(r.halloweenSprites.hCenter,centerX,yBottom,cell,cell,"center");
 
-      this.fitSprite(r.halloweenSprites.hRepair,xFire,yTop,cell,cell,"repair");
-      this.setSquare("follow",r.sprites.follow,xCenter,yTop,cell*.76);
+      const followSize=mobile?cell*.86:cell*.80;
+      this.setSquare("follow",r.sprites.follow,centerX,yTop,followSize);
+      this.fitSprite(r.halloweenSprites.hRepair,fireX,yTop,cell*.92,cell*.92,"repair");
 
-      // Reinforcement has no Halloween artwork in the corrected set. Keep a small functional fallback.
-      const shieldSize=mobile?38:44;
-      const shieldX=xAmmo;
+      const shieldSize=mobile?clamp(cell*.70,48,56):52;
+      const shieldX=ammoX;
       const shieldY=yTop;
       this.buttonRects.shield={left:shieldX-shieldSize/2,top:shieldY-shieldSize/2,width:shieldSize,height:shieldSize};
       r.shieldIcon.position.set(shieldX,shieldY);
@@ -492,11 +495,11 @@ export class PixiMobileHudRenderer{
 
       const ammoRect=this.buttonRects.ammo;
       if(ammoRect){
-        const iconSize=Math.min(ammoRect.width,ammoRect.height)*.40;
+        const iconSize=Math.min(ammoRect.width,ammoRect.height)*.44;
         r.ammoIcon.position.set(ammoRect.left+ammoRect.width*.50,ammoRect.top+ammoRect.height*.50);
         r.ammoIcon.width=iconSize;
         r.ammoIcon.height=iconSize;
-        r.ammoQtyText.position.set(ammoRect.left+ammoRect.width*.77,ammoRect.top+ammoRect.height*.77);
+        r.ammoQtyText.position.set(ammoRect.left+ammoRect.width*.78,ammoRect.top+ammoRect.height*.78);
       }
       r.ammoQtyText.visible=true;
       r.shieldQtyText.visible=true;
