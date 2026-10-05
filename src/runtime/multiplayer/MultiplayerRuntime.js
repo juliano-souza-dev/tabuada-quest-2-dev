@@ -38,7 +38,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.lastAckSequence=0;
     this.intentionalClose=false;
     this.offlineFallbackLocked=false;
-    this.protocolVersion="20261005-authoritative-v5-cannon-volley";
+    this.protocolVersion="20261005-authoritative-v6-ammo-ledger";
   }
 
   status(){
