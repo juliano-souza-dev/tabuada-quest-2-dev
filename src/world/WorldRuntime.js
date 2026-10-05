@@ -316,6 +316,7 @@ export class WorldRuntime {
     this.challengeTimer=0;
     this.repairActive=null;
     this.combatActive=null;
+    this.endPedagogyProtection();
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
@@ -391,6 +392,8 @@ export class WorldRuntime {
     this.joystick={x:0,y:0,active:false,pointerId:null};
     this.navigationTarget=null;
     this.treasureTarget=null;
+    this.treasureReady=null;
+    this.pedagogyInvulnerableUntil=0;
     this.entityEffectRenderers=new Map();
     this.entityEffectOrigins=new Map();
     this.entityById=new Map();
@@ -647,16 +650,37 @@ export class WorldRuntime {
 
   updateTreasureCollection(){
     const entity=this.treasureCollectionCandidate();
+    this.treasureReady=entity||null;
     if(!entity)return false;
 
-    // Collection is a standalone gameplay subsystem. It deliberately ignores
-    // collision/contact/nearby/combat target state.
-    this.stopNavalAutoFire({keepTarget:false});
-    this.clearCombatTarget({hideAction:true});
-    this.clearNavigationTarget({brake:true});
-    this.treasureTarget=null;
-    this.beginTreasureChallenge(entity);
+    // Reaching the treasure only exposes the Collect action. The challenge
+    // starts exclusively from the player's explicit click.
+    this.nearby=entity;
+    if(this.actionButton){
+      this.actionButton.disabled=false;
+      this.actionButton.textContent="🎁 Coletar";
+      this.actionButton.dataset.worldAction="collect-treasure";
+    }
+    if(this.actionMessage)this.actionMessage.textContent=String(entity.label||"Tesouro")+" ao alcance.";
+    if(this.actionWrap)this.actionWrap.hidden=false;
     return true;
+  }
+
+  pedagogyProtectionActive(){
+    return Boolean(this.challengeActive||this.combatActive||this.repairActive||Date.now()<Number(this.pedagogyInvulnerableUntil||0));
+  }
+
+  beginPedagogyProtection(){
+    this.pedagogyInvulnerableUntil=Number.MAX_SAFE_INTEGER;
+    this.coopTransport?.setChallengeProtection?.(true,0);
+    return true;
+  }
+
+  endPedagogyProtection(){
+    const until=Date.now()+15000;
+    this.pedagogyInvulnerableUntil=until;
+    this.coopTransport?.setChallengeProtection?.(false,until);
+    return until;
   }
 
   npcShipProfile(shipId){
@@ -3843,6 +3867,7 @@ export class WorldRuntime {
 
   async beginCombat(entity){
     if(!entity||this.combatActive||this.challengeActive||this.mode!=="play")return;
+    this.beginPedagogyProtection();
     this.stopForChallenge();
     this.clearCombatTarget({hideAction:false});
     this.actionWrap.hidden=true;
@@ -3981,6 +4006,7 @@ export class WorldRuntime {
   }
 
   async beginPlayerRepair({forced=false}={}){
+    this.beginPedagogyProtection();
     if(this.mode!=="play"||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
     if(this.repairActive){
       if(forced===true&&this.repairActive.forced!==true){
@@ -4013,6 +4039,7 @@ export class WorldRuntime {
     if(active.forced&&!completed&&this.navalPlayerHp<this.navalPlayerMaxHp)return false;
     this.repairActive=null;
     this.challengeActive=null;
+    this.endPedagogyProtection();
     if(this.challengeTimer){clearTimeout(this.challengeTimer);this.challengeTimer=0}
     if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-repair-challenge");this.challengeWrap.style.removeProperty("--tq-popup-layout")}
     if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}
@@ -4051,6 +4078,7 @@ export class WorldRuntime {
       this.challengeTimer=0;
     }
     this.challengeActive=null;
+    this.endPedagogyProtection();
     if(this.challengeKicker)this.challengeKicker.textContent="BAÚ DO TESOURO";
     if(this.challengeTitle)this.challengeTitle.textContent="Resolva para recolher";
     if(this.challengeWrap){this.challengeWrap.hidden=true;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.style.removeProperty("--tq-popup-layout")}
@@ -4074,6 +4102,7 @@ export class WorldRuntime {
 
   async beginStarterAmmoChallenge(){
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    this.beginPedagogyProtection();
     if(this.hasPlayerAmmo())return false;
 
     this.stopNavalAutoFire({keepTarget:true});
@@ -4175,6 +4204,7 @@ export class WorldRuntime {
   }
 
   async beginStarterCannonChallenge(){
+    this.beginPedagogyProtection();
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
 
@@ -4287,6 +4317,7 @@ export class WorldRuntime {
 
   async beginTreasureChallenge(entity){
     if(!entity||this.challengeActive||this.mode!=="play")return false;
+    this.beginPedagogyProtection();
     this.treasureTarget=null;
     this.stopForChallenge();
     this.actionWrap.hidden=true;
@@ -4533,6 +4564,18 @@ export class WorldRuntime {
       this.nearby=null;
       this.contactEntity=null;
       this.clearCombatTarget({hideAction:true});
+      return;
+    }
+
+    if(this.treasureReady&&!this.collected.has(this.treasureReady.id)){
+      this.nearby=this.treasureReady;
+      if(this.actionButton){
+        this.actionButton.disabled=false;
+        this.actionButton.textContent="🎁 Coletar";
+        this.actionButton.dataset.worldAction="collect-treasure";
+      }
+      if(this.actionMessage)this.actionMessage.textContent=String(this.treasureReady.label||"Tesouro")+" ao alcance.";
+      if(this.actionWrap)this.actionWrap.hidden=false;
       return;
     }
 
@@ -5221,6 +5264,7 @@ export class WorldRuntime {
   }
 
   applyDirectPlayerNavalDamage(amount=1,source=null){
+    if(this.pedagogyProtectionActive())return false;
     if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
     let incoming=Math.max(1,Number(amount)||1);
@@ -5455,6 +5499,16 @@ export class WorldRuntime {
   }
 
   activateNearby(){
+    if(this.treasureReady&&!this.collected.has(this.treasureReady.id)&&this.mode==="play"){
+      const entity=this.treasureReady;
+      this.treasureReady=null;
+      this.treasureTarget=null;
+      this.stopNavalAutoFire({keepTarget:false});
+      this.clearCombatTarget({hideAction:true});
+      this.clearNavigationTarget({brake:true});
+      this.beginTreasureChallenge(entity);
+      return;
+    }
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
         this.actionButton.disabled=true;
@@ -7039,7 +7093,7 @@ export class WorldRuntime {
     this.updateEntityMotionFrame(time,dt);
     this.updateTreasurePopulation(time);
     const collectingTreasure=this.updateTreasureCollection();
-    if(!collectingTreasure&&!this.challengeActive){
+    if(!collectingTreasure&&!this.challengeActive&&!this.treasureReady){
       this.syncAutomaticCombatTarget();
       this.updateDirectNavalCombat(time);
     }
