@@ -653,16 +653,16 @@ export class WorldRuntime {
     this.treasureReady=entity||null;
     if(!entity)return false;
 
-    // Reaching the treasure only exposes the Collect action. The challenge
-    // starts exclusively from the player's explicit click.
-    this.nearby=entity;
-    if(this.actionButton){
-      this.actionButton.disabled=false;
-      this.actionButton.textContent="🎁 Coletar";
-      this.actionButton.dataset.worldAction="collect-treasure";
-    }
-    if(this.actionMessage)this.actionMessage.textContent=String(entity.label||"Tesouro")+" ao alcance.";
-    if(this.actionWrap)this.actionWrap.hidden=false;
+    // Treasure collection is automatic only while the player is not in naval
+    // combat. A nearby treasure never interrupts an active fight.
+    if(this.isPlayerInNavalCombat())return false;
+
+    this.treasureReady=null;
+    this.treasureTarget=null;
+    this.stopNavalAutoFire({keepTarget:false});
+    this.clearCombatTarget({hideAction:true});
+    this.clearNavigationTarget({brake:true});
+    this.beginTreasureChallenge(entity);
     return true;
   }
 
@@ -4567,17 +4567,6 @@ export class WorldRuntime {
       return;
     }
 
-    if(this.treasureReady&&!this.collected.has(this.treasureReady.id)){
-      this.nearby=this.treasureReady;
-      if(this.actionButton){
-        this.actionButton.disabled=false;
-        this.actionButton.textContent="🎁 Coletar";
-        this.actionButton.dataset.worldAction="collect-treasure";
-      }
-      if(this.actionMessage)this.actionMessage.textContent=String(this.treasureReady.label||"Tesouro")+" ao alcance.";
-      if(this.actionWrap)this.actionWrap.hidden=false;
-      return;
-    }
 
     // Physical interactions must outrank an automatically selected combat
     // target. Otherwise any NPC anywhere in the world can steal the interaction
@@ -5499,16 +5488,6 @@ export class WorldRuntime {
   }
 
   activateNearby(){
-    if(this.treasureReady&&!this.collected.has(this.treasureReady.id)&&this.mode==="play"){
-      const entity=this.treasureReady;
-      this.treasureReady=null;
-      this.treasureTarget=null;
-      this.stopNavalAutoFire({keepTarget:false});
-      this.clearCombatTarget({hideAction:true});
-      this.clearNavigationTarget({brake:true});
-      this.beginTreasureChallenge(entity);
-      return;
-    }
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
         this.actionButton.disabled=true;
@@ -7093,7 +7072,7 @@ export class WorldRuntime {
     this.updateEntityMotionFrame(time,dt);
     this.updateTreasurePopulation(time);
     const collectingTreasure=this.updateTreasureCollection();
-    if(!collectingTreasure&&!this.challengeActive&&!this.treasureReady){
+    if(!collectingTreasure&&!this.challengeActive){
       this.syncAutomaticCombatTarget();
       this.updateDirectNavalCombat(time);
     }
