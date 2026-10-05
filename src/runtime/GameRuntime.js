@@ -925,6 +925,7 @@ export class GameRuntime {
     this.saveState();
     this.syncCloud("shop-purchase");
     globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{item:clone(product),quantity:amount,total,currency:walletKey}}));
+    await this.advanceMissions("purchase_upgrade",{worldId,amount:1});
     const purchasedUnits=product.type==="ammo"
       ?amount*Math.max(1,Math.floor(Number(product.packQuantity)||1))
       :amount;
@@ -1561,6 +1562,89 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
+  async advanceMissions(type,context={}){
+    const eventType=String(type||"").trim();
+    if(!eventType)return {changed:false,completed:[]};
+    const worldId=String(context.worldId||this.current?.id||"");
+    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\d+)/i)?.[1])||0);
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
+    const progress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
+    const claimed=new Set(Array.isArray(missionState.claimedRewards)?missionState.claimedRewards.map(String):[]);
+    const completed=[];
+    let changed=false;
+
+    for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
+      if(Number(mission?.region)!==region)continue;
+      const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
+      if(String(objective.type||"")!==eventType)continue;
+      if(eventType==="defeat_npc"){
+        const requiredNpcId=String(objective.npcId||objective.targetNpcId||"").trim();
+        if(requiredNpcId&&requiredNpcId!==String(context.npcId||""))continue;
+      }
+      if(eventType==="collect_rare_treasure"&&context.rare!==true)continue;
+
+      const id=String(mission.id||"").trim();
+      if(!id)continue;
+      const target=Math.max(1,Math.floor(Number(objective.target)||1));
+      const amount=Math.max(1,Math.floor(Number(context.amount)||1));
+      const previous=Math.max(0,Math.floor(Number(progress[id])||0));
+      const next=Math.min(target,previous+amount);
+      if(next!==previous){progress[id]=next;changed=true;}
+      if(next<target||claimed.has(id))continue;
+
+      const reward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
+      const gold=Math.max(0,Number(reward.gold ?? reward.coins)||0);
+      const rubies=Math.max(0,Number(reward.rubies)||0);
+      const xp=Math.max(0,Number(reward.xp)||0);
+      const current=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
+      this.rewards={
+        ...current,
+        coins:Math.max(0,Number(current.coins)||0)+gold,
+        gold:Math.max(0,Number(current.gold ?? current.coins)||0)+gold,
+        rubies:Math.max(0,Number(current.rubies)||0)+rubies,
+        xp:Math.max(0,Number(current.xp)||0)+xp
+      };
+
+      const cannonId=String(reward.cannonId||"").trim();
+      const cannonQuantity=Math.max(1,Math.floor(Number(reward.cannonQuantity)||1));
+      if(cannonId)this.grantCannon(cannonId,cannonQuantity,{save:false});
+      const shipId=String(reward.shipId||"").trim();
+      if(shipId){
+        await this.grantShip(shipId,{equip:reward.equipShip===true,save:false});
+        if(reward.equipShip===true&&this.playerShips.ownedShips.includes(shipId)){
+          this.playerShips.equippedShip=shipId;
+          this.ensurePlayerShips();
+        }
+      }
+
+      claimed.add(id);
+      completed.push(id);
+      changed=true;
+      globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
+        missionId:id,gold,rubies,xp,cannonId,
+        quantity:cannonId?cannonQuantity:0,
+        shipId,equipped:shipId?reward.equipShip===true:false
+      }}));
+      this.worldRuntime?.showGameplayToast?.("📜 Missão concluída: "+String(mission.name||id),2200);
+    }
+
+    if(!changed)return {changed:false,completed:[]};
+    this.accountState={
+      ...base,
+      game:{
+        ...game,
+        rewards:clone(this.rewards),
+        missions:{...missionState,progress,claimedRewards:[...claimed]}
+      }
+    };
+    this.worldRuntime?.shopOverlay?.refreshBalances?.();
+    this.saveState();
+    this.syncCloud("mission-progress");
+    return {changed:true,completed};
+  }
+
   async handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     let configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
@@ -1759,67 +1843,18 @@ export class GameRuntime {
         claimDetails
       };
 
-      const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
-      const missionProgress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
-      const claimedMissionRewards=new Set(Array.isArray(missionState.claimedRewards)?missionState.claimedRewards.map(String):[]);
-      const currentRegion=Math.max(0,Number(String(worldId).match(/^r(\d+)/i)?.[1])||0);
-      if(cleanEntity.npcId){
-        const missions=Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[];
-        for(const mission of missions){
-          const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
-          if(String(objective.type||"")!=="defeat_npc")continue;
-          if(Number(mission.region)!==currentRegion)continue;
-          const requiredNpcId=String(objective.npcId||objective.targetNpcId||"").trim();
-          if(requiredNpcId&&requiredNpcId!==String(cleanEntity.npcId))continue;
-          const target=Math.max(1,Math.floor(Number(objective.target)||1));
-          const id=String(mission.id||"").trim();
-          if(!id)continue;
-          const previous=Math.max(0,Math.floor(Number(missionProgress[id])||0));
-          const next=Math.min(target,previous+1);
-          missionProgress[id]=next;
-
-          if(next>=target&&!claimedMissionRewards.has(id)){
-            const missionReward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
-            const cannonId=String(missionReward.cannonId||"").trim();
-            const cannonQuantity=Math.max(1,Math.floor(Number(missionReward.cannonQuantity)||1));
-            let grantedAny=false;
-            if(cannonId&&this.grantCannon(cannonId,cannonQuantity,{save:false})){
-              grantedAny=true;
-            }
-            const shipId=String(missionReward.shipId||"").trim();
-            if(shipId){
-              const grantedShip=await this.grantShip(shipId,{
-                equip:missionReward.equipShip===true,
-                save:false
-              });
-              if(grantedShip)grantedAny=true;
-            }
-            if(grantedAny){
-              claimedMissionRewards.add(id);
-              globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
-                missionId:id,
-                cannonId,
-                quantity:cannonId?cannonQuantity:0,
-                shipId,
-                equipped:shipId?missionReward.equipShip===true:false
-              }}));
-            }
-          }
-        }
-      }
-
       this.accountState={
         ...base,
         game:{
           ...game,
           rewards:clone(this.rewards),
-          missions:{
-            ...missionState,
-            progress:missionProgress,
-            claimedRewards:[...claimedMissionRewards]
-          }
+          missions:game.missions&&typeof game.missions==="object"?clone(game.missions):{}
         }
       };
+
+      if(cleanEntity.npcId){
+        await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId),amount:1});
+      }
 
       const balances=this.getWalletBalances();
       const detail={
@@ -1890,6 +1925,11 @@ export class GameRuntime {
     configuredRewards.ammoRewards=ammoRewards;
     const rewardResult=await this.handleCombatVictory({entity,rewards:configuredRewards,claimKey});
     if(!rewardResult)return false;
+
+    await this.advanceMissions("defeat_boss",{worldId:String(this.current?.id||""),amount:1});
+    if(Number(String(this.current?.id||"").match(/^r(\d+)/i)?.[1])===12){
+      await this.advanceMissions("defeat_final_boss",{worldId:String(this.current?.id||""),amount:1});
+    }
 
     const rewardShipId=String(entity?.rewardShipId||"").trim();
     const alreadyOwned=rewardShipId&&this.playerShips.ownedShips.includes(rewardShipId);
@@ -1962,6 +2002,8 @@ export class GameRuntime {
         claimKey:chestKey
       });
     }
+
+    await this.advanceMissions("collect_treasure",{worldId,amount:1,rare:false});
 
     globalThis.dispatchEvent?.(new CustomEvent("tq:treasurecollected",{
       detail:{
