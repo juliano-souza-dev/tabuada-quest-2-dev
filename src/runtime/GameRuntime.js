@@ -1652,12 +1652,26 @@ export class GameRuntime {
             const missionReward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
             const cannonId=String(missionReward.cannonId||"").trim();
             const cannonQuantity=Math.max(1,Math.floor(Number(missionReward.cannonQuantity)||1));
+            let grantedAny=false;
             if(cannonId&&this.grantCannon(cannonId,cannonQuantity,{save:false})){
+              grantedAny=true;
+            }
+            const shipId=String(missionReward.shipId||"").trim();
+            if(shipId){
+              const grantedShip=await this.grantShip(shipId,{
+                equip:missionReward.equipShip===true,
+                save:false
+              });
+              if(grantedShip)grantedAny=true;
+            }
+            if(grantedAny){
               claimedMissionRewards.add(id);
               globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
                 missionId:id,
                 cannonId,
-                quantity:cannonQuantity
+                quantity:cannonId?cannonQuantity:0,
+                shipId,
+                equipped:shipId?missionReward.equipShip===true:false
               }}));
             }
           }
