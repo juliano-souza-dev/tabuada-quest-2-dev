@@ -13,7 +13,7 @@ import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-mobile-camera-30s";
-import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261004-pixi-phase1";
+import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-pixi-cannon-battery-v1";
 import {
   normalizeCollision,
   inferCollisionAction,
