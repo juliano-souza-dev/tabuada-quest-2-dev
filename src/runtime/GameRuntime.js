@@ -843,13 +843,12 @@ export class GameRuntime {
       const id=String(product.id);
       this.consumables[id]=Math.max(0,Math.floor(Number(this.consumables[id])||0))+amount;
     }else if(product.type==="ammo"){
-      this.ensurePlayerAmmo();
       const id=String(product.id);
       const packQuantity=Math.max(1,Math.floor(Number(product.packQuantity)||1));
       const grantedQuantity=amount*packQuantity;
-      this.playerAmmo.stock[id]=Math.max(0,Number(this.playerAmmo.stock[id])||0)+grantedQuantity;
-      if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
-      if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
+      if(!this.grantAmmo(id,grantedQuantity,{save:false,syncServer:true,source:"shop-purchase"})){
+        return {ok:false,message:"Não foi possível adicionar a munição ao inventário."};
+      }
     }else if(product.type==="cannon"){
       if(!this.grantCannon(String(product.id),amount,{save:false}))return {ok:false,message:"Não foi possível adicionar o canhão ao inventário."};
     }else if(!(await this.grantShip(String(product.id),{save:false}))){
@@ -1651,11 +1650,10 @@ export class GameRuntime {
           const ammoId=String(ammoReward?.id||"").trim();
           const ammoQuantity=Math.max(0,Math.floor(Number(ammoReward?.quantity)||0));
           if(!ammoId||ammoQuantity<=0||!validIds.has(ammoId))continue;
-          this.playerAmmo.stock[ammoId]=Math.max(0,Number(this.playerAmmo.stock[ammoId])||0)+ammoQuantity;
-          if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=ammoId;
+          this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"reward"});
         }
-        if(this.worldRuntime?.state)this.worldRuntime.state.ammo=clone(this.playerAmmo);
-        this.worldRuntime?.onAmmoChange?.(clone(this.playerAmmo));
+        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+        this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"reward"});
       }
 
       if(itemId){
@@ -2042,8 +2040,7 @@ export class GameRuntime {
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
       onAmmoChange:ammo=>{
-        this.playerAmmo=normalizeGlobalAmmo(ammo);
-        this.ensurePlayerAmmo({migrateWorldStates:false});
+        this.replacePlayerAmmo(ammo,{save:false,syncServer:false,reason:"combat"});
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
           if(snapshot&&typeof snapshot==="object"){
