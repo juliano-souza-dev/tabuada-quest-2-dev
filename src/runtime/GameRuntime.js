@@ -2050,7 +2050,8 @@ export class GameRuntime {
         queueMicrotask(()=>this.saveState());
       },
       onAmmoChange:ammo=>{
-        this.replacePlayerAmmo(ammo,{save:false,syncServer:false,reason:"combat"});
+        this.playerAmmo=normalizeGlobalAmmo(ammo);
+        this.ensurePlayerAmmo();
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
           if(snapshot&&typeof snapshot==="object"){
