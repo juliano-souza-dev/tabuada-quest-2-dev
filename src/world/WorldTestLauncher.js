@@ -1,4 +1,4 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261005-effects-lab-v1";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261005-hud-assets-v2";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 
