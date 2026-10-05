@@ -5054,6 +5054,12 @@ export class WorldRuntime {
     });
   }
 
+  renderCannonProjectile({from,to,duration=620,ammo=null}={}){
+    const shot={from,to,duration};
+    if(this.pixiRenderer?.fireCannonProjectile?.(shot)===true)return true;
+    return this.navalRenderer?.fire?.({from,to,duration,ammo})===true;
+  }
+
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     this.syncEquippedCannonsFromShipyard();
@@ -5112,9 +5118,7 @@ export class WorldRuntime {
       if(!sent)return false;
 
       for(const shot of visualShots){
-        if(!(this.pixiRenderer?.fireCannonProjectile?.(shot)===true)){
-          this.navalRenderer?.fire?.({...shot,ammo});
-        }
+        this.renderCannonProjectile({...shot,ammo});
       }
 
       const firedCount=available.length;
@@ -5181,9 +5185,7 @@ export class WorldRuntime {
         to:{x:intercept.x,y:intercept.y},
         duration
       };
-      if(!(this.pixiRenderer?.fireCannonProjectile?.(visualShot)===true)){
-        this.navalRenderer?.fire?.({...visualShot,ammo});
-      }
+      this.renderCannonProjectile({...visualShot,ammo});
 
       firedCount+=1;
       ammoRemaining=Math.max(0,ammoRemaining-1);
@@ -5374,7 +5376,7 @@ export class WorldRuntime {
         if(this.collected.has(entity.id)||this.navalDestroying.has(entity.id))return;
         const targetDistance=Math.hypot(muzzle.x-shotTarget.x,muzzle.y-shotTarget.y);
         const duration=clamp(targetDistance/Math.max(120,stats.projectileSpeed||620)*1000,220,2200);
-        const fired=this.navalRenderer?.fire?.({
+        const fired=this.renderCannonProjectile({
           from:muzzle,
           to:{x:shotTarget.x,y:shotTarget.y},
           duration,
@@ -6929,7 +6931,7 @@ export class WorldRuntime {
       const remaining=Math.max(80,resolvesAt?resolvesAt-serverNow:(Number(projectile.duration)||620)*(1-progress));
 
       this.serverProjectileRendered.set(id,now);
-      this.navalRenderer?.fire?.({
+      this.renderCannonProjectile({
         from:current,
         to:{x:Number(to.x)||0,y:Number(to.y)||0},
         duration:remaining,
@@ -7005,7 +7007,7 @@ export class WorldRuntime {
           this.bossProjectileFxWindow.set(key,window);
         }
         if(allowFx){
-          this.navalRenderer?.fire?.({
+          this.renderCannonProjectile({
             from:event.from,
             to:event.to,
             duration:Math.max(120,Number(event.duration)||620),
