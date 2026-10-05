@@ -639,6 +639,11 @@ wss.on("connection",ws=>{
         totalDamage+=damage;
         accepted.push({shotId:projectile.id,cannonId:shot.cannonId,damage,createdAt:projectile.createdAt,resolvesAt:projectile.resolvesAt});
       }
+      const unspawned=Math.max(0,normalized.length-spawned);
+      if(unspawned>0){
+        p.ammoStock=p.ammoStock&&typeof p.ammoStock==="object"?p.ammoStock:{};
+        p.ammoStock[ammoId]=Math.max(0,Math.floor(Number(p.ammoStock[ammoId])||0))+unspawned;
+      }
       if(!spawned){
         monitor.rejectedShots++;
         send(ws,{type:"fire.rejected",reason:"spawn_failed",volleyId,count:requested.length,targetId,ammoId,at:now});
