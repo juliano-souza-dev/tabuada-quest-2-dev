@@ -506,7 +506,7 @@ export class WorldRuntime {
       treasurePending:true,treasureRespawnAt:0,
       motion:normalizeEntityMotion(profile.behavior?.motion||{active:true,preset:"calm",speed:38,heave:24,pitch:20,roll:10,sway:8},"treasure"),
       effect:{category:"treasure",preset:"none"},
-      collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:4,action:"collect",message:"Coletar tesouro"}
+      collision:{active:false,shape:"ellipse",scaleX:.72,scaleY:.72,padding:0,action:"none",message:""}
     };
     entity.index=this.entities.length;entity.anchorX=entity.x;entity.anchorY=entity.y;entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=0;entity.skewX=0;entity.skewY=0;
     entity.effect=normalizeEntityEffect(entity.effect||{},entity);entity.collision=normalizeCollision(entity.collision||{},entity);return entity;
@@ -568,21 +568,89 @@ export class WorldRuntime {
     if(!population?.enabled)return;
     for(const entity of this.entities){
       if(!entity?.runtimeTreasure)continue;
+
       if(entity.treasurePending&&Number(time)>=Number(entity.treasureSpawnAt||0)){
-        entity.treasurePending=false;entity.collision=normalizeCollision({...entity.collision,active:true,action:"collect"},entity);
-        if(entity.el)entity.el.hidden=false;this.applyEntityVisual(entity);
+        entity.treasurePending=false;
+        entity.collision=normalizeCollision({
+          ...entity.collision,
+          active:false,
+          action:"none",
+          padding:0
+        },entity);
+        if(entity.el)entity.el.hidden=false;
+        this.applyEntityVisual(entity);
       }
+
       if(entity.treasureRespawnAt>0&&Number(time)>=Number(entity.treasureRespawnAt)){
-        const occupied=this.entities.filter(e=>e!==entity&&!this.collected.has(e.id)&&!e.treasurePending).map(e=>({x:Number(e.x)||0,y:Number(e.y)||0}));
+        const occupied=this.entities
+          .filter(e=>e!==entity&&!this.collected.has(e.id)&&!e.treasurePending)
+          .map(e=>({x:Number(e.x)||0,y:Number(e.y)||0}));
         occupied.push({x:Number(this.player.x)||0,y:Number(this.player.y)||0});
+
         const random=createSeededRandom(hashString(entity.id+".treasure."+Math.floor(time)));
         const point=this.treasureSpawnPoint(random,occupied,population);
-        entity.x=point.x;entity.y=point.y;entity.anchorX=point.x;entity.anchorY=point.y;entity.visualX=point.x;entity.visualY=point.y;
-        entity.treasureRespawnAt=0;this.collected.delete(entity.id);entity.collision=normalizeCollision({...entity.collision,active:true,action:"collect"},entity);
-        if(entity.el)entity.el.hidden=false;this.applyEntityVisual(entity);
+        entity.x=point.x;
+        entity.y=point.y;
+        entity.anchorX=point.x;
+        entity.anchorY=point.y;
+        entity.visualX=point.x;
+        entity.visualY=point.y;
+        entity.treasureRespawnAt=0;
+        entity.treasurePending=false;
+        this.collected.delete(entity.id);
+        entity.collision=normalizeCollision({
+          ...entity.collision,
+          active:false,
+          action:"none",
+          padding:0
+        },entity);
+        if(entity.el)entity.el.hidden=false;
+        this.applyEntityVisual(entity);
       }
+
       if(entity.treasurePending&&entity.el)entity.el.hidden=true;
     }
+  }
+
+  treasureCollectionRadius(entity){
+    const playerRadius=this.playerCollisionRadius();
+    const treasureRadius=Math.max(
+      24,
+      Math.max(Number(entity?.width)||88,Number(entity?.height)||88)*.48
+    );
+    return playerRadius+treasureRadius+18;
+  }
+
+  treasureCollectionCandidate(){
+    if(this.mode!=="play"||this.challengeActive||this.regionTransitionActive)return null;
+    let nearest=null;
+    let nearestDistance=Infinity;
+    for(const entity of this.entities){
+      if(String(entity?.type||"")!=="treasure")continue;
+      if(this.collected.has(entity.id)||entity.treasurePending||Number(entity.treasureRespawnAt)>0)continue;
+      const x=Number(entity.visualX??entity.x);
+      const y=Number(entity.visualY??entity.y);
+      if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+      const d=Math.hypot(x-(Number(this.player.x)||0),y-(Number(this.player.y)||0));
+      if(d>this.treasureCollectionRadius(entity)||d>=nearestDistance)continue;
+      nearest=entity;
+      nearestDistance=d;
+    }
+    return nearest;
+  }
+
+  updateTreasureCollection(){
+    const entity=this.treasureCollectionCandidate();
+    if(!entity)return false;
+
+    // Collection is a standalone gameplay subsystem. It deliberately ignores
+    // collision/contact/nearby/combat target state.
+    this.stopNavalAutoFire({keepTarget:false});
+    this.clearCombatTarget({hideAction:true});
+    this.clearNavigationTarget({brake:true});
+    this.treasureTarget=null;
+    this.beginTreasureChallenge(entity);
+    return true;
   }
 
   npcShipProfile(shipId){
@@ -4476,6 +4544,7 @@ export class WorldRuntime {
         if(this.collected.has(candidate.id))continue;
         candidate.collision=normalizeCollision(candidate.collision||{},candidate);
         if(!candidate.collision.active)continue;
+        if(String(candidate.type||"")==="treasure")continue;
         const candidateAction=inferCollisionAction(candidate,candidate.collision);
         if(candidateAction==="none"||candidateAction==="combat")continue;
         if(resolveCircleVsEntity(this.player,radius,candidate,candidate.collision).collided){
@@ -4491,21 +4560,6 @@ export class WorldRuntime {
       const collision=normalizeCollision(entity.collision||{},entity);
       const action=inferCollisionAction(entity,collision);
       const interaction=this.entityInteraction(entity);
-
-      if(entity.type==="treasure"&&action==="collect"){
-        if(entity.treasurePending||this.collected.has(entity.id)){
-          this.actionWrap.hidden=true;
-          return;
-        }
-        // Treasure interaction owns the frame. Combat target may be reacquired
-        // after the challenge, but cannot suppress collection.
-        this.stopNavalAutoFire({keepTarget:false});
-        this.clearCombatTarget({hideAction:true});
-        this.treasureTarget=null;
-        this.clearNavigationTarget({brake:true});
-        this.beginTreasureChallenge(entity);
-        return;
-      }
 
       if(action==="enter-world"||interaction?.actionId==="enter-region"){
         this.actionWrap.hidden=true;
@@ -5450,13 +5504,6 @@ export class WorldRuntime {
     }
 
     if(action==="collect"){
-      if(entity.type==="treasure"){
-        if(entity.treasurePending||this.collected.has(entity.id))return;
-        this.treasureTarget=null;
-        this.clearNavigationTarget();
-        this.beginTreasureChallenge(entity);
-        return;
-      }
       this.completeCollection(entity);
       return;
     }
@@ -6985,9 +7032,12 @@ export class WorldRuntime {
     this.updatePlayerWaterEffects(time);
     // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
-    this.syncAutomaticCombatTarget();
-    this.updateDirectNavalCombat(time);
     this.updateTreasurePopulation(time);
+    const collectingTreasure=this.updateTreasureCollection();
+    if(!collectingTreasure&&!this.challengeActive){
+      this.syncAutomaticCombatTarget();
+      this.updateDirectNavalCombat(time);
+    }
     if(this.pixiRenderer?.ready){
       this.pixiRenderer.syncEntities(this.entities);
       for(const entity of this.entities){
