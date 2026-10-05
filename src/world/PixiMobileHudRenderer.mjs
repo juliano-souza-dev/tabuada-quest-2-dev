@@ -1,6 +1,6 @@
 const PIXI_URL="https://cdn.jsdelivr.net/npm/pixi.js@8.21.0/dist/pixi.min.mjs";
 
-const HUD_V="20261005-hud-halloween-v10";
+const HUD_V="20261005-hud-halloween-v11";
 
 const ASSETS={
   ammo:"./assets/hud/municao.webp?v="+HUD_V,
@@ -25,6 +25,21 @@ const ASSETS={
   hRepair:"./assets/hud/events/halloween/repair_halloween.webp?v="+HUD_V,
 
   minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v="+HUD_V
+};
+
+const CROPS={
+  hProfile:{x:4,y:12,width:882,height:258},
+  hGold:{x:4,y:4,width:538,height:183},
+  hRuby:{x:5,y:97,width:585,height:241},
+  hShipyard:{x:18,y:62,width:274,height:317},
+  hGroups:{x:35,y:50,width:340,height:335},
+  hMissions:{x:2,y:68,width:310,height:330},
+  hShop:{x:4,y:58,width:301,height:330},
+  hAmmo:{x:40,y:28,width:282,height:222},
+  hCancel:{x:2,y:57,width:325,height:334},
+  hCenter:{x:85,y:69,width:284,height:300},
+  hConsumables:{x:37,y:19,width:269,height:228},
+  hRepair:{x:41,y:51,width:254,height:302}
 };
 
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
@@ -103,8 +118,21 @@ export class PixiMobileHudRenderer{
   }
 
   makeSprite(key){
-    const texture=this.textures[key];
-    if(!texture)return null;
+    const sourceTexture=this.textures[key];
+    if(!sourceTexture)return null;
+    let texture=sourceTexture;
+    const crop=CROPS[key];
+    if(crop&&sourceTexture.source){
+      try{
+        texture=new this.PIXI.Texture({
+          source:sourceTexture.source,
+          frame:new this.PIXI.Rectangle(crop.x,crop.y,crop.width,crop.height)
+        });
+      }catch(error){
+        console.warn("[TQ Pixi HUD] crop failed",key,error);
+        texture=sourceTexture;
+      }
+    }
     const sprite=new this.PIXI.Sprite(texture);
     sprite.anchor.set(.5);
     sprite.eventMode="none";
@@ -290,7 +318,7 @@ export class PixiMobileHudRenderer{
       topZoneBottom=topH;
     }else{
       r.top.clear();
-      const profileW=portraitMode?clamp(w*.94,310,430):clamp(w*.42,450,620);
+      const profileW=portraitMode?clamp(w*.92,300,420):clamp(w*.34,390,500);
       const profileH=profileW*(272/928);
       const profileLeft=6;
       const profileTop=6;
@@ -330,11 +358,12 @@ export class PixiMobileHudRenderer{
         if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
         currencyBottom=Math.max(goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
       }else{
-        const currencyLeft=profileLeft+profileW+10;
-        const available=Math.max(190,w-currencyLeft-24);
-        const maxW=Math.min(320,available);
-        const goldRect=this.fitSprite(r.halloweenSprites.hGold,currencyLeft+maxW/2,profileTop+36,maxW,72);
-        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,currencyLeft+Math.min(270,available)/2,profileTop+112,Math.min(270,available),82);
+        const currencyLeft=profileLeft+profileW+8;
+        const available=Math.max(180,w-currencyLeft-24);
+        const maxW=Math.min(250,available);
+        const goldRect=this.fitSprite(r.halloweenSprites.hGold,currencyLeft+maxW/2,profileTop+31,maxW,62);
+        const rubyW=Math.min(220,available);
+        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,currencyLeft+rubyW/2,profileTop+91,rubyW,66);
         if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.43,goldRect.top+goldRect.height*.54-9);
         if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
         currencyBottom=Math.max(currencyBottom,goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
@@ -403,7 +432,7 @@ export class PixiMobileHudRenderer{
       r.consumableQtyText.visible=false;
       r.ammoIcon.visible=false;
     }else{
-      const menuCell=portraitMode?clamp(w*.145,52,62):clamp(Math.min(w,h)*.082,60,78);
+      const menuCell=portraitMode?clamp(w*.15,54,66):clamp(Math.min(w,h)*.092,68,84);
       const menuRight=w-10-menuCell/2;
       const menuLeft=menuRight-menuCell-gap;
       const menuRow1=mapY+mapR+12+menuCell/2;
@@ -426,7 +455,7 @@ export class PixiMobileHudRenderer{
       r.configBack.visible=true;
       r.configIcon.visible=true;
 
-      const cell=portraitMode?clamp(w*.15,54,64):clamp(Math.min(w,h)*.084,62,82);
+      const cell=portraitMode?clamp(w*.155,56,68):clamp(Math.min(w,h)*.092,68,86);
       const primary=cell*1.10;
       const right=10;
       const bottom=10;
