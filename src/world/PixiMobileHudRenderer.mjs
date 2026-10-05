@@ -454,7 +454,7 @@ export class PixiMobileHudRenderer{
       const gap=mobile?6:9;
       const leftMargin=10;
       const rightMargin=10;
-      const bottom=mobile?12:14;
+      const topStart=topZoneBottom+10;
       const rowHeight=Math.max(cell,fireSize);
       const ordered=[
         {key:"ammo",size:cell},
@@ -475,7 +475,7 @@ export class PixiMobileHudRenderer{
           row+=1;
           cursorX=leftMargin;
         }
-        const y=h-bottom-row*(rowHeight+gap)-item.size/2;
+        const y=topStart+row*(rowHeight+gap)+item.size/2;
         positions[item.key]={x:cursorX+item.size/2,y,size:item.size};
         cursorX+=item.size+gap;
       }
@@ -502,8 +502,8 @@ export class PixiMobileHudRenderer{
       r.configBack.clear().roundRect(pConfig.x-pConfig.size/2,pConfig.y-pConfig.size/2,pConfig.size,pConfig.size,12).fill({color:0x171019,alpha:.94}).stroke({color:0xd09b3f,width:4});
       r.configIcon.position.set(pConfig.x,pConfig.y);
 
-      const contextualY=Math.max(topZoneBottom+cell/2+10,h-bottom-(row+1)*(rowHeight+gap)-cell/2);
-      const centerX=w-cell/2-10;
+      const contextualY=topStart+cell/2;
+      const centerX=w-cell/2-rightMargin;
       const repairX=centerX-cell-gap;
       const shieldX=repairX-cell-gap;
 
