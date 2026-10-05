@@ -3,7 +3,7 @@ import http from "node:http";
 import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
-const PROTOCOL_VERSION="20261005-authoritative-v6-ammo-ledger";
+const PROTOCOL_VERSION="20261005-authoritative-v6-ammo-stock";
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=60000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
