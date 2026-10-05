@@ -2465,3 +2465,47 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
   -webkit-user-select:none;
   -webkit-touch-callout:none;
 }
+
+
+/* HUD semantic v7 fallback.
+   If Pixi HUD cannot initialize, the DOM controls use the same uploaded compact
+   artwork instead of the legacy emoji/icon set. */
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  background-color:transparent!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-size:contain!important;
+  color:transparent!important;
+}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo{background-image:url("../../assets/hud/municao.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire{background-image:url("../../assets/hud/atirar.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow{background-image:url("../../assets/hud/seguir.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center{background-image:url("../../assets/hud/centralizar.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard{background-image:url("../../assets/hud/estaleiro.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions{background-image:url("../../assets/hud/missoes.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{background-image:url("../../assets/hud/loja.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop>small{
+  visibility:hidden!important;
+}
