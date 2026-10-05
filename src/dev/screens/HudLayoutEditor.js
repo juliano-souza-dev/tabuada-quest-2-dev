@@ -75,7 +75,9 @@ export class HudLayoutEditor {
           <div data-hud-layers></div>
         </aside>
         <main class="tq-hud-editor__stage-wrap">
-          <div class="tq-hud-editor__stage" data-hud-stage></div>
+          <div class="tq-hud-editor__game-preview" data-hud-game-preview>
+            <div class="tq-hud-editor__stage" data-hud-stage></div>
+          </div>
         </main>
         <aside class="tq-hud-editor__inspector">
           <strong>Elemento</strong>
@@ -105,8 +107,11 @@ export class HudLayoutEditor {
       .tq-hud-editor__body{height:calc(100% - 108px);display:grid;grid-template-columns:200px minmax(320px,1fr) 280px;min-height:0}
       .tq-hud-editor__layers,.tq-hud-editor__inspector{padding:12px;overflow:auto;background:#111827}.tq-hud-editor__layers{border-right:1px solid #273244}.tq-hud-editor__inspector{border-left:1px solid #273244}
       .tq-hud-editor__layer{display:flex;width:100%;justify-content:space-between;margin-top:8px;text-align:left}.tq-hud-editor__layer.is-selected{outline:2px solid #60a5fa}
-      .tq-hud-editor__stage-wrap{overflow:auto;display:grid;place-items:center;padding:36px;background:repeating-conic-gradient(#1f2937 0 25%,#243041 0 50%) 50%/24px 24px}
-      .tq-hud-editor__stage{position:relative;flex:none;background:linear-gradient(#123b5b,#0f5f7b);box-shadow:0 0 0 1px #93c5fd,0 20px 60px #0008;overflow:hidden;touch-action:none}
+      .tq-hud-editor__stage-wrap{overflow:auto;display:grid;place-items:center;padding:36px;background:#0b1220}
+      .tq-hud-editor__game-preview{position:relative;flex:none;overflow:hidden;box-shadow:0 0 0 1px #93c5fd,0 20px 60px #0008;background:#06131d}
+      .tq-hud-editor__game-preview::before{content:"";position:absolute;inset:0;background:var(--tq-hud-preview-image,none) center/cover no-repeat;opacity:.96;pointer-events:none}
+      .tq-hud-editor__game-preview::after{content:"GAMEPLAY";position:absolute;left:8px;bottom:6px;font-size:10px;letter-spacing:.12em;color:#ffffff88;pointer-events:none}
+      .tq-hud-editor__stage{position:relative;flex:none;background:transparent;overflow:hidden;touch-action:none;z-index:1}
       .tq-hud-editor__item{position:absolute;box-sizing:border-box;user-select:none;touch-action:none;cursor:move;outline:1px dashed transparent}
       .tq-hud-editor__item.is-selected{outline:2px solid #fde047}.tq-hud-editor__item img{width:100%;height:100%;object-fit:contain;pointer-events:none}
       .tq-hud-editor__item-text{display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;text-shadow:0 1px 2px #000}
@@ -139,7 +144,38 @@ export class HudLayoutEditor {
   setVisible(show){
     if(!this.el)return;
     this.el.hidden=!show;
-    if(show)this.render();
+    if(show){
+      this.syncGameplayPreview();
+      this.render();
+    }
+  }
+
+  syncGameplayPreview(){
+    const preview=this.el?.querySelector("[data-hud-game-preview]");
+    if(!preview)return;
+    const viewport=this.state.viewport||{width:390,height:844};
+    preview.style.width=viewport.width+"px";
+    preview.style.height=viewport.height+"px";
+    const host=this.runtime?.host||this.runtime?.root||document.querySelector("#app");
+    let source="";
+    const canvas=host?.querySelector?.("canvas");
+    if(canvas&&canvas.width&&canvas.height){
+      try{source=canvas.toDataURL("image/png")}catch{}
+    }
+    if(source){
+      preview.style.setProperty("--tq-hud-preview-image",`url("${source}")`);
+      return;
+    }
+    const backgroundNode=host&&[host,...host.querySelectorAll("*")].find(node=>{
+      const value=getComputedStyle(node).backgroundImage;
+      return value&&value!=="none";
+    });
+    const backgroundImage=backgroundNode?getComputedStyle(backgroundNode).backgroundImage:"";
+    if(backgroundImage&&backgroundImage!=="none"){
+      preview.style.setProperty("--tq-hud-preview-image",backgroundImage);
+      return;
+    }
+    preview.style.setProperty("--tq-hud-preview-image","linear-gradient(#0b3550,#0f6b83)");
   }
 
   addElement(type){
@@ -163,6 +199,11 @@ export class HudLayoutEditor {
     if(!this.el)return;
     const stage=this.el.querySelector("[data-hud-stage]");
     const viewport=this.state.viewport||{width:390,height:844};
+    const preview=this.el.querySelector("[data-hud-game-preview]");
+    if(preview){
+      preview.style.width=viewport.width+"px";
+      preview.style.height=viewport.height+"px";
+    }
     stage.style.width=viewport.width+"px";
     stage.style.height=viewport.height+"px";
     stage.innerHTML="";
