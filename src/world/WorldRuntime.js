@@ -4536,8 +4536,10 @@ export class WorldRuntime {
       return;
     }
 
-    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro desapareceu.";
-    this.discardTreasure(entity);
+    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro continua aqui.";
+    // Wrong answers never consume, hide, move or respawn the treasure.
+    // Close only the pedagogy challenge; collection remains available at the
+    // exact same world position for a future attempt.
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),700);
   }
 
