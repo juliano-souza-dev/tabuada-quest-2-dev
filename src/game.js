@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-pixi-cannon-battery-v1";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-pixi-cannon-battery-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-ammo-ledger-v6";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-ledger-v6";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261004-1604-room-revision-v2");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261005-ammo-ledger-v6");
 
 if(flowTest){
   try{
