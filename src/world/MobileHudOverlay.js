@@ -1,4 +1,4 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-live-hud-editor-v14";
+import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-live-hud-editor-v15";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
