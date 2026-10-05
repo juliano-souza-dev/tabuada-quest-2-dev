@@ -1,3 +1,3 @@
-# Tabuada Quest 2
+# DEV reset
 
-PWA educacional mobile-first. A branch `main` contém o runtime de produção; a branch `develop` contém o mesmo runtime acrescido das ferramentas de desenvolvimento.
+Backup integral anterior ao reset: branch `backup-pre-reset-2026-10-05`.
