@@ -1,5 +1,5 @@
-import { Game } from './engine/Game.js';
+import { GameApp } from './app/GameApp.js';
 import './styles/global.css';
 
-const game = new Game({ mount: document.querySelector('#game') });
-await game.start();
+const app = new GameApp({ mount: document.querySelector('#game') });
+await app.start();
