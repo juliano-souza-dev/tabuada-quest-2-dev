@@ -19,7 +19,20 @@ const createDevPlayerState=()=>{
     try{const raw=localStorage.getItem(DEV_PLAYER_KEY);if(raw){const value=JSON.parse(raw);if(value&&typeof value==="object")return value}}catch{}
     const value=empty();try{localStorage.setItem(DEV_PLAYER_KEY,JSON.stringify(value))}catch{}return value;
   };
-  const save=(state={})=>{const value=structuredClone(state);try{localStorage.setItem(DEV_PLAYER_KEY,JSON.stringify(value))}catch{}return value};
+  const save=(state={})=>{
+    let serialized="";
+    try{
+      serialized=JSON.stringify(state);
+    }catch(error){
+      console.error("[TabuadaQuest] DEV player state is not serializable",error);
+      throw new Error("Falha ao salvar o progresso local: estado inválido.");
+    }
+    try{localStorage.setItem(DEV_PLAYER_KEY,serialized)}catch(error){
+      console.error("[TabuadaQuest] DEV player state save failed",error);
+      throw error;
+    }
+    try{return JSON.parse(serialized)}catch{return state}
+  };
   return Object.freeze({uid:DEV_PLAYER_UID,load,save,status:()=>Object.freeze({authenticated:true,uid:DEV_PLAYER_UID,online:false,canPlay:true,accountRequired:false,offlineAllowed:true,developer:true})});
 };
 await installDevAssetCache();
