@@ -143,6 +143,11 @@ function bossMap(r){
   }
   return out;
 }
+function playerProtected(player,now=Date.now()){
+  if(!player)return false;
+  return player.challengeProtected===true||now<Number(player.protectedUntil||0);
+}
+
 function maybeRespawnEntity(e,now=Date.now()){
   if(!e?.defeated||!e.respawnAt||now<e.respawnAt)return false;
   e.hp=e.maxHp;
@@ -357,7 +362,7 @@ function resolveProjectile(r,p,now=Date.now()){
     }
   }else if(p.targetType==="player"){
     const target=r.players.get(key(p.targetId));
-    if(target&&target.hp>0){
+    if(target&&target.hp>0&&!playerProtected(target,now)){
       const miss=Math.hypot((Number(target.x)||0)-p.to.x,(Number(target.y)||0)-p.to.y);
       hit=miss<=95;
       if(hit){
@@ -378,7 +383,7 @@ function resolveProjectile(r,p,now=Date.now()){
 function maybeFireNpc(r,e,now=Date.now()){
   if(e.hostile===false||!e.aggroUid||e.defeated||e.stopped||e.hp<=0||now<Number(e.nextAttackAt||0))return false;
   const target=r.players.get(key(e.aggroUid));
-  if(!target||!(target.hp>0))return false;
+  if(!target||!(target.hp>0)||playerProtected(target,now))return false;
   const best=Math.hypot((Number(target.x)||0)-e.x,(Number(target.y)||0)-e.y);
   if(best>e.attackRange)return false;
   e.nextAttackAt=now+e.attackCooldownMs;
@@ -422,7 +427,7 @@ wss.on("connection",ws=>{
       const cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
       const previous=current.players.get(uid);
       const preservedPartyId=String(previous?.partyId||"");
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:preservedPartyId,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:preservedPartyId,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),challengeProtected:false,protectedUntil:0,nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
       send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
       if(preservedPartyId)sendPartyState(current,preservedPartyId);
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
@@ -457,6 +462,14 @@ wss.on("connection",ws=>{
       p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);
       p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=now;
       send(ws,{type:"state.ack",seq,x:p.x,y:p.y,vx:p.vx,vy:p.vy,rotation:p.rotation,direction:p.direction,serverTime:now});
+      return;
+    }
+    if(m.type==="challenge.protection"){
+      const now=Date.now();
+      p.challengeProtected=m.active===true;
+      p.protectedUntil=p.challengeProtected
+        ?0
+        :Math.min(now+20000,Math.max(now,Number(m.until)||now));
       return;
     }
     if(m.type==="party.invite"){
