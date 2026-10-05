@@ -533,12 +533,12 @@ wss.on("connection",ws=>{
       const requested=Array.isArray(m.shots)?m.shots.slice(0,64):[];
       if(!target||target.defeated||target.hp<=0){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"invalid_target",volleyId,targetId,at:Date.now()});
+        send(ws,{type:"fire.rejected",reason:"invalid_target",volleyId,count:requested.length,targetId,at:Date.now()});
         return;
       }
       if(!ammo||ammo.available===false||!requested.length){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,targetId,ammoId,at:Date.now()});
+        send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,count:requested.length,targetId,ammoId,at:Date.now()});
         return;
       }
 
@@ -555,13 +555,13 @@ wss.on("connection",ws=>{
         const cannon=cannonById.get(cannonId);
         if(!cannonId||!cannon||cannon.available===false){
           monitor.rejectedShots++;
-          send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,targetId,ammoId,cannonId,at:Date.now()});
+          send(ws,{type:"fire.rejected",reason:"invalid_loadout",volleyId,count:requested.length,targetId,ammoId,cannonId,at:Date.now()});
           return;
         }
         const used=(requestedCounts.get(cannonId)||0)+1;
         if(used>(equippedCounts.get(cannonId)||0)){
           monitor.rejectedShots++;
-          send(ws,{type:"fire.rejected",reason:"cannon_count_mismatch",volleyId,targetId,ammoId,cannonId,at:Date.now()});
+          send(ws,{type:"fire.rejected",reason:"cannon_count_mismatch",volleyId,count:requested.length,targetId,ammoId,cannonId,at:Date.now()});
           return;
         }
         requestedCounts.set(cannonId,used);
@@ -571,7 +571,7 @@ wss.on("connection",ws=>{
       const now=Date.now();
       if(now<Number(p.nextFireAt||0)){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"cooldown",volleyId,targetId,ammoId,retryAt:p.nextFireAt,at:now});
+        send(ws,{type:"fire.rejected",reason:"cooldown",volleyId,count:requested.length,targetId,ammoId,retryAt:p.nextFireAt,at:now});
         return;
       }
 
@@ -580,7 +580,7 @@ wss.on("connection",ws=>{
         const range=clamp(shot.cannon?.range||1200,100,12000);
         if(playerDistance>range+180){
           monitor.rejectedShots++;
-          send(ws,{type:"fire.rejected",reason:"out_of_range",volleyId,targetId,ammoId,cannonId:shot.cannonId,range,distance:playerDistance,at:now});
+          send(ws,{type:"fire.rejected",reason:"out_of_range",volleyId,count:requested.length,targetId,ammoId,cannonId:shot.cannonId,range,distance:playerDistance,at:now});
           return;
         }
       }
@@ -614,11 +614,11 @@ wss.on("connection",ws=>{
       }
       if(!spawned){
         monitor.rejectedShots++;
-        send(ws,{type:"fire.rejected",reason:"spawn_failed",volleyId,targetId,ammoId,at:now});
+        send(ws,{type:"fire.rejected",reason:"spawn_failed",volleyId,count:requested.length,targetId,ammoId,at:now});
         return;
       }
       log("VOLLEY+ ","uid="+uid+" target="+target.id+" cannons="+spawned+" damage="+(Math.round(totalDamage*100)/100)+" volley="+volleyId);
-      send(ws,{type:"fire.volley.accepted",volleyId,targetId:target.id,ammoId,count:spawned,totalDamage:Math.round(totalDamage*100)/100,shots:accepted,at:now});
+      send(ws,{type:"fire.volley.accepted",volleyId,count:requested.length,targetId:target.id,ammoId,count:spawned,totalDamage:Math.round(totalDamage*100)/100,shots:accepted,at:now});
       return;
     }
     if(m.type==="fire.request"||m.type==="projectile.fire"){
