@@ -529,20 +529,36 @@ export class PixiMobileHudRenderer{
   applyLayoutOffsets(){
     const offsetOf=key=>{
       const value=this.layoutOffsets?.[key]||{};
-      return {x:Number(value.x)||0,y:Number(value.y)||0};
+      return {x:Number(value.x)||0,y:Number(value.y)||0,scale:Math.max(.35,Math.min(3,Number(value.scale)||1))};
     };
     const shiftDisplay=(display,key)=>{
       if(!display)return;
       const offset=offsetOf(key);
       display.position.x+=offset.x;
       display.position.y+=offset.y;
+      if(offset.scale!==1&&display.scale){
+        display.scale.x*=offset.scale;
+        display.scale.y*=offset.scale;
+      }
     };
     const shiftRect=(key)=>{
       const rect=this.buttonRects[key];
       const editorRect=this.editorRects[key];
       const offset=offsetOf(key);
-      if(rect){rect.left+=offset.x;rect.top+=offset.y;rect.cx=(rect.cx??rect.left+rect.width/2)+offset.x;rect.cy=(rect.cy??rect.top+rect.height/2)+offset.y}
-      if(editorRect){editorRect.left+=offset.x;editorRect.top+=offset.y}
+      if(rect){
+        const cx=(rect.cx??rect.left+rect.width/2)+offset.x;
+        const cy=(rect.cy??rect.top+rect.height/2)+offset.y;
+        const width=rect.width*offset.scale;
+        const height=rect.height*offset.scale;
+        rect.width=width;rect.height=height;rect.cx=cx;rect.cy=cy;rect.left=cx-width/2;rect.top=cy-height/2;
+      }
+      if(editorRect){
+        const cx=editorRect.left+editorRect.width/2+offset.x;
+        const cy=editorRect.top+editorRect.height/2+offset.y;
+        const width=editorRect.width*offset.scale;
+        const height=editorRect.height*offset.scale;
+        editorRect.width=width;editorRect.height=height;editorRect.left=cx-width/2;editorRect.top=cy-height/2;
+      }
     };
 
     const topOffset=offsetOf("top");
@@ -550,9 +566,19 @@ export class PixiMobileHudRenderer{
       this.refs.top,this.refs.hpBack,this.refs.hpFill,this.refs.portrait,this.refs.halloweenChrome,
       this.refs.hpLabel,this.refs.hpText,this.refs.goldText,this.refs.rubyText,this.refs.levelText
     ]){
-      if(display){display.position.x+=topOffset.x;display.position.y+=topOffset.y}
+      if(display){
+        display.position.x+=topOffset.x;display.position.y+=topOffset.y;
+        if(topOffset.scale!==1&&display.scale){display.scale.x*=topOffset.scale;display.scale.y*=topOffset.scale}
+      }
     }
-    if(this.editorRects.top){this.editorRects.top.left+=topOffset.x;this.editorRects.top.top+=topOffset.y}
+    if(this.editorRects.top){
+      const rect=this.editorRects.top;
+      const cx=rect.left+rect.width/2+topOffset.x;
+      const cy=rect.top+rect.height/2+topOffset.y;
+      const width=rect.width*topOffset.scale;
+      const height=rect.height*topOffset.scale;
+      rect.width=width;rect.height=height;rect.left=cx-width/2;rect.top=cy-height/2;
+    }
 
     shiftDisplay(this.refs.minimapBack,"minimap");
     shiftDisplay(this.refs.mapMarkers,"minimap");
