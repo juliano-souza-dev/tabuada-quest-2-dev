@@ -12,8 +12,8 @@ import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-cache-hard-reset-v1";
-import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-pixi-cannon-battery-v1";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-ammo-sync-cache-v1";
+import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-ammo-sync-cache-v1";
 import {
   normalizeCollision,
   inferCollisionAction,
