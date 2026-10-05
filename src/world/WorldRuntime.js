@@ -12,7 +12,7 @@ import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-forcecache-v1";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-assets-v2";
 import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-seafight-vfx-v3";
 import {
   normalizeCollision,
@@ -247,7 +247,17 @@ export class WorldRuntime {
               hostile:Boolean(this.navalHostile.has(String(entity.id||""))||entity.boss===true)
             }))
         ];
+        const halloweenHud=Boolean(
+          String(this.config.event||"").toLowerCase()==="halloween"
+          ||String(this.config.meta?.event||"").toLowerCase()==="halloween"
+          ||this.config.meta?.halloween===true
+          ||this.config.region?.halloween===true
+          ||this.config.environment?.halloween?.active===true
+          ||String(this.config.environment?.preset||"").toLowerCase().includes("halloween")
+          ||String(this.config.player?.src||"").toLowerCase().includes("halloween")
+        );
         return {
+          hudTheme:halloweenHud?"halloween":"standard",
           gold:Math.max(0,Number(balances.gold)||0),
           rubies:Math.max(0,Number(balances.rubies)||0),
           level:Math.max(1,regionNumber),
