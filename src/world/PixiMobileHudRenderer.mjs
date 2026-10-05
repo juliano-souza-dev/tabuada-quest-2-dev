@@ -1,6 +1,6 @@
 const PIXI_URL="https://cdn.jsdelivr.net/npm/pixi.js@8.21.0/dist/pixi.min.mjs";
 
-const HUD_V="20261005-hud-halloween-v11";
+const HUD_V="20261005-hud-halloween-v12";
 
 const ASSETS={
   ammo:"./assets/hud/municao.webp?v="+HUD_V,
@@ -12,6 +12,7 @@ const ASSETS={
   shop:"./assets/hud/loja.webp?v="+HUD_V,
 
   hProfile:"./assets/hud/events/halloween/profile_hud_halloween.webp?v="+HUD_V,
+  hHealth:"./assets/hud/events/halloween/health_bar_halloween.webp?v="+HUD_V,
   hGold:"./assets/hud/events/halloween/gold_bar_halloween.webp?v="+HUD_V,
   hRuby:"./assets/hud/events/halloween/ruby_bar_halloween.webp?v="+HUD_V,
   hShipyard:"./assets/hud/events/halloween/shipyard_halloween.webp?v="+HUD_V,
@@ -21,26 +22,11 @@ const ASSETS={
   hAmmo:"./assets/hud/events/halloween/ammo_container_halloween.webp?v="+HUD_V,
   hCancel:"./assets/hud/events/halloween/cancel_attack_halloween.webp?v="+HUD_V,
   hCenter:"./assets/hud/events/halloween/center_ship_halloween.webp?v="+HUD_V,
-  hConsumables:"./assets/hud/events/halloween/consumables_container_halloween.webp?v="+HUD_V,
   hRepair:"./assets/hud/events/halloween/repair_halloween.webp?v="+HUD_V,
 
   minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v="+HUD_V
 };
 
-const CROPS={
-  hProfile:{x:4,y:12,width:882,height:258},
-  hGold:{x:4,y:4,width:538,height:183},
-  hRuby:{x:5,y:97,width:585,height:241},
-  hShipyard:{x:18,y:62,width:274,height:317},
-  hGroups:{x:35,y:50,width:340,height:335},
-  hMissions:{x:2,y:68,width:310,height:330},
-  hShop:{x:4,y:58,width:301,height:330},
-  hAmmo:{x:40,y:28,width:282,height:222},
-  hCancel:{x:2,y:57,width:325,height:334},
-  hCenter:{x:85,y:69,width:284,height:300},
-  hConsumables:{x:37,y:19,width:269,height:228},
-  hRepair:{x:41,y:51,width:254,height:302}
-};
 
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 
@@ -118,21 +104,8 @@ export class PixiMobileHudRenderer{
   }
 
   makeSprite(key){
-    const sourceTexture=this.textures[key];
-    if(!sourceTexture)return null;
-    let texture=sourceTexture;
-    const crop=CROPS[key];
-    if(crop&&sourceTexture.source){
-      try{
-        texture=new this.PIXI.Texture({
-          source:sourceTexture.source,
-          frame:new this.PIXI.Rectangle(crop.x,crop.y,crop.width,crop.height)
-        });
-      }catch(error){
-        console.warn("[TQ Pixi HUD] crop failed",key,error);
-        texture=sourceTexture;
-      }
-    }
+    const texture=this.textures[key];
+    if(!texture)return null;
     const sprite=new this.PIXI.Sprite(texture);
     sprite.anchor.set(.5);
     sprite.eventMode="none";
@@ -163,14 +136,14 @@ export class PixiMobileHudRenderer{
     const levelText=this.makeText("1",16,.5);
     const targetText=this.makeText("",13,.5);
     const ammoQtyText=this.makeText("",11,.5);
-    const consumableQtyText=this.makeText("",11,.5);
-    const consumableIcon=this.makeText("🛡",27,.5);
+    const shieldQtyText=this.makeText("",10,.5);
+    const shieldIcon=this.makeText("🛡",24,.5);
 
     root.addChild(
       top,hpBack,hpFill,portrait,halloweenChrome,
       joystick,minimapBack,mapMarkers,actions,halloweenActions,
       hpLabel,hpText,goldText,rubyText,levelText,targetText,
-      ammoQtyText,consumableQtyText,consumableIcon
+      ammoQtyText,shieldQtyText,shieldIcon
     );
 
     const minimapFrame=this.makeSprite("minimap");
@@ -183,11 +156,11 @@ export class PixiMobileHudRenderer{
     }
 
     const halloweenSprites={};
-    for(const key of ["hProfile","hGold","hRuby"]){
+    for(const key of ["hProfile","hHealth","hGold","hRuby"]){
       const sprite=this.makeSprite(key);
       if(sprite){halloweenChrome.addChild(sprite);halloweenSprites[key]=sprite}
     }
-    for(const key of ["hShipyard","hGroups","hMissions","hShop","hAmmo","hCancel","hCenter","hConsumables","hRepair"]){
+    for(const key of ["hShipyard","hGroups","hMissions","hShop","hAmmo","hCancel","hCenter","hRepair"]){
       const sprite=this.makeSprite(key);
       if(sprite){halloweenActions.addChild(sprite);halloweenSprites[key]=sprite}
     }
@@ -208,7 +181,7 @@ export class PixiMobileHudRenderer{
       root,top,hpBack,hpFill,portrait,joystick,minimapBack,mapMarkers,minimapFrame,
       actions,halloweenChrome,halloweenActions,sprites,halloweenSprites,
       configBack,configIcon,hpLabel,hpText,goldText,rubyText,levelText,targetText,
-      ammoQtyText,consumableQtyText,consumableIcon,ammoIcon
+      ammoQtyText,shieldQtyText,shieldIcon,ammoIcon
     };
   }
 
@@ -266,8 +239,8 @@ export class PixiMobileHudRenderer{
     const rect=this.root.getBoundingClientRect();
     const w=Math.max(1,Math.round(rect.width||innerWidth||390));
     const h=Math.max(1,Math.round(rect.height||innerHeight||844));
-    const portraitMode=h>w*1.08;
-    const signature=w+"x"+h+":"+this.theme+":"+(portraitMode?"p":"l");
+    const mobile=h>w*1.02||w<720;
+    const signature=w+"x"+h+":"+this.theme+":"+(mobile?"m":"d");
     if(!force&&signature===this.lastSize)return false;
     this.lastSize=signature;
     this.app.renderer.resize(w,h);
@@ -287,6 +260,9 @@ export class PixiMobileHudRenderer{
     r.sprites.follow.visible=true;
     r.sprites.fire.visible=true;
 
+    r.configBack.visible=true;
+    r.configIcon.visible=true;
+
     let topZoneBottom=0;
 
     if(!halloween){
@@ -300,10 +276,8 @@ export class PixiMobileHudRenderer{
       r.top.clear().rect(0,0,w,topH).fill(0x2a160d);
       r.top.rect(0,topH-8,w,8).fill(0x70401e);
       r.top.rect(0,topH-3,w,3).fill(0xd49b48);
-
       r.portrait.clear().circle(portraitR+8,topH*.52,portraitR).fill(0x102b3a).stroke({color:0xc78e42,width:5});
       r.portrait.circle(29,topH-2,17).fill(0x12100d).stroke({color:0xd19a49,width:3});
-
       r.hpBack.clear().roundRect(hpX,hpY,hpW,hpH,10).fill(0x0a0d0e).stroke({color:0xb77b35,width:3});
       r.hpLabel.position.set(hpX,hpY-21);
       r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
@@ -318,73 +292,120 @@ export class PixiMobileHudRenderer{
       topZoneBottom=topH;
     }else{
       r.top.clear();
-      const profileW=portraitMode?clamp(w*.92,300,420):clamp(w*.34,390,500);
-      const profileH=profileW*(272/928);
-      const profileLeft=6;
-      const profileTop=6;
-      const profileRect=this.fitSprite(
-        r.halloweenSprites.hProfile,
-        profileLeft+profileW/2,
-        profileTop+profileH/2,
-        profileW,
-        profileH
-      );
 
-      const portraitX=profileLeft+profileW*.225;
-      const portraitY=profileTop+profileH*.53;
-      const portraitR=profileH*.37;
-      r.portrait.clear()
-        .circle(portraitX,portraitY,portraitR)
-        .fill({color:0x120d17,alpha:.82});
+      if(mobile){
+        const margin=6;
+        const profileW=clamp(w*.59,205,255);
+        const profileRect=this.fitSprite(
+          r.halloweenSprites.hProfile,
+          margin+profileW/2,
+          margin+profileW*(227/628)/2,
+          profileW,
+          96
+        );
 
-      const hpX=profileLeft+profileW*.397;
-      const hpY=profileTop+profileH*.635;
-      const hpW=profileW*.565;
-      const hpH=profileH*.205;
-      r.hpBack.clear()
-        .roundRect(hpX,hpY,hpW,hpH,Math.max(8,hpH*.45))
-        .fill({color:0x07100b,alpha:.92});
-      r.hpLabel.position.set(profileLeft+profileW*.405,profileTop+profileH*.38);
-      r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
-      r.levelText.position.set(profileLeft+profileW*.115,profileTop+profileH*.86);
+        const profileH=profileRect?.height||82;
+        const portraitX=margin+profileW*.19;
+        const portraitY=margin+profileH*.50;
+        const portraitR=profileH*.34;
+        r.portrait.clear().circle(portraitX,portraitY,portraitR).fill({color:0x100b14,alpha:.82});
+        r.levelText.position.set(margin+profileW*.105,margin+profileH*.82);
 
-      let currencyBottom=profileTop+profileH;
-      if(portraitMode){
-        const currencyTop=profileTop+profileH+4;
-        const half=(w-18)/2;
-        const goldRect=this.fitSprite(r.halloweenSprites.hGold,6+half/2,currencyTop+27,half-6,54);
-        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,12+half+half/2,currencyTop+31,half-6,62);
-        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.43,goldRect.top+goldRect.height*.54-9);
-        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
-        currencyBottom=Math.max(goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
+        const healthW=clamp(w*.50,180,220);
+        const healthTop=margin+profileH+2;
+        const healthRect=this.fitSprite(
+          r.halloweenSprites.hHealth,
+          margin+healthW/2,
+          healthTop+healthW*(195/397)/2,
+          healthW,
+          84
+        );
+        if(healthRect){
+          const innerX=healthRect.left+healthRect.width*.33;
+          const innerY=healthRect.top+healthRect.height*.43;
+          const innerW=healthRect.width*.59;
+          const innerH=Math.max(13,healthRect.height*.17);
+          r.hpBack.clear().roundRect(innerX,innerY,innerW,innerH,innerH/2).fill({color:0x07100b,alpha:.95});
+          r.hpLabel.position.set(healthRect.left+healthRect.width*.36,healthRect.top+healthRect.height*.18);
+          r.hpText.position.set(innerX+innerW/2,innerY+innerH/2);
+        }
+
+        const rightLeft=Math.max(profileW+10,w*.61);
+        const rightW=Math.max(116,w-rightLeft-7);
+        const goldW=Math.min(rightW,150);
+        const goldRect=this.fitSprite(r.halloweenSprites.hGold,rightLeft+goldW/2,margin+29,goldW,58);
+        const rubyW=Math.min(rightW,154);
+        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,rightLeft+rubyW/2,margin+83,rubyW,54);
+        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.54,goldRect.top+goldRect.height*.54);
+        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.54,rubyRect.top+rubyRect.height*.54);
+
+        topZoneBottom=Math.max(
+          healthRect?healthRect.top+healthRect.height:healthTop+80,
+          rubyRect?rubyRect.top+rubyRect.height:margin+112
+        )+4;
       }else{
-        const currencyLeft=profileLeft+profileW+8;
-        const available=Math.max(180,w-currencyLeft-24);
-        const maxW=Math.min(250,available);
-        const goldRect=this.fitSprite(r.halloweenSprites.hGold,currencyLeft+maxW/2,profileTop+31,maxW,62);
-        const rubyW=Math.min(220,available);
-        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,currencyLeft+rubyW/2,profileTop+91,rubyW,66);
-        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.43,goldRect.top+goldRect.height*.54-9);
-        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
-        currencyBottom=Math.max(currencyBottom,goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
+        const margin=8;
+        const profileW=clamp(w*.29,360,470);
+        const profileRect=this.fitSprite(
+          r.halloweenSprites.hProfile,
+          margin+profileW/2,
+          margin+profileW*(227/628)/2,
+          profileW,
+          116
+        );
+        const profileH=profileRect?.height||110;
+        const portraitX=margin+profileW*.19;
+        const portraitY=margin+profileH*.50;
+        const portraitR=profileH*.34;
+        r.portrait.clear().circle(portraitX,portraitY,portraitR).fill({color:0x100b14,alpha:.82});
+        r.levelText.position.set(margin+profileW*.105,margin+profileH*.82);
+
+        const healthW=clamp(profileW*.72,250,330);
+        const healthRect=this.fitSprite(
+          r.halloweenSprites.hHealth,
+          margin+healthW/2,
+          margin+profileH+healthW*(195/397)/2,
+          healthW,
+          105
+        );
+        if(healthRect){
+          const innerX=healthRect.left+healthRect.width*.33;
+          const innerY=healthRect.top+healthRect.height*.43;
+          const innerW=healthRect.width*.59;
+          const innerH=Math.max(15,healthRect.height*.17);
+          r.hpBack.clear().roundRect(innerX,innerY,innerW,innerH,innerH/2).fill({color:0x07100b,alpha:.95});
+          r.hpLabel.position.set(healthRect.left+healthRect.width*.36,healthRect.top+healthRect.height*.18);
+          r.hpText.position.set(innerX+innerW/2,innerY+innerH/2);
+        }
+
+        const currencyLeft=margin+profileW+12;
+        const goldW=clamp(w*.15,180,250);
+        const rubyW=clamp(w*.16,190,260);
+        const goldRect=this.fitSprite(r.halloweenSprites.hGold,currencyLeft+goldW/2,margin+34,goldW,68);
+        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,currencyLeft+rubyW/2,margin+100,rubyW,64);
+        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.54,goldRect.top+goldRect.height*.54);
+        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.54,rubyRect.top+rubyRect.height*.54);
+
+        topZoneBottom=Math.max(
+          healthRect?healthRect.top+healthRect.height:margin+profileH+100,
+          rubyRect?rubyRect.top+rubyRect.height:margin+132
+        )+4;
       }
-      topZoneBottom=Math.max(profileTop+profileH,currencyBottom)+4;
-      if(profileRect)r.halloweenSprites.hProfile.visible=true;
     }
 
-    const mapR=portraitMode?clamp(w*.125,52,72):clamp(Math.min(w,h)*.092,62,88);
-    const mapX=w-mapR-12;
-    const mapY=topZoneBottom+mapR+14;
+    const mapR=mobile?clamp(w*.115,46,58):clamp(Math.min(w,h)*.082,60,82);
+    const mapX=w-mapR-10;
+    const mapY=topZoneBottom+mapR+10;
     r.minimapBack.clear().circle(mapX,mapY,mapR).fill(0x072d36);
     if(r.minimapFrame){
       r.minimapFrame.position.set(mapX,mapY);
-      r.minimapFrame.width=(mapR+14)*2;
-      r.minimapFrame.height=(mapR+14)*2;
+      r.minimapFrame.width=(mapR+12)*2;
+      r.minimapFrame.height=(mapR+12)*2;
     }
 
-    const joyR=portraitMode?clamp(w*.155,60,76):clamp(Math.min(w,h)*.105,64,96);
-    const joyX=joyR+12;
-    const joyY=h-joyR-18;
+    const joyR=mobile?clamp(w*.16,58,72):clamp(Math.min(w,h)*.10,64,92);
+    const joyX=joyR+10;
+    const joyY=h-joyR-16;
     r.joystick.clear()
       .circle(joyX,joyY,joyR).fill({color:0x092b3c,alpha:.82}).stroke({color:0xc0833b,width:6})
       .circle(joyX,joyY,joyR*.75).stroke({color:0x5c7c85,width:2,alpha:.55})
@@ -392,7 +413,7 @@ export class PixiMobileHudRenderer{
       .moveTo(joyX,joyY-joyR*.62).lineTo(joyX,joyY+joyR*.62).stroke({color:0x9eb8c0,width:2,alpha:.35})
       .circle(joyX,joyY,joyR*.35).fill({color:0x16658a,alpha:.9}).stroke({color:0xd5edf3,width:3});
 
-    const gap=portraitMode?6:8;
+    const gap=mobile?5:8;
 
     if(!halloween){
       const base=clamp(w*.094,54,78);
@@ -401,7 +422,6 @@ export class PixiMobileHudRenderer{
       const startX=w-(base*3+primary+gap*3)-8;
       const rowY=h-bottom-base/2;
       const fireY=h-bottom-primary/2;
-
       const actionLayout={
         ammo:{x:startX+base/2,y:rowY,size:base},
         fire:{x:startX+base+gap+primary/2,y:fireY,size:primary},
@@ -416,87 +436,74 @@ export class PixiMobileHudRenderer{
         config:{x:utilityX,y:utilityY-base-gap,size:base},
         shipyard:{x:utilityX-base-gap,y:utilityY-base-gap,size:base}
       };
+      for(const [key,pos] of Object.entries({...actionLayout,...utilities})) this.setSquare(key,r.sprites[key],pos.x,pos.y,pos.size);
 
-      for(const [key,pos] of Object.entries({...actionLayout,...utilities})){
-        this.setSquare(key,r.sprites[key],pos.x,pos.y,pos.size);
-      }
-
-      r.configBack.clear();
       const c=utilities.config;
-      r.configBack.roundRect(c.x-c.size/2,c.y-c.size/2,c.size,c.size,12).fill(0x10131c).stroke({color:0xb98039,width:3});
+      r.configBack.clear().roundRect(c.x-c.size/2,c.y-c.size/2,c.size,c.size,12).fill(0x10131c).stroke({color:0xb98039,width:3});
       r.configIcon.position.set(c.x,c.y);
-      r.configBack.visible=true;
-      r.configIcon.visible=true;
-      r.consumableIcon.visible=false;
       r.ammoQtyText.visible=false;
-      r.consumableQtyText.visible=false;
+      r.shieldQtyText.visible=false;
+      r.shieldIcon.visible=false;
       r.ammoIcon.visible=false;
     }else{
-      const menuCell=portraitMode?clamp(w*.15,54,66):clamp(Math.min(w,h)*.092,68,84);
-      const menuRight=w-10-menuCell/2;
-      const menuLeft=menuRight-menuCell-gap;
-      const menuRow1=mapY+mapR+12+menuCell/2;
-      const menuRow2=menuRow1+menuCell+gap;
+      // Mobile-first right rail. On desktop it scales up but keeps the same hierarchy.
+      const menu=mobile?clamp(w*.13,46,56):clamp(Math.min(w,h)*.078,58,72);
+      const right=w-9-menu/2;
+      const left=right-menu-gap;
+      const row1=mapY+mapR+9+menu/2;
+      const row2=row1+menu+gap;
 
-      this.fitSprite(r.halloweenSprites.hShipyard,menuLeft,menuRow1,menuCell,menuCell,"shipyard");
-      this.fitSprite(r.halloweenSprites.hGroups,menuRight,menuRow1,menuCell,menuCell,"groups");
-      this.fitSprite(r.halloweenSprites.hMissions,menuLeft,menuRow2,menuCell,menuCell,"missions");
-      this.fitSprite(r.halloweenSprites.hShop,menuRight,menuRow2,menuCell,menuCell,"shop");
+      this.fitSprite(r.halloweenSprites.hShipyard,left,row1,menu,menu,"shipyard");
+      this.fitSprite(r.halloweenSprites.hGroups,right,row1,menu,menu,"groups");
+      this.fitSprite(r.halloweenSprites.hMissions,left,row2,menu,menu,"missions");
+      this.fitSprite(r.halloweenSprites.hShop,right,row2,menu,menu,"shop");
 
-      const configSize=clamp(menuCell*.70,40,50);
-      const configX=menuRight;
-      const configY=menuRow2+menuCell/2+gap+configSize/2;
+      const configSize=mobile?38:44;
+      const configX=right;
+      const configY=row2+menu/2+gap+configSize/2;
       this.buttonRects.config={left:configX-configSize/2,top:configY-configSize/2,width:configSize,height:configSize};
-      r.configBack.clear()
-        .roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,10)
-        .fill({color:0x171019,alpha:.92})
-        .stroke({color:0xd09b3f,width:3});
+      r.configBack.clear().roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,10).fill({color:0x171019,alpha:.92}).stroke({color:0xd09b3f,width:3});
       r.configIcon.position.set(configX,configY);
-      r.configBack.visible=true;
-      r.configIcon.visible=true;
 
-      const cell=portraitMode?clamp(w*.155,56,68):clamp(Math.min(w,h)*.092,68,86);
-      const primary=cell*1.10;
-      const right=10;
-      const bottom=10;
-      const bottomY=h-bottom-cell/2;
+      const cell=mobile?clamp(w*.145,52,62):clamp(Math.min(w,h)*.082,62,78);
+      const fireSize=cell*1.08;
+      const bottom=9;
+      const yBottom=h-bottom-cell/2;
+      const xCenter=w-9-cell/2;
+      const xFire=xCenter-cell/2-gap-fireSize/2;
+      const xAmmo=xFire-fireSize/2-gap-cell/2;
+      const yTop=yBottom-cell-gap;
 
-      const centerX=w-right-cell/2;
-      const fireX=centerX-cell/2-gap-primary/2;
-      const ammoX=fireX-primary/2-gap-cell*.64;
-      const upperY=bottomY-cell-gap;
+      this.fitSprite(r.halloweenSprites.hAmmo,xAmmo,yBottom,cell,cell,"ammo");
+      this.setSquare("fire",r.sprites.fire,xFire,h-bottom-fireSize/2,fireSize);
+      this.fitSprite(r.halloweenSprites.hCancel,xFire,h-bottom-fireSize/2,fireSize,fireSize);
+      this.fitSprite(r.halloweenSprites.hCenter,xCenter,yBottom,cell,cell,"center");
 
-      this.fitSprite(r.halloweenSprites.hCenter,centerX,bottomY,cell,cell,"center");
-      this.setSquare("fire",r.sprites.fire,fireX,h-bottom-primary/2,primary);
-      this.fitSprite(r.halloweenSprites.hCancel,fireX,h-bottom-primary/2,primary,primary);
-      this.fitSprite(r.halloweenSprites.hAmmo,ammoX,bottomY,cell*1.28,cell,"ammo");
+      this.fitSprite(r.halloweenSprites.hRepair,xFire,yTop,cell,cell,"repair");
+      this.setSquare("follow",r.sprites.follow,xCenter,yTop,cell*.76);
 
-      const followX=centerX;
-      this.setSquare("follow",r.sprites.follow,followX,upperY,cell*.78);
-      const repairX=fireX;
-      this.fitSprite(r.halloweenSprites.hRepair,repairX,upperY,cell,cell,"repair");
-      const consumableX=ammoX;
-      this.fitSprite(r.halloweenSprites.hConsumables,consumableX,upperY,cell*1.28,cell,"shield");
+      // Reinforcement has no Halloween artwork in the corrected set. Keep a small functional fallback.
+      const shieldSize=mobile?38:44;
+      const shieldX=xAmmo;
+      const shieldY=yTop;
+      this.buttonRects.shield={left:shieldX-shieldSize/2,top:shieldY-shieldSize/2,width:shieldSize,height:shieldSize};
+      r.shieldIcon.position.set(shieldX,shieldY);
+      r.shieldQtyText.position.set(shieldX+shieldSize*.28,shieldY+shieldSize*.30);
 
       const ammoRect=this.buttonRects.ammo;
       if(ammoRect){
-        r.ammoQtyText.position.set(ammoRect.left+ammoRect.width*.74,ammoRect.top+ammoRect.height*.75);
-        const iconSize=Math.min(ammoRect.width,ammoRect.height)*.38;
+        const iconSize=Math.min(ammoRect.width,ammoRect.height)*.40;
         r.ammoIcon.position.set(ammoRect.left+ammoRect.width*.50,ammoRect.top+ammoRect.height*.50);
         r.ammoIcon.width=iconSize;
         r.ammoIcon.height=iconSize;
-      }
-      const shieldRect=this.buttonRects.shield;
-      if(shieldRect){
-        r.consumableIcon.position.set(shieldRect.left+shieldRect.width*.50,shieldRect.top+shieldRect.height*.49);
-        r.consumableQtyText.position.set(shieldRect.left+shieldRect.width*.76,shieldRect.top+shieldRect.height*.76);
+        r.ammoQtyText.position.set(ammoRect.left+ammoRect.width*.77,ammoRect.top+ammoRect.height*.77);
       }
       r.ammoQtyText.visible=true;
-      r.consumableQtyText.visible=true;
-      r.consumableIcon.visible=true;
+      r.shieldQtyText.visible=true;
+      r.shieldIcon.visible=true;
     }
 
-    r.targetText.position.set(w/2,topZoneBottom+8);
+    r.targetText.position.set(w/2,topZoneBottom+6);
     return true;
   }
 
@@ -557,9 +564,8 @@ export class PixiMobileHudRenderer{
 
     const shieldQty=Math.max(0,Math.floor(Number(state.hullReinforcementQuantity)||0));
     const shieldActive=state.hullReinforcementActive===true;
-    r.consumableQtyText.text=shieldActive?"ON":(shieldQty>0?"×"+shieldQty:"");
-    r.consumableIcon.alpha=shieldActive?1:(shieldQty>0?1:.42);
-    if(r.halloweenSprites.hConsumables)r.halloweenSprites.hConsumables.alpha=shieldActive||shieldQty>0?1:.55;
+    r.shieldQtyText.text=shieldActive?"ON":(shieldQty>0?"×"+shieldQty:"");
+    r.shieldIcon.alpha=shieldActive?1:(shieldQty>0?1:.38);
 
     const canRepair=hp>0&&hp<maxHp&&!attacking&&state.repairAvailable===true;
     if(r.halloweenSprites.hRepair){
@@ -588,7 +594,6 @@ export class PixiMobileHudRenderer{
       if(cancel)cancel.visible=attacking;
       if(r.halloweenSprites.hAmmo)r.halloweenSprites.hAmmo.visible=true;
       if(r.halloweenSprites.hCenter)r.halloweenSprites.hCenter.visible=true;
-      if(r.halloweenSprites.hConsumables)r.halloweenSprites.hConsumables.visible=true;
       r.ammoIcon.visible=Boolean(this.ammoIconUrl&&r.ammoIcon.texture);
     }else{
       if(fire){
