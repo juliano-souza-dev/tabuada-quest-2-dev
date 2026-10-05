@@ -1,6 +1,6 @@
 {
   "schema": "tq.world-catalog",
-  "version": 8,
+  "version": 9,
   "worlds": [
     {
       "id": "r1-enseada-aprendizes",
@@ -101,6 +101,14 @@
       "region": 0,
       "event": "halloween",
       "path": "./src/world/evento-halloween-baia-assombrada.world.json"
+    },
+    {
+      "id": "dev-effects-lab",
+      "name": "🧪 DEV · Laboratório de Efeitos",
+      "type": "ocean",
+      "region": 0,
+      "devOnly": true,
+      "path": "./src/world/dev-effects-lab.world.json"
     }
   ]
 }
