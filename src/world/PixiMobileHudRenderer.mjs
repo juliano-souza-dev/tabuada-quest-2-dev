@@ -449,52 +449,71 @@ export class PixiMobileHudRenderer{
       r.shieldIcon.visible=false;
       r.ammoIcon.visible=false;
     }else{
-      // Reference-driven layout: large bottom controls and expanded mobile touch targets.
-      const menu=mobile?clamp(w*.165,60,72):clamp(Math.min(w,h)*.086,64,82);
-      const menuGap=mobile?6:9;
-      const right=w-10-menu/2;
-      const left=right-menu-menuGap;
-      const row1=mapY+mapR+10+menu/2;
-      const row2=row1+menu+menuGap;
-
-      this.fitSprite(r.halloweenSprites.hShipyard,left,row1,menu,menu,"shipyard");
-      this.fitSprite(r.halloweenSprites.hGroups,right,row1,menu,menu,"groups");
-      this.fitSprite(r.halloweenSprites.hMissions,left,row2,menu,menu,"missions");
-      this.fitSprite(r.halloweenSprites.hShop,right,row2,menu,menu,"shop");
-
-      const configSize=mobile?clamp(w*.145,54,64):50;
-      const configX=right;
-      const configY=row2+menu/2+menuGap+configSize/2;
-      this.buttonRects.config={left:configX-configSize/2,top:configY-configSize/2,width:configSize,height:configSize};
-      r.configBack.clear().roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,12).fill({color:0x171019,alpha:.94}).stroke({color:0xd09b3f,width:4});
-      r.configIcon.position.set(configX,configY);
-
-      const cell=mobile?clamp(w*.185,68,80):clamp(Math.min(w,h)*.095,72,88);
-      const fireSize=cell*1.12;
+      const cell=mobile?clamp(w*.145,54,66):clamp(Math.min(w,h)*.082,60,76);
+      const fireSize=cell*1.08;
+      const gap=mobile?6:9;
+      const leftMargin=10;
+      const rightMargin=10;
       const bottom=mobile?12:14;
-      const combatGap=mobile?7:10;
-      const yBottom=h-bottom-cell/2;
-      const rightEdge=w-10;
-      const centerX=rightEdge-cell/2;
-      const fireX=centerX-cell/2-combatGap-fireSize/2;
-      const ammoX=fireX-fireSize/2-combatGap-cell/2;
-      const yTop=yBottom-cell-combatGap;
+      const rowHeight=Math.max(cell,fireSize);
+      const ordered=[
+        {key:"ammo",size:cell},
+        {key:"fire",size:fireSize},
+        {key:"groups",size:cell},
+        {key:"follow",size:cell},
+        {key:"shipyard",size:cell},
+        {key:"shop",size:cell},
+        {key:"missions",size:cell},
+        {key:"config",size:cell}
+      ];
+      const positions={};
+      let cursorX=leftMargin;
+      let row=0;
 
-      this.fitSprite(r.halloweenSprites.hAmmo,ammoX,yBottom,cell,cell,"ammo");
-      this.setSquare("fire",r.sprites.fire,fireX,h-bottom-fireSize/2,fireSize);
-      this.fitSprite(r.halloweenSprites.hCancel,fireX,h-bottom-fireSize/2,fireSize,fireSize);
-      this.fitSprite(r.halloweenSprites.hCenter,centerX,yBottom,cell,cell,"center");
+      for(const item of ordered){
+        if(cursorX+item.size> w-rightMargin && cursorX>leftMargin){
+          row+=1;
+          cursorX=leftMargin;
+        }
+        const y=h-bottom-row*(rowHeight+gap)-item.size/2;
+        positions[item.key]={x:cursorX+item.size/2,y,size:item.size};
+        cursorX+=item.size+gap;
+      }
 
-      const followSize=mobile?cell*.86:cell*.80;
-      this.setSquare("follow",r.sprites.follow,centerX,yTop,followSize);
-      this.fitSprite(r.halloweenSprites.hRepair,fireX,yTop,cell*.92,cell*.92,"repair");
+      const pAmmo=positions.ammo;
+      const pFire=positions.fire;
+      const pGroups=positions.groups;
+      const pFollow=positions.follow;
+      const pShipyard=positions.shipyard;
+      const pShop=positions.shop;
+      const pMissions=positions.missions;
+      const pConfig=positions.config;
 
-      const shieldSize=mobile?clamp(cell*.70,48,56):52;
-      const shieldX=ammoX;
-      const shieldY=yTop;
-      this.buttonRects.shield={left:shieldX-shieldSize/2,top:shieldY-shieldSize/2,width:shieldSize,height:shieldSize};
-      r.shieldIcon.position.set(shieldX,shieldY);
-      r.shieldQtyText.position.set(shieldX+shieldSize*.28,shieldY+shieldSize*.30);
+      this.fitSprite(r.halloweenSprites.hAmmo,pAmmo.x,pAmmo.y,pAmmo.size,pAmmo.size,"ammo");
+      this.setSquare("fire",r.sprites.fire,pFire.x,pFire.y,pFire.size);
+      this.fitSprite(r.halloweenSprites.hCancel,pFire.x,pFire.y,pFire.size,pFire.size);
+      this.fitSprite(r.halloweenSprites.hGroups,pGroups.x,pGroups.y,pGroups.size,pGroups.size,"groups");
+      this.setSquare("follow",r.sprites.follow,pFollow.x,pFollow.y,pFollow.size);
+      this.fitSprite(r.halloweenSprites.hShipyard,pShipyard.x,pShipyard.y,pShipyard.size,pShipyard.size,"shipyard");
+      this.fitSprite(r.halloweenSprites.hShop,pShop.x,pShop.y,pShop.size,pShop.size,"shop");
+      this.fitSprite(r.halloweenSprites.hMissions,pMissions.x,pMissions.y,pMissions.size,pMissions.size,"missions");
+
+      this.buttonRects.config={left:pConfig.x-pConfig.size/2,top:pConfig.y-pConfig.size/2,width:pConfig.size,height:pConfig.size,cx:pConfig.x,cy:pConfig.y};
+      r.configBack.clear().roundRect(pConfig.x-pConfig.size/2,pConfig.y-pConfig.size/2,pConfig.size,pConfig.size,12).fill({color:0x171019,alpha:.94}).stroke({color:0xd09b3f,width:4});
+      r.configIcon.position.set(pConfig.x,pConfig.y);
+
+      const contextualY=Math.max(topZoneBottom+cell/2+10,h-bottom-(row+1)*(rowHeight+gap)-cell/2);
+      const centerX=w-cell/2-10;
+      const repairX=centerX-cell-gap;
+      const shieldX=repairX-cell-gap;
+
+      this.fitSprite(r.halloweenSprites.hCenter,centerX,contextualY,cell,cell,"center");
+      this.fitSprite(r.halloweenSprites.hRepair,repairX,contextualY,cell*.92,cell*.92,"repair");
+
+      const shieldSize=mobile?clamp(cell*.70,42,52):48;
+      this.buttonRects.shield={left:shieldX-shieldSize/2,top:contextualY-shieldSize/2,width:shieldSize,height:shieldSize,cx:shieldX,cy:contextualY};
+      r.shieldIcon.position.set(shieldX,contextualY);
+      r.shieldQtyText.position.set(shieldX+shieldSize*.28,contextualY+shieldSize*.30);
 
       const ammoRect=this.buttonRects.ammo;
       if(ammoRect){
