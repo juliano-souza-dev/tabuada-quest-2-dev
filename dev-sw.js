@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-v20261003-2040-galeao";
+const CACHE_NAME="tq-dev-assets-20261005-ammo-ledger-v6";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
