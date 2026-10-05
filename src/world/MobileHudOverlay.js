@@ -43,6 +43,7 @@ export class MobileHudOverlay{
     this.onRepair=typeof options.onRepair==="function"?options.onRepair:null;
     this.onCancel=typeof options.onCancel==="function"?options.onCancel:null;
     this.onFollow=typeof options.onFollow==="function"?options.onFollow:null;
+    this.onCenterCamera=typeof options.onCenterCamera==="function"?options.onCenterCamera:null;
     this.onUseHullReinforcement=typeof options.onUseHullReinforcement==="function"?options.onUseHullReinforcement:null;
     this.onSelectAmmo=typeof options.onSelectAmmo==="function"?options.onSelectAmmo:null;
     this.onShop=typeof options.onShop==="function"?options.onShop:null;
@@ -83,6 +84,7 @@ export class MobileHudOverlay{
     const ammo=iconButton("ammo","Munição","💣");
     const fire=iconButton("fire","Atirar","🔥");
     const follow=iconButton("follow","Seguir","🎯");
+    const center=iconButton("center","Centralizar","⌖");
     const shield=iconButton("shield","Reforço","🛡️");
     const repair=iconButton("repair","Reparar","🔧");
     const missions=iconButton("missions","Missões","📜");
@@ -90,8 +92,9 @@ export class MobileHudOverlay{
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
     const settings=iconButton("settings","Config","⚙️");
     fire.classList.add("is-primary");
-    dock.append(ammo,fire,follow,shield,repair,missions,shop,shipyard,settings);
+    dock.append(ammo,fire,follow,center,shield,repair,missions,shop,shipyard,settings);
     follow.hidden=true;
+    center.hidden=true;
     shield.hidden=true;
 
     const drawer=document.createElement("section");
@@ -137,6 +140,7 @@ export class MobileHudOverlay{
       else this.onAttack?.();
     });
     bind(follow,()=>this.onFollow?.());
+    bind(center,()=>this.onCenterCamera?.());
     bind(shield,()=>this.onUseHullReinforcement?.());
     bind(repair,()=>this.onRepair?.());
     bind(missions,()=>this.openMissions());
@@ -335,6 +339,17 @@ export class MobileHudOverlay{
     if(follow){
       follow.hidden=true;
       follow.disabled=true;
+    }
+
+    const center=this.wrap.querySelector('[data-hud-action="center"]');
+    if(center){
+      const detached=state.cameraDetached===true;
+      center.hidden=!detached;
+      center.disabled=!detached;
+      center.classList.toggle("is-active",detached);
+      const remaining=Math.max(0,Math.ceil((Number(state.cameraRecenterRemainingMs)||0)/1000));
+      center.querySelector("small").textContent=remaining>0?"Centralizar "+remaining+"s":"Centralizar";
+      center.setAttribute("aria-label","Centralizar câmera no seu navio");
     }
 
     const shield=this.wrap.querySelector('[data-hud-action="shield"]');
