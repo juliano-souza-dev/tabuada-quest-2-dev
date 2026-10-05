@@ -1566,7 +1566,8 @@ export class GameRuntime {
     const eventType=String(type||"").trim();
     if(!eventType)return {changed:false,completed:[]};
     const worldId=String(context.worldId||this.current?.id||"");
-    const runtimeRegion=Number(this.worldRuntime?.config?.region?.index)||Number(this.worldRuntime?.config?.meta?.regionIndex)||Number(this.worldRuntime?.config?.region)||0;\n    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\\d+)/i)?.[1])||runtimeRegion||0);
+    const runtimeRegion=Number(this.worldRuntime?.config?.region?.index)||Number(this.worldRuntime?.config?.meta?.regionIndex)||Number(this.worldRuntime?.config?.region)||0;
+    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\d+)/i)?.[1])||runtimeRegion||0);
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
     const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
@@ -1627,7 +1628,18 @@ export class GameRuntime {
         quantity:cannonId?cannonQuantity:0,
         shipId,equipped:shipId?reward.equipShip===true:false
       }}));
-      this.worldRuntime?.showGameplayToast?.("📜 Missão concluída: "+String(mission.name||id),2200);
+      const rewardParts=[];
+      if(gold>0)rewardParts.push("+"+gold+" ouro");
+      if(rubies>0)rewardParts.push("+"+rubies+" rubis");
+      if(xp>0)rewardParts.push("+"+xp+" XP");
+      if(cannonId)rewardParts.push(String(reward.cannonQuantity||1)+"× canhão");
+      if(shipId)rewardParts.push("navio "+String(shipId));
+      globalThis.setTimeout(()=>{
+        this.worldRuntime?.showGameplayToast?.(
+          "🏆 Parabéns! "+String(mission.name||id)+" concluída"+(rewardParts.length?" · "+rewardParts.join(" · "):""),
+          4200
+        );
+      },850);
     }
 
     if(!changed)return {changed:false,completed:[]};
@@ -1642,7 +1654,7 @@ export class GameRuntime {
     this.worldRuntime?.shopOverlay?.refreshBalances?.();
     this.saveState();
     this.syncCloud("mission-progress");
-    return {changed:true,completed};
+    return {changed:true,completed,rewards:clone(this.rewards)};
   }
 
   async handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
