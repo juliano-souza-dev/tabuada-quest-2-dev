@@ -569,6 +569,12 @@ export class WorldRuntime {
     for(const entity of this.entities){
       if(!entity?.runtimeTreasure)continue;
 
+      const respawnDue=Number(entity.treasureRespawnAt)>0&&Number(time)>=Number(entity.treasureRespawnAt);
+      if(this.collected.has(entity.id)&&!respawnDue){
+        if(entity.el)entity.el.hidden=true;
+        continue;
+      }
+
       if(entity.treasurePending&&Number(time)>=Number(entity.treasureSpawnAt||0)){
         entity.treasurePending=false;
         entity.collision=normalizeCollision({
@@ -4285,9 +4291,8 @@ export class WorldRuntime {
     this.stopForChallenge();
     this.actionWrap.hidden=true;
 
-    // Lock immediately. updateNearby runs every frame and the pedagogy provider
-    // is async; waiting to set challengeActive allowed duplicate challenge
-    // requests for the same treasure while the first request was still pending.
+    // Lock immediately. The proximity collector runs every frame and the
+    // pedagogy provider is async, so only one challenge may be created per treasure.
     this.challengeActive={entity,challenge:null,pending:true};
 
     let challenge=null;
