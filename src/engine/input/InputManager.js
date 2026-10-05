@@ -1,19 +1,35 @@
 export class InputManager {
   constructor() {
+    this.canvas = null;
     this.pointer = { x: 0, y: 0, down: false };
     this.onPointer = (event) => {
       const rect = event.currentTarget.getBoundingClientRect();
       this.pointer.x = event.clientX - rect.left;
       this.pointer.y = event.clientY - rect.top;
     };
+    this.onPointerDown = (event) => { this.pointer.down = true; this.onPointer(event); };
+    this.onPointerUp = () => { this.pointer.down = false; };
   }
 
   attach(canvas) {
+    this.detach();
+    this.canvas = canvas;
     canvas.style.touchAction = 'none';
-    canvas.addEventListener('pointerdown', (event) => { this.pointer.down = true; this.onPointer(event); });
+    canvas.addEventListener('pointerdown', this.onPointerDown);
     canvas.addEventListener('pointermove', this.onPointer);
-    window.addEventListener('pointerup', () => { this.pointer.down = false; });
-    window.addEventListener('pointercancel', () => { this.pointer.down = false; });
+    window.addEventListener('pointerup', this.onPointerUp);
+    window.addEventListener('pointercancel', this.onPointerUp);
+  }
+
+  detach() {
+    if (this.canvas) {
+      this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+      this.canvas.removeEventListener('pointermove', this.onPointer);
+    }
+    window.removeEventListener('pointerup', this.onPointerUp);
+    window.removeEventListener('pointercancel', this.onPointerUp);
+    this.canvas = null;
+    this.pointer.down = false;
   }
 
   update() {}
