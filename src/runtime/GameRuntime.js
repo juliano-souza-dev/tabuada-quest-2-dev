@@ -602,6 +602,7 @@ export class GameRuntime {
       damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta),
       damageEntity:(entityId,damage,meta)=>this.multiplayer.damageEntity?.(entityId,damage,meta),
       fireProjectile:shot=>this.multiplayer.fireProjectile?.(shot)===true,
+      fireVolley:volley=>this.multiplayer.fireVolley?.(volley)===true,
       setChallengeProtection:(active,until)=>this.multiplayer.setChallengeProtection?.(active,until)===true,
       inviteParty:targetUid=>this.multiplayer.inviteParty?.(targetUid)===true,
       leaveParty:()=>this.multiplayer.leaveParty?.()===true,
