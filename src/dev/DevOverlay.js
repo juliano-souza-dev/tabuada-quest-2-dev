@@ -4,6 +4,7 @@ import { NpcEditor } from "./npcs/NpcEditor.js?v=20261002-1923";
 import { AmmoEditor } from "./ammo/AmmoEditor.js?v=20261002-2118";
 import { CannonEditor } from "./cannons/CannonEditor.js?v=20261002-2136";
 import { TreasureEditor } from "./treasures/TreasureEditor.js?v=20261003-0440";
+import { HudLayoutEditor } from "./screens/HudLayoutEditor.js?v=20261005-hud-layout-v1";
 export class DevOverlay {
   constructor(root,runtime,options={}){
     this.root=root;this.runtime=runtime;this.mode="edit";this.selected=null;this.linkScale=true;this.areaEditSession=null;
@@ -30,6 +31,7 @@ export class DevOverlay {
     this.soundCatalog={sounds:[]};
     this.npcEditor=new NpcEditor({getShips:()=>this.shipEditor?.allShips?.()||[],resolveShip:shipId=>this.shipEditor?.resolve?.(shipId)||null,getAmmo:()=>this.ammoEditor?.all?.()||[]});
     this.treasureEditor=new TreasureEditor({requestAsset:context=>this.openTreasureAssetPicker(context)});
+    this.hudLayoutEditor=new HudLayoutEditor({root:this.root,runtime:this.runtime});
     this.worldEditor=new WorldEditor(this.runtime.root,{
       sceneRuntime:this.runtime,
       pedagogyRuntime:this.pedagogyRuntime,
@@ -196,6 +198,7 @@ export class DevOverlay {
     this.soundCatalogReady=fetch("./src/config/sound-catalog.json?v=20261002-1740",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject(new Error("Sound catalog "+r.status))).then(catalog=>{this.soundCatalog=catalog;return catalog}).catch(error=>{console.warn("[TabuadaQuest] Sound catalog failed",error);return this.soundCatalog});
     this.npcEditorReady=this.shipEditorReady.then(()=>this.npcEditor.mount(this.el)).then(result=>{if(this.workspace==="world"&&this.mode==="config"&&!this.selected)this.renderWorldInspector();return result});
     this.treasureEditorReady=this.treasureEditor.mount(this.el);
+    this.hudLayoutEditor.mount(this.el);
     this.loadAssets();
     this.loadCompositionTypes();
     this.gameManifestReady=this.loadGameManifest();
