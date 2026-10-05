@@ -1,4 +1,4 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-halloween-v10";
+import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-halloween-v11";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
@@ -315,6 +315,7 @@ export class MobileHudOverlay{
     const state=this.getState()||{};
     const halloweenHud=String(state.hudTheme||"standard")==="halloween";
     this.wrap.classList.toggle("is-halloween-hud",halloweenHud);
+    document.documentElement.classList.toggle("tq-halloween-hud-active",halloweenHud);
     const groupsButton=this.wrap.querySelector('[data-hud-action="groups"]');
     if(groupsButton)groupsButton.hidden=!halloweenHud;
     if(this.pixiHud?.ready){
@@ -449,6 +450,7 @@ export class MobileHudOverlay{
     this.closeAmmoMenu();
     for(const cleanup of this.cleanups.splice(0)){try{cleanup()}catch{}}
     this.root?.classList.remove("tq-pixi-hud-active");
+    document.documentElement.classList.remove("tq-halloween-hud-active");
     this.pixiHud?.destroy?.();
     this.pixiHud=null;
     this.wrap?.remove();
