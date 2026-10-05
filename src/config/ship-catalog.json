@@ -238,7 +238,7 @@
       "name": "Terror do Halloween",
       "type": "player",
       "available": true,
-      "description": "Navio de evento conquistado ao causar pelo menos 15% do dano total no Terror do Halloween.",
+      "description": "Navio especial de Halloween conquistado exclusivamente ao concluir a missão O Couraçado da Noite.",
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
@@ -247,14 +247,15 @@
         "purchasable": false,
         "currency": "event",
         "price": 0,
-        "label": "Recompensa de Boss"
+        "label": "Recompensa de Missão Especial"
       },
       "acquisition": {
         "shop": false,
-        "shipBossReward": true,
+        "shipBossReward": false,
+        "missionReward": true,
+        "missionId": "HALLOWEEN_BOSS_10",
         "event": true,
-        "eventId": "halloween",
-        "minimumBossDamageRatio": 0.15
+        "eventId": "halloween"
       },
       "navigation": {
         "width": 230,
