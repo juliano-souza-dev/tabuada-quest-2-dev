@@ -404,12 +404,12 @@
         }
       },
       {
-        "npcId": "boss-halloween-galleon-100k",
-        "shipId": "ship-halloween-galleon-reward",
+        "npcId": "boss-halloween-dreadnought",
+        "shipId": "ship-halloween-dreadnought",
         "count": 1,
         "enabled": true,
         "respawn": true,
-        "respawnDelaySec": 180,
+        "respawnDelaySec": 300,
         "spawn": {
           "mode": "random-spaced",
           "margin": 1100,
@@ -433,7 +433,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261004-2300-r1-10npcs-15k",
+    "sourceRevision": "20261005-halloween-dreadnought-mission-boss",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
