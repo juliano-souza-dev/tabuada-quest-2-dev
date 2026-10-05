@@ -5126,8 +5126,6 @@ export class WorldRuntime {
       }
 
       const firedCount=available.length;
-      this.state.ammo.stock[selectedAmmoId]=Math.max(0,ammoStock-firedCount);
-      this.onAmmoChange?.(structuredClone(this.state.ammo));
       this.audio?.play("cannon-shot");
 
       const id=String(entity.id);
@@ -5477,6 +5475,16 @@ export class WorldRuntime {
       const safe=String(layout.src).replace(/["\\]/g,"");
       this.challengeWrap.style.setProperty("--tq-popup-layout",'url("'+safe+'")');
     }else this.challengeWrap.style.removeProperty("--tq-popup-layout");
+  }
+
+  replaceAmmoInventory(ammo={}){
+    this.state.ammo=normalizeAmmoInventory(ammo);
+    const selected=String(this.state.ammo.selectedAmmoId||"");
+    if(selected&&!(Number(this.state.ammo.stock?.[selected])>0)){
+      this.state.ammo.selectedAmmoId=Object.keys(this.state.ammo.stock).find(id=>Number(this.state.ammo.stock[id])>0)||"";
+    }
+    this.onAmmoChange?.(structuredClone(this.state.ammo));
+    return structuredClone(this.state.ammo);
   }
 
   selectPlayerAmmo(ammoId){
@@ -6968,21 +6976,23 @@ export class WorldRuntime {
 
   handleMultiplayerEvent(event={}){
     if(event.type==="fire.rejected"){
-      const ammoId=String(event.ammoId||"");
-      const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId&&item?.available!==false);
-      if(ammoId&&ammo){
-        const refund=Math.max(1,Math.floor(Number(event.count)||1));
-        this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+refund;
-        this.onAmmoChange?.(structuredClone(this.state.ammo));
-      }
+      if(event.ammo)this.replaceAmmoInventory(event.ammo);
       if(this.actionMessage){
         const reason=String(event.reason||"");
         this.actionMessage.textContent=reason==="cooldown"
           ?"Canhões recarregando."
           :reason==="out_of_range"
             ?"Alvo fora do alcance do canhão."
-            :"Disparo rejeitado pelo servidor.";
+            :reason==="insufficient_ammo"
+              ?"Munição insuficiente para esta salva."
+              :"Disparo rejeitado pelo servidor.";
       }
+    }
+    if(event.type==="fire.volley.accepted"&&event.ammo){
+      this.replaceAmmoInventory(event.ammo);
+    }
+    if(event.type==="ammo.state"&&event.ammo){
+      this.replaceAmmoInventory(event.ammo);
     }
     if((event.type==="shot"||event.type==="projectile.spawn")&&event.from&&event.to){
       if(!this.multiplayerNpcCanRetaliateLocally(event))return;
