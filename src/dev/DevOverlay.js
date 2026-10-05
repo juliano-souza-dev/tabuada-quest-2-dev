@@ -75,7 +75,7 @@ export class DevOverlay {
         <button data-treasures>💎 <span>Tesouros</span></button>
         <button data-cannons>🎯 <span>Canhões</span></button>
         <button data-ammo>💣 <span>Munições</span></button>
-        <button data-assets>▦ <span>Assets</span></button>
+        <button data-assets>▦ <span>Assets</span></button>\n        <button data-refresh-assets title="Atualizar manualmente o cache de assets">↻ <span>Atualizar assets</span></button>
         <button data-collapse aria-label="Recolher ferramentas" title="Recolher">‹</button>
       </div>
       <section class="tq-dev__scenes" hidden>
@@ -138,7 +138,7 @@ export class DevOverlay {
       </section>`;
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
-    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());
+    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());\n    this.el.querySelector("[data-refresh-assets]")?.addEventListener("click",async event=>{\n      const button=event.currentTarget;\n      if(button.disabled)return;\n      button.disabled=true;\n      const label=button.querySelector("span");\n      const previous=label?.textContent||"Atualizar assets";\n      if(label)label.textContent="Atualizando…";\n      try{\n        await globalThis.TabuadaQuestDevAssetCache?.refresh?.({force:true});\n        if(label)label.textContent="Atualizado ✓";\n      }catch(error){\n        console.error("[DEV] Falha ao atualizar assets",error);\n        if(label)label.textContent="Falhou";\n      }finally{\n        setTimeout(()=>{if(label)label.textContent=previous;button.disabled=false},1200);\n      }\n    });
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
