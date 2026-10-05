@@ -1,16 +1,16 @@
-import { WorldRuntime } from "./WorldRuntime.js?v=20261005-seafight-vfx-v3";
+import { WorldRuntime } from "./WorldRuntime.js?v=20261005-effects-lab-v1";
 import { SceneRuntime } from "../runtime/SceneRuntime.js?v=20260930-1851";
 import { PedagogyRuntime } from "../runtime/pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 
 export async function launchWorldTest(root,{worldId=""}={}){
-  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261001-2307",{cache:"no-store"});
+  const catalogResponse=await fetch("./src/config/world-catalog.json?v=20261005-effects-lab-v1",{cache:"no-store"});
   if(!catalogResponse.ok)throw new Error("World catalog failed: "+catalogResponse.status);
   const catalog=await catalogResponse.json();
   const worlds=Array.isArray(catalog.worlds)?catalog.worlds:[];
   const entry=(worldId?worlds.find(item=>item.id===worldId):null)||worlds[0]||null;
   if(!entry?.path)throw new Error(worldId?"World test not found: "+worldId:"No world tests configured");
 
-  const response=await fetch(entry.path+"?v=20261001-2209",{cache:"no-store"});
+  const response=await fetch(entry.path+"?v=20261005-effects-lab-v1",{cache:"no-store"});
   if(!response.ok)throw new Error("World test config failed: "+response.status);
   const config=await response.json();
 
@@ -31,7 +31,18 @@ export async function launchWorldTest(root,{worldId=""}={}){
   const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
   const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
   const requestedCannonIds=Array.isArray(config.test?.cannonIds)?config.test.cannonIds.map(String):[];
-  const testCannonIds=(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]).filter(id=>availableCannons.some(item=>String(item.id)===id));
+  const strongestCannonCount=Math.max(0,Math.floor(Number(config.test?.strongestCannonCount)||0));
+  const strongestCannon=availableCannons.reduce((best,item)=>{
+    if(!best)return item;
+    const itemPower=Number(item?.damagePerShot)||Number(item?.damageMultiplier)||0;
+    const bestPower=Number(best?.damagePerShot)||Number(best?.damageMultiplier)||0;
+    return itemPower>bestPower?item:best;
+  },null);
+  const strongestCannonIds=strongestCannon&&strongestCannonCount
+    ?Array.from({length:strongestCannonCount},()=>String(strongestCannon.id))
+    :[];
+  const testCannonIds=(strongestCannonIds.length?strongestCannonIds:(requestedCannonIds.length?requestedCannonIds:[defaultCannonId]))
+    .filter(id=>availableCannons.some(item=>String(item.id)===id));
 
   const pedagogyResponse=await fetch("./src/config/pedagogy-curriculum.json?v=20261001-0047",{cache:"no-store"});
   if(!pedagogyResponse.ok)throw new Error("Pedagogy curriculum failed: "+pedagogyResponse.status);
@@ -52,6 +63,8 @@ export async function launchWorldTest(root,{worldId=""}={}){
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoUnlimited:true,
+      testAmmoQuantity:Math.max(0,Math.floor(Number(config.test?.ammoQuantity)||0)),
+      initialAllTestAmmoQuantity:Math.max(0,Math.floor(Number(config.test?.allAmmoQuantity)||0)),
       cannonCatalog:availableCannons,
       testCannonIds:testCannonIds.length?testCannonIds:[defaultCannonId],
       createPedagogyChallenge:({entity})=>{
