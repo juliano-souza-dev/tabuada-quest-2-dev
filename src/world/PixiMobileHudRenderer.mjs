@@ -310,12 +310,14 @@ export class PixiMobileHudRenderer{
 
     if(portraitMode){
       // Bottom-right combat block, leaving the joystick's entire touch area free.
-      const compact=clamp(w*.135,48,58);
-      const wideH=clamp(w*.145,52,62);
-      const wideW=wideH*(halloween?1.50:1.12);
-      const primaryH=wideH*1.08;
-      const primaryW=primaryH*(halloween?1.50:1.12);
-      const gap=6;
+      // Halloween artwork contains its own labels, so it needs more physical size
+      // than the compact icon-only buttons to stay readable on phones.
+      const compact=clamp(w*(halloween?.155:.135),50,halloween?68:58);
+      const wideH=clamp(w*(halloween?.18:.145),halloween?62:52,halloween?80:62);
+      const wideW=wideH*(halloween?1.52:1.12);
+      const primaryH=wideH*(halloween?1.10:1.08);
+      const primaryW=primaryH*(halloween?1.52:1.12);
+      const gap=halloween?7:6;
       const right=8;
       const row2Y=h-12-primaryH/2;
       const row1Y=row2Y-primaryH/2-wideH/2-gap;
@@ -330,9 +332,9 @@ export class PixiMobileHudRenderer{
       this.setRect("shield",w-right-wideW-gap-compact/2,repairY,compact,compact);
 
       // Utility pair sits below the minimap, away from combat controls.
-      const util=clamp(w*.13,46,56);
-      const utilWideH=clamp(w*.13,46,56);
-      const utilWideW=utilWideH*(halloween?1.50:1.0);
+      const util=clamp(w*(halloween?.145:.13),48,halloween?64:56);
+      const utilWideH=clamp(w*(halloween?.16:.13),halloween?56:46,halloween?72:56);
+      const utilWideW=utilWideH*(halloween?1.52:1.0);
       const ux=w-10-util/2;
       const uy=Math.min(h*.58,mapY+mapR+58);
       this.setRect("config",ux,uy,util,util);
@@ -340,14 +342,21 @@ export class PixiMobileHudRenderer{
       this.setRect("shop",w-10-utilWideW/2,uy+util+gap,utilWideW,utilWideH);
       this.setRect("missions",w-10-utilWideW-gap-utilWideW/2,uy+util+gap,utilWideW,utilWideH);
     }else{
-      // Landscape/desktop: a clean horizontal combat strip, matching the reference layout.
-      const compact=clamp(Math.min(w,h)*.075,54,74);
-      const wideH=clamp(Math.min(w,h)*.082,58,78);
-      const wideW=wideH*(halloween?1.50:1.08);
-      const primaryH=wideH*1.10;
-      const primaryW=primaryH*(halloween?1.50:1.08);
-      const gap=8;
-      const bottom=10;
+      // Landscape/desktop: the uploaded Halloween buttons are illustrated title
+      // plaques rather than tiny icons. Give them enough pixels to preserve the
+      // lettering and artwork instead of shrinking them into postage stamps.
+      const desktop=w>=900&&h>=600;
+      const compact=halloween
+        ?clamp(h*(desktop?.082:.078),62,desktop?78:72)
+        :clamp(Math.min(w,h)*.075,54,74);
+      const wideH=halloween
+        ?clamp(h*(desktop?.115:.102),desktop?88:72,desktop?108:90)
+        :clamp(Math.min(w,h)*.082,58,78);
+      const wideW=wideH*(halloween?1.52:1.08);
+      const primaryH=wideH*(halloween?1.08:1.10);
+      const primaryW=primaryH*(halloween?1.52:1.08);
+      const gap=halloween?10:8;
+      const bottom=halloween?12:10;
       const y=h-bottom-primaryH/2;
 
       const actionWidths=[wideW,primaryW,compact,compact];
@@ -363,11 +372,14 @@ export class PixiMobileHudRenderer{
       this.setRect("shield",w-12-wideW-gap-compact/2,extraY,compact,compact);
 
       // Right-side utility cluster, directly under the minimap.
-      const util=compact;
-      const utilWideH=wideH*.92;
-      const utilWideW=utilWideH*(halloween?1.50:1.0);
+      const util=halloween?clamp(compact*.92,58,72):compact;
+      const utilWideH=halloween
+        ?clamp(wideH*.82,72,92)
+        :wideH*.92;
+      const utilWideW=utilWideH*(halloween?1.52:1.0);
       const uRight=12;
-      const uBaseY=Math.min(h-primaryH-wideH-gap*3,mapY+mapR+util*.78);
+      const roomAboveCombat=h-primaryH-wideH-gap*4-utilWideH;
+      const uBaseY=Math.min(roomAboveCombat,mapY+mapR+util*.86);
       this.setRect("config",w-uRight-util/2,uBaseY,util,util);
       this.setRect("shipyard",w-uRight-util-gap-util/2,uBaseY,util,util);
       this.setRect("shop",w-uRight-utilWideW/2,uBaseY+util+gap,utilWideW,utilWideH);
