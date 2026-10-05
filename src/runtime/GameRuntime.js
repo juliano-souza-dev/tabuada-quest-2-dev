@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261005-hud-forcecache-v1";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261005-hud-assets-v3";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
@@ -1342,7 +1342,8 @@ export class GameRuntime {
   resolveWorldPlayer(world){
     const legacy=world?.player&&typeof world.player==="object"?clone(world.player):{};
     const spawn=world?.playerSpawn&&typeof world.playerSpawn==="object"?clone(world.playerSpawn):{};
-    const ship=this.getEquippedShip();
+    const forceMapPlayer=world?.test?.forcePlayerProfile===true;
+    const ship=forceMapPlayer?null:this.getEquippedShip();
     const shipPlayer=ship?.player&&typeof ship.player==="object"?clone(ship.player):{};
 
     const navigation={
@@ -1350,6 +1351,15 @@ export class GameRuntime {
       y:Number(spawn.y??legacy.y??world.height/2),
       direction:String(spawn.direction??legacy.direction??shipPlayer.sprite?.initialDirection??"n")
     };
+
+    if(forceMapPlayer){
+      return {
+        ...legacy,
+        ...navigation,
+        effects:legacy.effects&&typeof legacy.effects==="object"?clone(legacy.effects):{},
+        shipId:legacy.shipId||null
+      };
+    }
 
     return {
       ...legacy,
@@ -2155,6 +2165,21 @@ export class GameRuntime {
 
     this.sceneHost.hidden=true;
     this.worldHost.hidden=false;
+
+    const forceTestLoadout=world?.test?.forceLoadout===true;
+    const availableCannons=(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[])
+      .filter(item=>item?.available!==false);
+    const strongestCannonCount=Math.max(0,Math.floor(Number(world?.test?.strongestCannonCount)||0));
+    const strongestCannon=availableCannons.reduce((best,item)=>{
+      if(!best)return item;
+      const itemPower=Number(item?.damagePerShot)||Number(item?.damageMultiplier)||0;
+      const bestPower=Number(best?.damagePerShot)||Number(best?.damageMultiplier)||0;
+      return itemPower>bestPower?item:best;
+    },null);
+    const effectLabCannonIds=forceTestLoadout&&strongestCannon&&strongestCannonCount
+      ?Array.from({length:strongestCannonCount},()=>String(strongestCannon.id))
+      :[];
+
     this.worldRuntime=new WorldRuntime(this.worldHost,world,{
       editorEnabled:false,
       globalCamera:clone(this.manifest.worldDefaults?.camera||{}),
@@ -2169,7 +2194,11 @@ export class GameRuntime {
         this.saveState();
         this.syncCloud("graphics-settings");
       },
-      playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
+      playerCannonIds:forceTestLoadout?null:this.getShipCannons(this.playerShips.equippedShip),
+      testCannonIds:forceTestLoadout?effectLabCannonIds:[],
+      testAmmoId:String(world?.test?.ammoId||""),
+      testAmmoQuantity:forceTestLoadout?Math.max(0,Math.floor(Number(world?.test?.ammoQuantity)||0)):undefined,
+      initialAllTestAmmoQuantity:forceTestLoadout?Math.max(0,Math.floor(Number(world?.test?.allAmmoQuantity)||0)):undefined,
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{
         this.markStarterAmmoChallengeCompleted();
