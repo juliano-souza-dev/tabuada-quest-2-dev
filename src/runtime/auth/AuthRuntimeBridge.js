@@ -1,4 +1,4 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261005-ammo-sync-cache-v1";
+import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261005-ammo-sync-cache-v2";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1924-runtime-refresh";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
