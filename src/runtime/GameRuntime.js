@@ -2044,7 +2044,11 @@ export class GameRuntime {
       },
       playerCannonIds:this.getShipCannons(this.playerShips.equippedShip),
       onStarterCannonEarned:()=>this.grantStarterCannon(),
-      onStarterAmmoEarned:()=>{this.markStarterAmmoChallengeCompleted();queueMicrotask(()=>this.saveState())},
+      onStarterAmmoEarned:()=>{
+        this.markStarterAmmoChallengeCompleted();
+        this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"starter-ammo-reward"});
+        queueMicrotask(()=>this.saveState());
+      },
       onAmmoChange:ammo=>{
         this.replacePlayerAmmo(ammo,{save:false,syncServer:false,reason:"combat"});
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
