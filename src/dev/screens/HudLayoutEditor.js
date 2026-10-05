@@ -84,6 +84,20 @@ export class HudLayoutEditor{
         background:rgba(255,216,77,.16);
       }
 
+      .tq-live-hud-editor__resize{
+        position:absolute;
+        right:-8px;
+        bottom:-8px;
+        width:18px;
+        height:18px;
+        border:2px solid #111827;
+        border-radius:50%;
+        background:#ffd84d;
+        box-shadow:0 2px 8px #0008;
+        cursor:nwse-resize;
+        pointer-events:auto;
+      }
+
       .tq-live-hud-editor__tools{
         position:fixed;
         left:50%;
@@ -217,7 +231,11 @@ export class HudLayoutEditor{
         handle.className="tq-live-hud-editor__handle";
         handle.dataset.hudKey=key;
         handle.dataset.label=labels[key]||key;
-        handle.addEventListener("pointerdown",event=>this.startDrag(event,key));
+        handle.innerHTML='<span class="tq-live-hud-editor__resize" data-resize aria-hidden="true"></span>';
+        handle.addEventListener("pointerdown",event=>{
+          if(event.target.closest("[data-resize]"))this.startResize(event,key);
+          else this.startDrag(event,key);
+        });
         host.append(handle);
       }
       handle.hidden=false;
@@ -263,6 +281,62 @@ export class HudLayoutEditor{
     window.addEventListener("pointermove",move,true);
     window.addEventListener("pointerup",end,true);
     window.addEventListener("pointercancel",end,true);
+  }
+
+  startResize(event,key){
+    const renderer=this.resolveRenderer();
+    if(!renderer)return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const current=this.offsets[key]||{x:0,y:0,scale:1};
+    const rect=renderer.editorRects?.[key];
+    if(!rect)return;
+
+    this.drag={
+      mode:"resize",
+      key,
+      startX:event.clientX,
+      startY:event.clientY,
+      baseWidth:Math.max(1,Number(rect.width)||1),
+      baseHeight:Math.max(1,Number(rect.height)||1),
+      scale:Number(current.scale)||1,
+      node:event.currentTarget.closest("[data-hud-key]")
+    };
+    this.drag.node?.classList.add("is-dragging");
+
+    const move=moveEvent=>this.onResize(moveEvent);
+    const end=endEvent=>{
+      endEvent.preventDefault();
+      window.removeEventListener("pointermove",move,true);
+      window.removeEventListener("pointerup",end,true);
+      window.removeEventListener("pointercancel",end,true);
+      this.drag?.node?.classList.remove("is-dragging");
+      this.drag=null;
+      this.saveOffsets();
+      this.renderHandles();
+    };
+
+    window.addEventListener("pointermove",move,true);
+    window.addEventListener("pointerup",end,true);
+    window.addEventListener("pointercancel",end,true);
+  }
+
+  onResize(event){
+    if(!this.drag||this.drag.mode!=="resize")return;
+    event.preventDefault();
+    const dx=event.clientX-this.drag.startX;
+    const dy=event.clientY-this.drag.startY;
+    const delta=Math.max(dx/this.drag.baseWidth,dy/this.drag.baseHeight);
+    const nextScale=Math.max(.35,Math.min(3,this.drag.scale+delta));
+    const current=this.offsets[this.drag.key]||{x:0,y:0};
+    this.offsets[this.drag.key]={
+      x:Number(current.x)||0,
+      y:Number(current.y)||0,
+      scale:Math.round(nextScale*1000)/1000
+    };
+    this.resolveRenderer()?.setLayoutOffsets?.(this.offsets);
+    this.renderHandles();
   }
 
   onDrag(event){
