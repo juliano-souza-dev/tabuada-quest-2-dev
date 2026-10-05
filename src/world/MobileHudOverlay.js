@@ -58,7 +58,8 @@ export class MobileHudOverlay{
     this.settingsDrawer=null;
     this.ammoMenu=null;
     this.timer=0;
-    this.lastAmmoSignature="";\n    this.lastMissionSignature="";
+    this.lastAmmoSignature="";
+    this.lastMissionSignature="";
     this.cleanups=[];
     this.pixiHud=null;
   }
