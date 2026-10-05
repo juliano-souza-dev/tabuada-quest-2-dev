@@ -619,8 +619,8 @@ export class WorldRuntime {
       ...(npcProfile&&typeof npcProfile==="object"?structuredClone(npcProfile):{}),
       sprite:shipProfile.sprite?structuredClone(shipProfile.sprite):null,
       src:String(shipProfile.src||shipProfile.sprite?.src||""),
-      width:Number(shipProfile.width)||180,
-      height:Number(shipProfile.height)||180,
+      width:Number(npcProfile?.width??shipProfile.width)||180,
+      height:Number(npcProfile?.height??shipProfile.height)||180,
       combat:{
         ...(shipProfile.combat&&typeof shipProfile.combat==="object"?structuredClone(shipProfile.combat):{}),
         ...(npcProfile?.combat&&typeof npcProfile.combat==="object"?structuredClone(npcProfile.combat):{})
