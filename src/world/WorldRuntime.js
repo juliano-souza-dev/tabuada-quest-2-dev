@@ -5117,6 +5117,10 @@ export class WorldRuntime {
       })===true;
       if(!sent)return false;
 
+      if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
+      const renderedAt=performance.now();
+      for(const request of requestShots)this.serverProjectileRendered.set(String(request.shotId||""),renderedAt);
+
       for(const shot of visualShots){
         this.renderCannonProjectile({...shot,ammo});
       }
@@ -6967,7 +6971,8 @@ export class WorldRuntime {
       const ammoId=String(event.ammoId||"");
       const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===ammoId&&item?.available!==false);
       if(ammoId&&ammo){
-        this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1;
+        const refund=Math.max(1,Math.floor(Number(event.count)||1));
+        this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+refund;
         this.onAmmoChange?.(structuredClone(this.state.ammo));
       }
       if(this.actionMessage){
