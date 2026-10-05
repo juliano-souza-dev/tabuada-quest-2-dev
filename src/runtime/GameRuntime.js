@@ -1566,7 +1566,7 @@ export class GameRuntime {
     const eventType=String(type||"").trim();
     if(!eventType)return {changed:false,completed:[]};
     const worldId=String(context.worldId||this.current?.id||"");
-    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\d+)/i)?.[1])||0);
+    const runtimeRegion=Number(this.worldRuntime?.config?.region?.index)||Number(this.worldRuntime?.config?.meta?.regionIndex)||Number(this.worldRuntime?.config?.region)||0;\n    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\\d+)/i)?.[1])||runtimeRegion||0);
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
     const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
@@ -1989,9 +1989,12 @@ export class GameRuntime {
       }
     };
 
-    // Treasure rewards must be granted in the same transaction as the chest
-    // completion. WorldRuntime also emits the generic reward callback later;
-    // using the same claim key makes that second path idempotent.
+    // Mission progress is driven by the successful collection event itself.
+    // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
+    await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
+
+    // Treasure rewards are granted separately. WorldRuntime may emit the generic
+    // reward callback later; using the same claim key keeps payout idempotent.
     const resolvedRewards=rewards&&typeof rewards==="object"
       ?clone(rewards)
       :(cleanEntity.rewards&&typeof cleanEntity.rewards==="object"?clone(cleanEntity.rewards):{});
@@ -2002,8 +2005,6 @@ export class GameRuntime {
         claimKey:chestKey
       });
     }
-
-    await this.advanceMissions("collect_treasure",{worldId,amount:1,rare:false});
 
     globalThis.dispatchEvent?.(new CustomEvent("tq:treasurecollected",{
       detail:{
