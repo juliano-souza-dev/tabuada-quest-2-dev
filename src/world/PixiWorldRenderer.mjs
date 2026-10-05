@@ -10,6 +10,7 @@ export class PixiWorldRenderer{
     this.failed=false;
     this.entitySprites=new Map();
     this.loading=new Map();
+    this.projectileFx=new Set();
   }
 
   async init(){
@@ -130,6 +131,43 @@ export class PixiWorldRenderer{
       this.syncEntity(entity);
     }
     for(const id of [...this.entitySprites.keys()])if(!seen.has(id))this.removeEntity(id);
+    return true;
+  }
+
+  fireCannonProjectile({from,to,duration=600,size=7}={}){
+    if(!this.ready||!this.world||!this.PIXI)return false;
+    const start={x:Number(from?.x)||0,y:Number(from?.y)||0};
+    const end={x:Number(to?.x)||0,y:Number(to?.y)||0};
+    const life=Math.max(80,Number(duration)||600);
+    const graphics=new this.PIXI.Graphics();
+    const radius=Math.max(3,Number(size)||7);
+    graphics.circle(0,0,radius).fill(0xffb347);
+    graphics.circle(0,0,Math.max(1,radius*.48)).fill(0xfff3c4);
+    graphics.position.set(start.x,start.y);
+    graphics.zIndex=90;
+    graphics.eventMode="none";
+    this.world.sortableChildren=true;
+    this.world.addChild(graphics);
+
+    const started=performance.now();
+    const tick=()=>{
+      if(!graphics.parent)return;
+      const t=Math.min(1,(performance.now()-started)/life);
+      const eased=1-Math.pow(1-t,2);
+      graphics.position.set(
+        start.x+(end.x-start.x)*eased,
+        start.y+(end.y-start.y)*eased
+      );
+      graphics.alpha=t>.82?Math.max(0,(1-t)/.18):1;
+      if(t>=1){
+        this.app?.ticker?.remove(tick);
+        this.projectileFx.delete(graphics);
+        graphics.removeFromParent();
+        graphics.destroy();
+      }
+    };
+    this.projectileFx.add(graphics);
+    this.app?.ticker?.add(tick);
     return true;
   }
 
