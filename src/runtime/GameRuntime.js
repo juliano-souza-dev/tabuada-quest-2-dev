@@ -1649,8 +1649,9 @@ export class GameRuntime {
 
       claims.push(claimKey);
       const {coins,gold,rubies,xp,itemId,quantity,shipId,ammoRewards=[]}=normalized;
+      const grantedAmmo=[];
       if(ammoRewards.length){
-        this.ensurePlayerAmmo({migrateWorldStates:false});
+        this.ensurePlayerAmmo();
         const validIds=new Set((Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
           .filter(ammo=>ammo?.available!==false)
           .map(ammo=>String(ammo?.id||"")));
@@ -1658,10 +1659,21 @@ export class GameRuntime {
           const ammoId=String(ammoReward?.id||"").trim();
           const ammoQuantity=Math.max(0,Math.floor(Number(ammoReward?.quantity)||0));
           if(!ammoId||ammoQuantity<=0||!validIds.has(ammoId))continue;
-          this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"reward"});
+          const before=this.ammoQuantity(ammoId);
+          const granted=this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"reward"});
+          const after=this.ammoQuantity(ammoId);
+          if(granted&&after===before+ammoQuantity){
+            grantedAmmo.push({id:ammoId,quantity:ammoQuantity,before,after});
+          }else{
+            console.error("[TQ rewards] ammo grant failed",{
+              ammoId,ammoQuantity,before,after,claimKey,worldId,entityId:String(cleanEntity.id)
+            });
+          }
         }
         this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-        this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"reward"});
+        if(grantedAmmo.length){
+          this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"reward"});
+        }
       }
 
       if(itemId){
@@ -1771,6 +1783,8 @@ export class GameRuntime {
         duplicateClaim:false,
         before:clone(beforeBalances),
         reward:clone(normalized),
+        grantedAmmo:clone(grantedAmmo),
+        ammo:clone(this.playerAmmo),
         after:clone(balances),
         claimsCount:claims.length
       }}));
