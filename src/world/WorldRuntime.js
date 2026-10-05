@@ -4006,10 +4006,10 @@ export class WorldRuntime {
   }
 
   async beginPlayerRepair({forced=false}={}){
-    this.beginPedagogyProtection();
     if(this.mode!=="play"||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
     if(this.repairActive){
       if(forced===true&&this.repairActive.forced!==true){
+        this.beginPedagogyProtection();
         this.repairActive.forced=true;
         this.repairActive.challenge=null;
         this.stopForChallenge();
@@ -4024,6 +4024,7 @@ export class WorldRuntime {
       return false;
     }
     if(!forced&&(this.navalPlayerHp<=0||this.isPlayerInNavalCombat()))return false;
+    this.beginPedagogyProtection();
     this.stopForChallenge();
     this.clearCombatTarget({hideAction:true});
     this.navalAutoFire=false;
@@ -4102,8 +4103,8 @@ export class WorldRuntime {
 
   async beginStarterAmmoChallenge(){
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
-    this.beginPedagogyProtection();
     if(this.hasPlayerAmmo())return false;
+    this.beginPedagogyProtection();
 
     this.stopNavalAutoFire({keepTarget:true});
     this.stopForChallenge();
@@ -4204,7 +4205,6 @@ export class WorldRuntime {
   }
 
   async beginStarterCannonChallenge(){
-    this.beginPedagogyProtection();
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
 
@@ -4221,6 +4221,7 @@ export class WorldRuntime {
       return false;
     }
 
+    this.beginPedagogyProtection();
     this.stopNavalAutoFire({keepTarget:true});
     this.stopForChallenge();
     if(this.actionWrap)this.actionWrap.hidden=true;
