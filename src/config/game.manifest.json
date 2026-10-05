@@ -38,7 +38,7 @@
     "grantDefaultShip": true,
     "grantDefaultCannon": false,
     "startingLoadout": {
-      "version": 2,
+      "version": 3,
       "cannons": [
         {
           "id": "cannon-bronze",
@@ -46,13 +46,7 @@
           "equip": true
         }
       ],
-      "ammo": [
-        {
-          "id": "cannonball-standard",
-          "quantity": 200,
-          "select": true
-        }
-      ]
+      "ammo": []
     }
   },
   "afterAuth": {
@@ -69,10 +63,10 @@
     }
   },
   "multiplayerTest": {
-    "enabled": true,
+    "enabled": false,
     "worldId": "r1-enseada-aprendizes",
     "useLocalWorldContent": true,
-    "grantAllAmmo": 1000,
+    "grantAllAmmo": 0,
     "grantStrongestCannon": false
   }
 }
