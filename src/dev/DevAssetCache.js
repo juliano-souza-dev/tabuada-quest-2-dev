@@ -181,16 +181,22 @@ export async function installDevAssetCache(){
     console.error("[DEV asset cache] Failed assets",failures);
     setProgress(overlay,{
       done:urls.length-failures.length,total:urls.length,
-      status:"Falha ao armazenar "+failures.length+" asset(s)."
+      status:"DEV iniciado com "+failures.length+" asset(s) indisponível(is)."
     });
-    throw new Error("DEV asset cache incomplete: "+failures.length+" failed");
   }
 
   localStorage.setItem(HASH_KEY,manifestHash);
-  setProgress(overlay,{done:urls.length,total:urls.length,status:"Assets DEV prontos."});
+  setProgress(overlay,{
+    done:urls.length-failures.length,
+    total:urls.length,
+    status:failures.length
+      ?"DEV pronto com avisos de asset."
+      :"Assets DEV prontos."
+  });
   globalThis.TabuadaQuestDevAssetCache={
     cacheName:CACHE_NAME,
     total:urls.length,
+    failures:[...failures],
     manifestHash,
     clear:async()=>{
       await caches.delete(CACHE_NAME);
@@ -200,5 +206,5 @@ export async function installDevAssetCache(){
 
   await sleep(180);
   overlay.remove();
-  return {total:urls.length,manifestChanged,cacheName:CACHE_NAME};
+  return {total:urls.length,manifestChanged,cacheName:CACHE_NAME,failures};
 }
