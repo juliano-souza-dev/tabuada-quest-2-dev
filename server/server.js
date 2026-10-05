@@ -3,7 +3,7 @@ import http from "node:http";
 import {readFileSync} from "node:fs";
 
 const PORT=Number(process.env.PORT)||8080;
-const PROTOCOL_VERSION="20261005-authoritative-v5-cannon-volley";
+const PROTOCOL_VERSION="20261005-authoritative-v6-ammo-ledger";
 const TICK_HZ=20, SNAPSHOT_MS=Math.round(1000/TICK_HZ), FULL_SNAPSHOT_MS=4000, STALE_MS=60000;
 const rooms=new Map();
 const monitor={messages:0,stateUpdates:0,shots:0,entityHits:0,rejectedShots:0};
@@ -16,6 +16,16 @@ const ammoCatalog=loadCatalog("../src/config/ammo-catalog.json");
 const cannonCatalog=loadCatalog("../src/config/cannon-catalog.json");
 const ammoById=new Map((Array.isArray(ammoCatalog.ammo)?ammoCatalog.ammo:[]).map(item=>[String(item?.id||""),item]));
 const cannonById=new Map((Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).map(item=>[String(item?.id||""),item]));
+const normalizeAmmoStock=input=>{
+  const source=input&&typeof input==="object"?input:{};
+  const stock={};
+  for(const [rawId,rawQty] of Object.entries(source)){
+    const id=String(rawId||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
+    const qty=Math.max(0,Math.floor(Number(rawQty)||0));
+    if(id&&qty>0&&ammoById.has(id))stock[id]=qty;
+  }
+  return stock;
+};
 const log=(event,detail="")=>console.log(`[RT ${new Date().toISOString()}] ${event}${detail?` ${detail}`:""}`);
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
@@ -427,8 +437,8 @@ wss.on("connection",ws=>{
       const cannonIds=Array.isArray(m.cannonIds)?m.cannonIds.map(key).filter(id=>cannonById.has(id)).slice(0,64):[];
       const previous=current.players.get(uid);
       const preservedPartyId=String(previous?.partyId||"");
-      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:preservedPartyId,x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),challengeProtected:false,protectedUntil:0,nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
-      send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION});
+      current.players.set(uid,{ws,uid,name:String(m.name||"Pirata").slice(0,40),shipId:key(m.shipId),cannonIds,partyId:preservedPartyId,ammoStock:normalizeAmmoStock(m.ammoStock),selectedAmmoId:key(m.selectedAmmoId),x:Number(m.x)||0,y:Number(m.y)||0,vx:Number(m.vx)||0,vy:Number(m.vy)||0,rotation:Number(m.rotation)||0,direction:String(m.direction||"n").slice(0,8),hp:Math.max(0,Number(m.hp)||0),challengeProtected:false,protectedUntil:0,nextFireAt:0,lastVolleyId:"",updatedAt:Date.now()});
+      send(ws,{type:"joined",worldId,uid,tickHz:TICK_HZ,authority:"server",protocolVersion:PROTOCOL_VERSION,ammo:{selectedAmmoId:current.players.get(uid)?.selectedAmmoId||"",stock:{...(current.players.get(uid)?.ammoStock||{})}}});
       if(preservedPartyId)sendPartyState(current,preservedPartyId);
       log("JOIN   ",`uid=${uid} world=${worldId} players=${current.players.size}`);
       return;
@@ -462,6 +472,12 @@ wss.on("connection",ws=>{
       p.rotation=Number(m.rotation)||0;p.direction=String(m.direction||"n").slice(0,8);
       p.hp=Math.max(0,Number(m.hp)||0);p.updatedAt=now;
       send(ws,{type:"state.ack",seq,x:p.x,y:p.y,vx:p.vx,vy:p.vy,rotation:p.rotation,direction:p.direction,serverTime:now});
+      return;
+    }
+    if(m.type==="ammo.sync"){
+      p.ammoStock=normalizeAmmoStock(m.stock);
+      p.selectedAmmoId=key(m.selectedAmmoId);
+      send(ws,{type:"ammo.state",ammo:{selectedAmmoId:p.selectedAmmoId||"",stock:{...(p.ammoStock||{})}},reason:key(m.reason||"sync"),at:Date.now()});
       return;
     }
     if(m.type==="challenge.protection"){
@@ -568,6 +584,13 @@ wss.on("connection",ws=>{
         normalized.push({shotId:key(raw.shotId||volleyId+"-"+i),cannonId,cannon,from:raw.from&&typeof raw.from==="object"?raw.from:null});
       }
 
+      const availableAmmo=Math.max(0,Math.floor(Number(p.ammoStock?.[ammoId])||0));
+      if(availableAmmo<normalized.length){
+        monitor.rejectedShots++;
+        send(ws,{type:"fire.rejected",reason:"insufficient_ammo",volleyId,count:0,targetId,ammoId,availableAmmo,ammo:{selectedAmmoId:p.selectedAmmoId||ammoId,stock:{...(p.ammoStock||{})}},at:Date.now()});
+        return;
+      }
+
       const now=Date.now();
       if(now<Number(p.nextFireAt||0)){
         monitor.rejectedShots++;
@@ -588,6 +611,10 @@ wss.on("connection",ws=>{
       const cooldown=Math.min(...normalized.map(shot=>clamp(shot.cannon?.attackCooldownMs||950,150,10000)));
       p.lastVolleyId=volleyId;
       p.nextFireAt=now+cooldown;
+      p.ammoStock=p.ammoStock&&typeof p.ammoStock==="object"?p.ammoStock:{};
+      p.ammoStock[ammoId]=availableAmmo-normalized.length;
+      if(p.ammoStock[ammoId]<=0)delete p.ammoStock[ammoId];
+      p.selectedAmmoId=ammoId;
       if(target.boss){target.stopped=true;target.vx=0;target.vy=0}
 
       let spawned=0,totalDamage=0;
@@ -618,7 +645,7 @@ wss.on("connection",ws=>{
         return;
       }
       log("VOLLEY+ ","uid="+uid+" target="+target.id+" cannons="+spawned+" damage="+(Math.round(totalDamage*100)/100)+" volley="+volleyId);
-      send(ws,{type:"fire.volley.accepted",volleyId,count:requested.length,targetId:target.id,ammoId,count:spawned,totalDamage:Math.round(totalDamage*100)/100,shots:accepted,at:now});
+      send(ws,{type:"fire.volley.accepted",volleyId,targetId:target.id,ammoId,count:spawned,totalDamage:Math.round(totalDamage*100)/100,shots:accepted,ammo:{selectedAmmoId:p.selectedAmmoId||ammoId,stock:{...(p.ammoStock||{})}},at:now});
       return;
     }
     if(m.type==="fire.request"||m.type==="projectile.fire"){
