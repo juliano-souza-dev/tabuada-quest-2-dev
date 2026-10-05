@@ -1,10 +1,10 @@
-import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261005-ammo-ledger-v6";
+import { installDevAssetCache } from "./dev/DevAssetCache.js?v=20261005-shop-clone-fix-v7";
 import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20261004-1924-runtime-refresh";
 import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261003-2113-repair-region";
-import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20261005-ammo-ledger-v6";
+import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20261005-shop-clone-fix-v7";
 
 const app=document.querySelector("#app");
 const DEV_PLAYER_UID="tq-dev-local-player";
