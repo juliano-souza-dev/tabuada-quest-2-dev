@@ -192,47 +192,47 @@ export class PixiWorldRenderer{
     const fx=normalizeAmmoFx(ammo||{});
     const style=fx.muzzle;
     if(style.enabled===false)return false;
+
+    const preset=String(fx.preset||"standard");
+    const special=!["standard","rusted-iron"].includes(preset);
     const root=new this.PIXI.Container();
     root.position.set(Number(at?.x)||0,Number(at?.y)||0);
     root.zIndex=92;
     root.eventMode="none";
 
-    const scaleBase=clamp(Number(size)||1,.6,2.2);
-    const radius=Math.max(10,style.size*.28*scaleBase);
+    const scaleBase=clamp(Number(size)||1,.7,1.6);
+    const radius=Math.max(4,style.size*(special?.105:.075)*scaleBase);
+    const primary=hexNumber(style.color,0xff8a24);
+    const core=hexNumber(style.coreColor,0xfff0a8);
+
     const flash=new this.PIXI.Graphics();
-    flash.circle(0,0,radius*1.45).fill({color:hexNumber(style.color,0xff8a24),alpha:.22});
-    flash.circle(0,0,radius*.86).fill({color:hexNumber(style.coreColor,0xfff0a8),alpha:.9});
-    flash.circle(0,0,radius*.34).fill({color:0xffffff,alpha:1});
+    if(special)flash.blendMode="add";
+    flash.circle(0,0,radius*(special?1.7:1.3)).fill({color:primary,alpha:special?.16:.10});
+    flash.circle(0,0,radius*(special?.86:.68)).fill({color:core,alpha:special?.76:.62});
+    flash.circle(0,0,radius*(special?.30:.22)).fill({color:0xffffff,alpha:.95});
     root.addChild(flash);
 
-    const ring=new this.PIXI.Graphics();
-    ring.circle(0,0,radius*.72).stroke({width:Math.max(2,radius*.10),color:hexNumber(style.accentColor,0x69e7ff),alpha:.9});
-    root.addChild(ring);
-
     const smoke=[];
-    const smokeCount=Math.min(4,Math.max(1,Math.round(style.smoke*4)));
+    const smokeCount=special?Math.min(2,Math.max(1,Math.round(style.smoke*2))):1;
     for(let i=0;i<smokeCount;i++){
       const puff=new this.PIXI.Graphics();
-      const a=(Math.PI*2*i)/smokeCount+.45;
-      puff.circle(0,0,radius*(.24+i*.035)).fill({color:0x2a2a2a,alpha:.38});
-      puff._vx=Math.cos(a)*(8+i*2);
-      puff._vy=Math.sin(a)*(8+i*2)-4;
+      puff.circle(0,0,radius*(.30+i*.05)).fill({color:0x2d2d2d,alpha:special?.20:.16});
+      puff._vx=radius*(.48+i*.20);
+      puff._vy=-radius*(.22+i*.18);
       root.addChild(puff);
       smoke.push(puff);
     }
 
     this.world.addChild(root);
-    return this._animateTransient(root,Math.max(90,style.durationMs),(p)=>{
+    return this._animateTransient(root,special?150:110,(p)=>{
       const fade=1-p;
-      flash.scale.set(.72+p*1.65);
+      flash.scale.set(.72+p*(special?.95:.62));
       flash.alpha=fade*fade;
-      ring.scale.set(.72+p*2.25);
-      ring.alpha=fade*.85;
       for(const puff of smoke){
         puff.x=puff._vx*p;
         puff.y=puff._vy*p;
-        puff.scale.set(.8+p*1.55);
-        puff.alpha=fade*.38;
+        puff.scale.set(.82+p*.72);
+        puff.alpha=fade*(special?.20:.16);
       }
     });
   }
@@ -241,14 +241,17 @@ export class PixiWorldRenderer{
     if(!this.ready||!this.world||!this.PIXI)return false;
     const start={x:Number(from?.x)||0,y:Number(from?.y)||0};
     const end={x:Number(to?.x)||0,y:Number(to?.y)||0};
-    const life=Math.max(80,Number(duration)||600);
+    const life=Math.max(100,Number(duration)||600);
     const fx=normalizeAmmoFx(ammo||{});
     const projectileStyle=fx.projectile;
     const trailStyle=fx.trail;
-    const radius=Math.max(4,(Number(size)||7)*clamp(projectileStyle.scale,.55,2.2));
+    const preset=String(fx.preset||"standard");
+    const solidBall=["standard","rusted-iron"].includes(preset);
+    const moderate=preset==="piercing";
+    const luminous=!solidBall;
+    const radius=Math.max(4.2,(Number(size)||7)*clamp(projectileStyle.scale,.62,1.55));
     const distance=Math.hypot(end.x-start.x,end.y-start.y);
-    const lift=Math.min(30,Math.max(7,distance*.028));
-    const solidBall=["standard","rusted-iron","piercing"].includes(String(fx.preset||""));
+    const lift=Math.min(22,Math.max(5,distance*.016));
     const primary=hexNumber(projectileStyle.color,0xff6b1a);
     const core=hexNumber(projectileStyle.coreColor,0xfff0b0);
     const accent=hexNumber(projectileStyle.accentColor,0x69e7ff);
@@ -258,35 +261,41 @@ export class PixiWorldRenderer{
     root.zIndex=90;
     root.eventMode="none";
 
-    const aura=new this.PIXI.Graphics();
-    if(projectileStyle.auraEnabled!==false){
-      aura.circle(0,0,radius*2.2).fill({color:primary,alpha:solidBall?.10:.23});
-      aura.circle(0,0,radius*1.45).stroke({width:Math.max(1.5,radius*.22),color:accent,alpha:solidBall?.18:.48});
+    let aura=null;
+    if(luminous&&projectileStyle.auraEnabled!==false){
+      aura=new this.PIXI.Graphics();
+      aura.blendMode="add";
+      const auraAlpha=moderate?.10:.18;
+      aura.circle(0,0,radius*(moderate?1.55:1.95)).fill({color:primary,alpha:auraAlpha});
+      aura.circle(0,0,radius*(moderate?1.05:1.28)).fill({color:accent,alpha:auraAlpha*.70});
       root.addChild(aura);
     }
 
-    const ghostCount=trailStyle.enabled===false?0:(solidBall?3:4);
-    const ghosts=[];
-    for(let i=ghostCount;i>=1;i--){
-      const ghost=new this.PIXI.Graphics();
-      const ghostRadius=radius*(1-i*.09);
-      const ghostColor=solidBall?(i===ghostCount?0x4a4a4a:0x232323):(i%2?primary:accent);
-      ghost.circle(0,0,Math.max(2,ghostRadius)).fill({color:ghostColor,alpha:solidBall?.34:.28});
-      ghost.zIndex=-i;
-      root.addChild(ghost);
-      ghosts.push({display:ghost,lag:i*(solidBall?.045:.035),index:i});
+    const trail=[];
+    if(trailStyle.enabled!==false){
+      const trailCount=solidBall?2:(moderate?3:5);
+      for(let i=1;i<=trailCount;i++){
+        const bead=new this.PIXI.Graphics();
+        const beadRadius=solidBall
+          ?Math.max(1.4,radius*(.30-i*.035))
+          :Math.max(1.7,radius*(.48-i*.045));
+        const beadColor=solidBall?(i%2?0x222222:0x4a4a4a):(i%2?primary:accent);
+        bead.circle(0,0,beadRadius).fill({color:beadColor,alpha:solidBall?.18:(moderate?.20:.28)});
+        root.addChildAt(bead,0);
+        trail.push({display:bead,lag:i*(solidBall?.040:.034),index:i});
+      }
     }
 
     const ball=new this.PIXI.Graphics();
     if(solidBall){
-      ball.circle(0,0,radius*1.08).fill({color:0x090909,alpha:1});
-      ball.circle(-radius*.25,-radius*.28,radius*.38).fill({color:0x777777,alpha:.72});
-      ball.circle(radius*.10,radius*.10,radius*.82).stroke({width:Math.max(1,radius*.12),color:primary,alpha:.42});
+      ball.circle(0,0,radius).fill({color:0x080808,alpha:1});
+      ball.circle(-radius*.25,-radius*.28,radius*.28).fill({color:0x9a9a9a,alpha:.52});
+      ball.circle(radius*.08,radius*.10,radius*.76).stroke({width:Math.max(.8,radius*.09),color:0x2f2f2f,alpha:.9});
     }else{
-      ball.circle(0,0,radius*1.22).fill({color:primary,alpha:.88});
-      ball.circle(0,0,radius*.68).fill({color:core,alpha:.92});
-      ball.circle(-radius*.20,-radius*.24,radius*.25).fill({color:0xffffff,alpha:.95});
-      ball.circle(0,0,radius*1.08).stroke({width:Math.max(1.4,radius*.16),color:accent,alpha:.78});
+      if(!moderate)ball.blendMode="add";
+      ball.circle(0,0,radius*(moderate?1.00:1.08)).fill({color:primary,alpha:moderate?.86:.84});
+      ball.circle(0,0,radius*(moderate?.52:.62)).fill({color:core,alpha:moderate?.82:.88});
+      ball.circle(-radius*.18,-radius*.20,radius*.20).fill({color:0xffffff,alpha:.92});
     }
     root.addChild(ball);
 
@@ -302,27 +311,25 @@ export class PixiWorldRenderer{
         return;
       }
       const raw=clamp((performance.now()-started)/life,0,1);
-      const t=1-Math.pow(1-raw,2);
-      const point=pointOnPath(start,end,t,lift);
+      const point=pointOnPath(start,end,raw,lift);
       root.position.set(point.x,point.y);
 
-      const heightPulse=.92+Math.sin(Math.PI*raw)*.34;
+      const heightPulse=.97+Math.sin(Math.PI*raw)*(solidBall?.10:.16);
       ball.scale.set(heightPulse);
-      if(aura.parent){
-        const pulse=1+Math.sin((performance.now()-started)*.018*projectileStyle.pulseSpeed)*.08;
+      if(aura){
+        const pulse=.97+.05*Math.sin((performance.now()-started)*.014*projectileStyle.pulseSpeed);
         aura.scale.set(heightPulse*pulse);
-        aura.alpha=raw>.82?Math.max(0,(1-raw)/.18):1;
+        aura.alpha=raw>.90?Math.max(0,(1-raw)/.10):1;
       }
 
-      for(const ghost of ghosts){
-        const gt=clamp(t-ghost.lag,0,1);
+      for(const bead of trail){
+        const gt=clamp(raw-bead.lag,0,1);
         const gp=pointOnPath(start,end,gt,lift);
-        ghost.display.position.set(gp.x-point.x,gp.y-point.y);
-        ghost.display.alpha=clamp((1-raw)*.75+.15,0,.72)*(1-ghost.index/(ghostCount+2));
-        ghost.display.scale.set(.78+heightPulse*.18);
+        bead.display.position.set(gp.x-point.x,gp.y-point.y);
+        bead.display.alpha=clamp((1-raw)*.60+.12,0,.60)*(1-bead.index/(trail.length+2));
       }
 
-      root.alpha=raw>.88?Math.max(0,(1-raw)/.12):1;
+      root.alpha=raw>.95?Math.max(0,(1-raw)/.05):1;
       if(raw>=1){
         try{this.app?.ticker?.remove(tick)}catch{}
         this.projectileFx.delete(entry);
@@ -342,126 +349,104 @@ export class PixiWorldRenderer{
     const style=water?fx.impactWater:fx.impactShip;
     if(style.enabled===false)return false;
 
+    const preset=String(fx.preset||"standard");
+    const special=!["standard","rusted-iron"].includes(preset);
+    const moderate=preset==="piercing";
     const root=new this.PIXI.Container();
     root.position.set(Number(at?.x)||0,Number(at?.y)||0);
     root.zIndex=96;
     root.eventMode="none";
-    const scaleBase=clamp(Number(size)||1,.55,2.2);
-    const radius=Math.max(20,style.size*.38*scaleBase);
+
+    const scaleBase=clamp(Number(size)||1,.65,1.35);
+    const radius=Math.max(6.5,style.size*(special?.080:.062)*scaleBase);
     const primary=hexNumber(style.color,water?0x8feaff:0xff5a12);
     const core=hexNumber(style.coreColor,0xffffff);
-    const accent=hexNumber(style.accentColor,water?0xffd86a:0x69e7ff);
+    const accent=hexNumber(style.accentColor,water?0xffffff:0x69e7ff);
 
-    const flash=new this.PIXI.Graphics();
-    flash.circle(0,0,radius*1.18).fill({color:accent,alpha:water?.16:.20});
-    flash.circle(0,0,radius*.78).fill({color:primary,alpha:water?.36:.56});
-    flash.circle(0,0,radius*.43).fill({color:core,alpha:.92});
-    flash.circle(0,0,radius*.18).fill({color:0xffffff,alpha:1});
-    root.addChild(flash);
+    const bloom=new this.PIXI.Graphics();
+    if(special&&!moderate)bloom.blendMode="add";
+    if(special){
+      bloom.circle(0,0,radius*(moderate?1.25:1.45)).fill({color:accent,alpha:moderate?.08:.10});
+      bloom.circle(0,0,radius*(moderate?.85:1.02)).fill({color:primary,alpha:moderate?.18:.24});
+    }
+    bloom.circle(0,0,radius*.62).fill({color:water?accent:primary,alpha:water?.34:.48});
+    bloom.circle(0,0,radius*.34).fill({color:core,alpha:.78});
+    bloom.circle(0,0,radius*.14).fill({color:0xffffff,alpha:.94});
+    root.addChild(bloom);
 
-    const shock=new this.PIXI.Graphics();
-    shock.circle(0,0,radius*.58).stroke({width:Math.max(3,radius*.075),color:accent,alpha:.9});
-    root.addChild(shock);
-
-    const halo=new this.PIXI.Graphics();
-    halo.circle(0,0,radius*.86).stroke({width:Math.max(2,radius*.05),color:primary,alpha:.72});
-    root.addChild(halo);
-
-    const targetDots=[];
-    if(!water){
-      const dotCount=20;
-      for(let i=0;i<dotCount;i++){
-        const dot=new this.PIXI.Graphics();
-        dot.circle(0,0,Math.max(2.2,radius*.045)).fill({color:0xffdf16,alpha:.96});
-        const a=(Math.PI*2*i)/dotCount;
-        dot._a=a;
-        root.addChild(dot);
-        targetDots.push(dot);
-      }
+    let shock=null;
+    if(special){
+      shock=new this.PIXI.Graphics();
+      shock.circle(0,0,radius*.62).stroke({width:Math.max(1,radius*.07),color:accent,alpha:moderate?.22:.30});
+      root.addChild(shock);
     }
 
     const sparks=[];
-    const sparkCount=water?8:Math.min(14,Math.max(8,Math.round((style.sparks||12)*.42)));
+    const sparkCount=water?5:(special?8:6);
     for(let i=0;i<sparkCount;i++){
       const spark=new this.PIXI.Graphics();
-      const a=(Math.PI*2*i)/sparkCount+(i%2)*.13;
-      const sr=Math.max(1.5,radius*(i%3===0?.035:.022));
-      spark.circle(0,0,sr).fill({color:i%3===0?core:(i%2?accent:primary),alpha:.95});
+      const a=(Math.PI*2*i)/sparkCount+(i%2)*.18;
+      const sr=Math.max(1,radius*(i%3===0?.07:.045));
+      const sparkColor=special?(i%2?accent:primary):(i%2?0xffb04a:0xff6a1f);
+      spark.circle(0,0,sr).fill({color:sparkColor,alpha:.86});
       spark._a=a;
-      spark._speed=radius*(.78+(i%5)*.13);
+      spark._speed=radius*(.88+(i%4)*.18);
       root.addChild(spark);
       sparks.push(spark);
     }
 
     const smoke=[];
     if(!water){
-      const smokeCount=Math.min(7,Math.max(3,Math.round((style.smoke||.5)*7)));
+      const smokeCount=special?2:2;
       for(let i=0;i<smokeCount;i++){
         const puff=new this.PIXI.Graphics();
-        const a=(Math.PI*2*i)/smokeCount+.28;
-        puff.circle(0,0,radius*(.15+(i%3)*.035)).fill({color:i%2?0x262626:0x393939,alpha:.42});
-        puff._a=a;
-        puff._distance=radius*(.22+(i%4)*.08);
-        root.addChild(puff);
+        puff.circle(0,0,radius*(.28+i*.05)).fill({color:i%2?0x282828:0x3b3b3b,alpha:.18});
+        puff._a=-Math.PI*.62+i*.18;
+        puff._speed=radius*(.45+i*.14);
+        root.addChildAt(puff,0);
         smoke.push(puff);
       }
     }
 
-    const splash=[];
-    if(water){
-      for(let i=0;i<10;i++){
-        const drop=new this.PIXI.Graphics();
-        const a=(Math.PI*2*i)/10;
-        drop.circle(0,0,Math.max(2,radius*.03)).fill({color:i%2?0xffffff:primary,alpha:.88});
-        drop._a=a;
-        drop._distance=radius*(.55+(i%3)*.18);
-        root.addChild(drop);
-        splash.push(drop);
-      }
+    const ripple=water?new this.PIXI.Graphics():null;
+    if(ripple){
+      ripple.circle(0,0,radius*.65).stroke({width:Math.max(1,radius*.07),color:accent,alpha:.34});
+      root.addChildAt(ripple,0);
     }
 
     this.world.addChild(root);
-    const duration=Math.max(240,Number(style.durationMs)||700);
+    const duration=water?380:(special?360:300);
+
     return this._animateTransient(root,duration,(p)=>{
       const fade=1-p;
-      const blast=Math.sin(Math.min(1,p*2.3)*Math.PI*.5);
-      flash.scale.set(.42+blast*1.48+p*.45);
-      flash.alpha=clamp((1-p*1.05)*(water?.82:1),0,1);
-      shock.scale.set(.58+p*2.75);
-      shock.alpha=fade*.82;
-      halo.scale.set(.72+p*1.75);
-      halo.alpha=fade*.55;
+      const pop=Math.sin(Math.min(1,p*2.7)*Math.PI*.5);
+      bloom.scale.set(.62+pop*(special?.58:.40)+p*.06);
+      bloom.alpha=clamp(1-p*1.08,0,1);
 
-      const ringRadius=radius*(1.15+p*.48);
-      for(const dot of targetDots){
-        dot.x=Math.cos(dot._a)*ringRadius;
-        dot.y=Math.sin(dot._a)*ringRadius*.72;
-        dot.alpha=clamp((1-p*1.3)*.95,0,.95);
-        dot.scale.set(.8+p*.35);
+      if(shock){
+        shock.scale.set(.72+p*(moderate?.75:1.05));
+        shock.alpha=fade*(moderate?.20:.28);
       }
 
       for(const spark of sparks){
-        const travel=spark._speed*(p*.92+p*p*.18);
+        const travel=spark._speed*(p+p*p*.08);
         spark.x=Math.cos(spark._a)*travel;
-        spark.y=Math.sin(spark._a)*travel+p*p*radius*.18;
+        spark.y=Math.sin(spark._a)*travel+p*p*radius*.12;
         spark.alpha=fade;
-        spark.scale.set(.95-p*.48);
+        spark.scale.set(1-p*.46);
       }
 
       for(const puff of smoke){
-        const travel=puff._distance*(.45+p);
+        const travel=puff._speed*p;
         puff.x=Math.cos(puff._a)*travel;
-        puff.y=Math.sin(puff._a)*travel-radius*p*.72;
-        puff.scale.set(.72+p*2.5);
-        puff.alpha=fade*.42;
+        puff.y=Math.sin(puff._a)*travel-radius*p*.40;
+        puff.scale.set(.78+p*.78);
+        puff.alpha=fade*.18;
       }
 
-      for(const drop of splash){
-        const travel=drop._distance*(p+.12*Math.sin(Math.PI*p));
-        drop.x=Math.cos(drop._a)*travel;
-        drop.y=Math.sin(drop._a)*travel*.52-radius*Math.sin(Math.PI*p)*.42;
-        drop.scale.set(1+p*.55);
-        drop.alpha=fade*.9;
+      if(ripple){
+        ripple.scale.set(.74+p*1.05);
+        ripple.alpha=fade*.30;
       }
     });
   }
