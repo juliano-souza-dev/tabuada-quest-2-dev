@@ -154,7 +154,7 @@ export class MultiplayerRuntime extends EventTarget{
         this.dispatchEvent(new CustomEvent("party",{detail:data}));
         return;
       }
-      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.rejected","player-left"].includes(data.type)){
+      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.volley.accepted","fire.rejected","player-left"].includes(data.type)){
         this.dispatchEvent(new CustomEvent("event",{detail:data}));
       }
     });
