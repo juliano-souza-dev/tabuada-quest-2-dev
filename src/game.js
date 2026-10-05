@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-pixi-hud-assets-v2";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-mobile-hud-syntax-fix";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-ledger-v6";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
