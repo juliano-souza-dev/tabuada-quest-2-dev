@@ -5477,14 +5477,18 @@ export class WorldRuntime {
     }else this.challengeWrap.style.removeProperty("--tq-popup-layout");
   }
 
-  replaceAmmoInventory(ammo={}){
+  replaceAmmoInventory(ammo={}, {emit=true}={}){
     this.state.ammo=normalizeAmmoInventory(ammo);
     const selected=String(this.state.ammo.selectedAmmoId||"");
     if(selected&&!(Number(this.state.ammo.stock?.[selected])>0)){
       this.state.ammo.selectedAmmoId=Object.keys(this.state.ammo.stock).find(id=>Number(this.state.ammo.stock[id])>0)||"";
     }
-    this.onAmmoChange?.(structuredClone(this.state.ammo));
-    return structuredClone(this.state.ammo);
+    const snapshot={
+      selectedAmmoId:String(this.state.ammo.selectedAmmoId||""),
+      stock:{...(this.state.ammo.stock||{})}
+    };
+    if(emit)this.onAmmoChange?.(snapshot);
+    return snapshot;
   }
 
   selectPlayerAmmo(ammoId){
