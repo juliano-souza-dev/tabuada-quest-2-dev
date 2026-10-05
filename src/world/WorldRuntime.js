@@ -239,6 +239,10 @@ export class WorldRuntime {
           hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
           graphicsSettings:structuredClone(this.graphicsSettings),
+          cameraDetached:this.playCameraDetached===true,
+          cameraRecenterRemainingMs:this.playCameraDetached&&this.playCameraRecenterAt>0
+            ?Math.max(0,this.playCameraRecenterAt-performance.now())
+            :0,
           repairAvailable:!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
@@ -256,7 +260,16 @@ export class WorldRuntime {
       },
       onAttack:()=>this.activateNearby(),
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
-      onFollow:()=>this.toggleCombatFollow(), 
+      onFollow:()=>this.toggleCombatFollow(),
+      onCenterCamera:()=>{
+        this.playCameraDetached=false;
+        this.playCameraRecenterAt=0;
+        this.playCameraOffset.x=0;
+        this.playCameraOffset.y=0;
+        if(this.recenterButton)this.recenterButton.hidden=true;
+        this.updateCamera(true);
+        return true;
+      },
       onUseHullReinforcement:()=>this.useHullReinforcement(),
       onRepair:()=>this.beginPlayerRepair({forced:false}),
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
@@ -2175,18 +2188,11 @@ export class WorldRuntime {
       return true;
     };
 
-    const finishPan=({recenterImmediately=false}={})=>{
+    const finishPan=({recenterDelayMs=3000}={})=>{
       const dragged=Boolean(pan?.dragging);
       this.host?.classList.remove("is-camera-dragging");
       if(this.mode==="play"&&dragged&&this.playCameraDetached){
-        if(recenterImmediately){
-          this.playCameraDetached=false;
-          this.playCameraRecenterAt=0;
-          if(this.recenterButton)this.recenterButton.hidden=true;
-          this.updateCamera(true);
-        }else{
-          this.playCameraRecenterAt=performance.now()+3000;
-        }
+        this.playCameraRecenterAt=performance.now()+Math.max(0,Number(recenterDelayMs)||0);
       }
       pan=null;
     };
@@ -2211,7 +2217,7 @@ export class WorldRuntime {
       try{
         if(this.viewport.hasPointerCapture(event.pointerId))this.viewport.releasePointerCapture(event.pointerId);
       }catch{}
-      finishPan({recenterImmediately:event.pointerType==="touch"});
+      finishPan({recenterDelayMs:event.pointerType==="touch"?30000:3000});
     };
 
     const touchStart=event=>{
@@ -2244,7 +2250,7 @@ export class WorldRuntime {
       if(!ended)return;
       const dragged=Boolean(pan?.dragging);
       touchPan=null;
-      finishPan({recenterImmediately:true});
+      finishPan({recenterDelayMs:30000});
       if(dragged)event.preventDefault();
     };
 
