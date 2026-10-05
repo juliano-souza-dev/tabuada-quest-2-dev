@@ -410,7 +410,6 @@
         "enabled": true,
         "respawn": true,
         "respawnDelaySec": 180,
-        "rewardShipId": "ship-halloween-galleon-reward",
         "spawn": {
           "mode": "random-spaced",
           "margin": 1100,
