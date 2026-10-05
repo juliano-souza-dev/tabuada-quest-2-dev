@@ -2828,11 +2828,22 @@ export class WorldRuntime {
 
         const hit=resolveCircleVsEntity({x,y},radius,entity,entity.collision);
         if(!hit.collided)continue;
+
+        const action=inferCollisionAction(entity,entity.collision);
+
+        // Collectibles are trigger volumes, not solid obstacles. The previous
+        // path pushed the player out and removed velocity before interaction.
+        if(action==="collect"){
+          if(!contact||hit.penetration>contact.penetration){
+            contact={entity,penetration:hit.penetration};
+          }
+          continue;
+        }
+
         changed=true;
         x=hit.x;
         y=hit.y;
 
-        const action=inferCollisionAction(entity,entity.collision);
         const cleaned=removeVelocityIntoNormal({x:vx,y:vy},hit.normalX,hit.normalY);
         vx=cleaned.x;
         vy=cleaned.y;
@@ -4446,18 +4457,84 @@ export class WorldRuntime {
       return;
     }
 
-    if(this.combatTarget){
-      if(this.isClickableCombatShip(this.combatTarget)){
-        const entity=this.combatTarget;
-        // Automatic targeting keeps the nearest valid ship selected even
-        // outside cannon range. Range gates firing, not target acquisition.
-        this.nearby=entity;
+    // Physical interactions must outrank an automatically selected combat
+    // target. Otherwise any NPC anywhere in the world can steal the interaction
+    // slot and make nearby treasures/region exits impossible to use.
+    let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
+      ?this.contactEntity
+      :null;
+
+    if(!entity){
+      const radius=this.playerCollisionRadius()+8;
+      for(const candidate of this.entities){
+        if(this.collected.has(candidate.id))continue;
+        candidate.collision=normalizeCollision(candidate.collision||{},candidate);
+        if(!candidate.collision.active)continue;
+        const candidateAction=inferCollisionAction(candidate,candidate.collision);
+        if(candidateAction==="none"||candidateAction==="combat")continue;
+        if(resolveCircleVsEntity(this.player,radius,candidate,candidate.collision).collided){
+          entity=candidate;
+          break;
+        }
+      }
+    }
+
+    if(entity){
+      this.nearby=entity;
+      if(this.actionButton)delete this.actionButton.dataset.worldAction;
+      const collision=normalizeCollision(entity.collision||{},entity);
+      const action=inferCollisionAction(entity,collision);
+      const interaction=this.entityInteraction(entity);
+
+      if(entity.type==="treasure"&&action==="collect"){
+        if(entity.treasurePending||this.collected.has(entity.id)){
+          this.actionWrap.hidden=true;
+          return;
+        }
+        // Treasure interaction owns the frame. Combat target may be reacquired
+        // after the challenge, but cannot suppress collection.
+        this.stopNavalAutoFire({keepTarget:false});
+        this.clearCombatTarget({hideAction:true});
+        this.treasureTarget=null;
+        this.clearNavigationTarget({brake:true});
+        this.beginTreasureChallenge(entity);
+        return;
+      }
+
+      if(action==="enter-world"||interaction?.actionId==="enter-region"){
+        this.actionWrap.hidden=true;
+        const canEnter=!this.canEnterWorld||this.canEnterWorld(entity);
+        if(!canEnter){
+          if(this.regionTransitionActive?.id===entity.id)this.closeRegionTransition();
+          return;
+        }
+        if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
+        return;
+      }
+
+      if(action!=="none"&&action!=="combat"){
         const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
         const safeAsset=asset.replace(/["\\]/g,"");
         this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
         this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
-        const hp=this.navalHpState(entity);
-        const distanceToTarget=Math.round(this.navalTargetDistance(entity));
+        if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
+        this.actionButton.textContent=collisionActionLabel(entity,collision);
+        this.actionWrap.hidden=false;
+        return;
+      }
+    }
+
+    // No immediate map interaction: combat UI can use the interaction slot.
+    if(this.combatTarget){
+      if(this.isClickableCombatShip(this.combatTarget)){
+        const combatEntity=this.combatTarget;
+        this.nearby=combatEntity;
+        const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
+        const safeAsset=asset.replace(/["\\]/g,"");
+        this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
+        this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
+        const hp=this.navalHpState(combatEntity);
+        const distanceToTarget=Math.round(this.navalTargetDistance(combatEntity));
         const playerHull=" · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
         if(this.navalPlayerHp<=0){
           if(this.actionMessage)this.actionMessage.textContent="Seu navio foi derrotado"+playerHull;
@@ -4469,11 +4546,11 @@ export class WorldRuntime {
           return;
         }
         if(this.actionButton)this.actionButton.disabled=false;
-        if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(entity)
-          ?String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
-          :String(entity.label||entity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
+        if(this.actionMessage)this.actionMessage.textContent=this.isNavalTargetInRange(combatEntity)
+          ?String(combatEntity.label||combatEntity.shipName||"Navio inimigo")+" · casco "+hp.current+"/"+hp.max+" · "+distanceToTarget+" px"+playerHull
+          :String(combatEntity.label||combatEntity.shipName||"Navio inimigo")+" · FORA DE ALCANCE · "+distanceToTarget+" / "+Math.round(this.playerEffectiveCannonRange())+" px"+playerHull;
         if(this.actionButton)this.actionButton.textContent=this.navalAutoFire
-          ?(this.isNavalTargetInRange(entity)?"🔥 Atacando":"⏸ Fora de alcance")
+          ?(this.isNavalTargetInRange(combatEntity)?"🔥 Atacando":"⏸ Fora de alcance")
           :"⚔ Atacar";
         this.actionWrap.hidden=false;
         return;
@@ -4481,75 +4558,10 @@ export class WorldRuntime {
       this.clearCombatTarget({hideAction:true});
     }
 
-    let entity=this.contactEntity&&!this.collected.has(this.contactEntity.id)
-      ?this.contactEntity
-      :null;
-
-    if(!entity){
-      const radius=this.playerCollisionRadius()+8;
-      for(const candidate of this.entities){
-        if(this.collected.has(candidate.id))continue;
-        candidate.collision=normalizeCollision(candidate.collision||{},candidate);
-        if(!candidate.collision.active)continue;
-        if(inferCollisionAction(candidate,candidate.collision)==="none")continue;
-        if(resolveCircleVsEntity(this.player,radius,candidate,candidate.collision).collided){
-          entity=candidate;
-          break;
-        }
-      }
-    }
-
-    this.nearby=entity;
-
-    if(!entity){
-      this.regionExitDismissedId=null;
-      const canRepair=this.navalPlayerHp>0
-        &&this.navalPlayerHp<this.navalPlayerMaxHp
-        &&!this.isPlayerInNavalCombat();
-      if(this.actionButton)delete this.actionButton.dataset.worldAction;
-      // O reparo é acionado pelo botão próprio do HUD, ao lado de Atirar.
-      // A área central permanece reservada apenas para interações do mapa.
-      if(this.actionWrap)this.actionWrap.hidden=true;
-      return;
-    }
+    this.nearby=null;
+    this.regionExitDismissedId=null;
     if(this.actionButton)delete this.actionButton.dataset.worldAction;
-
-    const collision=normalizeCollision(entity.collision||{},entity);
-    const action=inferCollisionAction(entity,collision);
-    const interaction=this.entityInteraction(entity);
-
-    if(entity.type==="treasure"&&action==="collect"){
-      if(entity.treasurePending||this.collected.has(entity.id)){
-        this.actionWrap.hidden=true;
-        return;
-      }
-      this.treasureTarget=null;
-      this.clearNavigationTarget();
-      this.beginTreasureChallenge(entity);
-      return;
-    }
-    if(action==="enter-world"||interaction?.actionId==="enter-region"){
-      this.actionWrap.hidden=true;
-      const canEnter=!this.canEnterWorld||this.canEnterWorld(entity);
-      if(!canEnter){
-        if(this.regionTransitionActive?.id===entity.id)this.closeRegionTransition();
-        return;
-      }
-      if(this.regionExitDismissedId!==entity.id&&!this.regionTransitionActive)this.openRegionTransition(entity);
-      return;
-    }
-    if(action==="none"){
-      this.actionWrap.hidden=true;
-      return;
-    }
-
-    const asset=String(this.config.ui?.interactionMessageAsset||this.config.interactionMessageAsset||"");
-    const safeAsset=asset.replace(/["\\]/g,"");
-    this.actionWrap.classList.toggle("has-message-asset",Boolean(safeAsset));
-    this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
-    if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
-    this.actionButton.textContent=collisionActionLabel(entity,collision);
-    this.actionWrap.hidden=false;
+    if(this.actionWrap)this.actionWrap.hidden=true;
   }
 
   navalHpState(entity){
