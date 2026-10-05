@@ -4197,19 +4197,19 @@ export class WorldRuntime {
     }
 
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
-    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+1000;
+    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+50;
     this.state.ammo.selectedAmmoId=ammoId;
     this.onAmmoChange?.(structuredClone(this.state.ammo));
     this.onStarterAmmoEarned?.({
       ammoId,
       ammoName:String(ammo.name||"Bola de Canhão"),
-      quantity:1000,
+      quantity:50,
       total:this.state.ammo.stock[ammoId]
     });
 
     if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Acertou! +1000 Bolas de Canhão recebidas e equipadas.";
-    this.showGameplayToast("🎁 +1000 Bolas de Canhão");
+      "Acertou! +50 Bolas de Canhão recebidas e equipadas.";
+    this.showGameplayToast("🎁 +50 Bolas de Canhão");
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
     return true;
   }
@@ -7175,7 +7175,6 @@ export class WorldRuntime {
           expiresAt:Number(this.hullReinforcement.expiresAt)||0
         }
         :{hp:0,expiresAt:0},
-      ammo:normalizeAmmoInventory(this.state.ammo||{}),
       combat:this.combatActive?{enemyId:this.combatActive.entity?.id||null,enemyHp:this.combatActive.enemyHp,playerHp:this.combatActive.playerHp}:null
     };
   }
