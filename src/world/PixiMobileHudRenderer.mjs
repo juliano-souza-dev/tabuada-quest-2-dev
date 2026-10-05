@@ -1,14 +1,30 @@
 const PIXI_URL="https://cdn.jsdelivr.net/npm/pixi.js@8.21.0/dist/pixi.min.mjs";
 
+const HUD_V="20261005-hud-halloween-v10";
+
 const ASSETS={
-  ammo:"./assets/hud/municao.webp?v=20261005-hud-stable-v9",
-  fire:"./assets/hud/atirar.webp?v=20261005-hud-stable-v9",
-  follow:"./assets/hud/seguir.webp?v=20261005-hud-stable-v9",
-  center:"./assets/hud/centralizar.webp?v=20261005-hud-stable-v9",
-  shipyard:"./assets/hud/estaleiro.webp?v=20261005-hud-stable-v9",
-  missions:"./assets/hud/missoes.webp?v=20261005-hud-stable-v9",
-  shop:"./assets/hud/loja.webp?v=20261005-hud-stable-v9",
-  minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v=20261005-hud-stable-v9"
+  ammo:"./assets/hud/municao.webp?v="+HUD_V,
+  fire:"./assets/hud/atirar.webp?v="+HUD_V,
+  follow:"./assets/hud/seguir.webp?v="+HUD_V,
+  center:"./assets/hud/centralizar.webp?v="+HUD_V,
+  shipyard:"./assets/hud/estaleiro.webp?v="+HUD_V,
+  missions:"./assets/hud/missoes.webp?v="+HUD_V,
+  shop:"./assets/hud/loja.webp?v="+HUD_V,
+
+  hProfile:"./assets/hud/events/halloween/profile_hud_halloween.webp?v="+HUD_V,
+  hGold:"./assets/hud/events/halloween/gold_bar_halloween.webp?v="+HUD_V,
+  hRuby:"./assets/hud/events/halloween/ruby_bar_halloween.webp?v="+HUD_V,
+  hShipyard:"./assets/hud/events/halloween/shipyard_halloween.webp?v="+HUD_V,
+  hGroups:"./assets/hud/events/halloween/groups_halloween.webp?v="+HUD_V,
+  hMissions:"./assets/hud/events/halloween/missions_halloween.webp?v="+HUD_V,
+  hShop:"./assets/hud/events/halloween/shop_halloween.webp?v="+HUD_V,
+  hAmmo:"./assets/hud/events/halloween/ammo_container_halloween.webp?v="+HUD_V,
+  hCancel:"./assets/hud/events/halloween/cancel_attack_halloween.webp?v="+HUD_V,
+  hCenter:"./assets/hud/events/halloween/center_ship_halloween.webp?v="+HUD_V,
+  hConsumables:"./assets/hud/events/halloween/consumables_container_halloween.webp?v="+HUD_V,
+  hRepair:"./assets/hud/events/halloween/repair_halloween.webp?v="+HUD_V,
+
+  minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v="+HUD_V
 };
 
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
@@ -24,6 +40,8 @@ export class PixiMobileHudRenderer{
     this.textures={};
     this.buttonRects={};
     this.lastSize="";
+    this.theme="standard";
+    this.ammoIconUrl="";
   }
 
   async init(){
@@ -94,7 +112,7 @@ export class PixiMobileHudRenderer{
   }
 
   build(){
-    const {Container,Graphics}=this.PIXI;
+    const {Container,Graphics,Sprite,Texture}=this.PIXI;
     const stage=this.app.stage;
     stage.removeChildren();
 
@@ -107,6 +125,8 @@ export class PixiMobileHudRenderer{
     const minimapBack=new Graphics();
     const mapMarkers=new Graphics();
     const actions=new Container();
+    const halloweenChrome=new Container();
+    const halloweenActions=new Container();
 
     const hpLabel=this.makeText("CASCO",15,0);
     const hpText=this.makeText("50 / 50",16,.5);
@@ -114,8 +134,16 @@ export class PixiMobileHudRenderer{
     const rubyText=this.makeText("0",18,0);
     const levelText=this.makeText("1",16,.5);
     const targetText=this.makeText("",13,.5);
+    const ammoQtyText=this.makeText("",11,.5);
+    const consumableQtyText=this.makeText("",11,.5);
+    const consumableIcon=this.makeText("🛡",27,.5);
 
-    root.addChild(top,hpBack,hpFill,portrait,joystick,minimapBack,mapMarkers,actions,hpLabel,hpText,goldText,rubyText,levelText,targetText);
+    root.addChild(
+      top,hpBack,hpFill,portrait,halloweenChrome,
+      joystick,minimapBack,mapMarkers,actions,halloweenActions,
+      hpLabel,hpText,goldText,rubyText,levelText,targetText,
+      ammoQtyText,consumableQtyText,consumableIcon
+    );
 
     const minimapFrame=this.makeSprite("minimap");
     if(minimapFrame)root.addChild(minimapFrame);
@@ -126,13 +154,83 @@ export class PixiMobileHudRenderer{
       if(sprite){actions.addChild(sprite);sprites[key]=sprite}
     }
 
-    // Config has no uploaded asset yet, so draw a matching temporary button in Pixi.
+    const halloweenSprites={};
+    for(const key of ["hProfile","hGold","hRuby"]){
+      const sprite=this.makeSprite(key);
+      if(sprite){halloweenChrome.addChild(sprite);halloweenSprites[key]=sprite}
+    }
+    for(const key of ["hShipyard","hGroups","hMissions","hShop","hAmmo","hCancel","hCenter","hConsumables","hRepair"]){
+      const sprite=this.makeSprite(key);
+      if(sprite){halloweenActions.addChild(sprite);halloweenSprites[key]=sprite}
+    }
+
+    const ammoIcon=new Sprite(Texture.EMPTY);
+    ammoIcon.anchor.set(.5);
+    ammoIcon.eventMode="none";
+    ammoIcon.visible=false;
+    halloweenActions.addChild(ammoIcon);
+
+    // Settings has no dedicated event asset yet.
     const configBack=new Graphics();
     const configIcon=this.makeText("⚙",32,.5);
-    actions.addChild(configBack,configIcon);
+    root.addChild(configBack,configIcon);
 
     stage.addChild(root);
-    this.refs={root,top,hpBack,hpFill,portrait,joystick,minimapBack,mapMarkers,minimapFrame,actions,sprites,configBack,configIcon,hpLabel,hpText,goldText,rubyText,levelText,targetText};
+    this.refs={
+      root,top,hpBack,hpFill,portrait,joystick,minimapBack,mapMarkers,minimapFrame,
+      actions,halloweenChrome,halloweenActions,sprites,halloweenSprites,
+      configBack,configIcon,hpLabel,hpText,goldText,rubyText,levelText,targetText,
+      ammoQtyText,consumableQtyText,consumableIcon,ammoIcon
+    };
+  }
+
+  fitSprite(sprite,x,y,maxW,maxH,key=null){
+    if(!sprite)return null;
+    const tw=Math.max(1,Number(sprite.texture?.width)||1);
+    const th=Math.max(1,Number(sprite.texture?.height)||1);
+    const scale=Math.min(Math.max(1,maxW)/tw,Math.max(1,maxH)/th);
+    const width=tw*scale;
+    const height=th*scale;
+    sprite.position.set(x,y);
+    sprite.width=width;
+    sprite.height=height;
+    if(key)this.buttonRects[key]={left:x-width/2,top:y-height/2,width,height};
+    return {left:x-width/2,top:y-height/2,width,height,cx:x,cy:y};
+  }
+
+  setSquare(key,sprite,x,y,size){
+    const rect={left:x-size/2,top:y-size/2,width:size,height:size,cx:x,cy:y};
+    this.buttonRects[key]=rect;
+    if(sprite){
+      sprite.position.set(x,y);
+      sprite.width=size;
+      sprite.height=size;
+    }
+    return rect;
+  }
+
+  async syncAmmoIcon(url){
+    const next=String(url||"");
+    if(next===this.ammoIconUrl)return;
+    this.ammoIconUrl=next;
+    const sprite=this.refs.ammoIcon;
+    if(!sprite)return;
+    if(!next){sprite.visible=false;return}
+    try{
+      const texture=await this.PIXI.Assets.load(next);
+      if(this.ammoIconUrl!==next)return;
+      sprite.texture=texture;
+      const rect=this.buttonRects.ammo;
+      if(rect){
+        const size=Math.min(rect.width,rect.height)*.38;
+        sprite.position.set(rect.left+rect.width*.50,rect.top+rect.height*.50);
+        sprite.width=size;
+        sprite.height=size;
+      }
+      sprite.visible=this.theme==="halloween";
+    }catch{
+      if(this.ammoIconUrl===next)sprite.visible=false;
+    }
   }
 
   layout(force=false){
@@ -140,41 +238,114 @@ export class PixiMobileHudRenderer{
     const rect=this.root.getBoundingClientRect();
     const w=Math.max(1,Math.round(rect.width||innerWidth||390));
     const h=Math.max(1,Math.round(rect.height||innerHeight||844));
-    const signature=w+"x"+h;
+    const portraitMode=h>w*1.08;
+    const signature=w+"x"+h+":"+this.theme+":"+(portraitMode?"p":"l");
     if(!force&&signature===this.lastSize)return false;
     this.lastSize=signature;
     this.app.renderer.resize(w,h);
 
     const r=this.refs;
-    const topH=clamp(h*.078,66,84);
-    const portraitR=clamp(w*.062,34,48);
-    const hpX=portraitR*2+20;
-    const hpY=topH*.51;
-    const hpW=clamp(w*.35,130,280);
-    const hpH=clamp(topH*.31,20,28);
+    const halloween=this.theme==="halloween";
+    this.buttonRects={};
 
-    r.top.clear().rect(0,0,w,topH).fill(0x2a160d);
-    r.top.rect(0,topH-8,w,8).fill(0x70401e);
-    r.top.rect(0,topH-3,w,3).fill(0xd49b48);
+    r.halloweenChrome.visible=halloween;
+    r.halloweenActions.visible=halloween;
+    r.top.visible=!halloween;
+    r.sprites.ammo.visible=!halloween;
+    r.sprites.center.visible=!halloween;
+    r.sprites.shipyard.visible=!halloween;
+    r.sprites.missions.visible=!halloween;
+    r.sprites.shop.visible=!halloween;
+    r.sprites.follow.visible=true;
+    r.sprites.fire.visible=true;
 
-    r.portrait.clear().circle(portraitR+8,topH*.52,portraitR).fill(0x102b3a).stroke({color:0xc78e42,width:5});
-    r.portrait.circle(29,topH-2,17).fill(0x12100d).stroke({color:0xd19a49,width:3});
+    let topZoneBottom=0;
 
-    r.hpBack.clear().roundRect(hpX,hpY,hpW,hpH,10).fill(0x0a0d0e).stroke({color:0xb77b35,width:3});
-    r.hpLabel.position.set(hpX,hpY-21);
-    r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
-    r.levelText.position.set(29,topH-2);
+    if(!halloween){
+      const topH=clamp(h*.078,66,84);
+      const portraitR=clamp(w*.062,34,48);
+      const hpX=portraitR*2+20;
+      const hpY=topH*.51;
+      const hpW=clamp(w*.35,130,280);
+      const hpH=clamp(topH*.31,20,28);
 
-    const goldX=Math.max(hpX+hpW+28,w*.53);
-    const rubyX=Math.max(goldX+92,w*.75);
-    r.top.circle(goldX,topH*.42,15).fill(0xf4bf24).stroke({color:0x88500d,width:3});
-    r.top.circle(rubyX,topH*.42,14).fill(0xd22542).stroke({color:0x711125,width:3});
-    r.goldText.position.set(goldX+21,topH*.42-10);
-    r.rubyText.position.set(rubyX+20,topH*.42-10);
+      r.top.clear().rect(0,0,w,topH).fill(0x2a160d);
+      r.top.rect(0,topH-8,w,8).fill(0x70401e);
+      r.top.rect(0,topH-3,w,3).fill(0xd49b48);
 
-    const mapR=clamp(w*.13,62,90);
+      r.portrait.clear().circle(portraitR+8,topH*.52,portraitR).fill(0x102b3a).stroke({color:0xc78e42,width:5});
+      r.portrait.circle(29,topH-2,17).fill(0x12100d).stroke({color:0xd19a49,width:3});
+
+      r.hpBack.clear().roundRect(hpX,hpY,hpW,hpH,10).fill(0x0a0d0e).stroke({color:0xb77b35,width:3});
+      r.hpLabel.position.set(hpX,hpY-21);
+      r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
+      r.levelText.position.set(29,topH-2);
+
+      const goldX=Math.max(hpX+hpW+28,w*.53);
+      const rubyX=Math.max(goldX+92,w*.75);
+      r.top.circle(goldX,topH*.42,15).fill(0xf4bf24).stroke({color:0x88500d,width:3});
+      r.top.circle(rubyX,topH*.42,14).fill(0xd22542).stroke({color:0x711125,width:3});
+      r.goldText.position.set(goldX+21,topH*.42-10);
+      r.rubyText.position.set(rubyX+20,topH*.42-10);
+      topZoneBottom=topH;
+    }else{
+      r.top.clear();
+      const profileW=portraitMode?clamp(w*.94,310,430):clamp(w*.42,450,620);
+      const profileH=profileW*(272/928);
+      const profileLeft=6;
+      const profileTop=6;
+      const profileRect=this.fitSprite(
+        r.halloweenSprites.hProfile,
+        profileLeft+profileW/2,
+        profileTop+profileH/2,
+        profileW,
+        profileH
+      );
+
+      const portraitX=profileLeft+profileW*.225;
+      const portraitY=profileTop+profileH*.53;
+      const portraitR=profileH*.37;
+      r.portrait.clear()
+        .circle(portraitX,portraitY,portraitR)
+        .fill({color:0x120d17,alpha:.82});
+
+      const hpX=profileLeft+profileW*.397;
+      const hpY=profileTop+profileH*.635;
+      const hpW=profileW*.565;
+      const hpH=profileH*.205;
+      r.hpBack.clear()
+        .roundRect(hpX,hpY,hpW,hpH,Math.max(8,hpH*.45))
+        .fill({color:0x07100b,alpha:.92});
+      r.hpLabel.position.set(profileLeft+profileW*.405,profileTop+profileH*.38);
+      r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
+      r.levelText.position.set(profileLeft+profileW*.115,profileTop+profileH*.86);
+
+      let currencyBottom=profileTop+profileH;
+      if(portraitMode){
+        const currencyTop=profileTop+profileH+4;
+        const half=(w-18)/2;
+        const goldRect=this.fitSprite(r.halloweenSprites.hGold,6+half/2,currencyTop+27,half-6,54);
+        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,12+half+half/2,currencyTop+31,half-6,62);
+        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.43,goldRect.top+goldRect.height*.54-9);
+        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
+        currencyBottom=Math.max(goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
+      }else{
+        const currencyLeft=profileLeft+profileW+10;
+        const available=Math.max(190,w-currencyLeft-24);
+        const maxW=Math.min(320,available);
+        const goldRect=this.fitSprite(r.halloweenSprites.hGold,currencyLeft+maxW/2,profileTop+36,maxW,72);
+        const rubyRect=this.fitSprite(r.halloweenSprites.hRuby,currencyLeft+Math.min(270,available)/2,profileTop+112,Math.min(270,available),82);
+        if(goldRect)r.goldText.position.set(goldRect.left+goldRect.width*.43,goldRect.top+goldRect.height*.54-9);
+        if(rubyRect)r.rubyText.position.set(rubyRect.left+rubyRect.width*.42,rubyRect.top+rubyRect.height*.73-9);
+        currencyBottom=Math.max(currencyBottom,goldRect?.top+goldRect?.height||0,rubyRect?.top+rubyRect?.height||0);
+      }
+      topZoneBottom=Math.max(profileTop+profileH,currencyBottom)+4;
+      if(profileRect)r.halloweenSprites.hProfile.visible=true;
+    }
+
+    const mapR=portraitMode?clamp(w*.125,52,72):clamp(Math.min(w,h)*.092,62,88);
     const mapX=w-mapR-12;
-    const mapY=topH+mapR+18;
+    const mapY=topZoneBottom+mapR+14;
     r.minimapBack.clear().circle(mapX,mapY,mapR).fill(0x072d36);
     if(r.minimapFrame){
       r.minimapFrame.position.set(mapX,mapY);
@@ -182,64 +353,135 @@ export class PixiMobileHudRenderer{
       r.minimapFrame.height=(mapR+14)*2;
     }
 
-    const joyR=clamp(w*.145,64,100);
+    const joyR=portraitMode?clamp(w*.155,60,76):clamp(Math.min(w,h)*.105,64,96);
     const joyX=joyR+12;
-    const joyY=h-joyR-22;
-    r.joystick.clear();
-    r.joystick.circle(joyX,joyY,joyR).fill({color:0x092b3c,alpha:.82}).stroke({color:0xc0833b,width:6});
-    r.joystick.circle(joyX,joyY,joyR*.75).stroke({color:0x5c7c85,width:2,alpha:.55});
-    r.joystick.moveTo(joyX-joyR*.62,joyY).lineTo(joyX+joyR*.62,joyY).stroke({color:0x9eb8c0,width:2,alpha:.35});
-    r.joystick.moveTo(joyX,joyY-joyR*.62).lineTo(joyX,joyY+joyR*.62).stroke({color:0x9eb8c0,width:2,alpha:.35});
-    r.joystick.circle(joyX,joyY,joyR*.35).fill({color:0x16658a,alpha:.9}).stroke({color:0xd5edf3,width:3});
+    const joyY=h-joyR-18;
+    r.joystick.clear()
+      .circle(joyX,joyY,joyR).fill({color:0x092b3c,alpha:.82}).stroke({color:0xc0833b,width:6})
+      .circle(joyX,joyY,joyR*.75).stroke({color:0x5c7c85,width:2,alpha:.55})
+      .moveTo(joyX-joyR*.62,joyY).lineTo(joyX+joyR*.62,joyY).stroke({color:0x9eb8c0,width:2,alpha:.35})
+      .moveTo(joyX,joyY-joyR*.62).lineTo(joyX,joyY+joyR*.62).stroke({color:0x9eb8c0,width:2,alpha:.35})
+      .circle(joyX,joyY,joyR*.35).fill({color:0x16658a,alpha:.9}).stroke({color:0xd5edf3,width:3});
 
-    const base=clamp(w*.094,54,78);
-    const primary=base*1.18;
-    const gap=clamp(w*.012,5,10);
-    const bottom=Math.max(10,h*.012);
-    const startX=w-(base*3+primary+gap*3)-8;
-    const rowY=h-bottom-base/2;
-    const fireY=h-bottom-primary/2;
+    const gap=portraitMode?6:8;
 
-    const actionLayout={
-      ammo:{x:startX+base/2,y:rowY,size:base},
-      fire:{x:startX+base+gap+primary/2,y:fireY,size:primary},
-      follow:{x:startX+base+gap+primary+gap+base/2,y:rowY,size:base},
-      center:{x:startX+base+gap+primary+gap+base+gap+base/2,y:rowY,size:base}
-    };
+    if(!halloween){
+      const base=clamp(w*.094,54,78);
+      const primary=base*1.18;
+      const bottom=Math.max(10,h*.012);
+      const startX=w-(base*3+primary+gap*3)-8;
+      const rowY=h-bottom-base/2;
+      const fireY=h-bottom-primary/2;
 
-    const utilityX=w-base/2-12;
-    const utilityY=h-bottom-primary-base-gap*2;
-    const utilities={
-      shop:{x:utilityX,y:utilityY,size:base},
-      missions:{x:utilityX-base-gap,y:utilityY,size:base},
-      config:{x:utilityX,y:utilityY-base-gap,size:base},
-      shipyard:{x:utilityX-base-gap,y:utilityY-base-gap,size:base}
-    };
+      const actionLayout={
+        ammo:{x:startX+base/2,y:rowY,size:base},
+        fire:{x:startX+base+gap+primary/2,y:fireY,size:primary},
+        follow:{x:startX+base+gap+primary+gap+base/2,y:rowY,size:base},
+        center:{x:startX+base+gap+primary+gap+base+gap+base/2,y:rowY,size:base}
+      };
+      const utilityX=w-base/2-12;
+      const utilityY=h-bottom-primary-base-gap*2;
+      const utilities={
+        shop:{x:utilityX,y:utilityY,size:base},
+        missions:{x:utilityX-base-gap,y:utilityY,size:base},
+        config:{x:utilityX,y:utilityY-base-gap,size:base},
+        shipyard:{x:utilityX-base-gap,y:utilityY-base-gap,size:base}
+      };
 
-    this.buttonRects={};
-    for(const [key,pos] of Object.entries({...actionLayout,...utilities})){
-      this.buttonRects[key]={left:pos.x-pos.size/2,top:pos.y-pos.size/2,width:pos.size,height:pos.size};
-      const sprite=r.sprites[key];
-      if(sprite){
-        sprite.position.set(pos.x,pos.y);
-        sprite.width=pos.size;
-        sprite.height=pos.size;
+      for(const [key,pos] of Object.entries({...actionLayout,...utilities})){
+        this.setSquare(key,r.sprites[key],pos.x,pos.y,pos.size);
       }
+
+      r.configBack.clear();
+      const c=utilities.config;
+      r.configBack.roundRect(c.x-c.size/2,c.y-c.size/2,c.size,c.size,12).fill(0x10131c).stroke({color:0xb98039,width:3});
+      r.configIcon.position.set(c.x,c.y);
+      r.configBack.visible=true;
+      r.configIcon.visible=true;
+      r.consumableIcon.visible=false;
+      r.ammoQtyText.visible=false;
+      r.consumableQtyText.visible=false;
+      r.ammoIcon.visible=false;
+    }else{
+      const menuCell=portraitMode?clamp(w*.145,52,62):clamp(Math.min(w,h)*.082,60,78);
+      const menuRight=w-10-menuCell/2;
+      const menuLeft=menuRight-menuCell-gap;
+      const menuRow1=mapY+mapR+12+menuCell/2;
+      const menuRow2=menuRow1+menuCell+gap;
+
+      this.fitSprite(r.halloweenSprites.hShipyard,menuLeft,menuRow1,menuCell,menuCell,"shipyard");
+      this.fitSprite(r.halloweenSprites.hGroups,menuRight,menuRow1,menuCell,menuCell,"groups");
+      this.fitSprite(r.halloweenSprites.hMissions,menuLeft,menuRow2,menuCell,menuCell,"missions");
+      this.fitSprite(r.halloweenSprites.hShop,menuRight,menuRow2,menuCell,menuCell,"shop");
+
+      const configSize=clamp(menuCell*.70,40,50);
+      const configX=menuRight;
+      const configY=menuRow2+menuCell/2+gap+configSize/2;
+      this.buttonRects.config={left:configX-configSize/2,top:configY-configSize/2,width:configSize,height:configSize};
+      r.configBack.clear()
+        .roundRect(configX-configSize/2,configY-configSize/2,configSize,configSize,10)
+        .fill({color:0x171019,alpha:.92})
+        .stroke({color:0xd09b3f,width:3});
+      r.configIcon.position.set(configX,configY);
+      r.configBack.visible=true;
+      r.configIcon.visible=true;
+
+      const cell=portraitMode?clamp(w*.15,54,64):clamp(Math.min(w,h)*.084,62,82);
+      const primary=cell*1.10;
+      const right=10;
+      const bottom=10;
+      const bottomY=h-bottom-cell/2;
+
+      const centerX=w-right-cell/2;
+      const fireX=centerX-cell/2-gap-primary/2;
+      const ammoX=fireX-primary/2-gap-cell*.64;
+      const upperY=bottomY-cell-gap;
+
+      this.fitSprite(r.halloweenSprites.hCenter,centerX,bottomY,cell,cell,"center");
+      this.setSquare("fire",r.sprites.fire,fireX,h-bottom-primary/2,primary);
+      this.fitSprite(r.halloweenSprites.hCancel,fireX,h-bottom-primary/2,primary,primary);
+      this.fitSprite(r.halloweenSprites.hAmmo,ammoX,bottomY,cell*1.28,cell,"ammo");
+
+      const followX=centerX;
+      this.setSquare("follow",r.sprites.follow,followX,upperY,cell*.78);
+      const repairX=fireX;
+      this.fitSprite(r.halloweenSprites.hRepair,repairX,upperY,cell,cell,"repair");
+      const consumableX=ammoX;
+      this.fitSprite(r.halloweenSprites.hConsumables,consumableX,upperY,cell*1.28,cell,"shield");
+
+      const ammoRect=this.buttonRects.ammo;
+      if(ammoRect){
+        r.ammoQtyText.position.set(ammoRect.left+ammoRect.width*.74,ammoRect.top+ammoRect.height*.75);
+        const iconSize=Math.min(ammoRect.width,ammoRect.height)*.38;
+        r.ammoIcon.position.set(ammoRect.left+ammoRect.width*.50,ammoRect.top+ammoRect.height*.50);
+        r.ammoIcon.width=iconSize;
+        r.ammoIcon.height=iconSize;
+      }
+      const shieldRect=this.buttonRects.shield;
+      if(shieldRect){
+        r.consumableIcon.position.set(shieldRect.left+shieldRect.width*.50,shieldRect.top+shieldRect.height*.49);
+        r.consumableQtyText.position.set(shieldRect.left+shieldRect.width*.76,shieldRect.top+shieldRect.height*.76);
+      }
+      r.ammoQtyText.visible=true;
+      r.consumableQtyText.visible=true;
+      r.consumableIcon.visible=true;
     }
 
-    r.configBack.clear();
-    const c=utilities.config;
-    r.configBack.roundRect(c.x-c.size/2,c.y-c.size/2,c.size,c.size,12).fill(0x10131c).stroke({color:0xb98039,width:3});
-    r.configIcon.position.set(c.x,c.y);
-
-    r.targetText.position.set(w/2,topH+7);
+    r.targetText.position.set(w/2,topZoneBottom+8);
     return true;
   }
 
   sync(state={}){
     if(!this.ready)return false;
+    const nextTheme=String(state.hudTheme||"standard")==="halloween"?"halloween":"standard";
+    if(nextTheme!==this.theme){
+      this.theme=nextTheme;
+      this.lastSize="";
+    }
     this.layout();
+
     const r=this.refs;
+    const halloween=this.theme==="halloween";
     const maxHp=Math.max(1,Number(state.playerMaxHp)||1);
     const hp=clamp(Number(state.playerHp)||0,0,maxHp);
     const pct=hp/maxHp;
@@ -249,15 +491,15 @@ export class PixiMobileHudRenderer{
     const y=backBounds.y+3;
     const h=Math.max(1,backBounds.height-6);
     const w=Math.max(1,(backBounds.width-6)*pct);
-    r.hpFill.clear().roundRect(x,y,w,h,8).fill(pct>.35?0x27b95d:0xd34832);
-    r.hpText.text=Math.round(hp)+" / "+Math.round(maxHp);
+    r.hpFill.clear().roundRect(x,y,w,h,Math.max(5,h*.45)).fill(pct>.35?0x27b95d:0xd34832);
+    r.hpText.text=Math.round(hp).toLocaleString("pt-BR")+" / "+Math.round(maxHp).toLocaleString("pt-BR");
     r.goldText.text=Number(state.gold||0).toLocaleString("pt-BR");
     r.rubyText.text=Number(state.rubies||0).toLocaleString("pt-BR");
     r.levelText.text=String(Math.max(1,Math.floor(Number(state.level)||1)));
 
     const target=state.target||{};
     r.targetText.text=target.visible===true
-      ?String(target.name||"Navio inimigo")+"  "+Math.round(Number(target.hp)||0)+"/"+Math.round(Number(target.maxHp)||1)
+      ?String(target.name||"Navio inimigo")+"  "+Math.round(Number(target.hp)||0).toLocaleString("pt-BR")+"/"+Math.round(Number(target.maxHp)||1).toLocaleString("pt-BR")
       :"";
 
     const map=r.mapMarkers;
@@ -277,10 +519,55 @@ export class PixiMobileHudRenderer{
       map.circle(px,py,point.player?4:3).fill(point.player?0xfff09a:(point.hostile?0xf1493f:0x6fdc82));
     }
 
-    const center=r.sprites.center;
-    if(center)center.alpha=state.cameraDetached===true?1:.38;
+    const attacking=state.attacking===true;
+    const selectedAmmo=(Array.isArray(state.ammo)?state.ammo:[]).find(item=>item?.selected===true);
+    const selectedQty=Math.max(0,Math.floor(Number(selectedAmmo?.quantity)||0));
+    r.ammoQtyText.text=selectedQty>0?"×"+selectedQty:"";
+    if(halloween)this.syncAmmoIcon(selectedAmmo?.image||"");
+    else r.ammoIcon.visible=false;
+
+    const shieldQty=Math.max(0,Math.floor(Number(state.hullReinforcementQuantity)||0));
+    const shieldActive=state.hullReinforcementActive===true;
+    r.consumableQtyText.text=shieldActive?"ON":(shieldQty>0?"×"+shieldQty:"");
+    r.consumableIcon.alpha=shieldActive?1:(shieldQty>0?1:.42);
+    if(r.halloweenSprites.hConsumables)r.halloweenSprites.hConsumables.alpha=shieldActive||shieldQty>0?1:.55;
+
+    const canRepair=hp>0&&hp<maxHp&&!attacking&&state.repairAvailable===true;
+    if(r.halloweenSprites.hRepair){
+      r.halloweenSprites.hRepair.visible=halloween&&canRepair;
+      r.halloweenSprites.hRepair.alpha=canRepair?1:.38;
+    }
+
+    const centerStandard=r.sprites.center;
+    if(centerStandard)centerStandard.alpha=state.cameraDetached===true?1:.38;
+    const hCenter=r.halloweenSprites.hCenter;
+    if(hCenter)hCenter.alpha=state.cameraDetached===true?1:.62;
+
+    const follow=r.sprites.follow;
+    if(follow){
+      follow.visible=true;
+      follow.alpha=state.target?.visible===true?1:.38;
+    }
+
     const fire=r.sprites.fire;
-    if(fire)fire.alpha=state.hasCannons!==false&&state.hasAmmo!==false?1:.45;
+    const cancel=r.halloweenSprites.hCancel;
+    if(halloween){
+      if(fire){
+        fire.visible=!attacking;
+        fire.alpha=state.hasCannons!==false&&state.hasAmmo!==false?1:.45;
+      }
+      if(cancel)cancel.visible=attacking;
+      if(r.halloweenSprites.hAmmo)r.halloweenSprites.hAmmo.visible=true;
+      if(r.halloweenSprites.hCenter)r.halloweenSprites.hCenter.visible=true;
+      if(r.halloweenSprites.hConsumables)r.halloweenSprites.hConsumables.visible=true;
+      r.ammoIcon.visible=Boolean(this.ammoIconUrl&&r.ammoIcon.texture);
+    }else{
+      if(fire){
+        fire.visible=true;
+        fire.alpha=state.hasCannons!==false&&state.hasAmmo!==false?1:.45;
+      }
+      if(cancel)cancel.visible=false;
+    }
     return true;
   }
 
