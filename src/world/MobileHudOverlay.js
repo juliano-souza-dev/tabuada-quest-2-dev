@@ -1,4 +1,4 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-halloween-v11";
+import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261005-hud-halloween-v12";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
