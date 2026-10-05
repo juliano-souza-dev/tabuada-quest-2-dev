@@ -1079,24 +1079,34 @@
   100%{opacity:0;transform:translate(-50%,-210%) scale(.9)}
 }
 
-/* Nome de NPCs e jogadores remotos; o jogador local não recebe este rótulo. */
-.tq-world-ship-name{
+/* Nomes dos navios no mundo. */
+.tq-world-ship-name,
+.tq-world-player-name{
   position:absolute;
   left:0;
   top:0;
   z-index:32;
   min-width:max-content;
-  max-width:180px;
+  max-width:240px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
   transform:translate(-50%,-50%);
   pointer-events:none;
   color:#fff7c8;
-  font:900 14px/1 system-ui,sans-serif;
+  font:900 20px/1 system-ui,sans-serif;
   text-align:center;
-  -webkit-text-stroke:1px #07131e;
-  text-shadow:0 2px 3px #000,0 0 6px rgba(0,0,0,.95);
+  -webkit-text-stroke:1.25px #07131e;
+  text-shadow:0 2px 4px #000,0 0 8px rgba(0,0,0,.98);
+}
+.tq-world-player-name{
+  z-index:34;
+  font-size:21px;
+  color:#fffbd8;
+}
+@media(max-width:430px){
+  .tq-world-ship-name,.tq-world-player-name{font-size:18px;max-width:210px}
+  .tq-world-player-name{font-size:19px}
 }
 
 
