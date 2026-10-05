@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-hud-semantic-v5";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-hud-semantic-v6";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-sync-cache-v2";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
@@ -41,7 +41,8 @@ mountFlowTestExit();
 
 const showBootError=error=>{
   console.error("[TQ Game] boot failed",error);
-  app.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:#081b2b;color:white;font:16px system-ui;text-align:center"><div><strong>Falha ao iniciar o teste</strong><br><br><span style="opacity:.8"></span></div></div>';
+  const bootLabel=flowTest?"Falha ao iniciar o teste":"Falha ao iniciar o jogo";
+  app.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;padding:24px;background:#081b2b;color:white;font:16px system-ui;text-align:center"><div><strong>'+bootLabel+'</strong><br><br><span style="opacity:.8"></span></div></div>';
   const span=app.querySelector("span");if(span)span.textContent=String(error?.message||error);
 };
 let game;
