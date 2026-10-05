@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-hud-forcecache-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-hud-assets-v3";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-sync-cache-v2";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
