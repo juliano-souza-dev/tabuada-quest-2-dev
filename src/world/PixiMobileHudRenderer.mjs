@@ -17,12 +17,13 @@ const ASSETS={
   hRuby:"./assets/hud/events/halloween/ruby_bar_halloween.webp?v="+HUD_V,
   hShipyard:"./assets/hud/events/halloween/shipyard_halloween.webp?v="+HUD_V,
   hGroups:"./assets/hud/events/halloween/groups_halloween.webp?v="+HUD_V,
-  hMissions:"./assets/hud/events/halloween/missions_halloween.webp?v="+HUD_V,
-  hShop:"./assets/hud/events/halloween/shop_halloween.webp?v="+HUD_V,
-  hAmmo:"./assets/hud/events/halloween/ammo_container_halloween.webp?v="+HUD_V,
-  hCancel:"./assets/hud/events/halloween/cancel_attack_halloween.webp?v="+HUD_V,
+  hMissions:"./assets/hud/halloween_hud_missoes.webp?v="+HUD_V,
+  hShop:"./assets/hud/halloween_hud_loja.webp?v="+HUD_V,
+  hAmmo:"./assets/hud/halloween_hud_btn_trocar_municao.webp?v="+HUD_V,
+  hFire:"./assets/hud/halloween_hud_btn_iniciar_ataque.webp?v="+HUD_V,
+  hCancel:"./assets/hud/halloween_hud_btn_cancelar_ataque.webp?v="+HUD_V,
   hCenter:"./assets/hud/events/halloween/center_ship_halloween.webp?v="+HUD_V,
-  hRepair:"./assets/hud/events/halloween/repair_halloween.webp?v="+HUD_V,
+  hRepair:"./assets/hud/halloween_hud_btn_consertar_navio.webp?v="+HUD_V,
 
   minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v="+HUD_V
 };
@@ -162,7 +163,7 @@ export class PixiMobileHudRenderer{
       const sprite=this.makeSprite(key);
       if(sprite){halloweenChrome.addChild(sprite);halloweenSprites[key]=sprite}
     }
-    for(const key of ["hShipyard","hGroups","hMissions","hShop","hAmmo","hCancel","hCenter","hRepair"]){
+    for(const key of ["hShipyard","hGroups","hMissions","hShop","hAmmo","hFire","hCancel","hCenter","hRepair"]){
       const sprite=this.makeSprite(key);
       if(sprite){halloweenActions.addChild(sprite);halloweenSprites[key]=sprite}
     }
@@ -490,7 +491,7 @@ export class PixiMobileHudRenderer{
       const pConfig=positions.config;
 
       this.fitSprite(r.halloweenSprites.hAmmo,pAmmo.x,pAmmo.y,pAmmo.size,pAmmo.size,"ammo");
-      this.setSquare("fire",r.sprites.fire,pFire.x,pFire.y,pFire.size);
+      this.fitSprite(r.halloweenSprites.hFire,pFire.x,pFire.y,pFire.size,pFire.size,"fire");
       this.fitSprite(r.halloweenSprites.hCancel,pFire.x,pFire.y,pFire.size,pFire.size);
       this.fitSprite(r.halloweenSprites.hGroups,pGroups.x,pGroups.y,pGroups.size,pGroups.size,"groups");
       this.setSquare("follow",r.sprites.follow,pFollow.x,pFollow.y,pFollow.size);
