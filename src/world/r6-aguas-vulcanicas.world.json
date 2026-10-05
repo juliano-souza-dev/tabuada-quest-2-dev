@@ -378,11 +378,11 @@
   ],
   "npcPopulation": {
     "enabled": true,
-    "seed": 31,
+    "seed": 3106,
     "spread": {
       "mode": "random-spaced",
-      "margin": 320,
-      "minDistance": 363
+      "margin": 520,
+      "minDistance": 520
     },
     "movement": {
       "mode": "straight",
@@ -390,42 +390,60 @@
     },
     "types": [
       {
-        "npcId": "boss-halloween-dreadnought",
-        "shipId": "ship-halloween-dreadnought",
-        "count": 1,
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "shipId": "ship-halloween-pumpkin-corsair",
+        "count": 4,
         "enabled": true,
         "respawn": true,
-        "respawnDelaySec": 300,
-        "hp": 5000000,
-        "rewards": {
-          "shipId": "ship-halloween-dreadnought"
-        },
+        "respawnDelaySec": 25,
         "spawn": {
           "mode": "random-spaced",
-          "margin": 420,
-          "minDistance": 900
+          "margin": 480,
+          "minDistance": 460,
+          "seed": 4106
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 100
         }
       },
       {
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "shipId": "ship-halloween-pumpkin-corsair",
+        "npcId": "npc-halloween-galleon",
+        "shipId": "ship-halloween-galleon-reward",
         "count": 5,
         "enabled": true,
         "respawn": true,
-        "respawnDelaySec": 20,
-        "hp": 3,
-        "rewards": {
-          "gold": 100,
-          "rubies": {
-            "chance": 25,
-            "min": 1,
-            "max": 5
-          }
-        },
+        "respawnDelaySec": 30,
         "spawn": {
           "mode": "random-spaced",
-          "margin": 360,
-          "minDistance": 420
+          "margin": 520,
+          "minDistance": 520,
+          "seed": 5106
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 150,
+          "xp": 40
+        }
+      },
+      {
+        "npcId": "boss-halloween-galleon-100k",
+        "shipId": "ship-halloween-galleon-reward",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 180,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 650,
+          "minDistance": 900,
+          "seed": 6106
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 1000,
+          "rubies": 2,
+          "xp": 500
         }
       }
     ]
