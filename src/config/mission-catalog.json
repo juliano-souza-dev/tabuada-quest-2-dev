@@ -913,21 +913,21 @@
       "region": 1,
       "order": 90,
       "category": "event",
-      "name": "A Frota do Almirante Maldito",
-      "description": "Afunde 10 Almirantes Malditos de Halloween.",
+      "name": "O Couraçado da Noite",
+      "description": "Derrote o Terror do Halloween e conquiste o próprio navio como recompensa especial do evento.",
       "acceptRequired": true,
       "unlockAfter": [],
       "objective": {
         "type": "defeat_npc",
-        "npcId": "boss-halloween-galleon-100k",
-        "targetLabel": "Almirante Maldito de Halloween",
-        "target": 10
+        "npcId": "boss-halloween-dreadnought",
+        "targetLabel": "Terror do Halloween",
+        "target": 1
       },
       "reward": {
         "gold": 5000,
         "rubies": 20,
         "xp": 3000,
-        "shipId": "ship-halloween-galleon-reward",
+        "shipId": "ship-halloween-dreadnought",
         "equipShip": true
       },
       "required": false,
