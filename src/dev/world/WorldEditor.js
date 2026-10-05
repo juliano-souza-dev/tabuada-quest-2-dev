@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261005-hud-halloween-v10";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261005-hud-halloween-v11";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog,getWorldDefaults}={}){
