@@ -215,7 +215,8 @@
     "strongestCannonCount": 25,
     "ammoId": "cannonball-standard",
     "ammoQuantity": 1000000,
-    "allAmmoQuantity": 1000000
+    "allAmmoQuantity": 1000000,
+    "forcePlayerProfile": true
   },
   "editor": {
     "cameraX": 2500,
@@ -225,16 +226,18 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261005-dev-effects-lab-v1",
+    "sourceRevision": "20261005-dev-effects-lab-v2",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "devOnly": true,
-    "purpose": "naval-vfx-test"
+    "purpose": "naval-vfx-test",
+    "event": "halloween"
   },
   "region": {
     "index": 0,
     "code": "DEV-FX",
     "nextWorldId": null,
     "previousWorldId": null
-  }
+  },
+  "event": "halloween"
 }
