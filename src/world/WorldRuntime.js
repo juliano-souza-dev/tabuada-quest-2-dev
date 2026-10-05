@@ -162,6 +162,7 @@ export class WorldRuntime {
   constructor(root,config,options={}){
     this.root=root;
     this.config=structuredClone(config);
+    this.playerDisplayName=String(options.playerName||this.config.player?.name||"Jogador").trim()||"Jogador";
     this.config.ocean=normalizeOceanConfig(this.config.ocean||{});
     this.editorEnabled=options.editorEnabled===true;
     this.audio=new GameAudio(options.soundCatalog||{sounds:[]});
@@ -1095,6 +1096,7 @@ export class WorldRuntime {
           <div class="tq-world-entities"></div>
           <div class="tq-world-nav-target" hidden aria-hidden="true"></div>
           <div class="tq-world-player" role="img" aria-label="Navio do jogador"></div>
+          <span class="tq-world-player-name" data-world-player-name aria-hidden="true"></span>
         </div>
         <canvas class="tq-world-naval-webgl" data-world-naval-webgl aria-hidden="true"></canvas>
       </div>
@@ -1206,6 +1208,8 @@ export class WorldRuntime {
     this.playerWakeLayer=this.host.querySelector("[data-world-player-wake]");
     this.playerShadowEl=this.host.querySelector("[data-world-player-shadow]");
     this.playerEl=this.host.querySelector(".tq-world-player");
+    this.playerNameEl=this.host.querySelector("[data-world-player-name]");
+    if(this.playerNameEl)this.playerNameEl.textContent=this.playerDisplayName;
     this.navTargetEl=this.host.querySelector(".tq-world-nav-target");
     this.joystickEl=this.host.querySelector("[data-world-joystick]");
     this.joystickThumbEl=this.host.querySelector("[data-world-joystick-thumb]");
@@ -3232,6 +3236,12 @@ export class WorldRuntime {
 
     this.playerEl.style.left=this.player.x+"px";
     this.playerEl.style.top=(this.player.y+heave)+"px";
+    if(this.playerNameEl){
+      this.playerNameEl.textContent=this.playerDisplayName;
+      this.playerNameEl.style.left=this.player.x+"px";
+      this.playerNameEl.style.top=((this.player.y+heave)+Math.max(18,Number(this.config.player?.height)||150)*.54+12)+"px";
+      this.playerNameEl.hidden=this.mode==="edit";
+    }
 
     const sprite=this.config.player?.sprite;
     const directional=this.config.player?.directions;
