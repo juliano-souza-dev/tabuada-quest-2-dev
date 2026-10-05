@@ -40,6 +40,8 @@ export class PixiMobileHudRenderer{
     this.refs={};
     this.textures={};
     this.buttonRects={};
+    this.editorRects={};
+    this.layoutOffsets={};
     this.lastSize="";
     this.theme="standard";
     this.ammoIconUrl="";
@@ -248,6 +250,7 @@ export class PixiMobileHudRenderer{
     const r=this.refs;
     const halloween=this.theme==="halloween";
     this.buttonRects={};
+    this.editorRects={};
 
     r.halloweenChrome.visible=halloween;
     r.halloweenActions.visible=halloween;
@@ -507,7 +510,81 @@ export class PixiMobileHudRenderer{
     }
 
     r.targetText.position.set(w/2,topZoneBottom+6);
+
+    this.editorRects.top={left:0,top:0,width:w,height:Math.max(70,topZoneBottom)};
+    this.editorRects.minimap={left:mapX-mapR-12,top:mapY-mapR-12,width:(mapR+12)*2,height:(mapR+12)*2};
+    this.editorRects.joystick={left:joyX-joyR,top:joyY-joyR,width:joyR*2,height:joyR*2};
+    for(const [key,rectValue] of Object.entries(this.buttonRects))this.editorRects[key]={...rectValue};
+    this.applyLayoutOffsets();
     return true;
+  }
+
+  setLayoutOffsets(offsets={}){
+    this.layoutOffsets=offsets&&typeof offsets==="object"?structuredClone(offsets):{};
+    this.lastSize="";
+    this.layout(true);
+    return true;
+  }
+
+  applyLayoutOffsets(){
+    const offsetOf=key=>{
+      const value=this.layoutOffsets?.[key]||{};
+      return {x:Number(value.x)||0,y:Number(value.y)||0};
+    };
+    const shiftDisplay=(display,key)=>{
+      if(!display)return;
+      const offset=offsetOf(key);
+      display.position.x+=offset.x;
+      display.position.y+=offset.y;
+    };
+    const shiftRect=(key)=>{
+      const rect=this.buttonRects[key];
+      const editorRect=this.editorRects[key];
+      const offset=offsetOf(key);
+      if(rect){rect.left+=offset.x;rect.top+=offset.y;rect.cx=(rect.cx??rect.left+rect.width/2)+offset.x;rect.cy=(rect.cy??rect.top+rect.height/2)+offset.y}
+      if(editorRect){editorRect.left+=offset.x;editorRect.top+=offset.y}
+    };
+
+    const topOffset=offsetOf("top");
+    for(const display of [
+      this.refs.top,this.refs.hpBack,this.refs.hpFill,this.refs.portrait,this.refs.halloweenChrome,
+      this.refs.hpLabel,this.refs.hpText,this.refs.goldText,this.refs.rubyText,this.refs.levelText
+    ]){
+      if(display){display.position.x+=topOffset.x;display.position.y+=topOffset.y}
+    }
+    if(this.editorRects.top){this.editorRects.top.left+=topOffset.x;this.editorRects.top.top+=topOffset.y}
+
+    shiftDisplay(this.refs.minimapBack,"minimap");
+    shiftDisplay(this.refs.mapMarkers,"minimap");
+    shiftDisplay(this.refs.minimapFrame,"minimap");
+    if(this.editorRects.minimap){
+      const o=offsetOf("minimap");this.editorRects.minimap.left+=o.x;this.editorRects.minimap.top+=o.y;
+    }
+
+    shiftDisplay(this.refs.joystick,"joystick");
+    if(this.editorRects.joystick){
+      const o=offsetOf("joystick");this.editorRects.joystick.left+=o.x;this.editorRects.joystick.top+=o.y;
+    }
+
+    const displayForKey=key=>{
+      if(key==="config")return [this.refs.configBack,this.refs.configIcon];
+      if(key==="shield")return [this.refs.shieldIcon,this.refs.shieldQtyText];
+      if(key==="ammo")return [this.theme==="halloween"?this.refs.halloweenSprites.hAmmo:this.refs.sprites.ammo,this.refs.ammoIcon,this.refs.ammoQtyText];
+      if(key==="fire")return [this.refs.sprites.fire,this.refs.halloweenSprites.hCancel];
+      if(key==="repair")return [this.refs.halloweenSprites.hRepair];
+      if(key==="center")return [this.theme==="halloween"?this.refs.halloweenSprites.hCenter:this.refs.sprites.center];
+      if(key==="shipyard")return [this.theme==="halloween"?this.refs.halloweenSprites.hShipyard:this.refs.sprites.shipyard];
+      if(key==="groups")return [this.refs.halloweenSprites.hGroups];
+      if(key==="missions")return [this.theme==="halloween"?this.refs.halloweenSprites.hMissions:this.refs.sprites.missions];
+      if(key==="shop")return [this.theme==="halloween"?this.refs.halloweenSprites.hShop:this.refs.sprites.shop];
+      if(key==="follow")return [this.refs.sprites.follow];
+      return [];
+    };
+
+    for(const key of Object.keys(this.buttonRects)){
+      for(const display of displayForKey(key))shiftDisplay(display,key);
+      shiftRect(key);
+    }
   }
 
   sync(state={}){
