@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-20261005-hud-syntax-hotfix-v2";
+const CACHE_NAME="tq-dev-assets-20261005-hud-cache-hard-reset-v1";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
