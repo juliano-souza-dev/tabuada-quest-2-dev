@@ -270,6 +270,15 @@ export class MultiplayerRuntime extends EventTarget{
     return this.fireRequest(shot);
   }
 
+  setChallengeProtection(active=false,until=0){
+    if(!this.worldId||!this.socketReady)return false;
+    return this.socketSend({
+      type:"challenge.protection",
+      active:active===true,
+      until:Math.max(0,Math.floor(Number(until)||0))
+    });
+  }
+
   inviteParty(targetUid){
     if(!this.worldId||!this.socketReady)return false;
     return this.socketSend({type:"party.invite",targetUid:safeKey(targetUid)});
