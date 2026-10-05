@@ -128,10 +128,10 @@ const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammo
 const resolvePlayerHullHp=(player,fallbackCombat={})=>{
   const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
   const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
-  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,500000);
-  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-499950,500000);
+  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,500000000);
+  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-499999950,500000000);
   const pct=clamp(Number(modifiers.maxHpPct??modifiers.hpPct)||0,-.9,10);
-  return clamp(Math.round(base*(1+pct)+flat),50,1000000);
+  return clamp(Math.round(base*(1+pct)+flat),50,500000000);
 };
 
 const normalizePlayerWaterEffects=player=>{
@@ -432,7 +432,7 @@ export class WorldRuntime {
       if(String(normalized.type||"")==="ship"){
         normalized.combat={
           ...(normalized.combat&&typeof normalized.combat==="object"?structuredClone(normalized.combat):{}),
-          hp:clamp(Math.floor(Number(normalized.combat?.hp)||3),1,99),
+          hp:clamp(Math.floor(Number(normalized.combat?.hp)||3),1,500000000),
           attackRange:clamp(Number(normalized.combat?.attackRange??1200),200,6000),
           attackCooldownMs:clamp(Number(normalized.combat?.attackCooldownMs??900),300,5000),
           damage:clamp(Math.floor(Number(normalized.combat?.damage)||1),1,20)
