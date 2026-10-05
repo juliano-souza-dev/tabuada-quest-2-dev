@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 6,
+  "version": 7,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -204,6 +204,64 @@
           }
         ],
         "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "npc-halloween-galleon",
+      "name": "Galeão Maldito de Halloween",
+      "shipId": "ship-halloween-galleon-reward",
+      "width": 230,
+      "height": 230,
+      "navigation": {
+        "minSpeed": 45,
+        "speed": 110,
+        "acceleration": 420,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 15000,
+        "attitude": "retaliate",
+        "damage": 3,
+        "maxTargets": 1,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-bronze",
+            "quantity": 4
+          }
+        ],
+        "ammoId": "cannonball-standard",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "boss-halloween-galleon-100k",
+      "name": "Almirante Maldito de Halloween",
+      "shipId": "ship-halloween-galleon-reward",
+      "boss": true,
+      "coopBoss": true,
+      "coopBossId": "boss-halloween-galleon-100k",
+      "width": 380,
+      "height": 380,
+      "navigation": {
+        "minSpeed": 55,
+        "speed": 125,
+        "acceleration": 460,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 100000,
+        "attitude": "retaliate",
+        "damage": 5,
+        "maxTargets": 2,
+        "rewardMinDamageRatio": 0,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-royal-golden-lion",
+            "quantity": 8
+          }
+        ],
+        "ammoId": "cannonball-piercing",
         "ammoUnlimited": true
       }
     }
