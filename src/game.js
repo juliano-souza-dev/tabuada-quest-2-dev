@@ -1,5 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-large-ship-names";
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-treasure-auto-safe-v2";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-pixi-cannon-battery-v1";
+import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-pixi-cannon-battery-v1";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
