@@ -1,6 +1,17 @@
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
 const safeKey=value=>String(value||"").replace(/[.#$\[\]\/]/g,"_").slice(0,96);
 const serverKey=value=>String(value||"").replace(/[^a-zA-Z0-9._-]/g,"-").slice(0,96);
+const normalizeAmmoPayload=input=>{
+  const value=input&&typeof input==="object"?input:{};
+  const source=value.stock&&typeof value.stock==="object"?value.stock:{};
+  const stock={};
+  for(const [rawId,rawQty] of Object.entries(source)){
+    const id=String(rawId||"").trim();
+    const qty=Math.max(0,Math.floor(Number(rawQty)||0));
+    if(id&&qty>0)stock[id]=qty;
+  }
+  return {selectedAmmoId:String(value.selectedAmmoId||""),stock};
+};
 
 export class MultiplayerRuntime extends EventTarget{
   constructor(auth,config={},options={}){
@@ -16,6 +27,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.reconnectAttempts=0;
     this.getLocalState=null;
     this.getCannonIds=null;
+    this.getAmmoInventory=null;
     this.shipId="";
     this.displayName="";
     this.pendingWorldEnsure=null;
@@ -47,6 +59,7 @@ export class MultiplayerRuntime extends EventTarget{
       name:this.displayName||status.displayName||"Pirata",
       shipId:this.shipId,
       cannonIds:(typeof this.getCannonIds==="function"?this.getCannonIds():[]).map(String).filter(Boolean).slice(0,64),
+      ammo:normalizeAmmoPayload(typeof this.getAmmoInventory==="function"?this.getAmmoInventory():{}),
       x:Number(p.x)||0,
       y:Number(p.y)||0,
       vx:Number(p.vx)||0,
@@ -78,7 +91,7 @@ export class MultiplayerRuntime extends EventTarget{
       ws.send(JSON.stringify({
         type:"join",worldId:this.worldId,uid:st.uid,
         name:this.displayName||st.displayName||"Pirata",
-        shipId:this.shipId,cannonIds:local.cannonIds,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
+        shipId:this.shipId,cannonIds:local.cannonIds,ammoStock:local.ammo.stock,selectedAmmoId:local.ammo.selectedAmmoId,x:local.x,y:local.y,vx:local.vx,vy:local.vy,rotation:local.rotation,
         direction:local.direction,hp:local.hp
       }));
       if(this.pendingWorldEnsure)ws.send(JSON.stringify(this.pendingWorldEnsure));
@@ -154,7 +167,7 @@ export class MultiplayerRuntime extends EventTarget{
         this.dispatchEvent(new CustomEvent("party",{detail:data}));
         return;
       }
-      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.volley.accepted","fire.rejected","player-left"].includes(data.type)){
+      if(["shot","entity-hit","boss-hit","projectile.spawn","projectile.hit","projectile.miss","fire.accepted","fire.volley.accepted","fire.rejected","ammo.state","player-left"].includes(data.type)){
         this.dispatchEvent(new CustomEvent("event",{detail:data}));
       }
     });
@@ -195,7 +208,7 @@ export class MultiplayerRuntime extends EventTarget{
     return true;
   }
 
-  async joinWorld(worldId,{getLocalState,getCannonIds,shipId="",displayName=""}={}){
+  async joinWorld(worldId,{getLocalState,getCannonIds,getAmmoInventory,shipId="",displayName=""}={}){
     await this.leaveWorld();
     this.worldId=safeKey(worldId);
     if(!this.worldId)return false;
@@ -204,6 +217,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.intentionalClose=false;
     this.getLocalState=typeof getLocalState==="function"?getLocalState:null;
     this.getCannonIds=typeof getCannonIds==="function"?getCannonIds:null;
+    this.getAmmoInventory=typeof getAmmoInventory==="function"?getAmmoInventory:null;
     this.shipId=String(shipId||"");
     this.displayName=String(displayName||"");
     console.info("[TQ Multiplayer] joining authoritative world",this.worldId);
@@ -268,6 +282,17 @@ export class MultiplayerRuntime extends EventTarget{
     // Compatibility alias. Authoritative servers receive only player intent;
     // damage/range/speed/cooldown are resolved from server-side catalogs.
     return this.fireRequest(shot);
+  }
+
+  syncAmmoInventory(ammo={},meta={}){
+    if(!this.worldId||!this.socketReady)return false;
+    const normalized=normalizeAmmoPayload(ammo);
+    return this.socketSend({
+      type:"ammo.sync",
+      stock:normalized.stock,
+      selectedAmmoId:normalized.selectedAmmoId,
+      reason:String(meta?.reason||"sync").slice(0,40)
+    });
   }
 
   fireVolley({volleyId="",targetId="",ammoId="",shots=[]}={}){
@@ -382,6 +407,7 @@ export class MultiplayerRuntime extends EventTarget{
     this.worldId="";
     this.getLocalState=null;
     this.getCannonIds=null;
+    this.getAmmoInventory=null;
     this.pendingWorldEnsure=null;
     this.pendingBossEnsures.clear();
     this.offlineFallbackLocked=false;
