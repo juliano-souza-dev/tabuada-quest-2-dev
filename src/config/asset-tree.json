@@ -1812,11 +1812,6 @@
     },
     {
       "type": "image",
-      "name": "navio_halloween_16_direcoes_transparente.webp",
-      "path": "assets/ships/events/halloween/navio_halloween_16_direcoes_transparente.webp"
-    },
-    {
-      "type": "image",
       "name": "navio_halloween_sprite_1600x1600.webp",
       "path": "assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp"
     },
