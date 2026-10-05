@@ -1,15 +1,15 @@
 const PIXI_URL="https://cdn.jsdelivr.net/npm/pixi.js@8.21.0/dist/pixi.min.mjs";
 
 const ASSETS={
-  ammo:"./assets/hud/municao.webp",
-  fire:"./assets/hud/atirar.webp",
-  follow:"./assets/hud/seguir.webp",
-  center:"./assets/hud/centralizar.webp",
-  shipyard:"./assets/hud/estaleiro.webp",
-  missions:"./assets/hud/missoes.webp",
-  shop:"./assets/hud/loja.webp",
-  repair:"./assets/hud/conserto_navio_padrao_ui.webp",
-  minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp"
+  ammo:"./assets/hud/municao.webp?v=20261005-hud-cache-v8",
+  fire:"./assets/hud/atirar.webp?v=20261005-hud-cache-v8",
+  follow:"./assets/hud/seguir.webp?v=20261005-hud-cache-v8",
+  center:"./assets/hud/centralizar.webp?v=20261005-hud-cache-v8",
+  shipyard:"./assets/hud/estaleiro.webp?v=20261005-hud-cache-v8",
+  missions:"./assets/hud/missoes.webp?v=20261005-hud-cache-v8",
+  shop:"./assets/hud/loja.webp?v=20261005-hud-cache-v8",
+  repair:"./assets/hud/conserto_navio_padrao_ui.webp?v=20261005-hud-cache-v8",
+  minimap:"./assets/ui/ui_minimap_frame_pirate_cartoon_hq.webp?v=20261005-hud-cache-v8"
 };
 
 const clamp=(v,min,max)=>Math.min(max,Math.max(min,Number(v)||0));
