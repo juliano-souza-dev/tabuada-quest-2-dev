@@ -1977,6 +1977,7 @@ export class GameRuntime {
       ammoCatalog:Array.isArray(this.ammoCatalog?.ammo)?clone(this.ammoCatalog.ammo):[],
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       graphicsSettings:clone(this.graphicsSettings),
+      playerName:String(this.accountState?.profile?.displayName||"Jogador"),
       onGraphicsSettingsChange:settings=>{
         this.graphicsSettings=normalizeGraphicsSettings(settings);
         this.saveState();
