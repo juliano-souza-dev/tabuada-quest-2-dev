@@ -363,39 +363,95 @@ export class GameRuntime {
       :this.openScene(fallback,{pushHistory:false});
   }
 
+  requiredMissionStatus(regionNumber){
+    const region=Math.max(0,Math.floor(Number(regionNumber)||0));
+    if(!region)return {region,required:[],completed:[],pending:[],complete:true};
+    const missions=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
+      .filter(mission=>Number(mission?.region)===region&&mission?.required===true);
+    const missionState=this.accountState?.game?.missions&&typeof this.accountState.game.missions==="object"
+      ?this.accountState.game.missions
+      :{};
+    const progress=missionState.progress&&typeof missionState.progress==="object"
+      ?missionState.progress
+      :{};
+    const required=missions.map(mission=>{
+      const id=String(mission?.id||"").trim();
+      const target=Math.max(1,Math.floor(Number(mission?.objective?.target)||1));
+      const current=Math.max(0,Math.floor(Number(progress[id])||0));
+      return {
+        id,
+        name:String(mission?.name||id),
+        target,
+        current,
+        complete:current>=target
+      };
+    });
+    const completed=required.filter(item=>item.complete);
+    const pending=required.filter(item=>!item.complete);
+    return {region,required,completed,pending,complete:pending.length===0};
+  }
+
   canShowRegionTransition(targetWorldId,fromWorldId=this.current?.kind==="world"?this.current.id:""){
     const target=String(targetWorldId||"").trim();
     const from=String(fromWorldId||"").trim();
     if(!target||!from)return true;
 
-    // Region exits are navigational by default. The previous implementation
-    // silently blocked forward travel unless complete-region had already been
-    // fired, but worlds currently do not expose a guaranteed completion hook.
-    // Keep the progression gate opt-in so navigation can never deadlock.
-    if(this.manifest?.progression?.lockRegionExits!==true)return true;
-
     const fromIndex=Math.max(0,Number(from.match(/^r(\d+)/i)?.[1])||0);
     const targetIndex=Math.max(0,Number(target.match(/^r(\d+)/i)?.[1])||0);
     if(!fromIndex||!targetIndex)return true;
     if(targetIndex<=fromIndex)return true;
+
+    const status=this.requiredMissionStatus(fromIndex);
+    if(!status.complete){
+      globalThis.dispatchEvent?.(new CustomEvent("tq:regionlocked",{detail:{
+        fromWorldId:from,
+        targetWorldId:target,
+        region:fromIndex,
+        pending:clone(status.pending)
+      }}));
+      return false;
+    }
+
     const completed=new Set(
       Array.isArray(this.flags?.completedRegions)
         ?this.flags.completedRegions.map(value=>String(value||""))
         :[]
     );
-    return completed.has(from);
+    if(!completed.has(from)){
+      completed.add(from);
+      this.flags={...(this.flags||{}),completedRegions:[...completed]};
+      this.saveState();
+      this.syncCloud("region-auto-complete");
+      globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{
+        regionId:from,
+        region:fromIndex,
+        source:"missions"
+      }}));
+    }
+    return true;
   }
 
   completeCurrentRegion(){
     const regionId=this.current?.kind==="world"?String(this.current.id||""):"";
-    if(!regionId)return false;
+    const region=Math.max(0,Number(regionId.match(/^r(\d+)/i)?.[1])||0);
+    if(!regionId||!region)return false;
+    const status=this.requiredMissionStatus(region);
+    if(!status.complete){
+      globalThis.dispatchEvent?.(new CustomEvent("tq:regionlocked",{detail:{
+        fromWorldId:regionId,
+        targetWorldId:"",
+        region,
+        pending:clone(status.pending)
+      }}));
+      return false;
+    }
     this.flags={
       ...(this.flags||{}),
       completedRegions:[...new Set([...(Array.isArray(this.flags?.completedRegions)?this.flags.completedRegions:[]),regionId])]
     };
     this.saveState();
     this.syncCloud("region-complete");
-    globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{regionId}}));
+    globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{regionId,region,source:"missions"}}));
     return true;
   }
 
