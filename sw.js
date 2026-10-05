@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261005-ammo-sync-cache-v1";
+const CACHE_NAME="tq-pwa-runtime-20261005-ammo-sync-cache-v2";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
