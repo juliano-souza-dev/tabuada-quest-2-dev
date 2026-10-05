@@ -12,7 +12,7 @@ import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-halloween-v10";
+import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261005-hud-halloween-v11";
 import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-seafight-vfx-v3";
 import {
   normalizeCollision,
