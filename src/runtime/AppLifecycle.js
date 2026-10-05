@@ -80,7 +80,7 @@ function createInstallButton(){
 async function registerPWA(){
   if(!("serviceWorker" in navigator))return null;
   try{
-    const registration=await navigator.serviceWorker.register("./sw.js?v=20261005-ammo-ledger-v6",{
+    const registration=await navigator.serviceWorker.register("./sw.js?v=20261005-hud-cache-hard-reset-v1",{
       scope:"./",
       updateViaCache:"none"
     });
