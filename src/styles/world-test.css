@@ -2524,23 +2524,34 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 
 /* Halloween HUD v10 fallback controls use the event asset family. */
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--center{
-  background-image:url("../../assets/hud/events/halloween/center_ship_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/center_ship_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--shipyard{
-  background-image:url("../../assets/hud/events/halloween/shipyard_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/shipyard_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--missions{
-  background-image:url("../../assets/hud/events/halloween/missions_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/missions_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--shop{
-  background-image:url("../../assets/hud/events/halloween/shop_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/shop_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--groups{
-  background-image:url("../../assets/hud/events/halloween/groups_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/groups_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--repair{
-  background-image:url("../../assets/hud/events/halloween/repair_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/repair_halloween.webp?v=20261005-hud-halloween-v11")!important;
 }
 .tq-mobile-combat-ui.is-halloween-hud:not(.is-pixi-hud) .tq-combat-dock__button--fire.is-cancel{
-  background-image:url("../../assets/hud/events/halloween/cancel_attack_halloween.webp?v=20261005-hud-halloween-v10")!important;
+  background-image:url("../../assets/hud/events/halloween/cancel_attack_halloween.webp?v=20261005-hud-halloween-v11")!important;
+}
+
+
+/* Halloween HUD v11: keep DEV diagnostics from sitting underneath the event profile frame. */
+html.tq-halloween-hud-active .tq-world-hud{
+  top:170px!important;
+}
+@media (max-width:700px){
+  html.tq-halloween-hud-active .tq-world-hud{
+    top:210px!important;
+  }
 }
