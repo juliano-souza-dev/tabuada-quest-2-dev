@@ -44,7 +44,7 @@ export class PixiMobileHudRenderer{
       app.canvas.className="tq-mobile-hud-pixi";
       app.canvas.setAttribute("aria-hidden","true");
       Object.assign(app.canvas.style,{
-        position:"absolute",inset:"0",width:"100%",height:"100%",
+        position:"fixed",inset:"0",width:"100%",height:"100%",
         display:"block",pointerEvents:"none",zIndex:"615"
       });
       this.root.append(app.canvas);
@@ -196,7 +196,7 @@ export class PixiMobileHudRenderer{
     const primary=base*1.18;
     const gap=clamp(w*.012,5,10);
     const bottom=Math.max(10,h*.012);
-    const startX=Math.max(joyX+joyR+14,w-(base*2+primary+base+gap*3)-12);
+    const startX=w-(base*3+primary+gap*3)-8;
     const rowY=h-bottom-base/2;
     const fireY=h-bottom-primary/2;
 
