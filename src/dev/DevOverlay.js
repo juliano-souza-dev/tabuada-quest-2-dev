@@ -138,7 +138,24 @@ export class DevOverlay {
       </section>`;
     this.root.append(this.el);
     this.el.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>this.setMode(b.dataset.mode)));
-    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());\n    this.el.querySelector("[data-refresh-assets]")?.addEventListener("click",async event=>{\n      const button=event.currentTarget;\n      if(button.disabled)return;\n      button.disabled=true;\n      const label=button.querySelector("span");\n      const previous=label?.textContent||"Atualizar assets";\n      if(label)label.textContent="Atualizando…";\n      try{\n        await globalThis.TabuadaQuestDevAssetCache?.refresh?.({force:true});\n        if(label)label.textContent="Atualizado ✓";\n      }catch(error){\n        console.error("[DEV] Falha ao atualizar assets",error);\n        if(label)label.textContent="Falhou";\n      }finally{\n        setTimeout(()=>{if(label)label.textContent=previous;button.disabled=false},1200);\n      }\n    });
+    this.el.querySelector("[data-flow-test]").addEventListener("click",()=>this.testProductionFlow());
+    this.el.querySelector("[data-refresh-assets]")?.addEventListener("click",async event=>{
+      const button=event.currentTarget;
+      if(button.disabled)return;
+      button.disabled=true;
+      const label=button.querySelector("span");
+      const previous=label?.textContent||"Atualizar assets";
+      if(label)label.textContent="Atualizando…";
+      try{
+        await globalThis.TabuadaQuestDevAssetCache?.refresh?.({force:true});
+        if(label)label.textContent="Atualizado ✓";
+      }catch(error){
+        console.error("[DEV] Falha ao atualizar assets",error);
+        if(label)label.textContent="Falhou";
+      }finally{
+        setTimeout(()=>{if(label)label.textContent=previous;button.disabled=false},1200);
+      }
+    });
     this.el.querySelector("[data-close]").addEventListener("click",()=>this.setMode("edit"));
     this.el.querySelector("[data-export]").addEventListener("click",()=>this.exportGlobalConfig());
     this.el.querySelector("[data-mold]").addEventListener("click",()=>this.toggleMold());
