@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-20261005-ammo-ledger-v6";
+const CACHE_NAME="tq-dev-assets-20261005-shop-clone-fix-v7";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
