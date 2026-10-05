@@ -556,7 +556,13 @@ export class GameRuntime {
       serverTime:event.detail?.serverTime,
       full:event.detail?.full===true
     });
-    const onEvent=event=>this.worldRuntime?.handleMultiplayerEvent?.(event.detail||{});
+    const onEvent=event=>{
+      const detail=event.detail||{};
+      if((detail.type==="ammo.state"||detail.type==="fire.volley.accepted"||detail.type==="fire.rejected")&&detail.ammo){
+        this.replacePlayerAmmo(detail.ammo,{save:true,syncServer:false,reason:"server-authority"});
+      }
+      this.worldRuntime?.handleMultiplayerEvent?.(detail);
+    };
     const onParty=event=>this.handlePartyEvent(event.detail||{});
     const onBosses=event=>this.worldRuntime?.syncCoopBosses?.(event.detail?.bosses||{});
     const onTransport=event=>{
@@ -609,7 +615,7 @@ export class GameRuntime {
       sharePartyReward:payload=>this.multiplayer.sharePartyReward?.(payload)===true
     };
     const ship=this.getEquippedShip();
-    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},getCannonIds:()=>this.getShipCannons(this.playerShips.equippedShip),shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
+    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},getCannonIds:()=>this.getShipCannons(this.playerShips.equippedShip),getAmmoInventory:()=>clone(this.playerAmmo),shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
       .then(()=>{
         if(this.worldRuntime!==runtime)return;
         runtime.setCoopTransport?.(coopTransport);
