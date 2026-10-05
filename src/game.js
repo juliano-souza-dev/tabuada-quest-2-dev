@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-treasure-collection-v3";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-treasure-rebuild-v1";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261004-coop-party-v1";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
