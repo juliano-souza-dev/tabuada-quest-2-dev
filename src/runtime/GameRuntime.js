@@ -962,7 +962,7 @@ export class GameRuntime {
     return this.playerCannons;
   }
 
-  ensurePlayerAmmo({migrateWorldStates=true}={}){
+  ensurePlayerAmmo(){
     const validAmmo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
       .filter(item=>item?.available!==false);
     const validIds=new Set(validAmmo.map(item=>String(item.id)));
@@ -972,20 +972,41 @@ export class GameRuntime {
     for(const [id,qty] of Object.entries(normalized.stock)){
       if(validIds.has(id)&&qty>0)stock[id]=qty;
     }
-    let selectedAmmoId=validIds.has(normalized.selectedAmmoId)?normalized.selectedAmmoId:"";
 
-    if(migrateWorldStates){
-      for(const state of Object.values(this.worldStates||{})){
-        if(!state||typeof state!=="object"||!state.ammo)continue;
-        const legacy=normalizeGlobalAmmo(state.ammo);
-        for(const [id,qty] of Object.entries(legacy.stock)){
-          if(validIds.has(id))stock[id]=Math.max(Number(stock[id])||0,qty);
-        }
-        if(!selectedAmmoId&&validIds.has(legacy.selectedAmmoId))selectedAmmoId=legacy.selectedAmmoId;
-        delete state.ammo;
-      }
+    // Ammo is account-global. Legacy world snapshots are never allowed to
+    // recreate stock that has already been spent.
+    for(const state of Object.values(this.worldStates||{})){
+      if(state&&typeof state==="object"&&"ammo" in state)delete state.ammo;
     }
 
+    this.flags=this.flags&&typeof this.flags==="object"?this.flags:{};
+    const ammoInventoryVersion=Math.max(0,Math.floor(Number(this.flags.ammoInventoryVersion)||0));
+    if(ammoInventoryVersion<2){
+      const hadTestGrant=Math.floor(Number(this.flags.multiplayerTestAmmoGrantVersion)||0)>=1;
+      const hadStarterGrant=Math.floor(Number(this.flags.startingLoadoutVersion)||0)>=2;
+
+      if(hadTestGrant){
+        // multiplayerTest used Math.max(1000,current), so 1000 units per ammo
+        // were synthetic. Remove that known synthetic floor once.
+        for(const id of validIds){
+          const current=Math.max(0,Math.floor(Number(stock[id])||0));
+          if(current>0)stock[id]=Math.max(0,current-1000);
+          if(!(stock[id]>0))delete stock[id];
+        }
+      }else if(hadStarterGrant){
+        // v2 starter loadout granted 200 standard cannonballs.
+        const id="cannonball-standard";
+        const current=Math.max(0,Math.floor(Number(stock[id])||0));
+        if(current>0)stock[id]=Math.max(0,current-200);
+        if(!(stock[id]>0))delete stock[id];
+      }
+
+      this.flags.ammoInventoryVersion=2;
+      this.flags.multiplayerTestAmmoGrantVersion=0;
+      this.flags.legacyAmmoCleanupAt=Date.now();
+    }
+
+    let selectedAmmoId=validIds.has(normalized.selectedAmmoId)?normalized.selectedAmmoId:"";
     if(!selectedAmmoId||!(Number(stock[selectedAmmoId])>0)){
       selectedAmmoId=(defaultId&&Number(stock[defaultId])>0)
         ?defaultId
@@ -993,6 +1014,35 @@ export class GameRuntime {
     }
     this.playerAmmo={selectedAmmoId,stock};
     return this.playerAmmo;
+  }
+
+  ammoQuantity(ammoId){
+    this.ensurePlayerAmmo();
+    return Math.max(0,Math.floor(Number(this.playerAmmo.stock?.[String(ammoId||"")])||0));
+  }
+
+  grantAmmo(ammoId,quantity,{save=true,syncServer=true,source="grant"}={}){
+    this.ensurePlayerAmmo();
+    const id=String(ammoId||"").trim();
+    const amount=Math.max(0,Math.floor(Number(quantity)||0));
+    const valid=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+      .some(ammo=>String(ammo?.id||"")===id&&ammo?.available!==false);
+    if(!id||!valid||amount<=0)return false;
+    this.playerAmmo.stock[id]=this.ammoQuantity(id)+amount;
+    if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
+    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+    if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:source});
+    if(save)this.saveState();
+    return true;
+  }
+
+  replacePlayerAmmo(ammo,{save=true,syncServer=false,reason="runtime"}={}){
+    this.playerAmmo=normalizeGlobalAmmo(ammo);
+    this.ensurePlayerAmmo();
+    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+    if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason});
+    if(save)this.saveState();
+    return clone(this.playerAmmo);
   }
 
   ensureStarterLoadout(){
@@ -1048,8 +1098,12 @@ export class GameRuntime {
         ...game,
         onboarding:{
           ...onboarding,
-          starterCannonChallengeCompleted:true,
-          starterAmmoChallengeCompleted:true,
+          starterCannonChallengeCompleted:Array.isArray(loadout.cannons)&&loadout.cannons.length>0
+            ?true
+            :onboarding.starterCannonChallengeCompleted===true,
+          starterAmmoChallengeCompleted:Array.isArray(loadout.ammo)&&loadout.ammo.length>0
+            ?true
+            :onboarding.starterAmmoChallengeCompleted===true,
           startingLoadoutVersion:version,
           startingLoadoutGrantedAt:Number(onboarding.startingLoadoutGrantedAt)||Date.now()
         }
