@@ -1,6 +1,6 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 2,
+  "version": 3,
   "missions": [
     {
       "id": "R1_M01",
@@ -905,6 +905,31 @@
         "rubies": 1
       },
       "required": true
+    },
+    {
+      "id": "HALLOWEEN_BOSS_10",
+      "region": 1,
+      "order": 90,
+      "category": "event",
+      "name": "A Frota do Almirante Maldito",
+      "description": "Afunde 10 Almirantes Malditos de Halloween.",
+      "acceptRequired": true,
+      "unlockAfter": [],
+      "objective": {
+        "type": "defeat_npc",
+        "npcId": "boss-halloween-galleon-100k",
+        "targetLabel": "Almirante Maldito de Halloween",
+        "target": 10
+      },
+      "reward": {
+        "gold": 5000,
+        "rubies": 20,
+        "xp": 3000,
+        "shipId": "ship-halloween-galleon-reward",
+        "equipShip": true
+      },
+      "required": false,
+      "event": "halloween"
     }
   ]
 }
