@@ -237,7 +237,7 @@ export class WorldRuntime {
         }).filter(item=>item.id&&item.quantity>0);
         return {
           attacking:this.navalAutoFire===true,
-          hasCannons:Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0,
+          hasCannons:Array.isArray(this.playerCannonIds)&&this.playerCannonIds.length>0,
           hasAmmo:this.hasPlayerAmmo(),
           graphicsSettings:structuredClone(this.graphicsSettings),
           cameraDetached:this.playCameraDetached===true,
@@ -358,7 +358,7 @@ export class WorldRuntime {
       Array.isArray(options.testCannonIds)?options.testCannonIds.map(String):[defaultCannonId]
     );
     const validatedCannonIds=requestedCannonIds.filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-    this.testCannonIds=validatedCannonIds;
+    this.playerCannonIds=validatedCannonIds;
     const requestedTestAmmoId=String(options.testAmmoId||"").trim();
     if(requestedTestAmmoId&&this.ammoCatalog.some(item=>String(item?.id||"")===requestedTestAmmoId))this.state.ammo.selectedAmmoId=requestedTestAmmoId;
     this.player={
@@ -1530,7 +1530,7 @@ export class WorldRuntime {
     const ids=(Array.isArray(active?.cannons)?active.cannons:[])
       .map(cannon=>String(cannon?.id||cannon||""))
       .filter(id=>id&&this.cannonCatalog.some(cannon=>String(cannon?.id||"")===id));
-    this.testCannonIds=ids;
+    this.playerCannonIds=ids;
     if(!ids.length)this.stopNavalAutoFire({keepTarget:false});
     return ids;
   }
@@ -1545,7 +1545,7 @@ export class WorldRuntime {
   playerCannonsInRange(entity){
     if(!this.isClickableCombatShip(entity))return [];
     const distance=this.navalTargetDistance(entity);
-    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
+    const cannons=(Array.isArray(this.playerCannonIds)?this.playerCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     if(!cannons.length)return [];
@@ -1553,7 +1553,7 @@ export class WorldRuntime {
   }
 
   playerEffectiveCannonRange(){
-    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
+    const cannons=(Array.isArray(this.playerCannonIds)?this.playerCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id)))
       .filter(Boolean);
     return cannons.length
@@ -4216,7 +4216,7 @@ export class WorldRuntime {
 
   async beginStarterCannonChallenge(){
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
-    if(Array.isArray(this.testCannonIds)&&this.testCannonIds.length>0)return false;
+    if(Array.isArray(this.playerCannonIds)&&this.playerCannonIds.length>0)return false;
 
     const yard=this.getShipyardState?.()||{};
     const storedTotal=Object.values(yard.storage&&typeof yard.storage==="object"?yard.storage:{})
@@ -5035,24 +5035,29 @@ export class WorldRuntime {
   }
 
   navalActiveBattery(shooter,cannons,target,{player=false}={}){
-    const list=Array.isArray(cannons)?cannons:[];
+    const list=Array.isArray(cannons)?cannons.filter(Boolean):[];
     if(!list.length)return [];
-    const layout=this.navalBatteryLayout(list.length);
-    const hasBow=layout.some(item=>item.side==="bow");
-    const targetSide=layout.length===1?layout[0].side:this.navalTargetBatterySide(shooter,target,hasBow);
-    return layout
-      .map((descriptor,index)=>({
+    const targetSide=this.navalTargetBatterySide(shooter,target,false);
+    return list.map((cannon,index)=>{
+      const descriptor={
+        index,
+        side:targetSide,
+        slot:index,
+        total:list.length
+      };
+      return {
+        instanceId:String(cannon?.id||"cannon")+"#"+index,
         descriptor,
-        cannon:list[index]||null,
+        cannon,
         hardpoint:this.navalCannonHardpoint(shooter,descriptor,{player})
-      }))
-      .filter(item=>item.cannon&&item.descriptor.side===targetSide);
+      };
+    });
   }
 
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     this.syncEquippedCannonsFromShipyard();
-    if(!Array.isArray(this.testCannonIds)||this.testCannonIds.length===0){
+    if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
       this.stopNavalAutoFire({keepTarget:true,message:"Nenhum canhão equipado neste navio."});
       return false;
     }
@@ -5064,7 +5069,7 @@ export class WorldRuntime {
       this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+"."});
       return false;
     }
-    const cannons=(Array.isArray(this.testCannonIds)?this.testCannonIds:[])
+    const cannons=(Array.isArray(this.playerCannonIds)?this.playerCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
       .filter(Boolean);
     if(!cannons.length)return false;
@@ -5073,42 +5078,50 @@ export class WorldRuntime {
     const eligible=battery.filter(item=>targetDistance<=Math.max(1,Number(item.cannon?.range)||900));
     if(!eligible.length)return false;
 
-    const onlineAuthoritative=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.fireProjectile;
+    const onlineAuthoritative=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.fireVolley;
     if(onlineAuthoritative){
       const hp=this.navalHpState(entity);
-      const ammoUnlimited=false;
-      let ammoRemaining=ammoStock;
-      if(ammoRemaining<=0){
-        if(this.actionMessage)this.actionMessage.textContent=!ammo?"Munição inválida ou não carregada.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
+      const available=eligible.slice(0,ammoStock);
+      if(!available.length){
+        if(this.actionMessage)this.actionMessage.textContent="Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
         return false;
       }
-      let firedCount=0;
+
       const volleyId="volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-      for(const batteryShot of eligible){
-        if(ammoRemaining<=0)break;
+      const visualShots=[];
+      const requestShots=available.map((batteryShot,index)=>{
         const cannon=batteryShot.cannon;
         const muzzle=batteryShot.hardpoint;
         const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-        const shotDamage=navalShotDamage(cannon,ammo);
         const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
         const duration=clamp(intercept.time*1000,120,8000);
-        const sent=this.coopTransport.fireProjectile({
-          shotId:"player-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
-          volleyId,
-          targetId:String(entity.serverEntityId||entity.id||""),
-          from:muzzle,
-          ammoId:selectedAmmoId,
-          cannonId:String(cannon.id||"")
-        })===true;
-        if(!sent)continue;
-        firedCount+=1;
-        if(!ammoUnlimited){
-          ammoRemaining=Math.max(0,ammoRemaining-1);
-          this.state.ammo.stock[selectedAmmoId]=ammoRemaining;
+        visualShots.push({from:muzzle,to:{x:intercept.x,y:intercept.y},duration});
+        return {
+          shotId:"player-"+Date.now()+"-"+index+"-"+Math.random().toString(36).slice(2,7),
+          cannonId:String(cannon.id||""),
+          from:muzzle
+        };
+      });
+
+      const sent=this.coopTransport.fireVolley({
+        volleyId,
+        targetId:String(entity.serverEntityId||entity.id||""),
+        ammoId:selectedAmmoId,
+        shots:requestShots
+      })===true;
+      if(!sent)return false;
+
+      for(const shot of visualShots){
+        if(!(this.pixiRenderer?.fireCannonProjectile?.(shot)===true)){
+          this.navalRenderer?.fire?.({...shot,ammo});
         }
       }
-      if(!firedCount)return false;
-      if(!ammoUnlimited)this.onAmmoChange?.(structuredClone(this.state.ammo));
+
+      const firedCount=available.length;
+      this.state.ammo.stock[selectedAmmoId]=Math.max(0,ammoStock-firedCount);
+      this.onAmmoChange?.(structuredClone(this.state.ammo));
+      this.audio?.play("cannon-shot");
+
       const id=String(entity.id);
       if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
         const hostile=this.navalHostile.get(id)||{nextShotAt:0};
@@ -5116,8 +5129,8 @@ export class WorldRuntime {
       }
       if(this.actionMessage){
         this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
-          +" · "+firedCount+" canhão"+(firedCount===1?"":"ões")+" disparado"+(firedCount===1?"":"s")
-          +(ammoUnlimited?"":" · munição "+ammoRemaining)
+          +" · salva "+firedCount+"/"+this.playerCannonIds.length+" canhões"
+          +" · munição "+this.state.ammo.stock[selectedAmmoId]
           +" · casco "+hp.current+"/"+hp.max;
       }
       return true;
@@ -5147,7 +5160,6 @@ export class WorldRuntime {
     }
 
     const volleyShots=[];
-    const visualShotLimit=this.graphicsSettings?.reducedAmmoFx===true?3:5;
     let firedCount=0;
     let maxDuration=0;
 
@@ -5164,13 +5176,13 @@ export class WorldRuntime {
       volleyShots.push({cannon,muzzle,predictedImpact,duration,shotDamage});
       maxDuration=Math.max(maxDuration,duration);
 
-      if(firedCount<visualShotLimit){
-        this.navalRenderer?.fire?.({
-          from:muzzle,
-          to:{x:intercept.x,y:intercept.y},
-          duration,
-          ammo
-        });
+      const visualShot={
+        from:muzzle,
+        to:{x:intercept.x,y:intercept.y},
+        duration
+      };
+      if(!(this.pixiRenderer?.fireCannonProjectile?.(visualShot)===true)){
+        this.navalRenderer?.fire?.({...visualShot,ammo});
       }
 
       firedCount+=1;
@@ -5399,7 +5411,7 @@ export class WorldRuntime {
       }else{
         const playerStats=this.playerNavalCombatStats();
         const dist=this.navalTargetDistance(target);
-        const equippedCannons=(this.testCannonIds||[]).map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id))).filter(Boolean);
+        const equippedCannons=(this.playerCannonIds||[]).map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===String(id))).filter(Boolean);
         const effectiveRange=this.playerEffectiveCannonRange();
         const inRangeCannons=this.playerCannonsInRange(target);
         const effectiveCooldown=inRangeCannons.length
@@ -5509,7 +5521,7 @@ export class WorldRuntime {
       if(this.actionWrap)this.actionWrap.hidden=false;
       return;
     }
-    if(!Array.isArray(this.testCannonIds)||this.testCannonIds.length===0){
+    if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
       this.beginStarterCannonChallenge();
       return;
     }
@@ -5860,8 +5872,8 @@ export class WorldRuntime {
       }
       if(Array.isArray(patch.test.cannonIds)){
         const validIds=patch.test.cannonIds.map(String).filter(id=>this.cannonCatalog.some(item=>String(item?.id||"")===id));
-        this.testCannonIds=validIds;
-        this.config.test.cannonIds=[...this.testCannonIds];
+        this.playerCannonIds=validIds;
+        this.config.test.cannonIds=[...this.playerCannonIds];
       }
     }
 
