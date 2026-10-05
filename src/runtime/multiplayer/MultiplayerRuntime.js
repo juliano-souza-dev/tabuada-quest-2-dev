@@ -270,6 +270,26 @@ export class MultiplayerRuntime extends EventTarget{
     return this.fireRequest(shot);
   }
 
+  fireVolley({volleyId="",targetId="",ammoId="",shots=[]}={}){
+    if(!this.worldId||!this.socketReady)return false;
+    const normalized=Array.isArray(shots)?shots.slice(0,64).map((shot,index)=>({
+      shotId:safeKey(shot?.shotId||"shot-"+index),
+      cannonId:safeKey(shot?.cannonId||""),
+      from:shot?.from&&typeof shot.from==="object"?{
+        x:Number(shot.from.x)||0,
+        y:Number(shot.from.y)||0
+      }:null
+    })).filter(shot=>shot.cannonId):[];
+    if(!normalized.length)return false;
+    return this.socketSend({
+      type:"fire.volley",
+      volleyId:safeKey(volleyId||("volley-"+Date.now())),
+      targetId:serverKey(targetId||""),
+      ammoId:String(ammoId||""),
+      shots:normalized
+    });
+  }
+
   setChallengeProtection(active=false,until=0){
     if(!this.worldId||!this.socketReady)return false;
     return this.socketSend({
