@@ -560,6 +560,8 @@ export class GameRuntime {
       const detail=event.detail||{};
       if((detail.type==="ammo.state"||detail.type==="fire.volley.accepted"||detail.type==="fire.rejected")&&detail.ammo){
         this.replacePlayerAmmo(detail.ammo,{save:true,syncServer:false,reason:"server-authority"});
+        this.worldRuntime?.handleMultiplayerEvent?.({...detail,ammo:null});
+        return;
       }
       this.worldRuntime?.handleMultiplayerEvent?.(detail);
     };
@@ -1035,7 +1037,7 @@ export class GameRuntime {
     if(!id||!valid||amount<=0)return false;
     this.playerAmmo.stock[id]=this.ammoQuantity(id)+amount;
     if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
-    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
     if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:source});
     if(save)this.saveState();
     return true;
@@ -1044,7 +1046,7 @@ export class GameRuntime {
   replacePlayerAmmo(ammo,{save=true,syncServer=false,reason="runtime"}={}){
     this.playerAmmo=normalizeGlobalAmmo(ammo);
     this.ensurePlayerAmmo();
-    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+    this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
     if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason});
     if(save)this.saveState();
     return clone(this.playerAmmo);
@@ -1658,7 +1660,7 @@ export class GameRuntime {
           if(!ammoId||ammoQuantity<=0||!validIds.has(ammoId))continue;
           this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"reward"});
         }
-        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo);
+        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
         this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"reward"});
       }
 
