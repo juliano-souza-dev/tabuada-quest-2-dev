@@ -1,7 +1,7 @@
 {
   "schema": "tq.asset-tree",
   "version": 3,
-  "generatedFrom": "bfb93606738c29541ea56b9b2ad9de16dcfb1488",
+  "generatedFrom": "git:main/assets",
   "root": {
     "type": "directory",
     "name": "assets",
@@ -189,6 +189,83 @@
       },
       {
         "type": "directory",
+        "name": "cannons",
+        "path": "assets/cannons",
+        "children": [
+          {
+            "type": "image",
+            "name": "bala_perfurante_512_q95.webp",
+            "path": "assets/cannons/bala_perfurante_512_q95.webp"
+          },
+          {
+            "type": "image",
+            "name": "Bola de Canhão de Ferro Enferrujado.png",
+            "path": "assets/cannons/Bola de Canhão de Ferro Enferrujado.png"
+          },
+          {
+            "type": "image",
+            "name": "bola_canhao_halloween_roxa.webp",
+            "path": "assets/cannons/bola_canhao_halloween_roxa.webp"
+          },
+          {
+            "type": "image",
+            "name": "Canhão de Guerra Espinhoso Fantástico.png",
+            "path": "assets/cannons/Canhão de Guerra Espinhoso Fantástico.png"
+          },
+          {
+            "type": "image",
+            "name": "Canhão Espectral Necromântico.png",
+            "path": "assets/cannons/Canhão Espectral Necromântico.png"
+          },
+          {
+            "type": "image",
+            "name": "Canhão Pirata Ornamentado em Azul e Ouro.png",
+            "path": "assets/cannons/Canhão Pirata Ornamentado em Azul e Ouro.png"
+          },
+          {
+            "type": "image",
+            "name": "Canhão Real Dourado com Leão.png",
+            "path": "assets/cannons/Canhão Real Dourado com Leão.png"
+          },
+          {
+            "type": "image",
+            "name": "canhao terror da abóbora.png",
+            "path": "assets/cannons/canhao terror da abóbora.png"
+          },
+          {
+            "type": "image",
+            "name": "Orbe Mágico de Cristal Violeta.png",
+            "path": "assets/cannons/Orbe Mágico de Cristal Violeta.png"
+          },
+          {
+            "type": "image",
+            "name": "Orbe Mágico de Pérola Oceânica.png",
+            "path": "assets/cannons/Orbe Mágico de Pérola Oceânica.png"
+          },
+          {
+            "type": "image",
+            "name": "Orbe Místico de Abóbora Roxa.png",
+            "path": "assets/cannons/Orbe Místico de Abóbora Roxa.png"
+          },
+          {
+            "type": "image",
+            "name": "Orbe Vulcânico de Lava Incandescente.png",
+            "path": "assets/cannons/Orbe Vulcânico de Lava Incandescente.png"
+          },
+          {
+            "type": "file",
+            "name": "README.md",
+            "path": "assets/cannons/README.md"
+          },
+          {
+            "type": "image",
+            "name": "rosa do terror.png",
+            "path": "assets/cannons/rosa do terror.png"
+          }
+        ]
+      },
+      {
+        "type": "directory",
         "name": "collectibles",
         "path": "assets/collectibles",
         "children": [
@@ -360,6 +437,197 @@
             "type": "image",
             "name": "regiao_01_ilha_01_enseada_da_bandeira_unlocked.webp",
             "path": "assets/global/regiao_01_ilha_01_enseada_da_bandeira_unlocked.webp"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "hud",
+        "path": "assets/hud",
+        "children": [
+          {
+            "type": "directory",
+            "name": "events",
+            "path": "assets/hud/events",
+            "children": [
+              {
+                "type": "directory",
+                "name": "halloween",
+                "path": "assets/hud/events/halloween",
+                "children": [
+                  {
+                    "type": "image",
+                    "name": "ammo_container_halloween.webp",
+                    "path": "assets/hud/events/halloween/ammo_container_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "cancel_attack_halloween.webp",
+                    "path": "assets/hud/events/halloween/cancel_attack_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "center_ship_halloween.webp",
+                    "path": "assets/hud/events/halloween/center_ship_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "gold_bar_halloween.webp",
+                    "path": "assets/hud/events/halloween/gold_bar_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "groups_halloween.webp",
+                    "path": "assets/hud/events/halloween/groups_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "health_bar_halloween.webp",
+                    "path": "assets/hud/events/halloween/health_bar_halloween.webp"
+                  },
+                  {
+                    "type": "file",
+                    "name": "manifest.json",
+                    "path": "assets/hud/events/halloween/manifest.json"
+                  },
+                  {
+                    "type": "image",
+                    "name": "missions_halloween.webp",
+                    "path": "assets/hud/events/halloween/missions_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "profile_hud_halloween.webp",
+                    "path": "assets/hud/events/halloween/profile_hud_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "repair_halloween.webp",
+                    "path": "assets/hud/events/halloween/repair_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "ruby_bar_halloween.webp",
+                    "path": "assets/hud/events/halloween/ruby_bar_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "shipyard_halloween.webp",
+                    "path": "assets/hud/events/halloween/shipyard_halloween.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "shop_halloween.webp",
+                    "path": "assets/hud/events/halloween/shop_halloween.webp"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "image",
+            "name": "atirar.webp",
+            "path": "assets/hud/atirar.webp"
+          },
+          {
+            "type": "image",
+            "name": "bau_tesouro_halloween_ui.webp",
+            "path": "assets/hud/bau_tesouro_halloween_ui.webp"
+          },
+          {
+            "type": "image",
+            "name": "bau_tesouro_padrao_ui.webp",
+            "path": "assets/hud/bau_tesouro_padrao_ui.webp"
+          },
+          {
+            "type": "image",
+            "name": "centralizar.webp",
+            "path": "assets/hud/centralizar.webp"
+          },
+          {
+            "type": "image",
+            "name": "conserto_navio_halloween_ui.webp",
+            "path": "assets/hud/conserto_navio_halloween_ui.webp"
+          },
+          {
+            "type": "image",
+            "name": "conserto_navio_padrao_ui.webp",
+            "path": "assets/hud/conserto_navio_padrao_ui.webp"
+          },
+          {
+            "type": "image",
+            "name": "estaleiro.webp",
+            "path": "assets/hud/estaleiro.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_btn_cancelar_ataque.webp",
+            "path": "assets/hud/halloween_hud_btn_cancelar_ataque.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_btn_consertar_navio.webp",
+            "path": "assets/hud/halloween_hud_btn_consertar_navio.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_btn_iniciar_ataque.webp",
+            "path": "assets/hud/halloween_hud_btn_iniciar_ataque.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_btn_trocar_municao.webp",
+            "path": "assets/hud/halloween_hud_btn_trocar_municao.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_loja.webp",
+            "path": "assets/hud/halloween_hud_loja.webp"
+          },
+          {
+            "type": "image",
+            "name": "halloween_hud_missoes.webp",
+            "path": "assets/hud/halloween_hud_missoes.webp"
+          },
+          {
+            "type": "image",
+            "name": "loja.webp",
+            "path": "assets/hud/loja.webp"
+          },
+          {
+            "type": "image",
+            "name": "missoes.webp",
+            "path": "assets/hud/missoes.webp"
+          },
+          {
+            "type": "image",
+            "name": "moldura_de_loja_pirata_halloween_200kb-1.webp",
+            "path": "assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp"
+          },
+          {
+            "type": "image",
+            "name": "moldura_de_loja_pirata_halloween_v2.png",
+            "path": "assets/hud/moldura_de_loja_pirata_halloween_v2.png"
+          },
+          {
+            "type": "image",
+            "name": "municao.webp",
+            "path": "assets/hud/municao.webp"
+          },
+          {
+            "type": "image",
+            "name": "painel_de_loja_pirata_de_halloween_200kb.webp",
+            "path": "assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp"
+          },
+          {
+            "type": "image",
+            "name": "painel_de_loja_pirata_halloween_v2.png",
+            "path": "assets/hud/painel_de_loja_pirata_halloween_v2.png"
+          },
+          {
+            "type": "image",
+            "name": "seguir.webp",
+            "path": "assets/hud/seguir.webp"
           }
         ]
       },
@@ -744,11 +1012,6 @@
         "path": "assets/ships",
         "children": [
           {
-            "type": "image",
-            "name": "colombo.png",
-            "path": "assets/ships/colombo.png"
-          },
-          {
             "type": "directory",
             "name": "combat",
             "path": "assets/ships/combat",
@@ -761,11 +1024,6 @@
             ]
           },
           {
-            "type": "image",
-            "name": "el-colombo.webp",
-            "path": "assets/ships/el-colombo.webp"
-          },
-          {
             "type": "directory",
             "name": "events",
             "path": "assets/ships/events",
@@ -775,6 +1033,16 @@
                 "name": "halloween",
                 "path": "assets/ships/events/halloween",
                 "children": [
+                  {
+                    "type": "image",
+                    "name": "galeao_halloween_400x400.webp",
+                    "path": "assets/ships/events/halloween/galeao_halloween_400x400.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "galeão_halloween.webp",
+                    "path": "assets/ships/events/halloween/galeão_halloween.webp"
+                  },
                   {
                     "type": "image",
                     "name": "navio_halloween_sprite_1600x1600.webp",
@@ -792,12 +1060,32 @@
                   },
                   {
                     "type": "image",
+                    "name": "navio_spritesheet_4x4_1600.png",
+                    "path": "assets/ships/events/halloween/navio_spritesheet_4x4_1600.png"
+                  },
+                  {
+                    "type": "image",
                     "name": "navio_viking_sprite_transparente_1600x1600.webp",
                     "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "navios_halloween_400x400.webp",
+                    "path": "assets/ships/events/halloween/navios_halloween_400x400.webp"
                   }
                 ]
               }
             ]
+          },
+          {
+            "type": "image",
+            "name": "colombo.png",
+            "path": "assets/ships/colombo.png"
+          },
+          {
+            "type": "image",
+            "name": "el-colombo.webp",
+            "path": "assets/ships/el-colombo.webp"
           },
           {
             "type": "file",
@@ -813,6 +1101,11 @@
             "type": "image",
             "name": "navio_pirata_tabuadas.webp",
             "path": "assets/ships/navio_pirata_tabuadas.webp"
+          },
+          {
+            "type": "image",
+            "name": "navio.webp",
+            "path": "assets/ships/navio.webp"
           },
           {
             "type": "image",
@@ -873,78 +1166,74 @@
       },
       {
         "type": "directory",
-        "name": "hud",
-        "path": "assets/hud",
+        "name": "sound",
+        "path": "assets/sound",
         "children": [
           {
-            "type": "image",
-            "name": "bau_tesouro_halloween_ui.webp",
-            "path": "assets/hud/bau_tesouro_halloween_ui.webp"
+            "type": "audio",
+            "name": "cannon_ball_in_water.mp3",
+            "path": "assets/sound/cannon_ball_in_water.mp3"
           },
           {
-            "type": "image",
-            "name": "bau_tesouro_padrao_ui.webp",
-            "path": "assets/hud/bau_tesouro_padrao_ui.webp"
+            "type": "audio",
+            "name": "cannon_impact_with_ship.mp3",
+            "path": "assets/sound/cannon_impact_with_ship.mp3"
           },
           {
-            "type": "image",
-            "name": "conserto_navio_halloween_ui.webp",
-            "path": "assets/hud/conserto_navio_halloween_ui.webp"
+            "type": "audio",
+            "name": "cannon_shot.mp3",
+            "path": "assets/sound/cannon_shot.mp3"
           },
           {
-            "type": "image",
-            "name": "conserto_navio_padrao_ui.webp",
-            "path": "assets/hud/conserto_navio_padrao_ui.webp"
+            "type": "audio",
+            "name": "ocean_water.mp3",
+            "path": "assets/sound/ocean_water.mp3"
           },
           {
-            "type": "image",
-            "name": "halloween_hud_btn_cancelar_ataque.webp",
-            "path": "assets/hud/halloween_hud_btn_cancelar_ataque.webp"
-          },
+            "type": "audio",
+            "name": "sound_game_coins_win.wav",
+            "path": "assets/sound/sound_game_coins_win.wav"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "treasures",
+        "path": "assets/treasures",
+        "children": [
           {
-            "type": "image",
-            "name": "halloween_hud_btn_consertar_navio.webp",
-            "path": "assets/hud/halloween_hud_btn_consertar_navio.webp"
-          },
-          {
-            "type": "image",
-            "name": "halloween_hud_btn_iniciar_ataque.webp",
-            "path": "assets/hud/halloween_hud_btn_iniciar_ataque.webp"
-          },
-          {
-            "type": "image",
-            "name": "halloween_hud_btn_trocar_municao.webp",
-            "path": "assets/hud/halloween_hud_btn_trocar_municao.webp"
-          },
-          {
-            "type": "image",
-            "name": "halloween_hud_loja.webp",
-            "path": "assets/hud/halloween_hud_loja.webp"
-          },
-          {
-            "type": "image",
-            "name": "halloween_hud_missoes.webp",
-            "path": "assets/hud/halloween_hud_missoes.webp"
-          },
-          {
-            "type": "image",
-            "name": "moldura_de_loja_pirata_halloween_200kb-1.webp",
-            "path": "assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp"
-          },
-          {
-            "type": "image",
-            "name": "moldura_de_loja_pirata_halloween_v2.png",
-            "path": "assets/hud/moldura_de_loja_pirata_halloween_v2.png"
-          },
-          {
-            "type": "image",
-            "name": "painel_de_loja_pirata_de_halloween_200kb.webp",
-            "path": "assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp"
-          },
-          {
-            "type": "image",
-            "name": "painel_de_loja_pirata_halloween_v2.png",
-            "path": "assets/hud/painel_de_loja_pirata_halloween_v2.png"
+            "type": "directory",
+            "name": "events",
+            "path": "assets/treasures/events",
+            "children": [
+              {
+                "type": "directory",
+                "name": "halloween",
+                "path": "assets/treasures/events/halloween",
+                "children": [
+                  {
+                    "type": "image",
+                    "name": "abobora_magica_halloween_brilhante_50kb.webp",
+                    "path": "assets/treasures/events/halloween/abobora_magica_halloween_brilhante_50kb.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "abobora_tesouro_halloween_sprite.webp",
+                    "path": "assets/treasures/events/halloween/abobora_tesouro_halloween_sprite.webp"
+                  },
+                  {
+                    "type": "image",
+                    "name": "Atlas de Abóboras de Halloween em Água.png",
+                    "path": "assets/treasures/events/halloween/Atlas de Abóboras de Halloween em Água.png"
+                  },
+                  {
+                    "type": "image",
+                    "name": "Sprite de Abóboras Flutuantes de Halloween.png",
+                    "path": "assets/treasures/events/halloween/Sprite de Abóboras Flutuantes de Halloween.png"
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1332,6 +1621,76 @@
     },
     {
       "type": "image",
+      "name": "bala_perfurante_512_q95.webp",
+      "path": "assets/cannons/bala_perfurante_512_q95.webp"
+    },
+    {
+      "type": "image",
+      "name": "Bola de Canhão de Ferro Enferrujado.png",
+      "path": "assets/cannons/Bola de Canhão de Ferro Enferrujado.png"
+    },
+    {
+      "type": "image",
+      "name": "bola_canhao_halloween_roxa.webp",
+      "path": "assets/cannons/bola_canhao_halloween_roxa.webp"
+    },
+    {
+      "type": "image",
+      "name": "Canhão de Guerra Espinhoso Fantástico.png",
+      "path": "assets/cannons/Canhão de Guerra Espinhoso Fantástico.png"
+    },
+    {
+      "type": "image",
+      "name": "Canhão Espectral Necromântico.png",
+      "path": "assets/cannons/Canhão Espectral Necromântico.png"
+    },
+    {
+      "type": "image",
+      "name": "Canhão Pirata Ornamentado em Azul e Ouro.png",
+      "path": "assets/cannons/Canhão Pirata Ornamentado em Azul e Ouro.png"
+    },
+    {
+      "type": "image",
+      "name": "Canhão Real Dourado com Leão.png",
+      "path": "assets/cannons/Canhão Real Dourado com Leão.png"
+    },
+    {
+      "type": "image",
+      "name": "canhao terror da abóbora.png",
+      "path": "assets/cannons/canhao terror da abóbora.png"
+    },
+    {
+      "type": "image",
+      "name": "Orbe Mágico de Cristal Violeta.png",
+      "path": "assets/cannons/Orbe Mágico de Cristal Violeta.png"
+    },
+    {
+      "type": "image",
+      "name": "Orbe Mágico de Pérola Oceânica.png",
+      "path": "assets/cannons/Orbe Mágico de Pérola Oceânica.png"
+    },
+    {
+      "type": "image",
+      "name": "Orbe Místico de Abóbora Roxa.png",
+      "path": "assets/cannons/Orbe Místico de Abóbora Roxa.png"
+    },
+    {
+      "type": "image",
+      "name": "Orbe Vulcânico de Lava Incandescente.png",
+      "path": "assets/cannons/Orbe Vulcânico de Lava Incandescente.png"
+    },
+    {
+      "type": "file",
+      "name": "README.md",
+      "path": "assets/cannons/README.md"
+    },
+    {
+      "type": "image",
+      "name": "rosa do terror.png",
+      "path": "assets/cannons/rosa do terror.png"
+    },
+    {
+      "type": "image",
       "name": "colecionaveis-background.webp",
       "path": "assets/colecionaveis-background.webp"
     },
@@ -1489,6 +1848,176 @@
       "type": "image",
       "name": "regiao_01_ilha_01_enseada_da_bandeira_unlocked.webp",
       "path": "assets/global/regiao_01_ilha_01_enseada_da_bandeira_unlocked.webp"
+    },
+    {
+      "type": "image",
+      "name": "atirar.webp",
+      "path": "assets/hud/atirar.webp"
+    },
+    {
+      "type": "image",
+      "name": "bau_tesouro_halloween_ui.webp",
+      "path": "assets/hud/bau_tesouro_halloween_ui.webp"
+    },
+    {
+      "type": "image",
+      "name": "bau_tesouro_padrao_ui.webp",
+      "path": "assets/hud/bau_tesouro_padrao_ui.webp"
+    },
+    {
+      "type": "image",
+      "name": "centralizar.webp",
+      "path": "assets/hud/centralizar.webp"
+    },
+    {
+      "type": "image",
+      "name": "conserto_navio_halloween_ui.webp",
+      "path": "assets/hud/conserto_navio_halloween_ui.webp"
+    },
+    {
+      "type": "image",
+      "name": "conserto_navio_padrao_ui.webp",
+      "path": "assets/hud/conserto_navio_padrao_ui.webp"
+    },
+    {
+      "type": "image",
+      "name": "estaleiro.webp",
+      "path": "assets/hud/estaleiro.webp"
+    },
+    {
+      "type": "image",
+      "name": "ammo_container_halloween.webp",
+      "path": "assets/hud/events/halloween/ammo_container_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "cancel_attack_halloween.webp",
+      "path": "assets/hud/events/halloween/cancel_attack_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "center_ship_halloween.webp",
+      "path": "assets/hud/events/halloween/center_ship_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "gold_bar_halloween.webp",
+      "path": "assets/hud/events/halloween/gold_bar_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "groups_halloween.webp",
+      "path": "assets/hud/events/halloween/groups_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "health_bar_halloween.webp",
+      "path": "assets/hud/events/halloween/health_bar_halloween.webp"
+    },
+    {
+      "type": "file",
+      "name": "manifest.json",
+      "path": "assets/hud/events/halloween/manifest.json"
+    },
+    {
+      "type": "image",
+      "name": "missions_halloween.webp",
+      "path": "assets/hud/events/halloween/missions_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "profile_hud_halloween.webp",
+      "path": "assets/hud/events/halloween/profile_hud_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "repair_halloween.webp",
+      "path": "assets/hud/events/halloween/repair_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "ruby_bar_halloween.webp",
+      "path": "assets/hud/events/halloween/ruby_bar_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "shipyard_halloween.webp",
+      "path": "assets/hud/events/halloween/shipyard_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "shop_halloween.webp",
+      "path": "assets/hud/events/halloween/shop_halloween.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_btn_cancelar_ataque.webp",
+      "path": "assets/hud/halloween_hud_btn_cancelar_ataque.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_btn_consertar_navio.webp",
+      "path": "assets/hud/halloween_hud_btn_consertar_navio.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_btn_iniciar_ataque.webp",
+      "path": "assets/hud/halloween_hud_btn_iniciar_ataque.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_btn_trocar_municao.webp",
+      "path": "assets/hud/halloween_hud_btn_trocar_municao.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_loja.webp",
+      "path": "assets/hud/halloween_hud_loja.webp"
+    },
+    {
+      "type": "image",
+      "name": "halloween_hud_missoes.webp",
+      "path": "assets/hud/halloween_hud_missoes.webp"
+    },
+    {
+      "type": "image",
+      "name": "loja.webp",
+      "path": "assets/hud/loja.webp"
+    },
+    {
+      "type": "image",
+      "name": "missoes.webp",
+      "path": "assets/hud/missoes.webp"
+    },
+    {
+      "type": "image",
+      "name": "moldura_de_loja_pirata_halloween_200kb-1.webp",
+      "path": "assets/hud/moldura_de_loja_pirata_halloween_200kb-1.webp"
+    },
+    {
+      "type": "image",
+      "name": "moldura_de_loja_pirata_halloween_v2.png",
+      "path": "assets/hud/moldura_de_loja_pirata_halloween_v2.png"
+    },
+    {
+      "type": "image",
+      "name": "municao.webp",
+      "path": "assets/hud/municao.webp"
+    },
+    {
+      "type": "image",
+      "name": "painel_de_loja_pirata_de_halloween_200kb.webp",
+      "path": "assets/hud/painel_de_loja_pirata_de_halloween_200kb.webp"
+    },
+    {
+      "type": "image",
+      "name": "painel_de_loja_pirata_halloween_v2.png",
+      "path": "assets/hud/painel_de_loja_pirata_halloween_v2.png"
+    },
+    {
+      "type": "image",
+      "name": "seguir.webp",
+      "path": "assets/hud/seguir.webp"
     },
     {
       "type": "image",
@@ -1812,6 +2341,16 @@
     },
     {
       "type": "image",
+      "name": "galeao_halloween_400x400.webp",
+      "path": "assets/ships/events/halloween/galeao_halloween_400x400.webp"
+    },
+    {
+      "type": "image",
+      "name": "galeão_halloween.webp",
+      "path": "assets/ships/events/halloween/galeão_halloween.webp"
+    },
+    {
+      "type": "image",
       "name": "navio_halloween_sprite_1600x1600.webp",
       "path": "assets/ships/events/halloween/navio_halloween_sprite_1600x1600.webp"
     },
@@ -1836,6 +2375,11 @@
       "path": "assets/ships/events/halloween/navio_viking_sprite_transparente_1600x1600.webp"
     },
     {
+      "type": "image",
+      "name": "navios_halloween_400x400.webp",
+      "path": "assets/ships/events/halloween/navios_halloween_400x400.webp"
+    },
+    {
       "type": "file",
       "name": "halloween_x5f_ship_x5f_playground (1).html",
       "path": "assets/ships/halloween_x5f_ship_x5f_playground (1).html"
@@ -1849,6 +2393,11 @@
       "type": "image",
       "name": "navio_pirata_tabuadas.webp",
       "path": "assets/ships/navio_pirata_tabuadas.webp"
+    },
+    {
+      "type": "image",
+      "name": "navio.webp",
+      "path": "assets/ships/navio.webp"
     },
     {
       "type": "image",
@@ -1907,8 +2456,48 @@
     },
     {
       "type": "audio",
+      "name": "cannon_ball_in_water.mp3",
+      "path": "assets/sound/cannon_ball_in_water.mp3"
+    },
+    {
+      "type": "audio",
+      "name": "cannon_impact_with_ship.mp3",
+      "path": "assets/sound/cannon_impact_with_ship.mp3"
+    },
+    {
+      "type": "audio",
+      "name": "cannon_shot.mp3",
+      "path": "assets/sound/cannon_shot.mp3"
+    },
+    {
+      "type": "audio",
+      "name": "ocean_water.mp3",
+      "path": "assets/sound/ocean_water.mp3"
+    },
+    {
+      "type": "audio",
       "name": "sound_game_coins_win.wav",
       "path": "assets/sound/sound_game_coins_win.wav"
+    },
+    {
+      "type": "image",
+      "name": "abobora_magica_halloween_brilhante_50kb.webp",
+      "path": "assets/treasures/events/halloween/abobora_magica_halloween_brilhante_50kb.webp"
+    },
+    {
+      "type": "image",
+      "name": "abobora_tesouro_halloween_sprite.webp",
+      "path": "assets/treasures/events/halloween/abobora_tesouro_halloween_sprite.webp"
+    },
+    {
+      "type": "image",
+      "name": "Atlas de Abóboras de Halloween em Água.png",
+      "path": "assets/treasures/events/halloween/Atlas de Abóboras de Halloween em Água.png"
+    },
+    {
+      "type": "image",
+      "name": "Sprite de Abóboras Flutuantes de Halloween.png",
+      "path": "assets/treasures/events/halloween/Sprite de Abóboras Flutuantes de Halloween.png"
     },
     {
       "type": "image",
