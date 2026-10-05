@@ -1,4 +1,4 @@
-import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261003-2024-auto-target";
+import { WorldRuntime } from "../../world/WorldRuntime.js?v=20261005-effects-lab-v1";
 
 export class WorldEditor {
   constructor(root,{sceneRuntime,pedagogyRuntime,onPedagogyResult,onRewardCollected,onShopPurchase,shopBalances,getShipyardState,onEquipShip,onEquipCannon,onRemoveCannon,onStarterCannonEarned,resolveShip,resolveNpc,resolveTreasure,getCannonCatalog,getAmmoCatalog,getSoundCatalog,getWorldDefaults}={}){
@@ -111,6 +111,18 @@ export class WorldEditor {
     const availableCannons=(Array.isArray(cannonCatalog.cannons)?cannonCatalog.cannons:[]).filter(item=>item?.available!==false);
     const defaultCannonId=String(cannonCatalog.defaultCannonId||availableCannons[0]?.id||"cannon-basic");
     const requestedCannonIds=Array.isArray(world.test?.cannonIds)?world.test.cannonIds.map(String):[];
+    const strongestCannonCount=Math.max(0,Math.floor(Number(world.test?.strongestCannonCount)||0));
+    const strongestCannon=availableCannons.reduce((best,item)=>{
+      if(!best)return item;
+      const itemPower=Number(item?.damagePerShot)||Number(item?.damageMultiplier)||0;
+      const bestPower=Number(best?.damagePerShot)||Number(best?.damageMultiplier)||0;
+      return itemPower>bestPower?item:best;
+    },null);
+    const strongestCannonIds=strongestCannon&&strongestCannonCount
+      ?Array.from({length:strongestCannonCount},()=>String(strongestCannon.id))
+      :[];
+    const requestedTestCannonIds=strongestCannonIds.length?strongestCannonIds:requestedCannonIds;
+    const forceTestLoadout=world.test?.forceLoadout===true;
     const yardState=this.getShipyardState?.()||{};
     const equippedShip=(yardState.ships||[]).find(ship=>ship?.equipped);
     const equippedCannonIds=equippedShip?.cannons?.map(cannon=>String(cannon?.id||cannon))||[];
@@ -125,12 +137,12 @@ export class WorldEditor {
       cannonCatalog:availableCannons,
       // O estaleiro é a fonte do loadout quando há um navio ativo. Assim,
       // inclusive um navio sem canhões inicia sem poder disparar.
-      testCannonIds:equippedShip?equippedCannonIds:requestedCannonIds,
+      testCannonIds:forceTestLoadout?requestedTestCannonIds:(equippedShip?equippedCannonIds:requestedTestCannonIds),
       ammoCatalog:availableAmmo,
       testAmmoId,
       testAmmoQuantity,
       // Estoque isolado do DEV/Play: toda munição disponível começa cheia.
-      initialAllTestAmmoQuantity:10000,
+      initialAllTestAmmoQuantity:Math.max(0,Math.floor(Number(world.test?.allAmmoQuantity??10000)||0)),
       shopBalances:()=>this.shopBalances(),
       onShopPurchase:request=>this.onShopPurchase?.(request),
       getShipyardState:()=>this.getShipyardState(),
