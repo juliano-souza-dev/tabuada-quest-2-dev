@@ -57,7 +57,7 @@ export class MobileHudOverlay{
     this.settingsDrawer=null;
     this.ammoMenu=null;
     this.timer=0;
-    this.lastAmmoSignature="";
+    this.lastAmmoSignature="";\n    this.lastMissionSignature="";
     this.cleanups=[];
   }
 
@@ -370,6 +370,13 @@ export class MobileHudOverlay{
       repair.hidden=!canRepair;
       repair.disabled=!canRepair;
       repair.classList.toggle("is-disabled",!canRepair);
+    }
+
+    const missionProgress=state.missionProgress&&typeof state.missionProgress==="object"?state.missionProgress:{};
+    const missionSignature=JSON.stringify(missionProgress);
+    if(missionSignature!==this.lastMissionSignature){
+      this.lastMissionSignature=missionSignature;
+      if(this.drawer&&!this.drawer.hidden)this.renderMissions();
     }
 
     const ammo=Array.isArray(state.ammo)?state.ammo.filter(item=>Number(item.quantity)>0):[];
