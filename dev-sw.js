@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-20261005-shop-clone-fix-v7";
+const CACHE_NAME="tq-dev-assets-20261005-hud-syntax-hotfix-v2";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
