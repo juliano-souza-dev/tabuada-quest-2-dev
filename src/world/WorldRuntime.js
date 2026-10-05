@@ -4212,10 +4212,15 @@ export class WorldRuntime {
   }
 
   async beginTreasureChallenge(entity){
-    if(!entity||this.challengeActive||this.mode!=="play")return;
+    if(!entity||this.challengeActive||this.mode!=="play")return false;
     this.treasureTarget=null;
     this.stopForChallenge();
     this.actionWrap.hidden=true;
+
+    // Lock immediately. updateNearby runs every frame and the pedagogy provider
+    // is async; waiting to set challengeActive allowed duplicate challenge
+    // requests for the same treasure while the first request was still pending.
+    this.challengeActive={entity,challenge:null,pending:true};
 
     let challenge=null;
     try{
@@ -4229,7 +4234,8 @@ export class WorldRuntime {
       console.warn("Pedagogy challenge creation failed",error);
     }
 
-    this.challengeActive={entity,challenge};
+    if(this.challengeActive?.entity!==entity)return false;
+    this.challengeActive={entity,challenge,pending:false};
     if(this.challengeWrap){this.applyPopupLayout("collect-treasure");this.challengeWrap.hidden=false;this.challengeWrap.classList.add("is-treasure-challenge")}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
