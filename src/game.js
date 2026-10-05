@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-missions-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-missions-flow-v2";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-ledger-v6";
 import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261005-missions-v1");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261005-missions-flow-v2");
 
 if(flowTest){
   try{
