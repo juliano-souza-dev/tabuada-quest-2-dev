@@ -165,6 +165,7 @@ export class MobileHudOverlay{
     this.pixiHud.init().then(ok=>{
       if(ok){
         this.wrap?.classList.add("is-pixi-hud");
+        this.root?.classList.add("tq-pixi-hud-active");
         this.sync();
       }
     });
@@ -350,15 +351,16 @@ export class MobileHudOverlay{
 
     const follow=this.wrap.querySelector('[data-hud-action="follow"]');
     if(follow){
-      follow.hidden=true;
-      follow.disabled=true;
+      follow.hidden=false;
+      follow.disabled=!targetVisible;
+      follow.classList.toggle("is-disabled",follow.disabled);
     }
 
     const center=this.wrap.querySelector('[data-hud-action="center"]');
     if(center){
       const detached=state.cameraDetached===true;
-      center.hidden=!detached;
-      center.disabled=!detached;
+      center.hidden=false;
+      center.disabled=false;
       center.classList.toggle("is-active",detached);
       const remaining=Math.max(0,Math.ceil((Number(state.cameraRecenterRemainingMs)||0)/1000));
       center.querySelector("small").textContent=remaining>0?"Centralizar "+remaining+"s":"Centralizar";
@@ -435,6 +437,7 @@ export class MobileHudOverlay{
     this.closeSettings();
     this.closeAmmoMenu();
     for(const cleanup of this.cleanups.splice(0)){try{cleanup()}catch{}}
+    this.root?.classList.remove("tq-pixi-hud-active");
     this.pixiHud?.destroy?.();
     this.pixiHud=null;
     this.wrap?.remove();
