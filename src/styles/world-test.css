@@ -2486,13 +2486,13 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
   background-size:contain!important;
   color:transparent!important;
 }
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo{background-image:url("../../assets/hud/municao.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire{background-image:url("../../assets/hud/atirar.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow{background-image:url("../../assets/hud/seguir.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center{background-image:url("../../assets/hud/centralizar.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard{background-image:url("../../assets/hud/estaleiro.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions{background-image:url("../../assets/hud/missoes.webp")!important}
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{background-image:url("../../assets/hud/loja.webp")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo{background-image:url("../../assets/hud/municao.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire{background-image:url("../../assets/hud/atirar.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--follow{background-image:url("../../assets/hud/seguir.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center{background-image:url("../../assets/hud/centralizar.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard{background-image:url("../../assets/hud/estaleiro.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions{background-image:url("../../assets/hud/missoes.webp?v=20261005-hud-cache-v8")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{background-image:url("../../assets/hud/loja.webp?v=20261005-hud-cache-v8")!important}
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>span,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>small,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire>span,
