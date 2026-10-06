@@ -4225,20 +4225,21 @@ export class WorldRuntime {
       return false;
     }
 
+    const starterAmmoQuantity=1000;
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
-    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+50;
+    this.state.ammo.stock[ammoId]=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[ammoId])||0))+starterAmmoQuantity;
     this.state.ammo.selectedAmmoId=ammoId;
     this.onAmmoChange?.(structuredClone(this.state.ammo));
     this.onStarterAmmoEarned?.({
       ammoId,
       ammoName:String(ammo.name||"Bola de Canhão"),
-      quantity:50,
+      quantity:starterAmmoQuantity,
       total:this.state.ammo.stock[ammoId]
     });
 
     if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Acertou! +50 Bolas de Canhão recebidas e equipadas.";
-    this.showGameplayToast("🎁 +50 Bolas de Canhão");
+      "Acertou! +"+starterAmmoQuantity+" Bolas de Canhão recebidas e equipadas.";
+    this.showGameplayToast("🎁 +"+starterAmmoQuantity+" Bolas de Canhão");
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
     return true;
   }
@@ -7042,15 +7043,29 @@ export class WorldRuntime {
   handleMultiplayerEvent(event={}){
     if(event.type==="fire.rejected"){
       if(event.ammo)this.replaceAmmoInventory(event.ammo);
+      const reason=String(event.reason||"");
+      const hardStop=["invalid_target","invalid_loadout","cannon_count_mismatch","insufficient_ammo"].includes(reason);
+      const rangeStop=reason==="out_of_range";
+      if(hardStop||rangeStop){
+        this.stopNavalAutoFire({
+          keepTarget:reason!=="invalid_target",
+          message:""
+        });
+      }
       if(this.actionMessage){
-        const reason=String(event.reason||"");
         this.actionMessage.textContent=reason==="cooldown"
           ?"Canhões recarregando."
           :reason==="out_of_range"
             ?"Alvo fora do alcance do canhão."
             :reason==="insufficient_ammo"
               ?"Munição insuficiente para esta salva."
-              :"Disparo rejeitado pelo servidor.";
+              :reason==="cannon_count_mismatch"
+                ?"A configuração dos canhões mudou. Abra o estaleiro e confira os canhões equipados."
+                :reason==="invalid_loadout"
+                  ?"Canhão ou munição inválidos. Confira o estaleiro e a munição equipada."
+                  :reason==="invalid_target"
+                    ?"O alvo não está mais disponível."
+                    :"Disparo rejeitado pelo servidor.";
       }
     }
     if(event.type==="fire.volley.accepted"&&event.ammo){
