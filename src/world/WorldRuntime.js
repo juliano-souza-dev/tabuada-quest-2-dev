@@ -4816,7 +4816,14 @@ export class WorldRuntime {
         quantity:5
       };
       const spawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1));
-      const claimKey=String(this.config.id||"world")+":"+id+":spawn:"+spawnCycle;
+      // Regular NPC rewards are repeatable. A deterministic claim based only on
+      // slot + spawn cycle survives page/server resets and can incorrectly block
+      // a later legitimate kill. Use a per-defeat token while still keeping the
+      // callback idempotent for this destruction.
+      const defeatToken=String(entity.npcRewardClaimToken||(
+        entity.npcRewardClaimToken="npc-kill-"+Date.now()+"-"+Math.random().toString(36).slice(2,10)
+      ));
+      const claimKey=String(this.config.id||"world")+":"+id+":spawn:"+spawnCycle+":"+defeatToken;
       this.onRewardCollected?.({
         entity:this.cleanEntity(entity),
         rewards:structuredClone(rewards),
@@ -4868,6 +4875,7 @@ export class WorldRuntime {
         },entity);
         this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
         entity.npcSpawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1))+1;
+        entity.npcRewardClaimToken="";
         if(this.isCoopBoss(entity)){
           entity.bossSpawnCycle=Math.max(1,Number(entity.bossSpawnCycle)||1)+1;
           this.coopBossLocalDamage.set(this.coopBossId(entity),0);
@@ -6753,8 +6761,10 @@ export class WorldRuntime {
       }
     }
     const eventPartyMembers=Array.isArray(event.partyMembers)?event.partyMembers.map(String):[];
-    const localInParty=eventPartyMembers.includes(this.coopLocalUid);
-    const localOwnsShot=String(event.ownerUid||"")===this.coopLocalUid;
+    const localUid=String(this.coopLocalUid||this.coopTransport?.uid||"");
+    const localInParty=eventPartyMembers.includes(localUid);
+    const eventOwnerUid=String(event.ownerUid||event.ownerId||event.uid||"");
+    const localOwnsShot=Boolean(localUid)&&eventOwnerUid===localUid;
     if(localOwnsShot&&Number(event.damage)>0&&Number(event.rewardGold)>0){
       const rewardGold=Math.max(0,Math.floor(Number(event.rewardGold)||0));
       const claimKey="hit:"+String(event.shotId||"");
@@ -6799,7 +6809,11 @@ export class WorldRuntime {
         if(localOwnsShot){
           const rewards=this.rollNpcRewards(entity);
           rewards.ammo={id:"cannonball-halloween-purple",quantity:5};
-          const claimKey=String(this.config.id||"world")+":"+id+":server-spawn:"+Math.max(1,Number(event.spawnId)||1);
+          // The killing projectile id is unique per legitimate defeat and remains
+          // stable if the same hit event is replayed. This avoids blocking rewards
+          // after a websocket/server restart resets spawnId back to 1.
+          const killToken=String(event.shotId||event.id||event.at||("spawn-"+Math.max(1,Number(event.spawnId)||1)));
+          const claimKey=String(this.config.id||"world")+":"+id+":server-kill:"+killToken;
           this.onRewardCollected?.({entity:this.cleanEntity(entity),rewards:structuredClone(rewards),claimKey});
         }
       }
