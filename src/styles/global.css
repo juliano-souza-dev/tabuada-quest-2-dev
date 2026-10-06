@@ -1,6 +1,10 @@
 :root{font-family:system-ui,sans-serif;background:#071522;color:#fff}
 *{box-sizing:border-box}
 html,body,#game{width:100%;height:100%;margin:0;overflow:hidden}
+#game{position:relative;background:#071522}
+#game>canvas{position:absolute;inset:0}
+#game>.tq-legacy-ocean-canvas{z-index:0;pointer-events:none}
+#game>canvas:not(.tq-legacy-ocean-canvas){z-index:1}
 body{overscroll-behavior:none}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 #build-version{
