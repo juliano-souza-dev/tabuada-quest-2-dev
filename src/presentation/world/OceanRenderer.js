@@ -2,13 +2,26 @@ import { Container, Graphics, TilingSprite } from 'pixi.js';
 
 const OCEAN_TILE_URL = new URL('../../../assets/oceans/ocean-tile.webp', import.meta.url).href;
 
+// Mesmo comportamento-base do oceano antigo (R1).
+const OCEAN_CONFIG = Object.freeze({
+  speed: 58,
+  directionX: 1,
+  directionY: 0.68,
+  swell: 55,
+  layers: Object.freeze({
+    deep: Object.freeze({ driftX: 7, driftY: 4, tileScale: 1.18, opacity: 1 }),
+    wave: Object.freeze({ driftX: 18, driftY: 11, tileScale: 0.72, opacity: 0.34 }),
+    foam: Object.freeze({ driftX: 36, driftY: 24, tileScale: 0.48, opacity: 0.20 })
+  })
+});
+
 export class OceanRenderer {
   constructor() {
     this.view = new Container();
     this.width = 0;
     this.height = 0;
     this.time = 0;
-    this.tile = null;
+    this.layers = [];
 
     this.fallback = new Graphics()
       .rect(-1024, -1024, 2048, 2048)
@@ -18,19 +31,29 @@ export class OceanRenderer {
   }
 
   async init(assets) {
-    if (!assets || this.tile) return;
+    if (!assets || this.layers.length) return;
 
     try {
       const texture = await assets.load(OCEAN_TILE_URL);
 
-      this.tile = new TilingSprite({
-        texture,
-        width: 1,
-        height: 1
+      this.layers = Object.values(OCEAN_CONFIG.layers).map((config) => {
+        const layer = new TilingSprite({
+          texture,
+          width: 1,
+          height: 1
+        });
+
+        layer.alpha = config.opacity;
+        layer.tileScale.set(config.tileScale);
+        layer.eventMode = 'none';
+        layer._oceanConfig = config;
+        return layer;
       });
 
-      this.tile.anchor?.set?.(0);
-      this.view.addChildAt(this.tile, 0);
+      for (let i = this.layers.length - 1; i >= 0; i -= 1) {
+        this.view.addChildAt(this.layers[i], 0);
+      }
+
       this.fallback.visible = false;
     } catch (error) {
       console.error('[OceanRenderer] Failed to load ocean tile:', error);
@@ -44,10 +67,10 @@ export class OceanRenderer {
     this.width = width;
     this.height = height;
 
-    if (this.tile) {
-      this.tile.position.set(-width, -height);
-      this.tile.width = width * 2;
-      this.tile.height = height * 2;
+    for (const layer of this.layers) {
+      layer.position.set(-width, -height);
+      layer.width = width * 2;
+      layer.height = height * 2;
     }
 
     this.fallback
@@ -57,19 +80,25 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.tile) return;
+    if (!this.layers.length) return;
 
     this.time += dt;
 
-    // Movimento orgânico curto: a água oscila, mas a textura não "viaja".
-    const swellX = Math.sin(this.time * 0.45) * 4;
-    const swellY = Math.sin(this.time * 0.62 + 0.8) * 3;
-    const microX = Math.sin(this.time * 1.15) * 1.25;
-    const microY = Math.cos(this.time * 0.95) * 0.85;
+    const basePxPerSecond = OCEAN_CONFIG.speed * 0.42;
+    const swellAmount = (OCEAN_CONFIG.swell / 100) * 0.016;
+    const swellPhase = this.time * (0.42 + OCEAN_CONFIG.speed / 180);
+    const swellScale = 1 + swellAmount * (0.5 + 0.5 * Math.sin(swellPhase));
 
-    this.tile.tilePosition.set(
-      swellX + microX,
-      swellY + microY
-    );
+    for (const layer of this.layers) {
+      const config = layer._oceanConfig;
+      const vx = config.driftX + basePxPerSecond * OCEAN_CONFIG.directionX;
+      const vy = config.driftY + basePxPerSecond * OCEAN_CONFIG.directionY;
+
+      layer.tilePosition.x = this.time * vx;
+      layer.tilePosition.y = this.time * vy;
+
+      const scale = config.tileScale * swellScale;
+      layer.tileScale.set(scale);
+    }
   }
 }
