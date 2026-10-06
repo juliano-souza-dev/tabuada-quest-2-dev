@@ -71,5 +71,8 @@
   },
   "multiplayer": {
     "enabled": false
+  },
+  "content": {
+    "mode": "local"
   }
 }
