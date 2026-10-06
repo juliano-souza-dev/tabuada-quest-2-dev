@@ -1,11 +1,25 @@
-import { Container, Graphics } from 'pixi.js';
+import {
+  Container,
+  Sprite
+} from 'pixi.js';
+
+const HALLOWEEN_TREASURE_URL = new URL(
+  '../../../assets/treasures/events/halloween/abobora_magica_halloween_brilhante_50kb.webp',
+  import.meta.url
+).href;
 
 export class TreasureRenderer {
   constructor() {
     this.view = new Container();
     this.nodes = new Map();
     this.elapsed = 0;
+    this.texture = null;
     this.view.eventMode = 'none';
+  }
+
+  async init(assets) {
+    if (!assets || this.texture) return;
+    this.texture = await assets.load(HALLOWEEN_TREASURE_URL);
   }
 
   sync(entities) {
@@ -13,30 +27,44 @@ export class TreasureRenderer {
 
     for (const entity of entities) {
       const transform = entity.get('transform');
-      if (!transform) continue;
+      if (!transform || !this.texture) continue;
 
       activeIds.add(entity.id);
 
       let node = this.nodes.get(entity.id);
-      if (!node) {
-        node = new Graphics()
-          .roundRect(-18, -13, 36, 26, 6)
-          .fill(0x7a3d12)
-          .stroke({ color: 0xffc33d, width: 3 })
-          .rect(-11, -4, 22, 8)
-          .fill(0xd79b2b);
 
-        node.eventMode = 'none';
+      if (!node) {
+        const sprite = new Sprite(this.texture);
+        sprite.anchor.set(0.5);
+
+        const maxSide = Math.max(
+          1,
+          this.texture.width,
+          this.texture.height
+        );
+
+        const scale = 92 / maxSide;
+        sprite.scale.set(scale);
+        sprite.eventMode = 'none';
+
+        node = {
+          sprite,
+          baseX: transform.x,
+          baseY: transform.y,
+          phase: this.nodes.size * 0.91
+        };
+
         this.nodes.set(entity.id, node);
-        this.view.addChild(node);
+        this.view.addChild(sprite);
       }
 
-      node.position.set(transform.x, transform.y);
+      node.baseX = transform.x;
+      node.baseY = transform.y;
     }
 
     for (const [id, node] of this.nodes) {
       if (activeIds.has(id)) continue;
-      node.destroy();
+      node.sprite.destroy();
       this.nodes.delete(id);
     }
   }
@@ -45,8 +73,26 @@ export class TreasureRenderer {
     this.elapsed += Math.max(0, Number(dt) || 0);
 
     for (const node of this.nodes.values()) {
-      node.y += Math.sin(this.elapsed * 2.4 + node.x * 0.01) * 0.08;
-      node.rotation = Math.sin(this.elapsed * 1.3 + node.x * 0.003) * 0.02;
+      node.sprite.x = node.baseX;
+      node.sprite.y =
+        node.baseY +
+        Math.sin(
+          this.elapsed * 2.1 + node.phase
+        ) * 4;
+
+      node.sprite.rotation =
+        Math.sin(
+          this.elapsed * 1.25 + node.phase
+        ) * 0.025;
     }
+  }
+
+  destroy() {
+    for (const node of this.nodes.values()) {
+      node.sprite.destroy();
+    }
+
+    this.nodes.clear();
+    this.view.destroy();
   }
 }
