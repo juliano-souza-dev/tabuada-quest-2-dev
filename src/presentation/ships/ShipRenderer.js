@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
 import { DirectionalSprite } from './DirectionalSprite.js';
+import { HalloweenShipFilter } from './filters/HalloweenShipFilter.js';
 
 const SHIP_ASSET_URL = new URL(
   '../../../assets/ships/player/starter/galeao_halloween_400x400-validated.webp',
@@ -11,6 +12,7 @@ export class ShipRenderer {
     this.view = new Container();
     this.directional = null;
     this.elapsed = 0;
+    this.halloweenFilter = new HalloweenShipFilter();
     this.view.eventMode = 'none';
   }
 
@@ -19,11 +21,13 @@ export class ShipRenderer {
 
     const sheetTexture = await assets.load(SHIP_ASSET_URL);
     this.directional = new DirectionalSprite(sheetTexture);
+    this.directional.sprite.filters = [this.halloweenFilter];
     this.view.addChild(this.directional.sprite);
   }
 
   advance(dt) {
     this.elapsed += dt;
+    this.halloweenFilter?.update(this.elapsed);
   }
 
   render(transform) {
