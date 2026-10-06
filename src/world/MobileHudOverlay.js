@@ -180,7 +180,9 @@ export class MobileHudOverlay{
     const host=this.drawer?.querySelector(".tq-mobile-hud__missions-list");
     if(!host)return;
     const progress=this.getState()?.missionProgress||{};
-    const list=this.missions.filter(item=>Number(item?.region)===this.region).sort((a,b)=>Number(a.order||0)-Number(b.order||0));
+    const list=this.missions
+      .filter(item=>Number(item?.region)===this.region||String(item?.event||"").toLowerCase()==="halloween")
+      .sort((a,b)=>Number(a.order||0)-Number(b.order||0));
     host.innerHTML="";
     if(!list.length){
       const empty=document.createElement("p");
@@ -193,13 +195,22 @@ export class MobileHudOverlay{
       const card=document.createElement("article");
       card.className="tq-mobile-hud__mission";
       const reward=mission.reward||{};
+      const unlockAfter=Array.isArray(mission.unlockAfter)?mission.unlockAfter:[];
+      const locked=unlockAfter.some(id=>{
+        const prerequisite=this.missions.find(item=>String(item?.id||"")===String(id));
+        const target=Math.max(1,Number(prerequisite?.objective?.target)||1);
+        return Math.max(0,Number(progress?.[id])||0)<target;
+      });
+      card.classList.toggle("is-locked",locked);
       card.innerHTML=
         '<div class="tq-mobile-hud__mission-number"></div>'+
         '<div class="tq-mobile-hud__mission-copy"><strong></strong><span></span></div>'+
         '<div class="tq-mobile-hud__mission-reward"></div>';
       card.querySelector(".tq-mobile-hud__mission-number").textContent=String(mission.order||"•");
       card.querySelector(".tq-mobile-hud__mission-copy strong").textContent=String(mission.name||mission.id||"Missão");
-      card.querySelector(".tq-mobile-hud__mission-copy span").textContent=objectiveLabel(mission.objective,progress?.[mission.id]);
+      card.querySelector(".tq-mobile-hud__mission-copy span").textContent=locked
+        ?"🔒 Bloqueada · conclua as missões anteriores"
+        :objectiveLabel(mission.objective,progress?.[mission.id]);
       const rewards=[];
       if(Number(reward.gold)>0)rewards.push("🪙 "+Number(reward.gold));
       if(Number(reward.rubies)>0)rewards.push("💎 "+Number(reward.rubies));
