@@ -11,6 +11,16 @@ import { STARTER_REGION, clampPointToRegion } from '../../game/world/RegionDefin
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
 const CAMERA_FOLLOW_SHARPNESS = 4.5;
 
+const cameraBoundaryPadding = (renderer, camera) => {
+  const halfViewWidth =
+    renderer.screen.width / (2 * camera.zoom);
+
+  const halfViewHeight =
+    renderer.screen.height / (2 * camera.zoom);
+
+  return Math.max(56, halfViewWidth, halfViewHeight);
+};
+
 const lerpAngle = (from, to, alpha) => {
   const a = normalizeDegrees(from);
   const b = normalizeDegrees(to);
@@ -93,7 +103,18 @@ export class WorldScene {
       rotation: before.rotation
     };
 
-    this.shipNavigation.update(this.playerShip, dt, this.input?.analog);
+    const sharedBoundaryPadding =
+      cameraBoundaryPadding(this.renderer, this.camera);
+
+    // Navio e câmera usam exatamente a mesma área navegável.
+    this.shipNavigation.boundaryPadding =
+      sharedBoundaryPadding;
+
+    this.shipNavigation.update(
+      this.playerShip,
+      dt,
+      this.input?.analog
+    );
 
     const after = this.playerShip.get('transform');
     this.currentPose = {
@@ -111,22 +132,11 @@ export class WorldScene {
       y: this.currentCamera.y + (after.y - this.currentCamera.y) * follow
     };
 
-    const halfViewWidth =
-      this.renderer.screen.width / (2 * this.camera.zoom);
-
-    const halfViewHeight =
-      this.renderer.screen.height / (2 * this.camera.zoom);
-
-    const cameraPadding = Math.max(
-      halfViewWidth,
-      halfViewHeight
-    );
-
     const clampedCamera = clampPointToRegion(
       desiredCamera.x,
       desiredCamera.y,
       this.region,
-      cameraPadding
+      sharedBoundaryPadding
     );
 
     this.currentCamera = clampedCamera;
