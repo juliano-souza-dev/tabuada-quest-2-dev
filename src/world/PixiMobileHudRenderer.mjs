@@ -146,31 +146,19 @@ export class PixiMobileHudRenderer{
     this.app.renderer.resize(w,h);
 
     const r=this.refs;
-    const topH=clamp(h*.078,66,84);
-    const portraitR=clamp(w*.062,34,48);
-    const hpX=portraitR*2+20;
-    const hpY=topH*.51;
-    const hpW=clamp(w*.35,130,280);
-    const hpH=clamp(topH*.31,20,28);
+    const topH=0;
 
-    r.top.clear().rect(0,0,w,topH).fill(0x2a160d);
-    r.top.rect(0,topH-8,w,8).fill(0x70401e);
-    r.top.rect(0,topH-3,w,3).fill(0xd49b48);
-
-    r.portrait.clear().circle(portraitR+8,topH*.52,portraitR).fill(0x102b3a).stroke({color:0xc78e42,width:5});
-    r.portrait.circle(29,topH-2,17).fill(0x12100d).stroke({color:0xd19a49,width:3});
-
-    r.hpBack.clear().roundRect(hpX,hpY,hpW,hpH,10).fill(0x0a0d0e).stroke({color:0xb77b35,width:3});
-    r.hpLabel.position.set(hpX,hpY-21);
-    r.hpText.position.set(hpX+hpW/2,hpY+hpH/2);
-    r.levelText.position.set(29,topH-2);
-
-    const goldX=Math.max(hpX+hpW+28,w*.53);
-    const rubyX=Math.max(goldX+92,w*.75);
-    r.top.circle(goldX,topH*.42,15).fill(0xf4bf24).stroke({color:0x88500d,width:3});
-    r.top.circle(rubyX,topH*.42,14).fill(0xd22542).stroke({color:0x711125,width:3});
-    r.goldText.position.set(goldX+21,topH*.42-10);
-    r.rubyText.position.set(rubyX+20,topH*.42-10);
+    // The legacy brown status bar was removed from gameplay.
+    // Keep its display objects alive for state compatibility, but never render them.
+    r.top.clear();
+    r.hpBack.clear();
+    r.hpFill.clear();
+    r.portrait.clear();
+    r.hpLabel.visible=false;
+    r.hpText.visible=false;
+    r.goldText.visible=false;
+    r.rubyText.visible=false;
+    r.levelText.visible=false;
 
     const mapR=clamp(w*.13,62,90);
     const mapX=w-mapR-12;
