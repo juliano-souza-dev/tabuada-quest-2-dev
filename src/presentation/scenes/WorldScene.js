@@ -5,9 +5,10 @@ import { createStarterShip } from '../../game/ships/createStarterShip.js';
 import { ShipNavigationSystem } from '../../game/systems/ShipNavigationSystem.js';
 import { OceanRenderer } from '../world/OceanRenderer.js';
 import { ShipRenderer } from '../ships/ShipRenderer.js';
+import { ShipWakeRenderer } from '../ships/ShipWakeRenderer.js';
 
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
-const CAMERA_FOLLOW_SHARPNESS = 6;
+const CAMERA_FOLLOW_SHARPNESS = 4.5;
 
 const lerpAngle = (from, to, alpha) => {
   const a = normalizeDegrees(from);
@@ -34,6 +35,7 @@ export class WorldScene {
     this.shipNavigation = new ShipNavigationSystem();
     this.playerShip = createStarterShip({ x: 0, y: 0 });
     this.shipRenderer = new ShipRenderer();
+    this.shipWakeRenderer = new ShipWakeRenderer({ shipHeight: 116 });
 
     this.previousPose = { x: 0, y: 0, rotation: 0 };
     this.currentPose = { x: 0, y: 0, rotation: 0 };
@@ -43,6 +45,7 @@ export class WorldScene {
     this.world.entities.add(this.playerShip);
 
     this.camera.view.addChild(this.ocean.view);
+    this.camera.view.addChild(this.shipWakeRenderer.view);
     this.camera.view.addChild(this.shipRenderer.view);
     this.view.addChild(this.camera.view);
   }
@@ -100,6 +103,12 @@ export class WorldScene {
       y: this.currentCamera.y + (after.y - this.currentCamera.y) * follow
     };
 
+    this.shipWakeRenderer.update(
+      after,
+      this.playerShip.get('movement'),
+      dt
+    );
+
     this.shipRenderer.advance(dt);
     this.ocean.update(dt);
   }
@@ -115,6 +124,7 @@ export class WorldScene {
       )
     };
 
+    this.shipWakeRenderer.render();
     this.shipRenderer.render(pose);
 
     const cameraPose = {
