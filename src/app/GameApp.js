@@ -21,7 +21,7 @@ export class GameApp {
     this.session = new GameSession();
     this.services = new ServiceContainer();
     this.services.register('persistence', new LocalPersistenceService());
-    this.scenes = new SceneManager({ stage: this.renderer.stage });
+    this.scenes = null;
     this.loop = new GameLoop({ update: (dt) => this.update(dt), render: (alpha) => this.render(alpha) });
   }
 
@@ -35,18 +35,19 @@ export class GameApp {
     this.session.start(profile);
 
     await this.renderer.init({ resizeTo: window, antialias: true, background: '#071522', resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true });
+    this.scenes = new SceneManager({ stage: this.renderer.stage });
     this.mount.appendChild(this.renderer.canvas);
     this.input.attach(this.renderer.canvas);
     await this.scenes.change(new WorldScene({ renderer: this.renderer }));
     this.loop.start();
   }
 
-  update(dt) { this.input.update(dt); this.scenes.update(dt); }
-  render(alpha) { this.scenes.render(alpha); }
+  update(dt) { this.input.update(dt); this.scenes?.update(dt); }
+  render(alpha) { this.scenes?.render(alpha); }
 
   stop() {
     this.loop.stop();
-    this.scenes.clear();
+    this.scenes?.clear();
     this.audio.stopAll();
     this.input.detach();
     this.session.end();
