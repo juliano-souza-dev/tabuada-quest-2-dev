@@ -14,7 +14,10 @@ export class WorldScene {
     this.view.addChild(this.camera.view);
   }
 
-  enter() { this.resize(); }
+  enter() {
+    this.resize();
+    this.ocean.render();
+  }
   update(dt) { this.world.advance(dt); this.ocean.update(dt); this.resize(); }
   render() { this.ocean.render(); }
 
