@@ -538,9 +538,41 @@ export class GameRuntime {
       progress[id]=next;changed=true;
       if(next>=target&&!claimed.has(id)){
         const reward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
+        const gold=Math.max(0,Number(reward.gold ?? reward.coins)||0);
+        const rubies=Math.max(0,Number(reward.rubies)||0);
+        const xp=Math.max(0,Number(reward.xp)||0);
+        const current=this.rewards&&typeof this.rewards==="object"
+          ?this.rewards
+          :{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
+        this.rewards={
+          ...current,
+          coins:Math.max(0,Number(current.coins)||0)+gold,
+          gold:Math.max(0,Number(current.gold ?? current.coins)||0)+gold,
+          rubies:Math.max(0,Number(current.rubies)||0)+rubies,
+          xp:Math.max(0,Number(current.xp)||0)+xp
+        };
+
         const cannonId=String(reward.cannonId||"").trim();
         const quantity=Math.max(1,Math.floor(Number(reward.cannonQuantity)||1));
-        if(cannonId&&this.grantCannon(cannonId,quantity,{save:false}))claimed.add(id);
+        if(cannonId)this.grantCannon(cannonId,quantity,{save:false});
+
+        const shipId=String(reward.shipId||"").trim();
+        if(shipId){
+          const ship=this.shipEntry(shipId);
+          if(ship&&ship.available!==false){
+            if(!this.playerShips.ownedShips.includes(shipId))this.playerShips.ownedShips.push(shipId);
+            if(reward.equipShip===true)this.playerShips.equippedShip=shipId;
+            this.ensurePlayerShips();
+          }
+        }
+
+        claimed.add(id);
+        globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
+          missionId:id,gold,rubies,xp,cannonId,
+          quantity:cannonId?quantity:0,
+          shipId,equipped:shipId?reward.equipShip===true:false,
+          source:"party"
+        }}));
       }
     }
     if(!changed)return false;
@@ -548,6 +580,12 @@ export class GameRuntime {
       ...base,
       game:{
         ...game,
+        rewards:clone(this.rewards),
+        ships:{
+          ownedShips:[...this.playerShips.ownedShips],
+          equippedShip:this.playerShips.equippedShip
+        },
+        cannons:clone(this.playerCannons),
         missions:{...missionState,progress,claimedRewards:[...claimed]}
       }
     };
@@ -1714,6 +1752,7 @@ export class GameRuntime {
         if(Array.isArray(source.ammoRewards))source.ammoRewards.forEach(pushAmmo);
         else if(source.ammo&&Array.isArray(source.ammo))source.ammo.forEach(pushAmmo);
         else pushAmmo(source.ammo);
+        const cannonId=String(source.cannonId||"").trim();
         return {
           coins:Math.max(0,Number(source.coins)||0),
           gold:Math.max(0,Number(source.gold ?? source.coins)||0),
@@ -1722,6 +1761,8 @@ export class GameRuntime {
           itemId,
           quantity:itemId?Math.max(1,Number(source.quantity)||1):0,
           shipId:String(source.shipId||"").trim(),
+          cannonId,
+          cannonQuantity:cannonId?Math.max(1,Math.floor(Number(source.cannonQuantity??source.quantity)||1)):0,
           ammoRewards
         };
       };
@@ -1810,7 +1851,7 @@ export class GameRuntime {
       }}));
 
       claims.push(claimKey);
-      const {coins,gold,rubies,xp,itemId,quantity,shipId,ammoRewards=[]}=normalized;
+      const {coins,gold,rubies,xp,itemId,quantity,shipId,cannonId,cannonQuantity,ammoRewards=[]}=normalized;
       const grantedAmmo=[];
       if(ammoRewards.length){
         this.ensurePlayerAmmo();
@@ -1846,6 +1887,14 @@ export class GameRuntime {
         if(ship&&ship.available!==false&&!this.playerShips.ownedShips.includes(ship.id)){
           this.playerShips.ownedShips.push(ship.id);
           this.ensurePlayerShips();
+        }
+      }
+      if(cannonId&&cannonQuantity>0){
+        const granted=this.grantCannon(cannonId,cannonQuantity,{save:false});
+        if(!granted){
+          console.error("[TQ rewards] cannon grant failed",{
+            cannonId,cannonQuantity,claimKey,worldId,entityId:String(cleanEntity.id)
+          });
         }
       }
 
