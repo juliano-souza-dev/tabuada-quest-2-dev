@@ -1,13 +1,16 @@
 {
   "id": "./",
-  "name": "Tabuada Quest DEV",
+  "name": "Tabuada Quest",
   "short_name": "Tabuada Quest",
-  "description": "Editor e aventura educacional Tabuada Quest.",
+  "description": "Aventura educacional Tabuada Quest.",
   "lang": "pt-BR",
-  "start_url": "./",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "fullscreen"
+  ],
   "background_color": "#081b2b",
   "theme_color": "#081b2b",
   "prefer_related_applications": false,
