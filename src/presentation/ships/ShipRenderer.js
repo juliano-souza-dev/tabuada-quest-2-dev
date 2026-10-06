@@ -60,7 +60,10 @@ export class ShipRenderer {
       visual?.effects?.ghostParticles !== false;
 
     const sprite = this.directional.sprite;
-    sprite.y = Math.sin(this.elapsed * 1.8) * 2.5;
-    sprite.rotation = Math.sin(this.elapsed * 1.1) * 0.008;
+
+    // O navio deve permanecer estável sobre o oceano.
+    // Movimento visual vem da navegação, não de oscilação artificial.
+    sprite.y = 0;
+    sprite.rotation = 0;
   }
 }
