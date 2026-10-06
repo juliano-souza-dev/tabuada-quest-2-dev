@@ -1,3 +1,5 @@
+import { clampPointToRegion } from '../world/RegionDefinition.js';
+
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
 
 const shortestAngle = (from, to) => {
@@ -12,12 +14,21 @@ const moveToward = (value, target, amount) => {
 };
 
 export class ShipNavigationSystem {
-  constructor() {
+  constructor({ region = null, boundaryPadding = 56 } = {}) {
     this.target = null;
+    this.region = region;
+    this.boundaryPadding = boundaryPadding;
   }
 
   setTarget(x, y) {
-    this.target = { x, y };
+    this.target = this.region
+      ? clampPointToRegion(
+          x,
+          y,
+          this.region,
+          this.boundaryPadding
+        )
+      : { x, y };
   }
 
   clearTarget() {
@@ -92,5 +103,28 @@ export class ShipNavigationSystem {
 
     transform.x += movement.velocityX * dt;
     transform.y += movement.velocityY * dt;
+
+    if (this.region) {
+      const clamped = clampPointToRegion(
+        transform.x,
+        transform.y,
+        this.region,
+        this.boundaryPadding
+      );
+
+      const hitX = clamped.x !== transform.x;
+      const hitY = clamped.y !== transform.y;
+
+      transform.x = clamped.x;
+      transform.y = clamped.y;
+
+      if (hitX) movement.velocityX = 0;
+      if (hitY) movement.velocityY = 0;
+
+      if (hitX || hitY) {
+        movement.speed = 0;
+        this.clearTarget();
+      }
+    }
   }
 }
