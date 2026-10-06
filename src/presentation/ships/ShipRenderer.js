@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 import { DirectionalSprite } from './DirectionalSprite.js';
 
 const SHIP_ASSET_URL = new URL(
-  '../../../assets/ships/player/starter/galeao_halloween_400x400.webp',
+  '../../../assets/ships/player/starter/galeao_halloween_400x400-validated.webp',
   import.meta.url
 ).href;
 
