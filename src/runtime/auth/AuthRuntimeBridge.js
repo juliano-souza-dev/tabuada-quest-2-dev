@@ -33,19 +33,24 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
     // Authentication success must never be blocked by optional content/state sync.
     // If Firestore/content restore fails, enter the game with the authenticated
     // session and the best locally available state, then allow later sync retries.
-    let content={ok:false,code:"content_not_prepared"};
-    try{
-      content=await gameContent.prepare({preferRemote:true,allowCache:true});
-      if(content?.ok){
-        try{
-          await runtime.reloadCanonicalContent?.(gameContent);
-        }catch(error){
-          console.warn("Canonical content reload failed after auth",error);
+    const localContentOnly=String(runtime?.manifest?.content?.mode||"").toLowerCase()==="local";
+    let content=localContentOnly
+      ?{ok:true,code:"bundled_local_content",source:"local"}
+      :{ok:false,code:"content_not_prepared"};
+    if(!localContentOnly){
+      try{
+        content=await gameContent.prepare({preferRemote:true,allowCache:true});
+        if(content?.ok){
+          try{
+            await runtime.reloadCanonicalContent?.(gameContent);
+          }catch(error){
+            console.warn("Canonical content reload failed after auth",error);
+          }
         }
+      }catch(error){
+        console.warn("Game content prepare failed after auth",error);
+        content={ok:false,code:"content_prepare_failed",message:String(error?.message||error)};
       }
-    }catch(error){
-      console.warn("Game content prepare failed after auth",error);
-      content={ok:false,code:"content_prepare_failed",message:String(error?.message||error)};
     }
 
     let restore=null;
