@@ -41,7 +41,7 @@
       },
       "combat": {
         "hp": 100000,
-        "attitude": "hostile",
+        "attitude": "retaliate",
         "damage": 5,
         "maxTargets": 2,
         "rewardMinDamageRatio": 0.15,
