@@ -103,17 +103,26 @@ export class OceanRenderer {
     this.elapsed += dt;
     this.surfaceFilter?.update(this.elapsed);
 
-    // O movimento visual do oceano é estritamente baseado no tempo.
-    // A velocidade/câmera do navio não altera a intensidade da água.
-    this.base.tilePosition.x = Math.sin(this.elapsed * 0.07) * 1.8;
-    this.base.tilePosition.y = Math.cos(this.elapsed * 0.06) * 1.4;
+    // A textura fica ancorada ao mundo. A câmera apenas revela outra parte do mar.
+    // A velocidade do navio NÃO altera a velocidade da animação da água.
+    const worldOffsetX = -this.cameraX;
+    const worldOffsetY = -this.cameraY;
 
-    // Profundidade lenta, sem parallax ligado à navegação.
-    this.depth.tilePosition.x = Math.sin(this.elapsed * 0.045) * 3.2;
-    this.depth.tilePosition.y = Math.cos(this.elapsed * 0.04) * 2.4;
+    this.base.tilePosition.x =
+      worldOffsetX + Math.sin(this.elapsed * 0.07) * 1.8;
+    this.base.tilePosition.y =
+      worldOffsetY + Math.cos(this.elapsed * 0.06) * 1.4;
 
-    // Reflexos com deriva curta e constante.
-    this.glints.tilePosition.x = Math.sin(this.elapsed * 0.11) * 4.2;
-    this.glints.tilePosition.y = Math.cos(this.elapsed * 0.09) * 3.1;
+    // Camadas usam o mesmo deslocamento de câmera para não criar parallax
+    // exagerado durante a navegação.
+    this.depth.tilePosition.x =
+      worldOffsetX + Math.sin(this.elapsed * 0.045) * 3.2;
+    this.depth.tilePosition.y =
+      worldOffsetY + Math.cos(this.elapsed * 0.04) * 2.4;
+
+    this.glints.tilePosition.x =
+      worldOffsetX + Math.sin(this.elapsed * 0.11) * 4.2;
+    this.glints.tilePosition.y =
+      worldOffsetY + Math.cos(this.elapsed * 0.09) * 3.1;
   }
 }
