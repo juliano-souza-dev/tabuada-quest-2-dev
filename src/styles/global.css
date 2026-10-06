@@ -1,1 +1,20 @@
-:root{font-family:system-ui,sans-serif;background:#071522;color:#fff}*{box-sizing:border-box}html,body,#game{width:100%;height:100%;margin:0;overflow:hidden}body{overscroll-behavior:none}canvas{display:block;width:100%;height:100%;touch-action:none}
+:root{font-family:system-ui,sans-serif;background:#071522;color:#fff}
+*{box-sizing:border-box}
+html,body,#game{width:100%;height:100%;margin:0;overflow:hidden}
+body{overscroll-behavior:none}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#build-version{
+  position:fixed;
+  right:5px;
+  bottom:4px;
+  z-index:999998;
+  padding:2px 5px;
+  border-radius:4px;
+  background:rgba(0,0,0,.30);
+  color:rgba(255,255,255,.58);
+  font:10px/1.15 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.02em;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
