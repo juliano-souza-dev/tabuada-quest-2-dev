@@ -5,7 +5,7 @@ if(!app)throw new Error("Tabuada Quest app root not found");
 
 const gate=await enforcePwaOnly(app);
 if(gate.allowed){
-  await import("./game.js?v=20261006-offline-only-v1");
+  await import("./game.js?v=20261006-terror-local-content-v2");
 }else{
   globalThis.TabuadaQuest={
     ...(globalThis.TabuadaQuest||{}),
