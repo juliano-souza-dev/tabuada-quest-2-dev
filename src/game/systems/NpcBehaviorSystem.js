@@ -1,5 +1,46 @@
-import { ShipNavigationSystem } from './ShipNavigationSystem.js';
 import { NpcDisposition } from '../npc/NpcDisposition.js';
+
+const clamp = (value, min, max) =>
+  Math.min(max, Math.max(min, value));
+
+const hashString = (value) => {
+  let hash = 2166136261;
+
+  for (const ch of String(value || '')) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+};
+
+const createSeededRandom = (seed) => {
+  let state =
+    (Number(seed) >>> 0) ||
+    0x9e3779b9;
+
+  return () => {
+    state += 0x6D2B79F5;
+    let t = state;
+
+    t = Math.imul(
+      t ^ (t >>> 15),
+      t | 1
+    );
+
+    t ^=
+      t +
+      Math.imul(
+        t ^ (t >>> 7),
+        t | 61
+      );
+
+    return (
+      ((t ^ (t >>> 14)) >>> 0) /
+      4294967296
+    );
+  };
+};
 
 const distanceBetween = (a, b) =>
   Math.hypot(
@@ -7,308 +48,580 @@ const distanceBetween = (a, b) =>
     (a?.y || 0) - (b?.y || 0)
   );
 
-const hash = (text) => {
-  let value = 2166136261;
-
-  for (let i = 0; i < text.length; i += 1) {
-    value ^= text.charCodeAt(i);
-    value = Math.imul(value, 16777619);
-  }
-
-  return value >>> 0;
-};
-
-const unit = (seed) =>
-  hash(seed) / 4294967295;
-
 export class NpcBehaviorSystem {
-  constructor({ region, boundaryPadding = 56 } = {}) {
+  constructor({
+    region,
+    boundaryPadding = 56
+  } = {}) {
     this.region = region;
     this.boundaryPadding = boundaryPadding;
-    this.navigation = new Map();
   }
 
-  navigatorFor(entity) {
-    let nav = this.navigation.get(entity.id);
+  notifyAttacked(
+    npcEntity,
+    attackerId,
+    nowSeconds
+  ) {
+    const npc =
+      npcEntity?.get?.('npc');
 
-    if (!nav) {
-      nav = new ShipNavigationSystem({
-        region: this.region,
-        boundaryPadding: this.boundaryPadding
-      });
-
-      this.navigation.set(entity.id, nav);
-    }
-
-    nav.boundaryPadding = this.boundaryPadding;
-    return nav;
-  }
-
-  notifyAttacked(npcEntity, attackerId, nowSeconds) {
-    const npc = npcEntity?.get?.('npc');
     if (!npc) return;
 
     npc.attackedById = attackerId;
 
-    if (npc.disposition === NpcDisposition.RETALIATORY) {
-      npc.state = 'combat';
+    if (
+      npc.disposition ===
+      NpcDisposition.RETALIATORY
+    ) {
       npc.retaliationUntil =
-        nowSeconds + npc.retaliationDuration;
+        nowSeconds +
+        npc.retaliationDuration;
     }
 
-    if (npc.disposition === NpcDisposition.PEACEFUL) {
-      npc.state = 'flee';
+    if (
+      npc.disposition ===
+      NpcDisposition.PEACEFUL
+    ) {
       npc.fleeUntil =
-        nowSeconds + npc.fleeDuration;
-    }
-
-    if (npc.disposition === NpcDisposition.HOSTILE) {
-      npc.state = 'combat';
+        nowSeconds +
+        npc.fleeDuration;
     }
   }
 
-  chooseRoamTarget(entity, npc, now, nav) {
-    npc.roamDecisionIndex += 1;
+  applyBehaviorHeading(
+    world,
+    entity,
+    playerEntity
+  ) {
+    const npc = entity.get('npc');
+    const nav = npc?.navigation;
+    const transform =
+      entity.get('transform');
 
-    const seed =
-      `${entity.id}:${npc.roamDecisionIndex}`;
-
-    const angle =
-      unit(`${seed}:angle`) *
-      Math.PI *
-      2;
-
-    const radius =
-      npc.roamRadius *
-      (0.35 + unit(`${seed}:radius`) * 0.65);
-
-    npc.roamTargetX =
-      npc.homeX + Math.cos(angle) * radius;
-
-    npc.roamTargetY =
-      npc.homeY + Math.sin(angle) * radius;
-
-    npc.nextRoamDecisionAt =
-      now + 4 + unit(`${seed}:time`) * 7;
-
-    npc.pauseUntil = 0;
-
-    nav.setTarget(
-      npc.roamTargetX,
-      npc.roamTargetY
-    );
-  }
-
-  updateRoam(entity, npc, transform, movement, now, nav) {
-    npc.state = 'roam';
-    npc.targetId = null;
-    movement.maxSpeed =
-      npc.baseMaxSpeed *
-      (0.48 + unit(`${entity.id}:cruise`) * 0.18);
-
-    const distanceToRoamTarget =
-      Math.hypot(
-        npc.roamTargetX - transform.x,
-        npc.roamTargetY - transform.y
-      );
-
-    if (npc.pauseUntil > now) {
-      nav.clearTarget();
-      return;
-    }
-
-    if (
-      now >= npc.nextRoamDecisionAt ||
-      distanceToRoamTarget < 90
-    ) {
-      const pauseSeed =
-        `${entity.id}:pause:${npc.roamDecisionIndex}`;
-
-      if (
-        distanceToRoamTarget < 90 &&
-        unit(pauseSeed) < 0.34
-      ) {
-        npc.pauseUntil =
-          now + 1.2 + unit(`${pauseSeed}:len`) * 2.8;
-        npc.nextRoamDecisionAt = npc.pauseUntil;
-        nav.clearTarget();
-        return;
-      }
-
-      this.chooseRoamTarget(
-        entity,
-        npc,
-        now,
-        nav
-      );
-    }
-  }
-
-  updateCombat(npc, npcTransform, playerEntity, playerTransform, playerDistance, now, nav) {
-    npc.state = 'combat';
-    npc.targetId = playerEntity.id;
-
-    if (playerDistance <= npc.engageDistance) {
-      nav.clearTarget();
-      return;
-    }
-
-    const dx =
-      playerTransform.x - npcTransform.x;
-
-    const dy =
-      playerTransform.y - npcTransform.y;
-
-    const length =
-      Math.max(1, Math.hypot(dx, dy));
-
-    nav.setTarget(
-      playerTransform.x -
-        (dx / length) * npc.engageDistance,
-      playerTransform.y -
-        (dy / length) * npc.engageDistance
-    );
-
-    if (
-      npc.disposition === NpcDisposition.RETALIATORY &&
-      now >= npc.retaliationUntil
-    ) {
-      npc.state = 'roam';
-      npc.targetId = null;
-      npc.attackedById = null;
-    }
-  }
-
-  updateFlee(npc, npcTransform, playerTransform, now, nav, movement) {
-    npc.state = 'flee';
-    npc.targetId = null;
-
-    movement.maxSpeed =
-      npc.baseMaxSpeed *
-      npc.fleeSpeedMultiplier;
-
-    if (now >= npc.fleeUntil) {
-      npc.state = 'roam';
-      npc.attackedById = null;
-      nav.clearTarget();
-      return;
-    }
-
-    const dx =
-      npcTransform.x - playerTransform.x;
-
-    const dy =
-      npcTransform.y - playerTransform.y;
-
-    const length =
-      Math.max(1, Math.hypot(dx, dy));
-
-    nav.setTarget(
-      npcTransform.x + (dx / length) * 1000,
-      npcTransform.y + (dy / length) * 1000
-    );
-  }
-
-  updateNpc(world, npcEntity, playerEntity, dt) {
-    const npc = npcEntity.get('npc');
-    const npcTransform = npcEntity.get('transform');
-    const movement = npcEntity.get('movement');
     const playerTransform =
       playerEntity?.get?.('transform');
 
-    if (!npc || !npcTransform || !movement || !playerTransform) {
-      return;
+    if (
+      !npc ||
+      !nav ||
+      !transform ||
+      !playerTransform
+    ) {
+      return false;
     }
 
     const now = world.time;
-    const nav = this.navigatorFor(npcEntity);
 
     const playerDistance =
       distanceBetween(
-        npcTransform,
+        transform,
         playerTransform
       );
 
-    movement.maxSpeed = npc.baseMaxSpeed;
-
     if (
-      npc.disposition === NpcDisposition.PEACEFUL &&
-      npc.state === 'flee'
+      npc.disposition ===
+        NpcDisposition.HOSTILE &&
+      playerDistance <=
+        npc.detectionRadius
     ) {
-      this.updateFlee(
-        npc,
-        npcTransform,
-        playerTransform,
-        now,
-        nav,
-        movement
-      );
-    } else if (
-      npc.disposition === NpcDisposition.RETALIATORY &&
-      npc.state === 'combat' &&
-      npc.attackedById === playerEntity.id &&
-      now < npc.retaliationUntil
-    ) {
-      this.updateCombat(
-        npc,
-        npcTransform,
-        playerEntity,
-        playerTransform,
-        playerDistance,
-        now,
-        nav
-      );
-    } else if (
-      npc.disposition === NpcDisposition.HOSTILE &&
-      (
-        npc.state === 'combat' ||
-        playerDistance <= npc.detectionRadius
-      ) &&
-      playerDistance <= npc.disengageRadius
-    ) {
-      this.updateCombat(
-        npc,
-        npcTransform,
-        playerEntity,
-        playerTransform,
-        playerDistance,
-        now,
-        nav
-      );
-    } else {
-      if (
-        npc.disposition === NpcDisposition.HOSTILE &&
-        playerDistance > npc.disengageRadius
-      ) {
-        npc.state = 'roam';
-        npc.targetId = null;
-      }
+      nav.targetHeading =
+        Math.atan2(
+          playerTransform.y -
+            transform.y,
+          playerTransform.x -
+            transform.x
+        ) *
+          180 /
+          Math.PI +
+        90;
 
-      this.updateRoam(
-        npcEntity,
-        npc,
-        npcTransform,
-        movement,
-        now,
-        nav
-      );
+      nav.nextCourseChange =
+        Math.max(
+          Number(nav.nextCourseChange) || 0,
+          nav.elapsed + 0.35
+        );
+
+      return true;
     }
 
-    nav.update(
-      npcEntity,
-      dt,
-      null
-    );
+    if (
+      npc.disposition ===
+        NpcDisposition.RETALIATORY &&
+      npc.attackedById ===
+        playerEntity.id &&
+      now <
+        npc.retaliationUntil
+    ) {
+      nav.targetHeading =
+        Math.atan2(
+          playerTransform.y -
+            transform.y,
+          playerTransform.x -
+            transform.x
+        ) *
+          180 /
+          Math.PI +
+        90;
+
+      nav.nextCourseChange =
+        Math.max(
+          Number(nav.nextCourseChange) || 0,
+          nav.elapsed + 0.35
+        );
+
+      return true;
+    }
+
+    if (
+      npc.disposition ===
+        NpcDisposition.PEACEFUL &&
+      npc.attackedById ===
+        playerEntity.id &&
+      now <
+        npc.fleeUntil
+    ) {
+      nav.targetHeading =
+        Math.atan2(
+          transform.y -
+            playerTransform.y,
+          transform.x -
+            playerTransform.x
+        ) *
+          180 /
+          Math.PI +
+        90;
+
+      return true;
+    }
+
+    if (
+      npc.disposition ===
+        NpcDisposition.PEACEFUL &&
+      now >= npc.fleeUntil
+    ) {
+      npc.attackedById = null;
+    }
+
+    if (
+      npc.disposition ===
+        NpcDisposition.RETALIATORY &&
+      now >= npc.retaliationUntil
+    ) {
+      npc.attackedById = null;
+    }
+
+    return false;
   }
 
-  update(world, playerEntity, dt) {
-    for (const entity of world.entities.withComponents(
-      'npc',
-      'ship',
-      'transform',
-      'movement'
-    )) {
-      this.updateNpc(
+  updateNpcNavigation(
+    world,
+    entity,
+    playerEntity,
+    dt
+  ) {
+    const npc =
+      entity.get('npc');
+
+    const nav =
+      npc?.navigation;
+
+    const transform =
+      entity.get('transform');
+
+    const movement =
+      entity.get('movement');
+
+    if (
+      !npc ||
+      !nav ||
+      !transform ||
+      !movement
+    ) {
+      return;
+    }
+
+    const baseMaxSpeed =
+      Math.max(
+        0,
+        Number(nav.speed) || 0
+      );
+
+    const fleeing =
+      npc.disposition ===
+        NpcDisposition.PEACEFUL &&
+      npc.attackedById ===
+        playerEntity?.id &&
+      world.time < npc.fleeUntil;
+
+    const maxSpeed =
+      fleeing
+        ? baseMaxSpeed *
+          npc.fleeSpeedMultiplier
+        : baseMaxSpeed;
+
+    if (
+      nav.mode === 'stationary' ||
+      maxSpeed <= 0
+    ) {
+      nav.vx = 0;
+      nav.vy = 0;
+
+      movement.velocityX = 0;
+      movement.velocityY = 0;
+      movement.speed = 0;
+      return;
+    }
+
+    // Port direto do antigo WorldRuntime.updateNpcNavigation.
+    const safeDt =
+      clamp(
+        Number(dt) || 1 / 60,
+        0.001,
+        0.08
+      );
+
+    nav.elapsed =
+      Math.max(
+        0,
+        Number(nav.elapsed) || 0
+      ) +
+      safeDt;
+
+    nav.courseCycle =
+      Math.max(
+        0,
+        Math.floor(
+          Number(nav.courseCycle) || 0
+        )
+      );
+
+    const halfW = 48;
+    const halfH = 48;
+
+    const left =
+      this.region.minX +
+      this.boundaryPadding +
+      halfW;
+
+    const right =
+      this.region.maxX -
+      this.boundaryPadding -
+      halfW;
+
+    const top =
+      this.region.minY +
+      this.boundaryPadding +
+      halfH;
+
+    const bottom =
+      this.region.maxY -
+      this.boundaryPadding -
+      halfH;
+
+    const edgeMargin =
+      Math.max(
+        90,
+        Math.min(
+          320,
+          maxSpeed * 2.1
+        )
+      );
+
+    const nearEdge =
+      transform.x <=
+        left + edgeMargin ||
+      transform.x >=
+        right - edgeMargin ||
+      transform.y <=
+        top + edgeMargin ||
+      transform.y >=
+        bottom - edgeMargin;
+
+    const behaviorOverride =
+      this.applyBehaviorHeading(
+        world,
+        entity,
+        playerEntity
+      );
+
+    if (nearEdge) {
+      const centerX =
+        (left + right) / 2;
+
+      const centerY =
+        (top + bottom) / 2;
+
+      nav.targetHeading =
+        Math.atan2(
+          centerY - transform.y,
+          centerX - transform.x
+        ) *
+          180 /
+          Math.PI +
+        90;
+
+      nav.nextCourseChange =
+        Math.max(
+          Number(nav.nextCourseChange) || 0,
+          nav.elapsed + 2.5
+        );
+    } else if (
+      !behaviorOverride &&
+      nav.elapsed >=
+        (Number(
+          nav.nextCourseChange
+        ) || 0)
+    ) {
+      nav.courseCycle += 1;
+
+      const seeded =
+        createSeededRandom(
+          hashString(
+            entity.id +
+              '.' +
+              nav.courseCycle
+          )
+        );
+
+      const current =
+        Number(
+          nav.targetHeading ??
+            nav.heading ??
+            transform.rotation
+        ) || 0;
+
+      nav.targetHeading =
+        current +
+        (seeded() - 0.5) *
+          110;
+
+      nav.nextCourseChange =
+        nav.elapsed +
+        3.5 +
+        seeded() *
+          5.5;
+    }
+
+    const targetHeading =
+      Number(
+        nav.targetHeading ??
+          nav.heading ??
+          transform.rotation
+      ) || 0;
+
+    const targetRad =
+      targetHeading *
+      Math.PI /
+      180;
+
+    const desiredX =
+      Math.sin(targetRad);
+
+    const desiredY =
+      -Math.cos(targetRad);
+
+    const accel =
+      Math.max(
+        100,
+        Number(nav.acceleration) ||
+          1100
+      );
+
+    const minSpeed =
+      clamp(
+        Number(nav.minSpeed) || 0,
+        0,
+        maxSpeed
+      );
+
+    const braking =
+      clamp(
+        Number(nav.braking ?? 0.12),
+        0.01,
+        0.98
+      );
+
+    const drag =
+      Math.pow(
+        braking,
+        safeDt
+      );
+
+    nav.vx =
+      (
+        (Number(nav.vx) || 0) +
+        desiredX *
+          accel *
+          safeDt
+      ) *
+      drag;
+
+    nav.vy =
+      (
+        (Number(nav.vy) || 0) +
+        desiredY *
+          accel *
+          safeDt
+      ) *
+      drag;
+
+    let actualSpeed =
+      Math.hypot(
+        nav.vx,
+        nav.vy
+      );
+
+    if (
+      actualSpeed > 0 &&
+      actualSpeed < minSpeed
+    ) {
+      const scale =
+        minSpeed /
+        actualSpeed;
+
+      nav.vx *= scale;
+      nav.vy *= scale;
+      actualSpeed = minSpeed;
+    }
+
+    if (
+      actualSpeed >
+      maxSpeed
+    ) {
+      const scale =
+        maxSpeed /
+        actualSpeed;
+
+      nav.vx *= scale;
+      nav.vy *= scale;
+      actualSpeed =
+        maxSpeed;
+    }
+
+    let nextX =
+      transform.x +
+      nav.vx *
+        safeDt;
+
+    let nextY =
+      transform.y +
+      nav.vy *
+        safeDt;
+
+    if (
+      nextX < left ||
+      nextX > right
+    ) {
+      nextX =
+        clamp(
+          nextX,
+          left,
+          right
+        );
+
+      nav.vx *= -0.28;
+
+      nav.targetHeading =
+        Math.atan2(
+          (top + bottom) / 2 -
+            nextY,
+          (left + right) / 2 -
+            nextX
+        ) *
+          180 /
+          Math.PI +
+        90;
+    }
+
+    if (
+      nextY < top ||
+      nextY > bottom
+    ) {
+      nextY =
+        clamp(
+          nextY,
+          top,
+          bottom
+        );
+
+      nav.vy *= -0.28;
+
+      nav.targetHeading =
+        Math.atan2(
+          (top + bottom) / 2 -
+            nextY,
+          (left + right) / 2 -
+            nextX
+        ) *
+          180 /
+          Math.PI +
+        90;
+    }
+
+    transform.x =
+      clamp(
+        nextX,
+        left,
+        right
+      );
+
+    transform.y =
+      clamp(
+        nextY,
+        top,
+        bottom
+      );
+
+    actualSpeed =
+      Math.hypot(
+        nav.vx,
+        nav.vy
+      );
+
+    if (
+      actualSpeed > 4
+    ) {
+      transform.rotation =
+        Math.atan2(
+          nav.vy,
+          nav.vx
+        ) *
+          180 /
+          Math.PI +
+        90;
+
+      nav.heading =
+        transform.rotation;
+    }
+
+    movement.velocityX =
+      nav.vx;
+
+    movement.velocityY =
+      nav.vy;
+
+    movement.speed =
+      actualSpeed;
+
+    movement.maxSpeed =
+      maxSpeed;
+  }
+
+  update(
+    world,
+    playerEntity,
+    dt
+  ) {
+    for (
+      const entity of
+      world.entities.withComponents(
+        'npc',
+        'ship',
+        'transform',
+        'movement'
+      )
+    ) {
+      this.updateNpcNavigation(
         world,
         entity,
         playerEntity,
@@ -317,11 +630,5 @@ export class NpcBehaviorSystem {
     }
   }
 
-  remove(entityId) {
-    this.navigation.delete(entityId);
-  }
-
-  clear() {
-    this.navigation.clear();
-  }
+  clear() {}
 }
