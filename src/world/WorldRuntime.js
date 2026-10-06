@@ -192,6 +192,8 @@ export class WorldRuntime {
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
+    this.canAttackEntity=typeof options.canAttackEntity==="function"?options.canAttackEntity:()=>true;
+    this.attackLockMessage=typeof options.attackLockMessage==="function"?options.attackLockMessage:()=>"Alvo bloqueado.";
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
     this.onShopPurchase=typeof options.onShopPurchase==="function"?options.onShopPurchase:null;
     this.getConsumableQuantity=typeof options.getConsumableQuantity==="function"?options.getConsumableQuantity:()=>0;
@@ -5118,6 +5120,10 @@ export class WorldRuntime {
 
   fireDirectNavalProjectile(entity){
     if(!this.isClickableCombatShip(entity)||this.mode!=="play"||this.navalPlayerHp<=0)return false;
+    if(this.canAttackEntity(entity)!==true){
+      this.stopNavalAutoFire({keepTarget:true,message:String(this.attackLockMessage(entity)||"Alvo bloqueado.")});
+      return false;
+    }
     this.syncEquippedCannonsFromShipyard();
     if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
       this.stopNavalAutoFire({keepTarget:true,message:"Nenhum canhão equipado neste navio."});
@@ -5626,6 +5632,14 @@ export class WorldRuntime {
     const action=inferCollisionAction(entity,collision);
 
     if(this.combatTarget?.id===entity.id&&this.isClickableCombatShip(entity)){
+      if(this.canAttackEntity(entity)!==true){
+        this.navalAutoFire=false;
+        const message=String(this.attackLockMessage(entity)||"Alvo bloqueado.");
+        if(this.actionButton)this.actionButton.textContent="🔒 Bloqueado";
+        if(this.actionMessage)this.actionMessage.textContent=message;
+        this.showGameplayToast(message,2200);
+        return;
+      }
       if(!this.isNavalTargetInRange(entity)){
         const stats=this.playerNavalCombatStats();
         if(this.actionMessage)this.actionMessage.textContent=
@@ -5643,6 +5657,14 @@ export class WorldRuntime {
 
     if(action==="combat"&&String(entity.type||"")==="ship"){
       this.selectCombatTarget(entity);
+      if(this.canAttackEntity(entity)!==true){
+        this.navalAutoFire=false;
+        const message=String(this.attackLockMessage(entity)||"Alvo bloqueado.");
+        if(this.actionButton)this.actionButton.textContent="🔒 Bloqueado";
+        if(this.actionMessage)this.actionMessage.textContent=message;
+        this.showGameplayToast(message,2200);
+        return;
+      }
       if(this.isNavalTargetInRange(entity)){
         this.navalAutoFire=true;
         this.navalNextShotAt=0;
