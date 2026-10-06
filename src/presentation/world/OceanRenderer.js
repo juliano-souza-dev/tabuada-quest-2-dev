@@ -17,6 +17,7 @@ export class OceanRenderer {
     this.height = 0;
     this.elapsed = 0;
 
+    this.depth = null;
     this.base = null;
     this.highlights = null;
     this.displacementMap = null;
@@ -35,6 +36,16 @@ export class OceanRenderer {
 
     try {
       const texture = await assets.load(OCEAN_TEXTURE_URL);
+
+      this.depth = new TilingSprite({
+        texture,
+        width: 1,
+        height: 1
+      });
+      this.depth.alpha = 0.34;
+      this.depth.tint = 0x0b5b78;
+      this.depth.tileScale.set(1.32);
+      this.depth.eventMode = 'none';
 
       this.base = new TilingSprite({
         texture,
@@ -61,7 +72,7 @@ export class OceanRenderer {
         scale: 13
       });
 
-      this.water.addChild(this.base, this.highlights);
+      this.water.addChild(this.depth, this.base, this.highlights);
       this.water.filters = [this.displacementFilter];
 
       // O mapa participa do filtro, mas não precisa ser visível.
@@ -85,7 +96,7 @@ export class OceanRenderer {
     const renderWidth = width * 2 + margin * 2;
     const renderHeight = height * 2 + margin * 2;
 
-    for (const layer of [this.base, this.highlights]) {
+    for (const layer of [this.depth, this.base, this.highlights]) {
       if (!layer) continue;
       layer.position.set(left, top);
       layer.width = renderWidth;
@@ -105,7 +116,7 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.base || !this.displacementMap) return;
+    if (!this.base || !this.depth || !this.displacementMap) return;
 
     this.elapsed += dt;
 
@@ -117,6 +128,12 @@ export class OceanRenderer {
     this.displacementMap.x = Math.sin(slowWave) * 22;
     this.displacementMap.y = Math.cos(crossWave) * 16;
     this.displacementMap.rotation = Math.sin(this.elapsed * 0.17) * 0.012;
+
+    // Profundidade lenta por baixo da superfície.
+    this.depth.tilePosition.x = Math.sin(this.elapsed * 0.11) * 18;
+    this.depth.tilePosition.y = Math.cos(this.elapsed * 0.09) * 14;
+    const depthBreathing = 1.32 + Math.sin(this.elapsed * 0.16) * 0.008;
+    this.depth.tileScale.set(depthBreathing);
 
     // Segunda leitura de onda para quebrar a repetição do tile.
     this.highlights.tilePosition.x = Math.sin(this.elapsed * 0.23) * 12;
