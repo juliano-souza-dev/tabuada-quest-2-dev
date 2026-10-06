@@ -636,9 +636,7 @@
         "respawn": true,
         "respawnDelaySec": 300,
         "hp": 100000,
-        "rewards": {
-          "shipId": "ship-halloween-dreadnought"
-        },
+        "rewards": {},
         "spawn": {
           "mode": "random-spaced",
           "margin": 420,
