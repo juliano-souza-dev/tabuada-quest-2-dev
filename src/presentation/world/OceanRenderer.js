@@ -14,6 +14,10 @@ export class OceanRenderer {
     this.cameraY = 0;
     this.elapsed = 0;
 
+    // A fase visual do oceano pertence ao mundo, não à câmera.
+    this.worldPhaseX = 0;
+    this.worldPhaseY = 0;
+
     this.depth = null;
     this.base = null;
     this.glints = null;
@@ -89,7 +93,15 @@ export class OceanRenderer {
       layer.position.set(left, top);
       layer.width = renderWidth;
       layer.height = renderHeight;
+
+      // Como a janela do TilingSprite é reciclada ao redor da câmera,
+      // compensamos sua origem local para manter o desenho parado no mundo.
+      layer.tilePosition.x = -left;
+      layer.tilePosition.y = -top;
     }
+
+    this.worldPhaseX = -left;
+    this.worldPhaseY = -top;
 
     this.fallback
       .clear()
@@ -103,26 +115,21 @@ export class OceanRenderer {
     this.elapsed += dt;
     this.surfaceFilter?.update(this.elapsed);
 
-    // A textura fica ancorada ao mundo. A câmera apenas revela outra parte do mar.
-    // A velocidade do navio NÃO altera a velocidade da animação da água.
-    const worldOffsetX = -this.cameraX;
-    const worldOffsetY = -this.cameraY;
-
+    // O padrão do mar permanece fixo em coordenadas de mundo.
+    // A câmera apenas passeia sobre ele.
     this.base.tilePosition.x =
-      worldOffsetX + Math.sin(this.elapsed * 0.07) * 1.8;
+      this.worldPhaseX + Math.sin(this.elapsed * 0.07) * 1.8;
     this.base.tilePosition.y =
-      worldOffsetY + Math.cos(this.elapsed * 0.06) * 1.4;
+      this.worldPhaseY + Math.cos(this.elapsed * 0.06) * 1.4;
 
-    // Camadas usam o mesmo deslocamento de câmera para não criar parallax
-    // exagerado durante a navegação.
     this.depth.tilePosition.x =
-      worldOffsetX + Math.sin(this.elapsed * 0.045) * 3.2;
+      this.worldPhaseX + Math.sin(this.elapsed * 0.045) * 3.2;
     this.depth.tilePosition.y =
-      worldOffsetY + Math.cos(this.elapsed * 0.04) * 2.4;
+      this.worldPhaseY + Math.cos(this.elapsed * 0.04) * 2.4;
 
     this.glints.tilePosition.x =
-      worldOffsetX + Math.sin(this.elapsed * 0.11) * 4.2;
+      this.worldPhaseX + Math.sin(this.elapsed * 0.11) * 4.2;
     this.glints.tilePosition.y =
-      worldOffsetY + Math.cos(this.elapsed * 0.09) * 3.1;
+      this.worldPhaseY + Math.cos(this.elapsed * 0.09) * 3.1;
   }
 }
