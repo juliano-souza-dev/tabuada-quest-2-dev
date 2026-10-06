@@ -67,7 +67,21 @@ export class NpcBehaviorSystem {
     if (npc.disposition === NpcDisposition.HOSTILE) {
       if (playerDistance <= npc.detectionRadius) {
         npc.targetId = playerEntity.id;
-        nav.setTarget(playerTransform.x, playerTransform.y);
+
+        const engageDistance = 240;
+
+        if (playerDistance > engageDistance) {
+          const dx = playerTransform.x - npcTransform.x;
+          const dy = playerTransform.y - npcTransform.y;
+          const length = Math.max(1, Math.hypot(dx, dy));
+
+          nav.setTarget(
+            playerTransform.x - (dx / length) * engageDistance,
+            playerTransform.y - (dy / length) * engageDistance
+          );
+        } else {
+          nav.clearTarget();
+        }
       } else {
         npc.targetId = null;
         nav.clearTarget();
@@ -80,7 +94,20 @@ export class NpcBehaviorSystem {
         now < npc.retaliationUntil
       ) {
         npc.targetId = playerEntity.id;
-        nav.setTarget(playerTransform.x, playerTransform.y);
+
+        const engageDistance = 240;
+        const dx = playerTransform.x - npcTransform.x;
+        const dy = playerTransform.y - npcTransform.y;
+        const length = Math.max(1, Math.hypot(dx, dy));
+
+        if (playerDistance > engageDistance) {
+          nav.setTarget(
+            playerTransform.x - (dx / length) * engageDistance,
+            playerTransform.y - (dy / length) * engageDistance
+          );
+        } else {
+          nav.clearTarget();
+        }
       } else {
         npc.targetId = null;
         nav.clearTarget();
