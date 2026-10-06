@@ -14,13 +14,7 @@ export class OceanRenderer {
     this.cameraY = 0;
     this.elapsed = 0;
 
-    // A fase visual do oceano pertence ao mundo, não à câmera.
-    this.worldPhaseX = 0;
-    this.worldPhaseY = 0;
-
-    this.depth = null;
     this.base = null;
-    this.glints = null;
     this.surfaceFilter = null;
 
     this.fallback = new Graphics()
@@ -36,23 +30,11 @@ export class OceanRenderer {
     try {
       const texture = await assets.load(OCEAN_TEXTURE_URL);
 
-      this.depth = new TilingSprite({ texture, width: 1, height: 1 });
-      this.depth.alpha = 0.24;
-      this.depth.tint = 0x0a6683;
-      this.depth.tileScale.set(1.22);
-      this.depth.eventMode = 'none';
-
       this.base = new TilingSprite({ texture, width: 1, height: 1 });
       this.base.eventMode = 'none';
 
-      this.glints = new TilingSprite({ texture, width: 1, height: 1 });
-      this.glints.alpha = 0.10;
-      this.glints.tileScale.set(0.88);
-      this.glints.eventMode = 'none';
-
       this.surfaceFilter = new OceanSurfaceFilter();
-
-      this.water.addChild(this.depth, this.base, this.glints);
+      this.water.addChild(this.base);
       this.water.filters = [this.surfaceFilter];
 
       this.fallback.visible = false;
@@ -88,27 +70,17 @@ export class OceanRenderer {
     const renderWidth = width + margin * 2;
     const renderHeight = height + margin * 2;
 
-    this.surfaceFilter?.setWorldRect(
-      left,
-      top,
-      renderWidth,
-      renderHeight
-    );
+    this.surfaceFilter?.setWorldRect(left, top, renderWidth, renderHeight);
 
-    for (const layer of [this.depth, this.base, this.glints]) {
-      if (!layer) continue;
-      layer.position.set(left, top);
-      layer.width = renderWidth;
-      layer.height = renderHeight;
+    if (this.base) {
+      this.base.position.set(left, top);
+      this.base.width = renderWidth;
+      this.base.height = renderHeight;
 
-      // Como a janela do TilingSprite é reciclada ao redor da câmera,
-      // compensamos sua origem local para manter o desenho parado no mundo.
-      layer.tilePosition.x = -left;
-      layer.tilePosition.y = -top;
+      // Compensa a janela reciclada do TilingSprite: o mesmo ponto do mundo
+      // sempre mostra o mesmo trecho da textura.
+      this.base.tilePosition.set(-left, -top);
     }
-
-    this.worldPhaseX = -left;
-    this.worldPhaseY = -top;
 
     this.fallback
       .clear()
@@ -117,26 +89,8 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.base || !this.depth || !this.glints) return;
-
+    if (!this.base) return;
     this.elapsed += dt;
     this.surfaceFilter?.update(this.elapsed);
-
-    // O padrão do mar permanece fixo em coordenadas de mundo.
-    // A câmera apenas passeia sobre ele.
-    this.base.tilePosition.x =
-      this.worldPhaseX + Math.sin(this.elapsed * 0.07) * 1.8;
-    this.base.tilePosition.y =
-      this.worldPhaseY + Math.cos(this.elapsed * 0.06) * 1.4;
-
-    this.depth.tilePosition.x =
-      this.worldPhaseX + Math.sin(this.elapsed * 0.045) * 3.2;
-    this.depth.tilePosition.y =
-      this.worldPhaseY + Math.cos(this.elapsed * 0.04) * 2.4;
-
-    this.glints.tilePosition.x =
-      this.worldPhaseX + Math.sin(this.elapsed * 0.11) * 4.2;
-    this.glints.tilePosition.y =
-      this.worldPhaseY + Math.cos(this.elapsed * 0.09) * 3.1;
   }
 }
