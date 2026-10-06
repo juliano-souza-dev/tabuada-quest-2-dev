@@ -1,3 +1,21 @@
+let capturedInstallPrompt=null;
+const installPromptListeners=new Set();
+
+globalThis.addEventListener?.("beforeinstallprompt",event=>{
+  event.preventDefault();
+  capturedInstallPrompt=event;
+  for(const listener of installPromptListeners){
+    try{listener(event)}catch{}
+  }
+});
+
+globalThis.addEventListener?.("appinstalled",()=>{
+  capturedInstallPrompt=null;
+  for(const listener of installPromptListeners){
+    try{listener(null,{installed:true})}catch{}
+  }
+});
+
 const isStandalone=()=>(
   globalThis.matchMedia?.("(display-mode: standalone)")?.matches===true
   ||globalThis.matchMedia?.("(display-mode: fullscreen)")?.matches===true
@@ -75,8 +93,11 @@ function installGateStyles(){
 }
 
 export async function enforcePwaOnly(root){
-  await registerWorker();
+  // Capture beforeinstallprompt at module load time, before awaiting service-worker
+  // registration. The previous implementation attached the listener too late and
+  // could miss Chrome's install event, leaving the button stuck on "Aguardando...".
   if(isStandalone())return {allowed:true,standalone:true};
+  await registerWorker();
 
   installGateStyles();
   const ios=isIOS();
@@ -84,7 +105,7 @@ export async function enforcePwaOnly(root){
 
   const button=root.querySelector("[data-pwa-install]");
   const status=root.querySelector("[data-pwa-status]");
-  let promptEvent=null;
+  let promptEvent=capturedInstallPrompt;
 
   const setStatus=message=>{if(status)status.textContent=String(message||"")};
   const syncButton=()=>{
@@ -99,24 +120,22 @@ export async function enforcePwaOnly(root){
       button.disabled=false;
       return;
     }
-    button.textContent="Aguardando opção de instalação…";
-    button.disabled=true;
+    button.textContent="Como instalar";
+    button.disabled=false;
   };
 
-  const beforeInstall=event=>{
-    event.preventDefault();
-    promptEvent=event;
+  const onInstallPrompt=(event,meta={})=>{
+    if(meta.installed===true){
+      promptEvent=null;
+      setStatus("Instalado. Agora abra o Tabuada Quest pelo ícone do aplicativo.");
+      syncButton();
+      return;
+    }
+    promptEvent=event||capturedInstallPrompt;
     setStatus("");
     syncButton();
   };
-  const installed=()=>{
-    promptEvent=null;
-    setStatus("Instalado. Agora abra o Tabuada Quest pelo ícone do aplicativo.");
-    syncButton();
-  };
-
-  globalThis.addEventListener("beforeinstallprompt",beforeInstall);
-  globalThis.addEventListener("appinstalled",installed);
+  installPromptListeners.add(onInstallPrompt);
 
   button?.addEventListener("click",async()=>{
     if(ios){
@@ -125,7 +144,10 @@ export async function enforcePwaOnly(root){
       setStatus("Use o menu Compartilhar do Safari.");
       return;
     }
-    if(!promptEvent)return;
+    if(!promptEvent){
+      setStatus("Use o ícone de instalar na barra do navegador ou abra o menu ⋮ e escolha “Instalar Tabuada Quest”.");
+      return;
+    }
     button.disabled=true;
     try{
       await promptEvent.prompt();
@@ -152,8 +174,7 @@ export async function enforcePwaOnly(root){
     allowed:false,
     standalone:false,
     destroy(){
-      globalThis.removeEventListener("beforeinstallprompt",beforeInstall);
-      globalThis.removeEventListener("appinstalled",installed);
+      installPromptListeners.delete(onInstallPrompt);
     }
   };
 }
