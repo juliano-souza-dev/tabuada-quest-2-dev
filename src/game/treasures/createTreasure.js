@@ -5,11 +5,15 @@ export function createTreasure({
   id,
   x = 0,
   y = 0,
-  kind = 'basic',
-  collectRadius = 72,
-  reward = { gold: 100 }
+  kind = 'halloween',
+  slot = 0,
+  generation = 0,
+  collectRadius = 84,
+  clickRadius = 110,
+  rewardRef
 } = {}) {
   if (!id) throw new Error('Treasure id is required.');
+  if (!rewardRef) throw new Error('Treasure rewardRef is required.');
 
   return new Entity({
     id,
@@ -18,9 +22,12 @@ export function createTreasure({
       transform: createTransform({ x, y, rotation: 0 }),
       treasure: {
         kind,
+        slot,
+        generation,
         collectRadius,
-        reward: { ...reward },
-        collected: false
+        clickRadius,
+        rewardRef,
+        claimToken: `${id}:g${generation}`
       }
     }
   });
