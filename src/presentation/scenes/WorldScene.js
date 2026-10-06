@@ -78,7 +78,7 @@ export class WorldScene {
       rotation: before.rotation
     };
 
-    this.shipNavigation.update(this.playerShip, dt);
+    this.shipNavigation.update(this.playerShip, dt, this.input?.analog);
 
     const after = this.playerShip.get('transform');
     this.currentPose = {
