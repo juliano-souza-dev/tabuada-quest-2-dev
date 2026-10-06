@@ -36,14 +36,13 @@ export class GameApp {
 
     await this.renderer.init({ resizeTo: window, antialias: true, background: '#071522', resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true });
     this.mount.appendChild(this.renderer.canvas);
-    this.renderer.ticker.stop();
     this.input.attach(this.renderer.canvas);
     await this.scenes.change(new WorldScene({ renderer: this.renderer }));
     this.loop.start();
   }
 
   update(dt) { this.input.update(dt); this.scenes.update(dt); }
-  render(alpha) { this.scenes.render(alpha); this.renderer.renderer.render(this.renderer.stage); }
+  render(alpha) { this.scenes.render(alpha); }
 
   stop() {
     this.loop.stop();
