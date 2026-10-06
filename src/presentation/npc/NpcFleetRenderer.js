@@ -32,7 +32,8 @@ export class NpcFleetRenderer {
     const promise = (async () => {
       const renderer = new ShipRenderer({
         assetUrl: PIRATE_NPC_ASSET_URL,
-        useHalloweenEffects: false
+        useHalloweenEffects: false,
+        frameZeroHeading: 0
       });
 
       await renderer.init(this.assets);
