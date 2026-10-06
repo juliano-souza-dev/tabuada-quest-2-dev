@@ -8,11 +8,15 @@ import { TreasureSpawnSystem } from '../../game/systems/TreasureSpawnSystem.js';
 import { resolveReward } from '../../game/rewards/RewardCatalog.js';
 import { grantReward } from '../../game/rewards/RewardGrantService.js';
 import { createMathChallenge } from '../../game/math/createMathChallenge.js';
+import { createNpc } from '../../game/npc/createNpc.js';
+import { NpcDisposition } from '../../game/npc/NpcDisposition.js';
+import { NpcBehaviorSystem } from '../../game/systems/NpcBehaviorSystem.js';
 import { OceanRenderer } from '../world/OceanRenderer.js';
 import { ShipRenderer } from '../ships/ShipRenderer.js';
 import { ShipWakeRenderer } from '../ships/ShipWakeRenderer.js';
 import { TreasureRenderer } from '../treasures/TreasureRenderer.js';
 import { MathChallengeModal } from '../hud/math/MathChallengeModal.js';
+import { NpcFleetRenderer } from '../npc/NpcFleetRenderer.js';
 import {
   STARTER_REGION,
   clampPointToRegion
@@ -103,6 +107,15 @@ export class WorldScene {
     this.mathChallenge =
       new MathChallengeModal();
 
+    this.npcBehavior =
+      new NpcBehaviorSystem({
+        region: this.region,
+        boundaryPadding: 56
+      });
+
+    this.npcRenderer =
+      new NpcFleetRenderer();
+
     this.pendingTreasureId = null;
     this.challengeBusy = false;
 
@@ -151,9 +164,38 @@ export class WorldScene {
 
     this.world.entities.add(this.playerShip);
 
+    [
+      createNpc({
+        id: 'npc-hostile-01',
+        x: 700,
+        y: -520,
+        rotation: 180,
+        disposition: NpcDisposition.HOSTILE
+      }),
+      createNpc({
+        id: 'npc-retaliatory-01',
+        x: -820,
+        y: -260,
+        rotation: 45,
+        disposition: NpcDisposition.RETALIATORY
+      }),
+      createNpc({
+        id: 'npc-peaceful-01',
+        x: 360,
+        y: 860,
+        rotation: 300,
+        disposition: NpcDisposition.PEACEFUL
+      })
+    ].forEach((npc) => {
+      this.world.entities.add(npc);
+    });
+
     this.view.addChild(this.ocean.view);
     this.camera.view.addChild(
       this.treasureRenderer.view
+    );
+    this.camera.view.addChild(
+      this.npcRenderer.view
     );
     this.camera.view.addChild(
       this.shipRenderer.view
@@ -178,7 +220,8 @@ export class WorldScene {
     await Promise.all([
       this.ocean.init(this.assets),
       this.shipRenderer.init(this.assets),
-      this.treasureRenderer.init(this.assets)
+      this.treasureRenderer.init(this.assets),
+      this.npcRenderer.init(this.assets)
     ]);
 
     await this.treasureSpawn.initialize(
@@ -187,6 +230,10 @@ export class WorldScene {
 
     this.treasureRenderer.sync(
       this.treasureEntities()
+    );
+
+    this.npcRenderer.sync(
+      this.world.entities.withComponents('npc', 'ship', 'transform')
     );
 
     this.resize();
@@ -447,6 +494,15 @@ export class WorldScene {
       this.input?.analog
     );
 
+    this.npcBehavior.boundaryPadding =
+      sharedBoundaryPadding;
+
+    this.npcBehavior.update(
+      this.world,
+      this.playerShip,
+      dt
+    );
+
     const after =
       this.playerShip.get('transform');
 
@@ -539,6 +595,11 @@ export class WorldScene {
       dt
     );
 
+    this.npcRenderer.sync(
+      this.world.entities.withComponents('npc', 'ship', 'transform')
+    );
+    this.npcRenderer.advance(dt);
+
     this.shipRenderer.advance(dt);
     this.ocean.update(dt);
   }
@@ -570,6 +631,10 @@ export class WorldScene {
     this.shipRenderer.render(
       pose,
       this.playerShip.get('visual')
+    );
+
+    this.npcRenderer.sync(
+      this.world.entities.withComponents('npc', 'ship', 'transform')
     );
 
     const cameraPose = {
@@ -648,6 +713,23 @@ export class WorldScene {
     );
   }
 
+  notifyNpcAttacked(npcId, attackerId = this.playerShip.id) {
+    const npcEntity =
+      this.world.entities.get(npcId);
+
+    if (!npcEntity?.has('npc')) {
+      return false;
+    }
+
+    this.npcBehavior.notifyAttacked(
+      npcEntity,
+      attackerId,
+      this.world.time
+    );
+
+    return true;
+  }
+
   resize() {
     const {
       width,
@@ -668,6 +750,9 @@ export class WorldScene {
   async exit() {
     this.mathChallenge.destroy();
     this.treasureRenderer.destroy();
+    this.npcRenderer.destroy();
+    this.npcBehavior.clear();
+    this.shipRenderer.destroy?.();
     this.ocean.destroy?.();
   }
 }
