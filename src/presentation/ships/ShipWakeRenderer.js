@@ -14,7 +14,7 @@ const distance = (a, b) =>
 
 const WAKE = Object.freeze({
   opacity: 0.78,
-  width: 66,
+  width: 74,
   length: 240,
   rateMs: 55,
   minSpeed: 35,
@@ -379,7 +379,7 @@ export class ShipWakeRenderer {
 
       const spread =
         WAKE.width *
-        (0.72 + age * 0.88);
+        (0.78 + age * 0.88);
 
       const rad =
         Number(sample.heading || 0) *
