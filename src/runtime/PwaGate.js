@@ -97,11 +97,15 @@ export async function enforcePwaOnly(root){
   // registration. The previous implementation attached the listener too late and
   // could miss Chrome's install event, leaving the button stuck on "Aguardando...".
   if(isStandalone())return {allowed:true,standalone:true};
-  await registerWorker();
 
+  // Never block first paint on service-worker registration/update.
+  // On some production browsers the registration promise can take several
+  // seconds while an old worker is being replaced, which previously left
+  // the app as a blank navy screen.
   installGateStyles();
   const ios=isIOS();
   root.innerHTML=gateMarkup({ios});
+  registerWorker().catch(error=>console.warn("[TQ PWA] background worker registration failed",error));
 
   const button=root.querySelector("[data-pwa-install]");
   const status=root.querySelector("[data-pwa-status]");
