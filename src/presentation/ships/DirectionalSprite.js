@@ -1,30 +1,47 @@
 import { Rectangle, Sprite, Texture } from 'pixi.js';
 
-const DIRECTION_COUNT = 16;
-const STEP_DEGREES = 360 / DIRECTION_COUNT;
+const STEP_DEGREES = 22.5;
+
+const FRAME_REGIONS = Object.freeze([
+  { direction: 'n',   x: 0,    y: 0 },
+  { direction: 'nne', x: 400,  y: 0 },
+  { direction: 'ne',  x: 800,  y: 0 },
+  { direction: 'ene', x: 1200, y: 0 },
+
+  { direction: 'e',   x: 0,    y: 400 },
+  { direction: 'ese', x: 400,  y: 400 },
+  { direction: 'se',  x: 800,  y: 400 },
+  { direction: 'sse', x: 1200, y: 400 },
+
+  { direction: 's',   x: 0,    y: 800 },
+  { direction: 'ssw', x: 400,  y: 800 },
+  { direction: 'sw',  x: 800,  y: 800 },
+  { direction: 'wsw', x: 1200, y: 800 },
+
+  { direction: 'w',   x: 0,    y: 1200 },
+  { direction: 'wnw', x: 400,  y: 1200 },
+  { direction: 'nw',  x: 800,  y: 1200 },
+  { direction: 'nnw', x: 1200, y: 1200 }
+]);
 
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
 
 export class DirectionalSprite {
-  constructor(sheetTexture, { columns = 4, rows = 4, displaySize = 190 } = {}) {
+  constructor(sheetTexture, {
+    frameWidth = 400,
+    frameHeight = 400,
+    displaySize = 190
+  } = {}) {
     this.sheetTexture = sheetTexture;
     this.frames = [];
     this.currentIndex = -1;
 
-    const sheetWidth = sheetTexture.width;
-    const sheetHeight = sheetTexture.height;
-    const frameWidth = sheetWidth / columns;
-    const frameHeight = sheetHeight / rows;
-
-    for (let index = 0; index < DIRECTION_COUNT; index += 1) {
-      const column = index % columns;
-      const row = Math.floor(index / columns);
-
+    for (const region of FRAME_REGIONS) {
       this.frames.push(new Texture({
         source: sheetTexture.source,
         frame: new Rectangle(
-          column * frameWidth,
-          row * frameHeight,
+          region.x,
+          region.y,
           frameWidth,
           frameHeight
         )
@@ -39,8 +56,7 @@ export class DirectionalSprite {
   }
 
   setDirection(degrees) {
-    const normalized = normalizeDegrees(degrees);
-    const index = Math.round(normalized / STEP_DEGREES) % DIRECTION_COUNT;
+    const index = Math.round(normalizeDegrees(degrees) / STEP_DEGREES) % 16;
 
     if (index === this.currentIndex) return;
 
