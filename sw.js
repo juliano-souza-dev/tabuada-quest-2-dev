@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261006-pwa-install-fix-v2";
+const CACHE_NAME="tq-pwa-runtime-20261006-terror-galleon-100k-v1";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
