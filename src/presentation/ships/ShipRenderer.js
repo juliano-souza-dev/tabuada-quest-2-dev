@@ -11,10 +11,12 @@ const DEFAULT_SHIP_ASSET_URL = new URL(
 export class ShipRenderer {
   constructor({
     assetUrl = DEFAULT_SHIP_ASSET_URL,
-    useHalloweenEffects = true
+    useHalloweenEffects = true,
+    frameZeroHeading = 270
   } = {}) {
     this.assetUrl = assetUrl;
     this.useHalloweenEffects = useHalloweenEffects;
+    this.frameZeroHeading = frameZeroHeading;
     this.view = new Container();
     this.directional = null;
     this.elapsed = 0;
@@ -41,7 +43,11 @@ export class ShipRenderer {
     this.directional =
       new DirectionalSprite(
         sheetTexture,
-        { displayScale: 1 }
+        {
+          displayScale: 1,
+          frameZeroHeading:
+            this.frameZeroHeading
+        }
       );
 
     if (this.halloweenFilter) {
