@@ -24,7 +24,7 @@ export class ShipNavigationSystem {
     this.target = null;
   }
 
-  update(entity, dt) {
+  update(entity, dt, steering = null) {
     const transform = entity.get('transform');
     const movement = entity.get('movement');
     const ship = entity.get('ship');
@@ -32,8 +32,20 @@ export class ShipNavigationSystem {
     if (!transform || !movement || !ship) return;
 
     let desiredSpeed = 0;
+    let desiredHeading = null;
 
-    if (this.target) {
+    if (steering?.active) {
+      this.clearTarget();
+
+      const x = Number(steering.x) || 0;
+      const y = Number(steering.y) || 0;
+      const magnitude = Math.max(0, Math.min(1, Number(steering.magnitude) || 0));
+
+      if (magnitude > 0.001) {
+        desiredHeading = normalizeDegrees(Math.atan2(x, -y) * 180 / Math.PI);
+        desiredSpeed = movement.maxSpeed * magnitude;
+      }
+    } else if (this.target) {
       const dx = this.target.x - transform.x;
       const dy = this.target.y - transform.y;
       const distance = Math.hypot(dx, dy);
@@ -41,13 +53,7 @@ export class ShipNavigationSystem {
       if (distance <= ship.stopRadius) {
         this.clearTarget();
       } else {
-        const desiredHeading = normalizeDegrees(Math.atan2(dx, -dy) * 180 / Math.PI);
-        const turn = shortestAngle(transform.rotation, desiredHeading);
-        const maxTurn = movement.turnRate * dt;
-
-        transform.rotation = normalizeDegrees(
-          transform.rotation + Math.max(-maxTurn, Math.min(maxTurn, turn))
-        );
+        desiredHeading = normalizeDegrees(Math.atan2(dx, -dy) * 180 / Math.PI);
 
         const brakingDistance =
           (movement.speed * movement.speed) / Math.max(1, 2 * movement.deceleration);
@@ -56,6 +62,15 @@ export class ShipNavigationSystem {
           ? Math.max(45, movement.maxSpeed * 0.28)
           : movement.maxSpeed;
       }
+    }
+
+    if (desiredHeading !== null) {
+      const turn = shortestAngle(transform.rotation, desiredHeading);
+      const maxTurn = movement.turnRate * dt;
+
+      transform.rotation = normalizeDegrees(
+        transform.rotation + Math.max(-maxTurn, Math.min(maxTurn, turn))
+      );
     }
 
     const rate = desiredSpeed > movement.speed
