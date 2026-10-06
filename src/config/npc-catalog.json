@@ -29,7 +29,7 @@
     {
       "id": "boss-halloween-dreadnought",
       "name": "Terror do Halloween",
-      "shipId": "ship-halloween-dreadnought",
+      "shipId": "ship-halloween-terror-galleon-400",
       "boss": true,
       "coopBoss": true,
       "coopBossId": "boss-halloween-dreadnought",
@@ -40,7 +40,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 5000000,
+        "hp": 100000,
         "attitude": "hostile",
         "damage": 5,
         "maxTargets": 2,
