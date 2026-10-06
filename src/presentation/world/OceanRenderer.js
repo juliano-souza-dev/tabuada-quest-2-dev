@@ -103,19 +103,17 @@ export class OceanRenderer {
     this.elapsed += dt;
     this.surfaceFilter?.update(this.elapsed);
 
-    // Mantém o padrão preso ao mundo enquanto a câmera navega.
-    this.base.tilePosition.set(-this.cameraX, -this.cameraY);
+    // O movimento visual do oceano é estritamente baseado no tempo.
+    // A velocidade/câmera do navio não altera a intensidade da água.
+    this.base.tilePosition.x = Math.sin(this.elapsed * 0.07) * 1.8;
+    this.base.tilePosition.y = Math.cos(this.elapsed * 0.06) * 1.4;
 
-    // Profundidade quase estática, em escala diferente.
-    this.depth.tilePosition.x =
-      -this.cameraX * 0.76 + Math.sin(this.elapsed * 0.08) * 5;
-    this.depth.tilePosition.y =
-      -this.cameraY * 0.76 + Math.cos(this.elapsed * 0.07) * 4;
+    // Profundidade lenta, sem parallax ligado à navegação.
+    this.depth.tilePosition.x = Math.sin(this.elapsed * 0.045) * 3.2;
+    this.depth.tilePosition.y = Math.cos(this.elapsed * 0.04) * 2.4;
 
-    // Reflexos têm deriva independente e muito curta.
-    this.glints.tilePosition.x =
-      -this.cameraX * 1.06 + Math.sin(this.elapsed * 0.17) * 7;
-    this.glints.tilePosition.y =
-      -this.cameraY * 1.06 + Math.cos(this.elapsed * 0.14) * 5;
+    // Reflexos com deriva curta e constante.
+    this.glints.tilePosition.x = Math.sin(this.elapsed * 0.11) * 4.2;
+    this.glints.tilePosition.y = Math.cos(this.elapsed * 0.09) * 3.1;
   }
 }
