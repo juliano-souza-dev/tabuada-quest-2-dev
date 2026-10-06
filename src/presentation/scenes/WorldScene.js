@@ -44,7 +44,7 @@ export class WorldScene {
 
     this.region = STARTER_REGION;
 
-    this.ocean = new OceanRenderer();
+    this.ocean = new OceanRenderer({ renderer: this.renderer });
     this.shipNavigation = new ShipNavigationSystem({
       region: this.region,
       boundaryPadding: 56
@@ -61,7 +61,6 @@ export class WorldScene {
     this.world.entities.add(this.playerShip);
 
     this.view.addChild(this.ocean.view);
-    this.view.addChild(this.shipWakeRenderer.view);
     this.camera.view.addChild(this.shipRenderer.view);
     this.view.addChild(this.camera.view);
   }
@@ -177,12 +176,13 @@ export class WorldScene {
         (this.currentCamera.y - this.previousCamera.y) * alpha
     };
 
-    this.shipWakeRenderer.render({
-      x: cameraPose.x,
-      y: cameraPose.y,
-      zoom: this.camera.zoom,
-      width: this.renderer.screen.width,
-      height: this.renderer.screen.height
+    // O wake é desenhado pelo mesmo passe WebGL da versão antiga.
+    this.ocean.setWake({
+      active: true,
+      samples: this.shipWakeRenderer.samples,
+      width: 66,
+      opacity: 0.78,
+      lifetime: 2588
     });
 
     // A câmera segue suavemente, então o navio pode avançar alguns pixels
