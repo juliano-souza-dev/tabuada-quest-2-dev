@@ -405,7 +405,7 @@
       },
       {
         "npcId": "boss-halloween-dreadnought",
-        "shipId": "ship-halloween-dreadnought",
+        "shipId": "ship-halloween-terror-galleon-400",
         "count": 1,
         "enabled": true,
         "respawn": true,
@@ -421,7 +421,8 @@
           "gold": 1000,
           "rubies": 2,
           "xp": 500
-        }
+        },
+        "hp": 100000
       }
     ]
   },
