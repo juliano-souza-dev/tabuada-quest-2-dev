@@ -941,6 +941,10 @@ export class GameRuntime {
       return {ok:false,message:"Você já possui este navio."};
     }
 
+    let purchasedUnits=amount;
+    let purchasedAmmoId="";
+    let purchasedAmmoTotal=null;
+
     if(product.type==="item"){
       const id=String(product.id);
       this.consumables[id]=Math.max(0,Math.floor(Number(this.consumables[id])||0))+amount;
@@ -948,9 +952,29 @@ export class GameRuntime {
       const id=String(product.id);
       const packQuantity=Math.max(1,Math.floor(Number(product.packQuantity)||1));
       const grantedQuantity=amount*packQuantity;
-      if(!this.grantAmmo(id,grantedQuantity,{save:false,syncServer:true,source:"shop-purchase"})){
+      const before=this.ammoQuantity(id);
+
+      // Keep the shop transaction local until the inventory mutation is verified.
+      // Sending ammo to the realtime server before the purchase finishes can race
+      // with an authoritative ammo.state echo and make the freshly bought stock
+      // appear to vanish.
+      if(!this.grantAmmo(id,grantedQuantity,{save:false,syncServer:false,source:"shop-purchase"})){
         return {ok:false,message:"Não foi possível adicionar a munição ao inventário."};
       }
+
+      const after=this.ammoQuantity(id);
+      if(after!==before+grantedQuantity){
+        console.error("[TQ shop] ammo purchase verification failed",{
+          ammoId:id,before,after,grantedQuantity,amount,packQuantity
+        });
+        this.playerAmmo.stock[id]=before;
+        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+        return {ok:false,message:"A munição não foi confirmada no inventário. A compra foi cancelada."};
+      }
+
+      purchasedUnits=grantedQuantity;
+      purchasedAmmoId=id;
+      purchasedAmmoTotal=after;
     }else if(product.type==="cannon"){
       if(!this.grantCannon(String(product.id),amount,{save:false}))return {ok:false,message:"Não foi possível adicionar o canhão ao inventário."};
     }else if(!(await this.grantShip(String(product.id),{save:false}))){
@@ -959,15 +983,37 @@ export class GameRuntime {
 
     this.rewards={...this.rewards,[walletKey]:Math.max(0,Number(this.rewards?.[walletKey])||0)-total};
     if(walletKey==="gold")this.rewards.coins=this.rewards.gold;
-    if(worldId&&this.worldRuntime?.getState)this.worldStates[worldId]=clone(this.worldRuntime.getState());
+
+    if(worldId&&this.worldRuntime?.getState){
+      const snapshot=this.worldRuntime.getState();
+      if(snapshot&&typeof snapshot==="object")delete snapshot.ammo;
+      this.worldStates[worldId]=clone(snapshot||{});
+    }
+
+    // Persist the complete transaction first. Only then publish the final ammo
+    // inventory to the realtime server, so every layer sees the same total.
     this.saveState();
+    if(purchasedAmmoId){
+      this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"shop-purchase"});
+    }
     this.syncCloud("shop-purchase");
-    globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{item:clone(product),quantity:amount,total,currency:walletKey}}));
+
+    globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{
+      item:clone(product),
+      quantity:amount,
+      purchasedUnits,
+      ammoTotal:purchasedAmmoTotal,
+      total,
+      currency:walletKey
+    }}));
     await this.advanceMissions("purchase_upgrade",{worldId,amount:1});
-    const purchasedUnits=product.type==="ammo"
-      ?amount*Math.max(1,Math.floor(Number(product.packQuantity)||1))
-      :amount;
-    return {ok:true,message:`Compra realizada: ${purchasedUnits}× ${product.name||product.id}.`};
+    return {
+      ok:true,
+      purchasedUnits,
+      ammoTotal:purchasedAmmoTotal,
+      message:`Compra realizada: ${purchasedUnits}× ${product.name||product.id}.`
+        +(purchasedAmmoTotal!==null?` Total no inventário: ${purchasedAmmoTotal}.`:"")
+    };
   }
 
   listAvailableShips(){
