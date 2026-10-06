@@ -28,9 +28,9 @@ function makeGhostFlame(color) {
     .moveTo(0, -7)
     .bezierCurveTo(3, -3, 3, 2, 0, 6)
     .bezierCurveTo(-3, 2, -3, -3, 0, -7)
-    .fill(0xd8fff6);
+    .fill(0x8fffd9);
 
-  g.blendMode = 'add';
+  g.blendMode = 'normal';
   g.eventMode = 'none';
   return g;
 }
@@ -46,16 +46,16 @@ export class GhostParticleField {
     this.aura = new Graphics()
       .ellipse(0, 14, 118, 80)
       .fill({
-        color: 0x36e5c5,
-        alpha: 0.12
+        color: 0x20c99c,
+        alpha: 0.10
       })
       .ellipse(0, 8, 86, 58)
       .fill({
-        color: 0x9effea,
-        alpha: 0.08
+        color: 0x69e6bd,
+        alpha: 0.06
       });
 
-    this.aura.blendMode = 'add';
+    this.aura.blendMode = 'normal';
     this.aura.filters = [
       new BlurFilter({
         strength: 12,
