@@ -1,44 +1,15 @@
 const TABLES = Object.freeze({
-  'treasure.halloween.random.v1': Object.freeze([
+  'treasure.halloween.gold.v1': Object.freeze([
     Object.freeze({
-      weight: 50,
+      weight: 100,
       grants: Object.freeze([
         Object.freeze({
           kind: 'currency',
           ref: 'gold',
-          amount: Object.freeze({ min: 80, max: 180 })
-        })
-      ])
-    }),
-    Object.freeze({
-      weight: 20,
-      grants: Object.freeze([
-        Object.freeze({
-          kind: 'currency',
-          ref: 'rubies',
-          amount: Object.freeze({ min: 1, max: 2 })
-        })
-      ])
-    }),
-    Object.freeze({
-      weight: 20,
-      grants: Object.freeze([
-        Object.freeze({
-          kind: 'inventory',
-          bucket: 'items',
-          ref: 'event.halloween.pumpkin-fragment',
-          amount: Object.freeze({ min: 1, max: 3 })
-        })
-      ])
-    }),
-    Object.freeze({
-      weight: 10,
-      grants: Object.freeze([
-        Object.freeze({
-          kind: 'inventory',
-          bucket: 'ammo',
-          ref: 'ammo.basic',
-          amount: Object.freeze({ min: 10, max: 25 })
+          amount: Object.freeze({
+            min: 1,
+            max: 100
+          })
         })
       ])
     })
@@ -64,33 +35,66 @@ const resolveAmount = (amount, seed, index) => {
     return Math.max(0, Number(amount));
   }
 
-  const min = Math.max(0, Number(amount?.min) || 0);
-  const max = Math.max(min, Number(amount?.max) || min);
-  const unit = seededUnit(seed, `amount:${index}`);
+  const min = Math.max(
+    0,
+    Number(amount?.min) || 0
+  );
 
-  return Math.floor(min + unit * (max - min + 1));
+  const max = Math.max(
+    min,
+    Number(amount?.max) || min
+  );
+
+  const unit = seededUnit(
+    seed,
+    `amount:${index}`
+  );
+
+  return Math.floor(
+    min +
+    unit *
+      (max - min + 1)
+  );
 };
 
-export function resolveReward(rewardRef, claimToken) {
+export function resolveReward(
+  rewardRef,
+  claimToken
+) {
   const table = TABLES[rewardRef];
 
   if (!table?.length) {
-    throw new Error(`Unknown reward ref: ${rewardRef}`);
+    throw new Error(
+      `Unknown reward ref: ${rewardRef}`
+    );
   }
 
-  const totalWeight = table.reduce(
-    (sum, entry) => sum + Math.max(0, Number(entry.weight) || 0),
-    0
-  );
+  const totalWeight =
+    table.reduce(
+      (sum, entry) =>
+        sum +
+        Math.max(
+          0,
+          Number(entry.weight) || 0
+        ),
+      0
+    );
 
   let cursor =
-    seededUnit(claimToken, 'entry') *
+    seededUnit(
+      claimToken,
+      'entry'
+    ) *
     totalWeight;
 
-  let selected = table[table.length - 1];
+  let selected =
+    table[table.length - 1];
 
   for (const entry of table) {
-    cursor -= Math.max(0, Number(entry.weight) || 0);
+    cursor -= Math.max(
+      0,
+      Number(entry.weight) || 0
+    );
 
     if (cursor <= 0) {
       selected = entry;
@@ -98,16 +102,19 @@ export function resolveReward(rewardRef, claimToken) {
     }
   }
 
-  return selected.grants.map((grant, index) => ({
-    ...grant,
-    amount: resolveAmount(
-      grant.amount,
-      claimToken,
-      index
-    )
-  }));
+  return selected.grants.map(
+    (grant, index) => ({
+      ...grant,
+      amount: resolveAmount(
+        grant.amount,
+        claimToken,
+        index
+      )
+    })
+  );
 }
 
 export const RewardRefs = Object.freeze({
-  HALLOWEEN_TREASURE: 'treasure.halloween.random.v1'
+  HALLOWEEN_TREASURE:
+    'treasure.halloween.gold.v1'
 });
