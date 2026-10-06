@@ -946,6 +946,47 @@
         "price": 0,
         "label": "Recompensa de missão"
       }
+    },
+    {
+      "id": "ship-halloween-terror-galleon-400",
+      "name": "Terror do Halloween",
+      "type": "npc",
+      "available": true,
+      "description": "Visual exclusivo do boss Terror do Halloween.",
+      "spriteMode": "split",
+      "autoFrame": false,
+      "asset": "./assets/ships/events/halloween/galeao_halloween_400x400.webp",
+      "navigation": {
+        "width": 300,
+        "height": 300,
+        "minSpeed": 80,
+        "speed": 420,
+        "acceleration": 1100,
+        "braking": 0.12,
+        "roll": 2.4,
+        "heave": 3.2,
+        "sway": 0,
+        "periodMs": 3600,
+        "wake": true,
+        "shadow": true,
+        "src": "./assets/ships/events/halloween/galeao_halloween_400x400.webp",
+        "compiled": {}
+      },
+      "combat": {
+        "hp": 100000,
+        "attackRange": 1600,
+        "attackCooldownMs": 900,
+        "damage": 1,
+        "recoil": 18,
+        "shake": 5,
+        "muzzleFlash": true,
+        "smoke": true,
+        "impact": true,
+        "useNavigationAtlas": false,
+        "cannonSlots": 25
+      },
+      "schema": "tq.ship",
+      "version": 2
     }
   ],
   "shipTypes": [
