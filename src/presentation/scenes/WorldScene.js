@@ -44,7 +44,7 @@ export class WorldScene {
 
     this.world.entities.add(this.playerShip);
 
-    this.camera.view.addChild(this.ocean.view);
+    this.view.addChild(this.ocean.view);
     this.camera.view.addChild(this.shipWakeRenderer.view);
     this.camera.view.addChild(this.shipRenderer.view);
     this.view.addChild(this.camera.view);
@@ -66,6 +66,7 @@ export class WorldScene {
 
     this.camera.setPosition(transform.x, transform.y);
     this.ocean.setCameraPosition(transform.x, transform.y);
+    this.ocean.setZoom(this.camera.zoom);
     this.shipRenderer.render(transform);
   }
 
@@ -140,15 +141,13 @@ export class WorldScene {
 
     // O oceano acompanha a janela da câmera, mas sua animação não acelera.
     this.ocean.setCameraPosition(cameraPose.x, cameraPose.y);
+    this.ocean.setZoom(this.camera.zoom);
     this.ocean.update(0);
   }
 
   resize() {
     const { width, height } = this.renderer.screen;
     this.camera.resize(width, height);
-    this.ocean.resize(
-      width / this.camera.zoom + 160,
-      height / this.camera.zoom + 160
-    );
+    this.ocean.resize(width, height);
   }
 }
