@@ -1,12 +1,14 @@
-const CACHE_NAME="tq-pwa-runtime-v20261005-hud-forcecache-v1";
+const CACHE_NAME="tq-pwa-runtime-20261006-pwa-only-v1";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./src/pwa-entry.js",
+  "./src/runtime/PwaGate.js",
+  "./src/game.js",
   "./src/styles/app.css",
-  "./src/styles/world-test.css",
-  "./src/main.js"
+  "./src/styles/world-test.css"
 ];
 
 self.addEventListener("install",event=>{
