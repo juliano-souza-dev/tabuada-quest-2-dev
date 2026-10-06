@@ -18,18 +18,15 @@ export class ShipRenderer {
     if (!assets || this.directional) return;
 
     const sheetTexture = await assets.load(SHIP_ASSET_URL);
-
-    this.directional = new DirectionalSprite(sheetTexture, {
-      columns: 4,
-      rows: 4,
-      displaySize: 190
-    });
-
+    this.directional = new DirectionalSprite(sheetTexture);
     this.view.addChild(this.directional.sprite);
   }
 
-  update(transform, dt) {
+  advance(dt) {
     this.elapsed += dt;
+  }
+
+  render(transform) {
     this.view.position.set(transform.x, transform.y);
 
     if (!this.directional) return;
