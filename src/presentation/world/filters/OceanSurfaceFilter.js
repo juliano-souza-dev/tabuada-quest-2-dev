@@ -34,122 +34,121 @@ in vec2 vTextureCoord;
 
 uniform sampler2D uTexture;
 uniform float uTime;
-uniform float uDistortion;
-uniform float uFoam;
-uniform float uSparkle;
 uniform float uWorldLeft;
 uniform float uWorldTop;
 uniform float uWorldWidth;
 uniform float uWorldHeight;
-uniform float uTileSize;
 
 float hash21(vec2 p) {
-  p = fract(p * vec2(123.34, 345.45));
-  p += dot(p, p + 34.345);
-  return fract(p.x * p.y);
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-vec3 boostSaturation(vec3 color, float amount) {
+vec3 saturateColor(vec3 color, float amount) {
   float luma = dot(color, vec3(0.299, 0.587, 0.114));
   return mix(vec3(luma), color, amount);
 }
 
 void main() {
   vec2 uv = vTextureCoord;
-  float t = uTime;
 
-  // Todas as ondas usam coordenadas absolutas do mundo.
-  // Mover a câmera não altera fase, frequência nem intensidade.
+  // Valores equivalentes ao preset adventure da versão anterior depois
+  // dos redutores usados no caminho WebGL real.
+  const float speed = 28.0;
+  const float swell = 8.4;
+  const float distortion = 13.44;
+  const float waveMix = 14.28;
+  const float foamMix = 6.0;
+  const float sparkleIntensity = 7.48;
+  const float sparkleSharpness = 18.0;
+  const float tileSize = 720.0;
+
   vec2 world = vec2(
     uWorldLeft + uv.x * uWorldWidth,
     uWorldTop + uv.y * uWorldHeight
   );
+  vec2 baseCoord = world / tileSize;
 
-  vec2 baseCoord = world / max(uTileSize, 64.0);
-
-  float longWave =
-    sin(baseCoord.y * 21.0 + baseCoord.x * 6.0 + t * 0.48);
-
-  float crossWave =
-    cos(baseCoord.x * 17.0 - baseCoord.y * 11.0 - t * 0.36);
-
-  float smallWave =
-    sin((baseCoord.x + baseCoord.y) * 36.0 + t * 0.68);
-
-  vec2 offset = vec2(
-    longWave * 0.62 + smallWave * 0.38,
-    crossWave * 0.66 - smallWave * 0.34
-  ) * uDistortion;
-
-  vec2 sampleUv = clamp(uv + offset, vec2(0.002), vec2(0.998));
-  vec3 base = texture(uTexture, sampleUv).rgb;
-
-  vec2 secondaryUv = clamp(
-    uv + vec2(
-      crossWave * uDistortion * 0.55,
-      longWave * uDistortion * 0.42
-    ),
-    vec2(0.002),
-    vec2(0.998)
+  float waveA = sin(
+    baseCoord.y * 18.0 +
+    baseCoord.x * (18.0 * 0.22) +
+    uTime * (0.45 + speed * 0.006)
   );
 
-  vec3 secondary = texture(uTexture, secondaryUv).rgb;
+  float waveB = cos(
+    baseCoord.x * 15.0 -
+    baseCoord.y * (15.0 * 0.46) +
+    uTime * (0.34 + speed * 0.004)
+  );
 
-  float crestSignal =
-    0.52 +
-    longWave * 0.24 +
-    crossWave * 0.16 +
-    smallWave * 0.08;
+  float swellAmount = 0.0015 + swell * 0.000045;
+  float distortionStrength = 0.15 + distortion * 0.0125;
 
-  float crest = smoothstep(0.61, 0.93, crestSignal);
+  vec2 offset =
+    vec2(waveA, waveB) *
+    swellAmount *
+    distortionStrength;
+
+  vec2 sampleUv = clamp(uv + offset, vec2(0.001), vec2(0.999));
+  vec3 color = texture(uTexture, sampleUv).rgb;
+
+  float crest = smoothstep(
+    0.40,
+    0.95,
+    0.5 + 0.5 * sin(
+      baseCoord.x * 24.0 +
+      baseCoord.y * 19.0 +
+      uTime * (0.8 + speed * 0.008)
+    )
+  );
+
+  float waveAmount = clamp(waveMix * 0.01, 0.0, 1.0);
+  color += vec3(0.12, 0.30, 0.38) * crest * waveAmount * 0.12;
 
   float foamBand =
     0.5 +
     0.5 * sin(
-      baseCoord.y * 63.0 +
-      baseCoord.x * 24.0 +
-      t * 0.82 +
-      longWave * 1.3
+      baseCoord.y * 73.0 +
+      baseCoord.x * 19.0 +
+      uTime * 0.72
     );
 
-  float foamMask =
-    smoothstep(0.80, 0.98, foamBand) *
-    smoothstep(0.46, 0.88, crest) *
-    uFoam;
-
-  vec2 sparkleGrid = baseCoord * vec2(42.0, 34.0);
-  vec2 sparkleCell = floor(sparkleGrid);
-  vec2 sparkleLocal = fract(sparkleGrid) - 0.5;
-  float sparkleSeed = hash21(sparkleCell);
-
-  float sparklePulse =
-    0.5 +
-    0.5 * sin(t * (1.05 + sparkleSeed * 1.25) + sparkleSeed * 6.2831853);
-
-  float sparkleShape =
-    1.0 - smoothstep(0.025, 0.14, length(sparkleLocal));
-
-  float sparkle =
-    sparkleShape *
-    sparklePulse *
-    step(0.90, sparkleSeed) *
-    smoothstep(0.40, 0.92, crestSignal) *
-    uSparkle;
-
-  vec3 color = mix(base, secondary, 0.18 + crest * 0.08);
+  float foam =
+    smoothstep(0.84, 0.98, foamBand) *
+    smoothstep(0.38, 0.92, crest) *
+    clamp(foamMix * 0.01, 0.0, 1.0);
 
   color = mix(
     color,
-    vec3(0.86, 0.98, 1.0),
-    clamp(foamMask * 0.30, 0.0, 0.38)
+    vec3(0.91, 0.98, 1.0),
+    clamp(foam * 0.34, 0.0, 0.20)
   );
 
-  color += vec3(1.0, 0.86, 0.52) * sparkle * 0.22;
-  color += vec3(0.16, 0.44, 0.55) * crest * 0.045;
+  vec2 sparkleGrid = baseCoord * 34.0;
+  vec2 sparkleCell = floor(sparkleGrid);
+  vec2 sparkleLocal = fract(sparkleGrid) - 0.5;
+  float sparkleHash = hash21(sparkleCell);
+  float sparklePulse =
+    0.5 +
+    0.5 * sin(
+      uTime * (1.4 + sparkleHash * 1.8) +
+      sparkleHash * 6.2831853
+    );
 
-  color = boostSaturation(color, 1.04);
-  color = (color - 0.5) * 1.02 + 0.5;
+  float sparkleCore =
+    1.0 - smoothstep(0.03, 0.20, length(sparkleLocal));
 
+  float sparkle = pow(
+    max(0.0, sparkleCore * sparklePulse * crest),
+    max(2.0, sparkleSharpness * 0.35)
+  ) * step(0.84, sparkleHash);
+
+  color +=
+    vec3(1.0, 0.86, 0.52) *
+    sparkle *
+    clamp(sparkleIntensity * 0.01, 0.0, 1.0) *
+    0.50;
+
+  color = saturateColor(color, 1.05);
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
 `;
@@ -164,19 +163,15 @@ export class OceanSurfaceFilter extends Filter {
       resources: {
         oceanUniforms: {
           uTime: { value: 0, type: 'f32' },
-          uDistortion: { value: 0.0038, type: 'f32' },
-          uFoam: { value: 0.62, type: 'f32' },
-          uSparkle: { value: 0.48, type: 'f32' },
           uWorldLeft: { value: 0, type: 'f32' },
           uWorldTop: { value: 0, type: 'f32' },
           uWorldWidth: { value: 1, type: 'f32' },
-          uWorldHeight: { value: 1, type: 'f32' },
-          uTileSize: { value: 720, type: 'f32' }
+          uWorldHeight: { value: 1, type: 'f32' }
         }
       }
     });
 
-    this.padding = 8;
+    this.padding = 4;
   }
 
   setWorldRect(left, top, width, height) {
