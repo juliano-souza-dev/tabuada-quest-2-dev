@@ -68,5 +68,8 @@
     "useLocalWorldContent": true,
     "grantAllAmmo": 0,
     "grantStrongestCannon": false
+  },
+  "multiplayer": {
+    "enabled": false
   }
 }
