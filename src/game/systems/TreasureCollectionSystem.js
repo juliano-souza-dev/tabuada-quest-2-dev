@@ -1,41 +1,50 @@
 export class TreasureCollectionSystem {
-  update(world, collector) {
-    const collectorTransform = collector?.get?.('transform');
-    if (!world || !collectorTransform) return [];
+  findClickedTreasure(world, point) {
+    if (!world || !point) return null;
 
-    const collected = [];
+    let best = null;
+    let bestDistance = Infinity;
 
     for (const entity of world.entities.withComponents('transform', 'treasure')) {
-      const treasure = entity.get('treasure');
-      if (!treasure || treasure.collected) continue;
-
       const transform = entity.get('transform');
-      const radius = Math.max(1, Number(treasure.collectRadius) || 72);
+      const treasure = entity.get('treasure');
+
       const distance = Math.hypot(
-        transform.x - collectorTransform.x,
-        transform.y - collectorTransform.y
+        transform.x - point.x,
+        transform.y - point.y
       );
 
-      if (distance > radius) continue;
+      const radius = Math.max(
+        1,
+        Number(treasure?.clickRadius) || 110
+      );
 
-      treasure.collected = true;
-
-      const payload = {
-        treasureId: entity.id,
-        kind: treasure.kind,
-        reward: { ...(treasure.reward || {}) },
-        x: transform.x,
-        y: transform.y
-      };
-
-      world.events.emit('treasure:collected', payload);
-      collected.push(entity);
+      if (distance <= radius && distance < bestDistance) {
+        best = entity;
+        bestDistance = distance;
+      }
     }
 
-    for (const entity of collected) {
-      world.entities.remove(entity.id);
+    return best;
+  }
+
+  isCollectorInRange(collector, treasureEntity) {
+    const collectorTransform = collector?.get?.('transform');
+    const targetTransform = treasureEntity?.get?.('transform');
+    const treasure = treasureEntity?.get?.('treasure');
+
+    if (!collectorTransform || !targetTransform || !treasure) {
+      return false;
     }
 
-    return collected;
+    const distance = Math.hypot(
+      targetTransform.x - collectorTransform.x,
+      targetTransform.y - collectorTransform.y
+    );
+
+    return distance <= Math.max(
+      1,
+      Number(treasure.collectRadius) || 84
+    );
   }
 }
