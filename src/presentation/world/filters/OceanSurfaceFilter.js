@@ -37,8 +37,11 @@ uniform float uTime;
 uniform float uDistortion;
 uniform float uFoam;
 uniform float uSparkle;
-uniform float uMotion;
-
+uniform float uWorldLeft;
+uniform float uWorldTop;
+uniform float uWorldWidth;
+uniform float uWorldHeight;
+uniform float uTileSize;
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
@@ -55,14 +58,23 @@ void main() {
   vec2 uv = vTextureCoord;
   float t = uTime;
 
+  // Todas as ondas usam coordenadas absolutas do mundo.
+  // Mover a câmera não altera fase, frequência nem intensidade.
+  vec2 world = vec2(
+    uWorldLeft + uv.x * uWorldWidth,
+    uWorldTop + uv.y * uWorldHeight
+  );
+
+  vec2 baseCoord = world / max(uTileSize, 64.0);
+
   float longWave =
-    sin(uv.y * 21.0 + uv.x * 6.0 + t * (0.54 + uMotion * 0.18));
+    sin(baseCoord.y * 21.0 + baseCoord.x * 6.0 + t * 0.48);
 
   float crossWave =
-    cos(uv.x * 17.0 - uv.y * 11.0 - t * (0.39 + uMotion * 0.12));
+    cos(baseCoord.x * 17.0 - baseCoord.y * 11.0 - t * 0.36);
 
   float smallWave =
-    sin((uv.x + uv.y) * 36.0 + t * (0.82 + uMotion * 0.22));
+    sin((baseCoord.x + baseCoord.y) * 36.0 + t * 0.68);
 
   vec2 offset = vec2(
     longWave * 0.62 + smallWave * 0.38,
@@ -70,7 +82,6 @@ void main() {
   ) * uDistortion;
 
   vec2 sampleUv = clamp(uv + offset, vec2(0.002), vec2(0.998));
-
   vec3 base = texture(uTexture, sampleUv).rgb;
 
   vec2 secondaryUv = clamp(
@@ -95,9 +106,9 @@ void main() {
   float foamBand =
     0.5 +
     0.5 * sin(
-      uv.y * 63.0 +
-      uv.x * 24.0 +
-      t * (1.02 + uMotion * 0.28) +
+      baseCoord.y * 63.0 +
+      baseCoord.x * 24.0 +
+      t * 0.82 +
       longWave * 1.3
     );
 
@@ -106,13 +117,14 @@ void main() {
     smoothstep(0.46, 0.88, crest) *
     uFoam;
 
-  vec2 sparkleGrid = uv * vec2(42.0, 34.0);
+  vec2 sparkleGrid = baseCoord * vec2(42.0, 34.0);
   vec2 sparkleCell = floor(sparkleGrid);
   vec2 sparkleLocal = fract(sparkleGrid) - 0.5;
   float sparkleSeed = hash21(sparkleCell);
+
   float sparklePulse =
     0.5 +
-    0.5 * sin(t * (1.2 + sparkleSeed * 1.8) + sparkleSeed * 6.2831853);
+    0.5 * sin(t * (1.05 + sparkleSeed * 1.25) + sparkleSeed * 6.2831853);
 
   float sparkleShape =
     1.0 - smoothstep(0.025, 0.14, length(sparkleLocal));
@@ -129,14 +141,14 @@ void main() {
   color = mix(
     color,
     vec3(0.86, 0.98, 1.0),
-    clamp(foamMask * 0.34, 0.0, 0.42)
+    clamp(foamMask * 0.30, 0.0, 0.38)
   );
 
-  color += vec3(1.0, 0.86, 0.52) * sparkle * 0.28;
-  color += vec3(0.16, 0.44, 0.55) * crest * 0.055;
+  color += vec3(1.0, 0.86, 0.52) * sparkle * 0.22;
+  color += vec3(0.16, 0.44, 0.55) * crest * 0.045;
 
   color = boostSaturation(color, 1.04);
-  color = (color - 0.5) * 1.025 + 0.5;
+  color = (color - 0.5) * 1.02 + 0.5;
 
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
@@ -152,18 +164,31 @@ export class OceanSurfaceFilter extends Filter {
       resources: {
         oceanUniforms: {
           uTime: { value: 0, type: 'f32' },
-          uDistortion: { value: 0.0062, type: 'f32' },
-          uFoam: { value: 0.72, type: 'f32' },
-          uSparkle: { value: 0.62, type: 'f32' },
-          uMotion: { value: 0.68, type: 'f32' }
+          uDistortion: { value: 0.0038, type: 'f32' },
+          uFoam: { value: 0.62, type: 'f32' },
+          uSparkle: { value: 0.48, type: 'f32' },
+          uWorldLeft: { value: 0, type: 'f32' },
+          uWorldTop: { value: 0, type: 'f32' },
+          uWorldWidth: { value: 1, type: 'f32' },
+          uWorldHeight: { value: 1, type: 'f32' },
+          uTileSize: { value: 720, type: 'f32' }
         }
       }
     });
 
-    this.padding = 12;
+    this.padding = 8;
+  }
+
+  setWorldRect(left, top, width, height) {
+    const uniforms = this.resources.oceanUniforms.uniforms;
+    uniforms.uWorldLeft = Number(left) || 0;
+    uniforms.uWorldTop = Number(top) || 0;
+    uniforms.uWorldWidth = Math.max(1, Number(width) || 1);
+    uniforms.uWorldHeight = Math.max(1, Number(height) || 1);
   }
 
   update(timeSeconds) {
-    this.resources.oceanUniforms.uniforms.uTime = timeSeconds;
+    this.resources.oceanUniforms.uniforms.uTime =
+      Math.max(0, Number(timeSeconds) || 0);
   }
 }
