@@ -7,6 +7,7 @@ export class OceanRenderer {
     this.view = new Container();
     this.width = 0;
     this.height = 0;
+    this.time = 0;
     this.tile = null;
 
     this.fallback = new Graphics()
@@ -21,12 +22,14 @@ export class OceanRenderer {
 
     try {
       const texture = await assets.load(OCEAN_TILE_URL);
+
       this.tile = new TilingSprite({
         texture,
         width: 1,
         height: 1
       });
 
+      this.tile.anchor?.set?.(0);
       this.view.addChildAt(this.tile, 0);
       this.fallback.visible = false;
     } catch (error) {
@@ -56,7 +59,17 @@ export class OceanRenderer {
   update(dt) {
     if (!this.tile) return;
 
-    this.tile.tilePosition.x += dt * 6;
-    this.tile.tilePosition.y += dt * 2;
+    this.time += dt;
+
+    // Movimento orgânico curto: a água oscila, mas a textura não "viaja".
+    const swellX = Math.sin(this.time * 0.45) * 4;
+    const swellY = Math.sin(this.time * 0.62 + 0.8) * 3;
+    const microX = Math.sin(this.time * 1.15) * 1.25;
+    const microY = Math.cos(this.time * 0.95) * 0.85;
+
+    this.tile.tilePosition.set(
+      swellX + microX,
+      swellY + microY
+    );
   }
 }
