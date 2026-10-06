@@ -7,6 +7,9 @@ import { OceanRenderer } from '../world/OceanRenderer.js';
 import { ShipRenderer } from '../ships/ShipRenderer.js';
 import { ShipWakeRenderer } from '../ships/ShipWakeRenderer.js';
 import { STARTER_REGION, clampPointToRegion } from '../../game/world/RegionDefinition.js';
+import { createTreasure } from '../../game/treasures/createTreasure.js';
+import { TreasureCollectionSystem } from '../../game/systems/TreasureCollectionSystem.js';
+import { TreasureRenderer } from '../treasures/TreasureRenderer.js';
 
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
 const CAMERA_FOLLOW_SHARPNESS = 4.5;
@@ -52,6 +55,8 @@ export class WorldScene {
     this.playerShip = createStarterShip({ x: 0, y: 0 });
     this.shipRenderer = new ShipRenderer();
     this.shipWakeRenderer = new ShipWakeRenderer({ shipHeight: 116 });
+    this.treasureCollection = new TreasureCollectionSystem();
+    this.treasureRenderer = new TreasureRenderer();
 
     this.previousPose = { x: 0, y: 0, rotation: 0 };
     this.currentPose = { x: 0, y: 0, rotation: 0 };
@@ -60,7 +65,19 @@ export class WorldScene {
 
     this.world.entities.add(this.playerShip);
 
+    [
+      { id: 'treasure-test-1', x: 420, y: -260 },
+      { id: 'treasure-test-2', x: -540, y: -120 },
+      { id: 'treasure-test-3', x: 160, y: 520 }
+    ].forEach((treasure) => {
+      this.world.entities.add(createTreasure({
+        ...treasure,
+        reward: { gold: 100 }
+      }));
+    });
+
     this.view.addChild(this.ocean.view);
+    this.camera.view.addChild(this.treasureRenderer.view);
     this.camera.view.addChild(this.shipRenderer.view);
     this.view.addChild(this.camera.view);
   }
@@ -149,6 +166,27 @@ export class WorldScene {
       dt
     );
 
+    const collectedTreasures =
+      this.treasureCollection.update(
+        this.world,
+        this.playerShip
+      );
+
+    if (collectedTreasures.length) {
+      for (const event of this.world.events.drain()) {
+        if (event.type === 'treasure:collected') {
+          console.info('[Treasure] collected', event.payload);
+        }
+      }
+    }
+
+    this.treasureRenderer.sync(
+      this.world.entities
+        .all()
+        .filter((entity) => entity.type === 'treasure')
+    );
+    this.treasureRenderer.update(dt);
+
     this.shipRenderer.advance(dt);
     this.ocean.update(dt);
   }
@@ -163,6 +201,12 @@ export class WorldScene {
         alpha
       )
     };
+
+    this.treasureRenderer.sync(
+      this.world.entities
+        .all()
+        .filter((entity) => entity.type === 'treasure')
+    );
 
     this.shipRenderer.render(
       pose,
