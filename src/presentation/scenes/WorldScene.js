@@ -4,8 +4,9 @@ import { WorldCamera } from '../../engine/camera/WorldCamera.js';
 import { OceanRenderer } from '../world/OceanRenderer.js';
 
 export class WorldScene {
-  constructor({ renderer, worldId = 'ocean' }) {
+  constructor({ renderer, assets, worldId = 'ocean' }) {
     this.renderer = renderer;
+    this.assets = assets;
     this.view = new Container();
     this.world = new WorldState({ worldId });
     this.camera = new WorldCamera();
@@ -14,12 +15,18 @@ export class WorldScene {
     this.view.addChild(this.camera.view);
   }
 
-  enter() {
+  async enter() {
+    await this.ocean.init(this.assets);
     this.resize();
-    this.ocean.render();
   }
-  update(dt) { this.world.advance(dt); this.ocean.update(dt); this.resize(); }
-  render() { this.ocean.render(); }
+
+  update(dt) {
+    this.world.advance(dt);
+    this.ocean.update(dt);
+    this.resize();
+  }
+
+  render() {}
 
   resize() {
     const { width, height } = this.renderer.screen;
