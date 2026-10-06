@@ -4,8 +4,8 @@ import {
   BlurFilter
 } from 'pixi.js';
 
+const PARTICLE_COUNT = 20;
 const TAU = Math.PI * 2;
-const WISP_COUNT = 14;
 
 const pseudo = (i, salt = 0) => {
   const n = Math.sin(
@@ -15,23 +15,34 @@ const pseudo = (i, salt = 0) => {
   return n - Math.floor(n);
 };
 
-function makeGhostFlame(color) {
+function flameGraphic(seed) {
+  const outer = seed > 0.55
+    ? 0xff4b0a
+    : 0xff7a0b;
+
   const g = new Graphics();
 
   g
-    .moveTo(0, -13)
-    .bezierCurveTo(6, -7, 6, 2, 0, 10)
-    .bezierCurveTo(-6, 2, -6, -7, 0, -13)
-    .fill(color);
+    .moveTo(0, -10)
+    .bezierCurveTo(5, -5, 4, 3, 0, 8)
+    .bezierCurveTo(-4, 3, -5, -5, 0, -10)
+    .fill({
+      color: outer,
+      alpha: 0.88
+    });
 
   g
-    .moveTo(0, -7)
-    .bezierCurveTo(3, -3, 3, 2, 0, 6)
-    .bezierCurveTo(-3, 2, -3, -3, 0, -7)
-    .fill(0x8fffd9);
+    .moveTo(0, -5)
+    .bezierCurveTo(2.5, -1, 2, 2, 0, 5)
+    .bezierCurveTo(-2, 2, -2.5, -1, 0, -5)
+    .fill({
+      color: 0xffd45a,
+      alpha: 0.94
+    });
 
-  g.blendMode = 'normal';
   g.eventMode = 'none';
+  g.blendMode = 'normal';
+
   return g;
 }
 
@@ -43,46 +54,38 @@ export class GhostParticleField {
     this.elapsed = 0;
     this.scale = 1;
 
-    this.aura = new Graphics()
-      .ellipse(0, 14, 118, 80)
+    this.fireGlow = new Graphics()
+      .ellipse(0, 10, 86, 56)
       .fill({
-        color: 0x20c99c,
-        alpha: 0.10
-      })
-      .ellipse(0, 8, 86, 58)
-      .fill({
-        color: 0x69e6bd,
-        alpha: 0.06
+        color: 0xff4a00,
+        alpha: 0.085
       });
 
-    this.aura.blendMode = 'normal';
-    this.aura.filters = [
+    this.fireGlow.filters = [
       new BlurFilter({
-        strength: 12,
+        strength: 16,
         quality: 2
       })
     ];
 
-    this.view.addChild(this.aura);
+    this.fireGlow.blendMode = 'normal';
+    this.view.addChild(this.fireGlow);
 
-    this.wisps = Array.from(
-      { length: WISP_COUNT },
+    this.particles = Array.from(
+      { length: PARTICLE_COUNT },
       (_, i) => {
-        const ember = i % 4 === 0;
-
-        const g = makeGhostFlame(
-          ember ? 0xff6b16 : 0x45efcf
-        );
+        const seed = pseudo(i, 1);
+        const g = flameGraphic(seed);
 
         this.view.addChild(g);
 
         return {
           g,
-          ember,
-          seed: pseudo(i, 1),
+          seed,
           seed2: pseudo(i, 2),
           seed3: pseudo(i, 3),
-          phase: pseudo(i, 4) * TAU
+          phase: pseudo(i, 4) * TAU,
+          ember: i % 3 === 0
         };
       }
     );
@@ -101,59 +104,57 @@ export class GhostParticleField {
       Number(dt) || 0
     );
 
-    const auraPulse =
-      0.92 +
-      Math.sin(this.elapsed * 1.7) * 0.08;
+    const glowPulse =
+      0.90 +
+      Math.sin(this.elapsed * 3.2) * 0.10;
 
-    this.aura.scale.set(
-      this.scale * auraPulse
+    this.fireGlow.scale.set(
+      this.scale * glowPulse
     );
-
-    this.aura.alpha =
-      0.78 +
-      Math.sin(this.elapsed * 1.25) * 0.08;
 
     for (
       let i = 0;
-      i < this.wisps.length;
+      i < this.particles.length;
       i += 1
     ) {
-      const p = this.wisps[i];
+      const p = this.particles[i];
 
       const cycle =
         (
           this.elapsed *
-            (0.34 + p.seed * 0.18) +
+            (0.42 + p.seed * 0.32) +
           p.seed3
         ) % 1;
 
       const side =
         p.seed < 0.5 ? -1 : 1;
 
+      // Fica preso perto do casco/mastros.
       const lane =
-        46 +
-        p.seed2 * 54;
+        28 +
+        p.seed2 * 62;
 
       const baseY =
-        -72 +
-        p.seed * 142;
+        -84 +
+        p.seed * 164;
 
-      const drift =
+      const sway =
         Math.sin(
           this.elapsed *
-            (1.1 + p.seed2) +
+            (1.8 + p.seed2 * 1.6) +
           p.phase
         ) *
-        8;
+        (3 + p.seed2 * 5);
 
       const rise =
-        cycle * (22 + p.seed2 * 24);
+        cycle *
+        (18 + p.seed2 * 30);
 
       const fadeIn =
-        Math.min(1, cycle * 5);
+        Math.min(1, cycle * 7);
 
       const fadeOut =
-        Math.min(1, (1 - cycle) * 4);
+        Math.min(1, (1 - cycle) * 5);
 
       const fade =
         Math.max(
@@ -162,7 +163,7 @@ export class GhostParticleField {
         );
 
       p.g.x =
-        (side * lane + drift) *
+        (side * lane + sway) *
         this.scale;
 
       p.g.y =
@@ -171,40 +172,40 @@ export class GhostParticleField {
 
       p.g.alpha =
         fade *
-        (p.ember ? 0.46 : 0.34);
+        (p.ember ? 0.50 : 0.66);
 
       const pulse =
-        0.78 +
+        0.82 +
         Math.sin(
-          this.elapsed * 2.4 +
+          this.elapsed * 5.0 +
           p.phase
-        ) * 0.18;
+        ) * 0.14;
 
-      const size =
+      const s =
         this.scale *
         pulse *
-        (p.ember ? 0.72 : 1.0);
+        (p.ember ? 0.52 : 0.82);
 
       p.g.scale.set(
-        size * (0.72 + p.seed2 * 0.30),
-        size * (0.90 + cycle * 0.45)
+        s * (0.76 + p.seed2 * 0.25),
+        s * (1.05 + cycle * 0.62)
       );
 
       p.g.rotation =
         Math.sin(
-          this.elapsed * 1.3 +
+          this.elapsed * 2.1 +
           p.phase
-        ) * 0.18;
+        ) * 0.14;
     }
   }
 
   destroy() {
-    for (const p of this.wisps) {
+    for (const p of this.particles) {
       p.g.destroy();
     }
 
-    this.wisps = [];
-    this.aura.destroy();
+    this.particles = [];
+    this.fireGlow.destroy();
     this.view.destroy();
   }
 }
