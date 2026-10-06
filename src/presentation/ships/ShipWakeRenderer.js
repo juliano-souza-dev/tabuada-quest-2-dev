@@ -252,8 +252,10 @@ export class ShipWakeRenderer {
     const forwardX = Math.sin(angle);
     const forwardY = -Math.cos(angle);
 
+    // O rastro nasce atrás da popa, não no centro visual do navio.
+    // Isso deixa a abertura lateral começar já depois do casco.
     const sternDistance =
-      this.shipHeight * 0.35 + 8;
+      this.shipHeight * 0.58 + 18;
 
     const sample = {
       x:
@@ -377,7 +379,7 @@ export class ShipWakeRenderer {
 
       const spread =
         WAKE.width *
-        (0.58 + age * 0.92);
+        (0.72 + age * 0.88);
 
       const rad =
         Number(sample.heading || 0) *
@@ -399,7 +401,7 @@ export class ShipWakeRenderer {
           : Math.max(
               6,
               spread *
-                (0.19 + age * 0.13)
+                (0.15 + age * 0.12)
             );
 
       const offset =
