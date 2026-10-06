@@ -83,7 +83,10 @@ export class WorldScene {
     this.camera.setPosition(transform.x, transform.y);
     this.ocean.setCameraPosition(transform.x, transform.y);
     this.ocean.setZoom(this.camera.zoom);
-    this.shipRenderer.render(transform);
+    this.shipRenderer.render(
+      transform,
+      this.playerShip.get('visual')
+    );
   }
 
   update(dt) {
@@ -162,7 +165,10 @@ export class WorldScene {
       )
     };
 
-    this.shipRenderer.render(pose);
+    this.shipRenderer.render(
+      pose,
+      this.playerShip.get('visual')
+    );
 
     const cameraPose = {
       x: this.previousCamera.x +
