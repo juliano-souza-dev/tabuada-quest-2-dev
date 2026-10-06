@@ -19,6 +19,13 @@ export function createStarterShip({ id = 'player-ship', x = 0, y = 0 } = {}) {
       ship: {
         definitionId: STARTER_SHIP.id,
         stopRadius: STARTER_SHIP.movement.stopRadius
+      },
+      visual: {
+        scale: 0.62,
+        effects: {
+          halloween: true,
+          ghostParticles: true
+        }
       }
     }
   });
