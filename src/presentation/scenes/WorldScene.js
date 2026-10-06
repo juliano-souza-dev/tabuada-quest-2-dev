@@ -7,6 +7,7 @@ import { OceanRenderer } from '../world/OceanRenderer.js';
 import { ShipRenderer } from '../ships/ShipRenderer.js';
 
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
+const CAMERA_FOLLOW_SHARPNESS = 6;
 
 const lerpAngle = (from, to, alpha) => {
   const a = normalizeDegrees(from);
@@ -36,6 +37,8 @@ export class WorldScene {
 
     this.previousPose = { x: 0, y: 0, rotation: 0 };
     this.currentPose = { x: 0, y: 0, rotation: 0 };
+    this.previousCamera = { x: 0, y: 0 };
+    this.currentCamera = { x: 0, y: 0 };
 
     this.world.entities.add(this.playerShip);
 
@@ -55,6 +58,8 @@ export class WorldScene {
     const transform = this.playerShip.get('transform');
     this.previousPose = { ...transform };
     this.currentPose = { ...transform };
+    this.previousCamera = { x: transform.x, y: transform.y };
+    this.currentCamera = { x: transform.x, y: transform.y };
 
     this.camera.setPosition(transform.x, transform.y);
     this.ocean.setCameraPosition(transform.x, transform.y);
@@ -87,6 +92,14 @@ export class WorldScene {
       rotation: after.rotation
     };
 
+    this.previousCamera = { ...this.currentCamera };
+
+    const follow = 1 - Math.exp(-CAMERA_FOLLOW_SHARPNESS * dt);
+    this.currentCamera = {
+      x: this.currentCamera.x + (after.x - this.currentCamera.x) * follow,
+      y: this.currentCamera.y + (after.y - this.currentCamera.y) * follow
+    };
+
     this.shipRenderer.advance(dt);
     this.ocean.update(dt);
   }
@@ -104,11 +117,19 @@ export class WorldScene {
 
     this.shipRenderer.render(pose);
 
-    // A câmera usa a posição interpolada, não os saltos de 60 Hz da simulação.
-    this.camera.setPosition(pose.x, pose.y);
+    const cameraPose = {
+      x: this.previousCamera.x +
+        (this.currentCamera.x - this.previousCamera.x) * alpha,
+      y: this.previousCamera.y +
+        (this.currentCamera.y - this.previousCamera.y) * alpha
+    };
 
-    // Mantém o oceano contínuo e reaplica o filtro na posição visual da câmera.
-    this.ocean.setCameraPosition(pose.x, pose.y);
+    // A câmera segue suavemente, então o navio pode avançar alguns pixels
+    // na tela antes dela acompanhar.
+    this.camera.setPosition(cameraPose.x, cameraPose.y);
+
+    // O oceano acompanha a janela da câmera, mas sua animação não acelera.
+    this.ocean.setCameraPosition(cameraPose.x, cameraPose.y);
     this.ocean.update(0);
   }
 
