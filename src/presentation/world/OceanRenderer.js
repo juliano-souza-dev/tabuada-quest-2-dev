@@ -2,26 +2,19 @@ import { Container, Graphics, TilingSprite } from 'pixi.js';
 
 const OCEAN_TILE_URL = new URL('../../../assets/oceans/ocean-tile.webp', import.meta.url).href;
 
-// Mesmo comportamento-base do oceano antigo (R1).
-const OCEAN_CONFIG = Object.freeze({
-  speed: 58,
-  directionX: 1,
-  directionY: 0.68,
-  swell: 55,
-  layers: Object.freeze({
-    deep: Object.freeze({ driftX: 7, driftY: 4, tileScale: 1.18, opacity: 1 }),
-    wave: Object.freeze({ driftX: 18, driftY: 11, tileScale: 0.72, opacity: 0.34 }),
-    foam: Object.freeze({ driftX: 36, driftY: 24, tileScale: 0.48, opacity: 0.20 })
-  })
-});
+const LAYERS = [
+  { scale: 1.00, alpha: 1.00, vx: 5.5,  vy: 2.5 },
+  { scale: 0.78, alpha: 0.26, vx: 11.0, vy: 4.0 },
+  { scale: 1.34, alpha: 0.12, vx: -3.5, vy: 6.5 }
+];
 
 export class OceanRenderer {
   constructor() {
     this.view = new Container();
     this.width = 0;
     this.height = 0;
-    this.time = 0;
-    this.layers = [];
+    this.elapsed = 0;
+    this.surfaces = [];
 
     this.fallback = new Graphics()
       .rect(-1024, -1024, 2048, 2048)
@@ -31,32 +24,33 @@ export class OceanRenderer {
   }
 
   async init(assets) {
-    if (!assets || this.layers.length) return;
+    if (!assets || this.surfaces.length) return;
 
     try {
       const texture = await assets.load(OCEAN_TILE_URL);
 
-      this.layers = Object.values(OCEAN_CONFIG.layers).map((config) => {
-        const layer = new TilingSprite({
+      this.surfaces = LAYERS.map((settings) => {
+        const surface = new TilingSprite({
           texture,
           width: 1,
           height: 1
         });
 
-        layer.alpha = config.opacity;
-        layer.tileScale.set(config.tileScale);
-        layer.eventMode = 'none';
-        layer._oceanConfig = config;
-        return layer;
+        surface.alpha = settings.alpha;
+        surface.tileScale.set(settings.scale);
+        surface.eventMode = 'none';
+        surface.oceanMotion = settings;
+
+        return surface;
       });
 
-      for (let i = this.layers.length - 1; i >= 0; i -= 1) {
-        this.view.addChildAt(this.layers[i], 0);
+      for (const surface of this.surfaces) {
+        this.view.addChild(surface);
       }
 
       this.fallback.visible = false;
     } catch (error) {
-      console.error('[OceanRenderer] Failed to load ocean tile:', error);
+      console.error('[OceanRenderer] Ocean texture load failed:', error);
       this.fallback.visible = true;
     }
   }
@@ -67,10 +61,12 @@ export class OceanRenderer {
     this.width = width;
     this.height = height;
 
-    for (const layer of this.layers) {
-      layer.position.set(-width, -height);
-      layer.width = width * 2;
-      layer.height = height * 2;
+    const margin = 96;
+
+    for (const surface of this.surfaces) {
+      surface.position.set(-width - margin, -height - margin);
+      surface.width = width * 2 + margin * 2;
+      surface.height = height * 2 + margin * 2;
     }
 
     this.fallback
@@ -80,25 +76,18 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.layers.length) return;
+    if (!this.surfaces.length) return;
 
-    this.time += dt;
+    this.elapsed += dt;
 
-    const basePxPerSecond = OCEAN_CONFIG.speed * 0.42;
-    const swellAmount = (OCEAN_CONFIG.swell / 100) * 0.016;
-    const swellPhase = this.time * (0.42 + OCEAN_CONFIG.speed / 180);
-    const swellScale = 1 + swellAmount * (0.5 + 0.5 * Math.sin(swellPhase));
+    this.surfaces.forEach((surface, index) => {
+      const motion = surface.oceanMotion;
+      const phase = this.elapsed * (0.32 + index * 0.09);
+      const pulse = 1 + Math.sin(phase) * (0.0025 + index * 0.0008);
 
-    for (const layer of this.layers) {
-      const config = layer._oceanConfig;
-      const vx = config.driftX + basePxPerSecond * OCEAN_CONFIG.directionX;
-      const vy = config.driftY + basePxPerSecond * OCEAN_CONFIG.directionY;
-
-      layer.tilePosition.x = this.time * vx;
-      layer.tilePosition.y = this.time * vy;
-
-      const scale = config.tileScale * swellScale;
-      layer.tileScale.set(scale);
-    }
+      surface.tilePosition.x += motion.vx * dt;
+      surface.tilePosition.y += motion.vy * dt;
+      surface.tileScale.set(motion.scale * pulse);
+    });
   }
 }
