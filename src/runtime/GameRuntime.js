@@ -1170,13 +1170,20 @@ export class GameRuntime {
   }
 
   grantAmmo(ammoId,quantity,{save=true,syncServer=true,source="grant"}={}){
-    this.ensurePlayerAmmo();
     const id=String(ammoId||"").trim();
     const amount=Math.max(0,Math.floor(Number(quantity)||0));
     const valid=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
       .some(ammo=>String(ammo?.id||"")===id&&ammo?.available!==false);
     if(!id||!valid||amount<=0)return false;
-    this.playerAmmo.stock[id]=this.ammoQuantity(id)+amount;
+
+    // Normalize first, then mutate the current inventory object.
+    // Calling ammoQuantity() inside an assignment to playerAmmo.stock used to
+    // replace playerAmmo during RHS evaluation, so the write landed on a stale
+    // stock object and the purchased/granted ammo effectively vanished.
+    this.ensurePlayerAmmo();
+    const current=Math.max(0,Math.floor(Number(this.playerAmmo.stock?.[id])||0));
+    this.playerAmmo.stock[id]=current+amount;
+
     if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
     this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
     if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:source});
