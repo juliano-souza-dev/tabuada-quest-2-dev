@@ -127,7 +127,8 @@ void main() {
 
   color *= 0.90 + noise * 0.18;
 
-  finalColor = vec4(color, alpha);
+  // Pixi compõe transparência em premultiplied alpha.
+  finalColor = vec4(color * alpha, alpha);
 }
 `;
 
