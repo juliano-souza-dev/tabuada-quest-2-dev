@@ -184,10 +184,14 @@ void main() {
   // Mantém a leitura da arte original.
   color = saturateColor(color, 1.045);
 
+  float auraAlpha =
+    nearGlow * 0.42 +
+    farGlow * 0.18;
+
   float alpha =
     max(
       base.a,
-      rim * 0.72
+      auraAlpha * ghostPulse
     );
 
   finalColor = vec4(
