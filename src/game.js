@@ -1,11 +1,10 @@
 import { GameRuntime } from "./runtime/GameRuntime.js?v=20261005-hud-stable-v9";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-sync-cache-v2";
-import { createLocalFlowTestServices } from "./runtime/testing/LocalFlowTestServices.js?v=20261003-3015";
 
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
 const rawStart=params.get("start");
-const flowTest=params.get("flowtest")==="1";
+const flowTest=false;
 let start=null;
 
 if(rawStart){
