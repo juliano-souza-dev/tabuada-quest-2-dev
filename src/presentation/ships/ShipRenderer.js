@@ -3,18 +3,31 @@ import { DirectionalSprite } from './DirectionalSprite.js';
 import { HalloweenShipFilter } from './filters/HalloweenShipFilter.js';
 import { GhostParticleField } from './GhostParticleField.js';
 
-const SHIP_ASSET_URL = new URL(
+const DEFAULT_SHIP_ASSET_URL = new URL(
   '../../../assets/ships/player/starter/galeao_halloween_400x400-validated.webp',
   import.meta.url
 ).href;
 
 export class ShipRenderer {
-  constructor() {
+  constructor({
+    assetUrl = DEFAULT_SHIP_ASSET_URL,
+    useHalloweenEffects = true
+  } = {}) {
+    this.assetUrl = assetUrl;
+    this.useHalloweenEffects = useHalloweenEffects;
     this.view = new Container();
     this.directional = null;
     this.elapsed = 0;
-    this.halloweenFilter = new HalloweenShipFilter();
-    this.ghostParticles = new GhostParticleField();
+    this.halloweenFilter =
+      useHalloweenEffects
+        ? new HalloweenShipFilter()
+        : null;
+
+    this.ghostParticles =
+      useHalloweenEffects
+        ? new GhostParticleField()
+        : null;
+
     this.visualScale = 0.5;
     this.view.eventMode = 'none';
   }
@@ -22,12 +35,28 @@ export class ShipRenderer {
   async init(assets) {
     if (!assets || this.directional) return;
 
-    const sheetTexture = await assets.load(SHIP_ASSET_URL);
-    this.directional = new DirectionalSprite(sheetTexture, { displayScale: 1 });
-    this.directional.sprite.filters = [this.halloweenFilter];
+    const sheetTexture =
+      await assets.load(this.assetUrl);
+
+    this.directional =
+      new DirectionalSprite(
+        sheetTexture,
+        { displayScale: 1 }
+      );
+
+    if (this.halloweenFilter) {
+      this.directional.sprite.filters = [
+        this.halloweenFilter
+      ];
+    }
+
+    if (this.ghostParticles) {
+      this.view.addChild(
+        this.ghostParticles.view
+      );
+    }
 
     this.view.addChild(
-      this.ghostParticles.view,
       this.directional.sprite
     );
   }
@@ -39,31 +68,54 @@ export class ShipRenderer {
   }
 
   render(transform, visual = null) {
-    this.view.position.set(transform.x, transform.y);
+    this.view.position.set(
+      transform.x,
+      transform.y
+    );
 
     if (!this.directional) return;
 
-    this.directional.setDirection(transform.rotation);
+    this.directional.setDirection(
+      transform.rotation
+    );
 
     const requestedScale = Math.max(
       0.1,
       Number(visual?.scale) || 0.5
     );
 
-    if (requestedScale !== this.visualScale) {
-      this.visualScale = requestedScale;
-      this.directional.sprite.scale.set(requestedScale);
-      this.ghostParticles.setScale(requestedScale / 0.5);
+    if (
+      requestedScale !==
+      this.visualScale
+    ) {
+      this.visualScale =
+        requestedScale;
+
+      this.directional.sprite.scale.set(
+        requestedScale
+      );
+
+      this.ghostParticles?.setScale(
+        requestedScale / 0.5
+      );
     }
 
-    this.ghostParticles.view.visible =
-      visual?.effects?.ghostParticles !== false;
+    if (this.ghostParticles) {
+      this.ghostParticles.view.visible =
+        visual?.effects?.ghostParticles !== false;
+    }
 
-    const sprite = this.directional.sprite;
+    const sprite =
+      this.directional.sprite;
 
-    // O navio deve permanecer estável sobre o oceano.
-    // Movimento visual vem da navegação, não de oscilação artificial.
     sprite.y = 0;
     sprite.rotation = 0;
+  }
+
+  destroy() {
+    this.directional?.destroy();
+    this.directional = null;
+    this.ghostParticles?.view?.destroy?.();
+    this.view.destroy();
   }
 }
