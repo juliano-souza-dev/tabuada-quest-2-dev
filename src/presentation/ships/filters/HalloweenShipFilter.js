@@ -134,70 +134,52 @@ void main() {
     uGlowStrength *
     0.48;
 
-  // Contorno mágico usando apenas vizinhos do alpha.
-  float alphaNear = 0.0;
+  // Aura espectral larga calculada a partir do alpha.
+  float nearAlpha = 0.0;
+  float farAlpha = 0.0;
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv + vec2(texel.x * 2.0, 0.0)
-    ).a
-  );
+  vec2 r1 = texel * 4.0;
+  vec2 r2 = texel * 8.0;
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv - vec2(texel.x * 2.0, 0.0)
-    ).a
-  );
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2( r1.x, 0.0)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2(-r1.x, 0.0)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2(0.0,  r1.y)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2(0.0, -r1.y)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2( r1.x,  r1.y)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2(-r1.x,  r1.y)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2( r1.x, -r1.y)).a);
+  nearAlpha = max(nearAlpha, texture(uTexture, uv + vec2(-r1.x, -r1.y)).a);
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv + vec2(0.0, texel.y * 2.0)
-    ).a
-  );
+  farAlpha = max(farAlpha, texture(uTexture, uv + vec2( r2.x, 0.0)).a);
+  farAlpha = max(farAlpha, texture(uTexture, uv + vec2(-r2.x, 0.0)).a);
+  farAlpha = max(farAlpha, texture(uTexture, uv + vec2(0.0,  r2.y)).a);
+  farAlpha = max(farAlpha, texture(uTexture, uv + vec2(0.0, -r2.y)).a);
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv - vec2(0.0, texel.y * 2.0)
-    ).a
-  );
+  float nearGlow =
+    max(0.0, nearAlpha - base.a);
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv + texel * vec2(1.45, 1.45)
-    ).a
-  );
+  float farGlow =
+    max(0.0, farAlpha - max(base.a, nearGlow * 0.5));
 
-  alphaNear = max(
-    alphaNear,
-    texture(
-      uTexture,
-      uv + texel * vec2(-1.45, 1.45)
-    ).a
-  );
+  float ghostPulse =
+    0.82 +
+    0.18 * sin(uTime * 1.35);
 
-  float rim =
-    max(0.0, alphaNear - base.a) *
-    uRimStrength;
-
-  vec3 rimColor =
+  vec3 ghostColor =
     mix(
-      vec3(0.16, 0.88, 0.92),
-      vec3(0.42, 1.00, 0.78),
-      0.48 + 0.18 * sin(uTime * 1.15)
+      vec3(0.08, 0.78, 0.88),
+      vec3(0.30, 1.00, 0.72),
+      0.46 + 0.18 * sin(uTime * 0.95)
     );
 
-  // Aura espectral, suave o bastante para não parecer um traço desenhado.
-  color += rimColor * rim * 0.38;
+  color +=
+    ghostColor *
+    (
+      nearGlow * 0.72 +
+      farGlow * 0.34
+    ) *
+    ghostPulse *
+    uRimStrength;
 
   // Mantém a leitura da arte original.
   color = saturateColor(color, 1.045);
@@ -233,7 +215,7 @@ export class HalloweenShipFilter extends Filter {
             type: 'f32'
           },
           uRimStrength: {
-            value: 0.34,
+            value: 1.0,
             type: 'f32'
           },
           uHeatStrength: {
@@ -250,7 +232,7 @@ export class HalloweenShipFilter extends Filter {
       Math.max(1, Number(globalThis.devicePixelRatio) || 1),
       2
     );
-    this.padding = 18;
+    this.padding = 34;
   }
 
   update(timeSeconds) {
