@@ -1,0 +1,97 @@
+{
+  "id": "first-player-ship-16dir-map",
+  "preservedAt": "2026-10-06",
+  "sourceBranch": "backup-rebuild-before-legacy-restore-2026-10-06",
+  "frameSize": 400,
+  "grid": {
+    "columns": 4,
+    "rows": 4,
+    "frames": 16
+  },
+  "stepDegrees": 22.5,
+  "frameZeroHeading": 270,
+  "headingConvention": "0=north, clockwise positive",
+  "frameOrder": [
+    {
+      "index": 0,
+      "direction": "w",
+      "heading": 270
+    },
+    {
+      "index": 1,
+      "direction": "wnw",
+      "heading": 292.5
+    },
+    {
+      "index": 2,
+      "direction": "nw",
+      "heading": 315
+    },
+    {
+      "index": 3,
+      "direction": "nnw",
+      "heading": 337.5
+    },
+    {
+      "index": 4,
+      "direction": "n",
+      "heading": 0
+    },
+    {
+      "index": 5,
+      "direction": "nne",
+      "heading": 22.5
+    },
+    {
+      "index": 6,
+      "direction": "ne",
+      "heading": 45
+    },
+    {
+      "index": 7,
+      "direction": "ene",
+      "heading": 67.5
+    },
+    {
+      "index": 8,
+      "direction": "e",
+      "heading": 90
+    },
+    {
+      "index": 9,
+      "direction": "ese",
+      "heading": 112.5
+    },
+    {
+      "index": 10,
+      "direction": "se",
+      "heading": 135
+    },
+    {
+      "index": 11,
+      "direction": "sse",
+      "heading": 157.5
+    },
+    {
+      "index": 12,
+      "direction": "s",
+      "heading": 180
+    },
+    {
+      "index": 13,
+      "direction": "ssw",
+      "heading": 202.5
+    },
+    {
+      "index": 14,
+      "direction": "sw",
+      "heading": 225
+    },
+    {
+      "index": 15,
+      "direction": "wsw",
+      "heading": 247.5
+    }
+  ],
+  "formula": "frameIndex = (round(normalizeDegrees(heading)/22.5) + 4) % 16"
+}
