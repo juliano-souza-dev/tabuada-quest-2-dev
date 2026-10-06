@@ -1,56 +1,74 @@
-import { Container, Graphics, TilingSprite } from 'pixi.js';
+import {
+  Container,
+  DisplacementFilter,
+  Graphics,
+  Sprite,
+  TilingSprite
+} from 'pixi.js';
 
-const OCEAN_TILE_URL = new URL('../../../assets/oceans/ocean-tile.webp', import.meta.url).href;
-
-const LAYERS = [
-  { scale: 1.00, alpha: 1.00, vx: 5.5,  vy: 2.5 },
-  { scale: 0.78, alpha: 0.26, vx: 11.0, vy: 4.0 },
-  { scale: 1.34, alpha: 0.12, vx: -3.5, vy: 6.5 }
-];
+const OCEAN_TEXTURE_URL = new URL('../../../assets/oceans/ocean.png', import.meta.url).href;
 
 export class OceanRenderer {
   constructor() {
     this.view = new Container();
+    this.water = new Container();
+
     this.width = 0;
     this.height = 0;
     this.elapsed = 0;
-    this.surfaces = [];
+
+    this.base = null;
+    this.highlights = null;
+    this.displacementMap = null;
+    this.displacementFilter = null;
 
     this.fallback = new Graphics()
       .rect(-1024, -1024, 2048, 2048)
       .fill('#0b4263');
 
     this.view.addChild(this.fallback);
+    this.view.addChild(this.water);
   }
 
   async init(assets) {
-    if (!assets || this.surfaces.length) return;
+    if (!assets || this.base) return;
 
     try {
-      const texture = await assets.load(OCEAN_TILE_URL);
+      const texture = await assets.load(OCEAN_TEXTURE_URL);
 
-      this.surfaces = LAYERS.map((settings) => {
-        const surface = new TilingSprite({
-          texture,
-          width: 1,
-          height: 1
-        });
-
-        surface.alpha = settings.alpha;
-        surface.tileScale.set(settings.scale);
-        surface.eventMode = 'none';
-        surface.oceanMotion = settings;
-
-        return surface;
+      this.base = new TilingSprite({
+        texture,
+        width: 1,
+        height: 1
       });
 
-      for (const surface of this.surfaces) {
-        this.view.addChild(surface);
-      }
+      this.highlights = new TilingSprite({
+        texture,
+        width: 1,
+        height: 1
+      });
+      this.highlights.alpha = 0.16;
+      this.highlights.tileScale.set(0.82);
+      this.highlights.eventMode = 'none';
 
+      this.displacementMap = new Sprite(texture);
+      this.displacementMap.anchor.set(0.5);
+      this.displacementMap.alpha = 0;
+      this.displacementMap.eventMode = 'none';
+
+      this.displacementFilter = new DisplacementFilter({
+        sprite: this.displacementMap,
+        scale: 13
+      });
+
+      this.water.addChild(this.base, this.highlights);
+      this.water.filters = [this.displacementFilter];
+
+      // O mapa participa do filtro, mas não precisa ser visível.
+      this.view.addChild(this.displacementMap);
       this.fallback.visible = false;
     } catch (error) {
-      console.error('[OceanRenderer] Ocean texture load failed:', error);
+      console.error('[OceanRenderer] Ocean GPU effect failed:', error);
       this.fallback.visible = true;
     }
   }
@@ -62,11 +80,22 @@ export class OceanRenderer {
     this.height = height;
 
     const margin = 96;
+    const left = -width - margin;
+    const top = -height - margin;
+    const renderWidth = width * 2 + margin * 2;
+    const renderHeight = height * 2 + margin * 2;
 
-    for (const surface of this.surfaces) {
-      surface.position.set(-width - margin, -height - margin);
-      surface.width = width * 2 + margin * 2;
-      surface.height = height * 2 + margin * 2;
+    for (const layer of [this.base, this.highlights]) {
+      if (!layer) continue;
+      layer.position.set(left, top);
+      layer.width = renderWidth;
+      layer.height = renderHeight;
+    }
+
+    if (this.displacementMap) {
+      this.displacementMap.position.set(0, 0);
+      this.displacementMap.width = renderWidth * 1.2;
+      this.displacementMap.height = renderHeight * 1.2;
     }
 
     this.fallback
@@ -76,18 +105,24 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.surfaces.length) return;
+    if (!this.base || !this.displacementMap) return;
 
     this.elapsed += dt;
 
-    this.surfaces.forEach((surface, index) => {
-      const motion = surface.oceanMotion;
-      const phase = this.elapsed * (0.32 + index * 0.09);
-      const pulse = 1 + Math.sin(phase) * (0.0025 + index * 0.0008);
+    // O desenho da água permanece praticamente ancorado no mundo.
+    // O movimento vem da deformação dos pixels, não de uma textura deslizando.
+    const slowWave = this.elapsed * 0.42;
+    const crossWave = this.elapsed * 0.31;
 
-      surface.tilePosition.x += motion.vx * dt;
-      surface.tilePosition.y += motion.vy * dt;
-      surface.tileScale.set(motion.scale * pulse);
-    });
+    this.displacementMap.x = Math.sin(slowWave) * 22;
+    this.displacementMap.y = Math.cos(crossWave) * 16;
+    this.displacementMap.rotation = Math.sin(this.elapsed * 0.17) * 0.012;
+
+    // Segunda leitura de onda para quebrar a repetição do tile.
+    this.highlights.tilePosition.x = Math.sin(this.elapsed * 0.23) * 12;
+    this.highlights.tilePosition.y = Math.cos(this.elapsed * 0.19) * 9;
+
+    const breathing = 0.82 + Math.sin(this.elapsed * 0.38) * 0.006;
+    this.highlights.tileScale.set(breathing);
   }
 }
