@@ -6,6 +6,7 @@ import { ShipNavigationSystem } from '../../game/systems/ShipNavigationSystem.js
 import { OceanRenderer } from '../world/OceanRenderer.js';
 import { ShipRenderer } from '../ships/ShipRenderer.js';
 import { ShipWakeRenderer } from '../ships/ShipWakeRenderer.js';
+import { STARTER_REGION, clampPointToRegion } from '../../game/world/RegionDefinition.js';
 
 const normalizeDegrees = (value) => ((value % 360) + 360) % 360;
 const CAMERA_FOLLOW_SHARPNESS = 4.5;
@@ -31,8 +32,13 @@ export class WorldScene {
     this.world = new WorldState({ worldId });
     this.camera = new WorldCamera();
 
+    this.region = STARTER_REGION;
+
     this.ocean = new OceanRenderer();
-    this.shipNavigation = new ShipNavigationSystem();
+    this.shipNavigation = new ShipNavigationSystem({
+      region: this.region,
+      boundaryPadding: 56
+    });
     this.playerShip = createStarterShip({ x: 0, y: 0 });
     this.shipRenderer = new ShipRenderer();
     this.shipWakeRenderer = new ShipWakeRenderer({ shipHeight: 116 });
@@ -99,10 +105,31 @@ export class WorldScene {
     this.previousCamera = { ...this.currentCamera };
 
     const follow = 1 - Math.exp(-CAMERA_FOLLOW_SHARPNESS * dt);
-    this.currentCamera = {
+
+    const desiredCamera = {
       x: this.currentCamera.x + (after.x - this.currentCamera.x) * follow,
       y: this.currentCamera.y + (after.y - this.currentCamera.y) * follow
     };
+
+    const halfViewWidth =
+      this.renderer.screen.width / (2 * this.camera.zoom);
+
+    const halfViewHeight =
+      this.renderer.screen.height / (2 * this.camera.zoom);
+
+    const cameraPadding = Math.max(
+      halfViewWidth,
+      halfViewHeight
+    );
+
+    const clampedCamera = clampPointToRegion(
+      desiredCamera.x,
+      desiredCamera.y,
+      this.region,
+      cameraPadding
+    );
+
+    this.currentCamera = clampedCamera;
 
     this.shipWakeRenderer.update(
       after,
