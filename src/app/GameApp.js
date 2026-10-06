@@ -38,7 +38,7 @@ export class GameApp {
     this.scenes = new SceneManager({ stage: this.renderer.stage });
     this.mount.appendChild(this.renderer.canvas);
     this.input.attach(this.renderer.canvas);
-    await this.scenes.change(new WorldScene({ renderer: this.renderer }));
+    await this.scenes.change(new WorldScene({ renderer: this.renderer, assets: this.assets }));
     this.loop.start();
   }
 
