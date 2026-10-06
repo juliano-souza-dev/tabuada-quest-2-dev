@@ -36,7 +36,7 @@ export class GameApp {
     }
     this.session.start(profile);
 
-    await this.renderer.init({ resizeTo: window, preference: 'webgl', preferWebGLVersion: 2, powerPreference: 'high-performance', antialias: true, background: '#071522', resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true });
+    await this.renderer.init({ resizeTo: window, preference: 'webgl', preferWebGLVersion: 2, powerPreference: 'high-performance', antialias: true, background: '#071522', backgroundAlpha: 0, resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true });
     this.scenes = new SceneManager({ stage: this.renderer.stage });
     this.mount.appendChild(this.renderer.canvas);
     this.input.attach(this.renderer.canvas);
