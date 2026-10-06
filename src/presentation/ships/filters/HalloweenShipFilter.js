@@ -243,6 +243,12 @@ export class HalloweenShipFilter extends Filter {
       }
     });
 
+    // Filters render through an intermediate texture. Match the game canvas
+    // density so the 400x400 directional frame stays crisp on mobile.
+    this.resolution = Math.min(
+      Math.max(1, Number(globalThis.devicePixelRatio) || 1),
+      2
+    );
     this.padding = 18;
   }
 
