@@ -100,3 +100,76 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     height:116px;
   }
 }
+
+
+.tq-math-modal{
+  position:fixed;
+  inset:0;
+  z-index:999999;
+  display:grid;
+  place-items:center;
+  padding:16px;
+  background:rgba(3,10,18,.48);
+  touch-action:none;
+}
+.tq-math-modal[hidden]{display:none}
+.tq-math-modal__panel{
+  position:relative;
+  width:min(92vw,460px);
+  aspect-ratio:1/1;
+}
+.tq-math-modal__art{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.tq-math-modal__content{
+  position:absolute;
+  left:50%;
+  top:56%;
+  width:58%;
+  transform:translate(-50%,-50%);
+  display:grid;
+  gap:10px;
+  justify-items:center;
+}
+.tq-math-modal__question{
+  width:100%;
+  text-align:center;
+  font-weight:900;
+  font-size:clamp(24px,7vw,38px);
+  line-height:1;
+  color:#fff5d6;
+  text-shadow:
+    0 2px 0 #4a1907,
+    0 0 10px rgba(255,102,0,.72);
+}
+.tq-math-modal__input{
+  width:100%;
+  min-height:54px;
+  border:3px solid #f4a52f;
+  border-radius:12px;
+  background:rgba(22,10,6,.88);
+  color:#fff7db;
+  text-align:center;
+  font:900 28px/1 system-ui,sans-serif;
+  outline:none;
+}
+.tq-math-modal__input:focus{
+  box-shadow:0 0 0 3px rgba(255,133,24,.24);
+}
+.tq-math-modal__submit{
+  min-width:62%;
+  min-height:46px;
+  border:2px solid #ffb545;
+  border-radius:12px;
+  background:linear-gradient(#d86612,#8b2d08);
+  color:#fff7de;
+  font:800 17px/1 system-ui,sans-serif;
+  box-shadow:0 4px 10px rgba(0,0,0,.35);
+}
