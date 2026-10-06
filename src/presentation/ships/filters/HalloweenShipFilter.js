@@ -146,8 +146,8 @@ void main() {
 
   color = mix(
     color,
-    color + ghostInside * 0.34,
-    darkMask * ghostInsidePulse
+    color + ghostInside * 0.62,
+    darkMask * ghostInsidePulse * 0.82
   );
 
   // Aura espectral larga calculada a partir do alpha.
@@ -210,8 +210,12 @@ void main() {
       auraAlpha * ghostPulse
     );
 
+  vec3 finalRgb = clamp(color, 0.0, 1.0);
+
+  // Pixi filters usam composição premultiplicada.
+  // Sem isso o halo tende a estourar para branco/ciano.
   finalColor = vec4(
-    clamp(color, 0.0, 1.0),
+    finalRgb * alpha,
     alpha
   );
 }
