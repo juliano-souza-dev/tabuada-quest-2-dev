@@ -909,14 +909,220 @@
       "required": true
     },
     {
+      "id": "HALLOWEEN_M01",
+      "region": 1,
+      "order": 81,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Sinais na Névoa",
+      "description": "Colete tesouros de Halloween para iniciar a preparação contra o Terror do Halloween.",
+      "unlockAfter": [],
+      "objective": {
+        "type": "collect_treasure",
+        "target": 5
+      },
+      "reward": {
+        "gold": 200,
+        "rubies": 0
+      }
+    },
+    {
+      "id": "HALLOWEEN_M02",
+      "region": 1,
+      "order": 82,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Corsários da Abóbora",
+      "description": "Afunde corsários da Abóbora Maldita e limpe a rota.",
+      "unlockAfter": [
+        "HALLOWEEN_M01"
+      ],
+      "objective": {
+        "type": "defeat_npc",
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "targetLabel": "Corsários da Abóbora Maldita",
+        "target": 5
+      },
+      "reward": {
+        "gold": 350,
+        "rubies": 0
+      }
+    },
+    {
+      "id": "HALLOWEEN_M03",
+      "region": 1,
+      "order": 83,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Primeiro Reforço",
+      "description": "Compre um upgrade para fortalecer o navio.",
+      "unlockAfter": [
+        "HALLOWEEN_M02"
+      ],
+      "objective": {
+        "type": "purchase_upgrade",
+        "target": 1
+      },
+      "reward": {
+        "gold": 500,
+        "rubies": 1
+      }
+    },
+    {
+      "id": "HALLOWEEN_M04",
+      "region": 1,
+      "order": 84,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Carga das Almas",
+      "description": "Colete mais tesouros para financiar a preparação da frota.",
+      "unlockAfter": [
+        "HALLOWEEN_M03"
+      ],
+      "objective": {
+        "type": "collect_treasure",
+        "target": 8
+      },
+      "reward": {
+        "gold": 750,
+        "rubies": 1
+      }
+    },
+    {
+      "id": "HALLOWEEN_M05",
+      "region": 1,
+      "order": 85,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Caçada Maldita",
+      "description": "Afunde uma nova leva de corsários de Halloween.",
+      "unlockAfter": [
+        "HALLOWEEN_M04"
+      ],
+      "objective": {
+        "type": "defeat_npc",
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "targetLabel": "Corsários da Abóbora Maldita",
+        "target": 10
+      },
+      "reward": {
+        "gold": 1000,
+        "rubies": 2,
+        "cannonId": "cannon-halloween-pumpkin-terror",
+        "cannonQuantity": 1
+      }
+    },
+    {
+      "id": "HALLOWEEN_M06",
+      "region": 1,
+      "order": 86,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Arsenal Assombrado",
+      "description": "Faça mais um upgrade antes do confronto final.",
+      "unlockAfter": [
+        "HALLOWEEN_M05"
+      ],
+      "objective": {
+        "type": "purchase_upgrade",
+        "target": 1
+      },
+      "reward": {
+        "gold": 1250,
+        "rubies": 3
+      }
+    },
+    {
+      "id": "HALLOWEEN_M07",
+      "region": 1,
+      "order": 87,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Reserva de Guerra",
+      "description": "Colete tesouros para completar a reserva de combate.",
+      "unlockAfter": [
+        "HALLOWEEN_M06"
+      ],
+      "objective": {
+        "type": "collect_treasure",
+        "target": 12
+      },
+      "reward": {
+        "gold": 1600,
+        "rubies": 4
+      }
+    },
+    {
+      "id": "HALLOWEEN_M08",
+      "region": 1,
+      "order": 88,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Última Patrulha",
+      "description": "Afunde a última patrulha antes de desafiar o Terror.",
+      "unlockAfter": [
+        "HALLOWEEN_M07"
+      ],
+      "objective": {
+        "type": "defeat_npc",
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "targetLabel": "Corsários da Abóbora Maldita",
+        "target": 15
+      },
+      "reward": {
+        "gold": 2000,
+        "rubies": 5
+      }
+    },
+    {
+      "id": "HALLOWEEN_M09",
+      "region": 1,
+      "order": 89,
+      "category": "event",
+      "event": "halloween",
+      "required": true,
+      "name": "Preparação Final",
+      "description": "Conclua o último upgrade. Depois disso o Terror do Halloween poderá ser atacado.",
+      "unlockAfter": [
+        "HALLOWEEN_M08"
+      ],
+      "objective": {
+        "type": "purchase_upgrade",
+        "target": 1
+      },
+      "reward": {
+        "gold": 2500,
+        "rubies": 10
+      }
+    },
+    {
       "id": "HALLOWEEN_BOSS_10",
       "region": 1,
       "order": 90,
       "category": "event",
-      "name": "O Couraçado da Noite",
-      "description": "Derrote o Terror do Halloween e conquiste o próprio navio como recompensa especial do evento.",
-      "acceptRequired": true,
-      "unlockAfter": [],
+      "event": "halloween",
+      "required": true,
+      "name": "Afundar o Terror do Halloween",
+      "description": "As nove missões foram concluídas. Agora afunde o Terror do Halloween e conquiste seu galeão.",
+      "unlockAfter": [
+        "HALLOWEEN_M01",
+        "HALLOWEEN_M02",
+        "HALLOWEEN_M03",
+        "HALLOWEEN_M04",
+        "HALLOWEEN_M05",
+        "HALLOWEEN_M06",
+        "HALLOWEEN_M07",
+        "HALLOWEEN_M08",
+        "HALLOWEEN_M09"
+      ],
       "objective": {
         "type": "defeat_npc",
         "npcId": "boss-halloween-dreadnought",
@@ -927,11 +1133,9 @@
         "gold": 5000,
         "rubies": 20,
         "xp": 3000,
-        "shipId": "ship-halloween-dreadnought",
+        "shipId": "ship-halloween-terror-reward-400",
         "equipShip": true
-      },
-      "required": false,
-      "event": "halloween"
+      }
     }
   ]
 }
