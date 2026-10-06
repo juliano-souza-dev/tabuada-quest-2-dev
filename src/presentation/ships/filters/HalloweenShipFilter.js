@@ -67,24 +67,9 @@ void main() {
   vec2 uv = vTextureCoord;
   vec2 texel = uInputSize.zw;
 
-  // Distorção mínima e localizada no eixo vertical.
-  float heatWave =
-    sin(uv.y * 58.0 + uTime * 2.15) *
-    sin(uv.x * 19.0 - uTime * 1.35);
-
-  vec2 heatOffset = vec2(
-    heatWave * texel.x * 0.85,
-    heatWave * texel.y * 0.22
-  ) * uHeatStrength;
-
-  vec4 base = texture(
-    uTexture,
-    clamp(
-      uv + heatOffset,
-      vec2(0.001),
-      vec2(0.999)
-    )
-  );
+  // O sprite não é deformado. Isso evita o navio parecer submerso
+  // ou compartilhar a animação do oceano.
+  vec4 base = texture(uTexture, uv);
 
   // Máscara das áreas quentes já existentes no asset.
   float warmRed =
@@ -133,6 +118,37 @@ void main() {
     pulse *
     uGlowStrength *
     0.48;
+
+  // Energia espectral dentro do próprio casco/velas.
+  // Atua principalmente nas áreas escuras e preserva os laranjas.
+  float darkMask =
+    smoothstep(
+      0.72,
+      0.18,
+      luminosity
+    ) *
+    base.a *
+    (1.0 - hotMask * 0.82);
+
+  float ghostInsidePulse =
+    0.78 +
+    0.22 * sin(
+      uTime * 1.55 +
+      uv.y * 8.0
+    );
+
+  vec3 ghostInside =
+    mix(
+      vec3(0.05, 0.46, 0.52),
+      vec3(0.12, 0.80, 0.64),
+      0.5 + 0.5 * sin(uTime * 0.85)
+    );
+
+  color = mix(
+    color,
+    color + ghostInside * 0.34,
+    darkMask * ghostInsidePulse
+  );
 
   // Aura espectral larga calculada a partir do alpha.
   float nearAlpha = 0.0;
@@ -223,7 +239,7 @@ export class HalloweenShipFilter extends Filter {
             type: 'f32'
           },
           uHeatStrength: {
-            value: 0.52,
+            value: 0.0,
             type: 'f32'
           }
         }
