@@ -88,6 +88,13 @@ export class OceanRenderer {
     const renderWidth = width + margin * 2;
     const renderHeight = height + margin * 2;
 
+    this.surfaceFilter?.setWorldRect(
+      left,
+      top,
+      renderWidth,
+      renderHeight
+    );
+
     for (const layer of [this.depth, this.base, this.glints]) {
       if (!layer) continue;
       layer.position.set(left, top);
