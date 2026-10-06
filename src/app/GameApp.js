@@ -41,7 +41,13 @@ export class GameApp {
     this.mount.appendChild(this.renderer.canvas);
     this.input.attach(this.renderer.canvas);
     this.joystick.mount(document.body);
-    await this.scenes.change(new WorldScene({ renderer: this.renderer, assets: this.assets, input: this.input }));
+    await this.scenes.change(new WorldScene({
+      renderer: this.renderer,
+      assets: this.assets,
+      input: this.input,
+      session: this.session,
+      persistence
+    }));
     this.loop.start();
   }
 
