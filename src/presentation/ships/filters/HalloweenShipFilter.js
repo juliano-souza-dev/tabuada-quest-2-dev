@@ -191,12 +191,13 @@ void main() {
 
   vec3 rimColor =
     mix(
-      vec3(0.78, 0.08, 0.94),
-      vec3(1.00, 0.14, 0.42),
-      0.36 + 0.16 * sin(uTime * 1.45)
+      vec3(0.16, 0.88, 0.92),
+      vec3(0.42, 1.00, 0.78),
+      0.48 + 0.18 * sin(uTime * 1.15)
     );
 
-  color += rimColor * rim * 0.82;
+  // Aura espectral, suave o bastante para não parecer um traço desenhado.
+  color += rimColor * rim * 0.38;
 
   // Mantém a leitura da arte original.
   color = saturateColor(color, 1.045);
@@ -232,7 +233,7 @@ export class HalloweenShipFilter extends Filter {
             type: 'f32'
           },
           uRimStrength: {
-            value: 0.72,
+            value: 0.34,
             type: 'f32'
           },
           uHeatStrength: {
