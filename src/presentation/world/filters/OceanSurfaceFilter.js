@@ -39,7 +39,6 @@ uniform float uFoam;
 uniform float uSparkle;
 uniform float uMotion;
 
-out vec4 finalColor;
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 345.45));
@@ -139,7 +138,7 @@ void main() {
   color = boostSaturation(color, 1.04);
   color = (color - 0.5) * 1.025 + 0.5;
 
-  finalColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
 `;
 
