@@ -1,10 +1,5 @@
-import {
-  Container,
-  DisplacementFilter,
-  Graphics,
-  Sprite,
-  TilingSprite
-} from 'pixi.js';
+import { Container, Graphics, TilingSprite } from 'pixi.js';
+import { OceanSurfaceFilter } from './filters/OceanSurfaceFilter.js';
 
 const OCEAN_TEXTURE_URL = new URL('../../../assets/oceans/ocean.png', import.meta.url).href;
 
@@ -21,16 +16,14 @@ export class OceanRenderer {
 
     this.depth = null;
     this.base = null;
-    this.highlights = null;
-    this.displacementMap = null;
-    this.displacementFilter = null;
+    this.glints = null;
+    this.surfaceFilter = null;
 
     this.fallback = new Graphics()
       .rect(-1024, -1024, 2048, 2048)
       .fill('#0b4263');
 
-    this.view.addChild(this.fallback);
-    this.view.addChild(this.water);
+    this.view.addChild(this.fallback, this.water);
   }
 
   async init(assets) {
@@ -40,37 +33,29 @@ export class OceanRenderer {
       const texture = await assets.load(OCEAN_TEXTURE_URL);
 
       this.depth = new TilingSprite({ texture, width: 1, height: 1 });
-      this.depth.alpha = 0.34;
-      this.depth.tint = 0x0b5b78;
-      this.depth.tileScale.set(1.32);
+      this.depth.alpha = 0.24;
+      this.depth.tint = 0x0a6683;
+      this.depth.tileScale.set(1.22);
       this.depth.eventMode = 'none';
 
       this.base = new TilingSprite({ texture, width: 1, height: 1 });
       this.base.eventMode = 'none';
 
-      this.highlights = new TilingSprite({ texture, width: 1, height: 1 });
-      this.highlights.alpha = 0.16;
-      this.highlights.tileScale.set(0.82);
-      this.highlights.eventMode = 'none';
+      this.glints = new TilingSprite({ texture, width: 1, height: 1 });
+      this.glints.alpha = 0.10;
+      this.glints.tileScale.set(0.88);
+      this.glints.eventMode = 'none';
 
-      this.displacementMap = new Sprite(texture);
-      this.displacementMap.anchor.set(0.5);
-      this.displacementMap.alpha = 0;
-      this.displacementMap.eventMode = 'none';
+      this.surfaceFilter = new OceanSurfaceFilter();
 
-      this.displacementFilter = new DisplacementFilter({
-        sprite: this.displacementMap,
-        scale: 13
-      });
-
-      this.water.addChild(this.depth, this.base, this.highlights);
-      this.water.filters = [this.displacementFilter];
-      this.view.addChild(this.displacementMap);
+      this.water.addChild(this.depth, this.base, this.glints);
+      this.water.filters = [this.surfaceFilter];
 
       this.fallback.visible = false;
       this.layout();
     } catch (error) {
-      console.error('[OceanRenderer] Ocean GPU effect failed:', error);
+      console.error('[OceanRenderer] Ocean surface shader failed:', error);
+      this.water.filters = null;
       this.fallback.visible = true;
     }
   }
@@ -90,26 +75,20 @@ export class OceanRenderer {
   }
 
   layout() {
-    const width = this.width || 1;
-    const height = this.height || 1;
-    const margin = 160;
+    const width = Math.max(1, this.width);
+    const height = Math.max(1, this.height);
+    const margin = 96;
 
-    const left = this.cameraX - width - margin;
-    const top = this.cameraY - height - margin;
-    const renderWidth = width * 2 + margin * 2;
-    const renderHeight = height * 2 + margin * 2;
+    const left = this.cameraX - width / 2 - margin;
+    const top = this.cameraY - height / 2 - margin;
+    const renderWidth = width + margin * 2;
+    const renderHeight = height + margin * 2;
 
-    for (const layer of [this.depth, this.base, this.highlights]) {
+    for (const layer of [this.depth, this.base, this.glints]) {
       if (!layer) continue;
       layer.position.set(left, top);
       layer.width = renderWidth;
       layer.height = renderHeight;
-    }
-
-    if (this.displacementMap) {
-      this.displacementMap.position.set(this.cameraX, this.cameraY);
-      this.displacementMap.width = renderWidth * 1.2;
-      this.displacementMap.height = renderHeight * 1.2;
     }
 
     this.fallback
@@ -119,30 +98,24 @@ export class OceanRenderer {
   }
 
   update(dt) {
-    if (!this.base || !this.depth || !this.displacementMap) return;
+    if (!this.base || !this.depth || !this.glints) return;
 
     this.elapsed += dt;
+    this.surfaceFilter?.update(this.elapsed);
 
-    const slowWave = this.elapsed * 0.42;
-    const crossWave = this.elapsed * 0.31;
-
-    this.displacementMap.x = this.cameraX + Math.sin(slowWave) * 22;
-    this.displacementMap.y = this.cameraY + Math.cos(crossWave) * 16;
-    this.displacementMap.rotation = Math.sin(this.elapsed * 0.17) * 0.012;
-
+    // Mantém o padrão preso ao mundo enquanto a câmera navega.
     this.base.tilePosition.set(-this.cameraX, -this.cameraY);
 
-    this.depth.tilePosition.x = -this.cameraX * 0.72 + Math.sin(this.elapsed * 0.11) * 18;
-    this.depth.tilePosition.y = -this.cameraY * 0.72 + Math.cos(this.elapsed * 0.09) * 14;
-    const depthBreathing = 1.32 + Math.sin(this.elapsed * 0.16) * 0.008;
-    this.depth.tileScale.set(depthBreathing);
+    // Profundidade quase estática, em escala diferente.
+    this.depth.tilePosition.x =
+      -this.cameraX * 0.76 + Math.sin(this.elapsed * 0.08) * 5;
+    this.depth.tilePosition.y =
+      -this.cameraY * 0.76 + Math.cos(this.elapsed * 0.07) * 4;
 
-    this.highlights.tilePosition.x =
-      -this.cameraX * 1.08 + Math.sin(this.elapsed * 0.23) * 12;
-    this.highlights.tilePosition.y =
-      -this.cameraY * 1.08 + Math.cos(this.elapsed * 0.19) * 9;
-
-    const breathing = 0.82 + Math.sin(this.elapsed * 0.38) * 0.006;
-    this.highlights.tileScale.set(breathing);
+    // Reflexos têm deriva independente e muito curta.
+    this.glints.tilePosition.x =
+      -this.cameraX * 1.06 + Math.sin(this.elapsed * 0.17) * 7;
+    this.glints.tilePosition.y =
+      -this.cameraY * 1.06 + Math.cos(this.elapsed * 0.14) * 5;
   }
 }
