@@ -8,6 +8,7 @@ const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.star
 const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(Boolean))];
 const LEGACY_DEFAULT_SHIP_ID="pirate-default";
 const CURRENT_DEFAULT_SHIP_ID="ship-pirate-galleon-navio";
+const HALLOWEEN_TERROR_PREREQUISITES=["HALLOWEEN_M01","HALLOWEEN_M02","HALLOWEEN_M03","HALLOWEEN_M04","HALLOWEEN_M05","HALLOWEEN_M06","HALLOWEEN_M07","HALLOWEEN_M08","HALLOWEEN_M09"];
 const migrateLegacyShipId=id=>String(id||"")===LEGACY_DEFAULT_SHIP_ID?CURRENT_DEFAULT_SHIP_ID:String(id||"");
 const normalizeGlobalAmmo=input=>{
   const value=input&&typeof input==="object"?input:{};
@@ -1663,6 +1664,39 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
+  halloweenTerrorUnlocked(){
+    const claimed=new Set(
+      Array.isArray(this.accountState?.game?.missions?.claimedRewards)
+        ?this.accountState.game.missions.claimedRewards.map(String)
+        :[]
+    );
+    return HALLOWEEN_TERROR_PREREQUISITES.every(id=>claimed.has(id));
+  }
+
+  canAttackWorldEntity(entity){
+    const npcId=String(entity?.npcId||"");
+    const coopBossId=String(entity?.coopBossId||"");
+    if(npcId==="boss-halloween-dreadnought"||coopBossId==="boss-halloween-dreadnought"){
+      return this.halloweenTerrorUnlocked();
+    }
+    return true;
+  }
+
+  attackLockMessage(entity){
+    const npcId=String(entity?.npcId||"");
+    const coopBossId=String(entity?.coopBossId||"");
+    if(npcId==="boss-halloween-dreadnought"||coopBossId==="boss-halloween-dreadnought"){
+      const claimed=new Set(
+        Array.isArray(this.accountState?.game?.missions?.claimedRewards)
+          ?this.accountState.game.missions.claimedRewards.map(String)
+          :[]
+      );
+      const done=HALLOWEEN_TERROR_PREREQUISITES.filter(id=>claimed.has(id)).length;
+      return "🔒 Terror do Halloween protegido · conclua as 9 missões ("+done+"/9).";
+    }
+    return "Alvo bloqueado.";
+  }
+
   async advanceMissions(type,context={}){
     const eventType=String(type||"").trim();
     if(!eventType)return {changed:false,completed:[]};
@@ -1678,7 +1712,10 @@ export class GameRuntime {
     let changed=false;
 
     for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
-      if(Number(mission?.region)!==region)continue;
+      const eventMission=String(mission?.event||"").toLowerCase()==="halloween";
+      if(!eventMission&&Number(mission?.region)!==region)continue;
+      const unlockAfter=Array.isArray(mission?.unlockAfter)?mission.unlockAfter.map(String).filter(Boolean):[];
+      if(unlockAfter.length&&!unlockAfter.every(id=>claimed.has(id)))continue;
       const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
       if(String(objective.type||"")!==eventType)continue;
       if(eventType==="defeat_npc"){
@@ -2327,6 +2364,8 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
+      canAttackEntity:entity=>this.canAttackWorldEntity(entity),
+      attackLockMessage:entity=>this.attackLockMessage(entity),
       shopBalances:()=>this.getWalletBalances(),
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
