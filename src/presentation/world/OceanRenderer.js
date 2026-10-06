@@ -15,6 +15,8 @@ export class OceanRenderer {
 
     this.width = 0;
     this.height = 0;
+    this.cameraX = 0;
+    this.cameraY = 0;
     this.elapsed = 0;
 
     this.depth = null;
@@ -37,27 +39,16 @@ export class OceanRenderer {
     try {
       const texture = await assets.load(OCEAN_TEXTURE_URL);
 
-      this.depth = new TilingSprite({
-        texture,
-        width: 1,
-        height: 1
-      });
+      this.depth = new TilingSprite({ texture, width: 1, height: 1 });
       this.depth.alpha = 0.34;
       this.depth.tint = 0x0b5b78;
       this.depth.tileScale.set(1.32);
       this.depth.eventMode = 'none';
 
-      this.base = new TilingSprite({
-        texture,
-        width: 1,
-        height: 1
-      });
+      this.base = new TilingSprite({ texture, width: 1, height: 1 });
+      this.base.eventMode = 'none';
 
-      this.highlights = new TilingSprite({
-        texture,
-        width: 1,
-        height: 1
-      });
+      this.highlights = new TilingSprite({ texture, width: 1, height: 1 });
       this.highlights.alpha = 0.16;
       this.highlights.tileScale.set(0.82);
       this.highlights.eventMode = 'none';
@@ -74,14 +65,20 @@ export class OceanRenderer {
 
       this.water.addChild(this.depth, this.base, this.highlights);
       this.water.filters = [this.displacementFilter];
-
-      // O mapa participa do filtro, mas não precisa ser visível.
       this.view.addChild(this.displacementMap);
+
       this.fallback.visible = false;
+      this.layout();
     } catch (error) {
       console.error('[OceanRenderer] Ocean GPU effect failed:', error);
       this.fallback.visible = true;
     }
+  }
+
+  setCameraPosition(x, y) {
+    this.cameraX = x;
+    this.cameraY = y;
+    this.layout();
   }
 
   resize(width, height) {
@@ -89,10 +86,16 @@ export class OceanRenderer {
 
     this.width = width;
     this.height = height;
+    this.layout();
+  }
 
-    const margin = 96;
-    const left = -width - margin;
-    const top = -height - margin;
+  layout() {
+    const width = this.width || 1;
+    const height = this.height || 1;
+    const margin = 160;
+
+    const left = this.cameraX - width - margin;
+    const top = this.cameraY - height - margin;
     const renderWidth = width * 2 + margin * 2;
     const renderHeight = height * 2 + margin * 2;
 
@@ -104,14 +107,14 @@ export class OceanRenderer {
     }
 
     if (this.displacementMap) {
-      this.displacementMap.position.set(0, 0);
+      this.displacementMap.position.set(this.cameraX, this.cameraY);
       this.displacementMap.width = renderWidth * 1.2;
       this.displacementMap.height = renderHeight * 1.2;
     }
 
     this.fallback
       .clear()
-      .rect(-width, -height, width * 2, height * 2)
+      .rect(left, top, renderWidth, renderHeight)
       .fill('#0b4263');
   }
 
@@ -120,24 +123,24 @@ export class OceanRenderer {
 
     this.elapsed += dt;
 
-    // O desenho da água permanece praticamente ancorado no mundo.
-    // O movimento vem da deformação dos pixels, não de uma textura deslizando.
     const slowWave = this.elapsed * 0.42;
     const crossWave = this.elapsed * 0.31;
 
-    this.displacementMap.x = Math.sin(slowWave) * 22;
-    this.displacementMap.y = Math.cos(crossWave) * 16;
+    this.displacementMap.x = this.cameraX + Math.sin(slowWave) * 22;
+    this.displacementMap.y = this.cameraY + Math.cos(crossWave) * 16;
     this.displacementMap.rotation = Math.sin(this.elapsed * 0.17) * 0.012;
 
-    // Profundidade lenta por baixo da superfície.
-    this.depth.tilePosition.x = Math.sin(this.elapsed * 0.11) * 18;
-    this.depth.tilePosition.y = Math.cos(this.elapsed * 0.09) * 14;
+    this.base.tilePosition.set(-this.cameraX, -this.cameraY);
+
+    this.depth.tilePosition.x = -this.cameraX * 0.72 + Math.sin(this.elapsed * 0.11) * 18;
+    this.depth.tilePosition.y = -this.cameraY * 0.72 + Math.cos(this.elapsed * 0.09) * 14;
     const depthBreathing = 1.32 + Math.sin(this.elapsed * 0.16) * 0.008;
     this.depth.tileScale.set(depthBreathing);
 
-    // Segunda leitura de onda para quebrar a repetição do tile.
-    this.highlights.tilePosition.x = Math.sin(this.elapsed * 0.23) * 12;
-    this.highlights.tilePosition.y = Math.cos(this.elapsed * 0.19) * 9;
+    this.highlights.tilePosition.x =
+      -this.cameraX * 1.08 + Math.sin(this.elapsed * 0.23) * 12;
+    this.highlights.tilePosition.y =
+      -this.cameraY * 1.08 + Math.cos(this.elapsed * 0.19) * 9;
 
     const breathing = 0.82 + Math.sin(this.elapsed * 0.38) * 0.006;
     this.highlights.tileScale.set(breathing);
