@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261006-npc-reward-fix-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261006-offline-only-v1";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261005-ammo-sync-cache-v2";
 
 const app=document.querySelector("#app");
