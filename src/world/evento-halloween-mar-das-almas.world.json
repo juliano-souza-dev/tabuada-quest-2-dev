@@ -630,12 +630,12 @@
     "types": [
       {
         "npcId": "boss-halloween-dreadnought",
-        "shipId": "ship-halloween-dreadnought",
+        "shipId": "ship-halloween-terror-galleon-400",
         "count": 1,
         "enabled": true,
         "respawn": true,
         "respawnDelaySec": 300,
-        "hp": 5000000,
+        "hp": 100000,
         "rewards": {
           "shipId": "ship-halloween-dreadnought"
         },
