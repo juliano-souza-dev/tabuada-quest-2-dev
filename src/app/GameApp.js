@@ -6,6 +6,8 @@ import { InputManager } from '../engine/input/InputManager.js';
 import { AudioManager } from '../engine/audio/AudioManager.js';
 import { GameSession } from './GameSession.js';
 import { ServiceContainer } from '../services/ServiceContainer.js';
+import { LocalPersistenceService } from '../services/persistence/LocalPersistenceService.js';
+import { PlayerProfile } from '../game/player/PlayerProfile.js';
 
 export class GameApp {
   constructor({ mount }) {
@@ -17,11 +19,20 @@ export class GameApp {
     this.audio = new AudioManager();
     this.session = new GameSession();
     this.services = new ServiceContainer();
+    this.services.register('persistence', new LocalPersistenceService());
     this.scenes = new SceneManager({ stage: this.renderer.stage });
     this.loop = new GameLoop({ update: (dt) => this.update(dt), render: (alpha) => this.render(alpha) });
   }
 
   async start() {
+    const persistence = this.services.get('persistence');
+    let profile = await persistence.loadPlayerProfile();
+    if (!profile) {
+      profile = new PlayerProfile();
+      await persistence.savePlayerProfile(profile);
+    }
+    this.session.start(profile);
+
     await this.renderer.init({ resizeTo: window, antialias: true, background: '#071522', resolution: Math.min(devicePixelRatio || 1, 2), autoDensity: true });
     this.mount.appendChild(this.renderer.canvas);
     this.renderer.ticker.stop();
@@ -29,21 +40,15 @@ export class GameApp {
     this.loop.start();
   }
 
-  update(dt) {
-    this.input.update(dt);
-    this.scenes.update(dt);
-  }
-
-  render(alpha) {
-    this.scenes.render(alpha);
-    this.renderer.renderer.render(this.renderer.stage);
-  }
+  update(dt) { this.input.update(dt); this.scenes.update(dt); }
+  render(alpha) { this.scenes.render(alpha); this.renderer.renderer.render(this.renderer.stage); }
 
   stop() {
     this.loop.stop();
     this.scenes.clear();
     this.audio.stopAll();
     this.input.detach();
+    this.session.end();
     this.renderer.destroy(true);
   }
 }
