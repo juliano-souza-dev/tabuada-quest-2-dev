@@ -8,6 +8,7 @@ import { GameSession } from './GameSession.js';
 import { ServiceContainer } from '../services/ServiceContainer.js';
 import { LocalPersistenceService } from '../services/persistence/LocalPersistenceService.js';
 import { PlayerProfile } from '../game/player/PlayerProfile.js';
+import { WorldScene } from '../presentation/scenes/WorldScene.js';
 
 export class GameApp {
   constructor({ mount }) {
@@ -37,6 +38,7 @@ export class GameApp {
     this.mount.appendChild(this.renderer.canvas);
     this.renderer.ticker.stop();
     this.input.attach(this.renderer.canvas);
+    await this.scenes.change(new WorldScene({ renderer: this.renderer }));
     this.loop.start();
   }
 
