@@ -45,7 +45,7 @@ export class WorldScene {
     this.world.entities.add(this.playerShip);
 
     this.view.addChild(this.ocean.view);
-    this.camera.view.addChild(this.shipWakeRenderer.view);
+    this.view.addChild(this.shipWakeRenderer.view);
     this.camera.view.addChild(this.shipRenderer.view);
     this.view.addChild(this.camera.view);
   }
@@ -125,7 +125,6 @@ export class WorldScene {
       )
     };
 
-    this.shipWakeRenderer.render();
     this.shipRenderer.render(pose);
 
     const cameraPose = {
@@ -134,6 +133,14 @@ export class WorldScene {
       y: this.previousCamera.y +
         (this.currentCamera.y - this.previousCamera.y) * alpha
     };
+
+    this.shipWakeRenderer.render({
+      x: cameraPose.x,
+      y: cameraPose.y,
+      zoom: this.camera.zoom,
+      width: this.renderer.screen.width,
+      height: this.renderer.screen.height
+    });
 
     // A câmera segue suavemente, então o navio pode avançar alguns pixels
     // na tela antes dela acompanhar.
