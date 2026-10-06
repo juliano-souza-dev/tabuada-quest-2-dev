@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261006-terror-local-content-v2";
+const CACHE_NAME="tq-pwa-runtime-20261006-halloween-10-mission-gate-v1";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
