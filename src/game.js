@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261006-offline-only-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261006-halloween-10-mission-gate-v1";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
 
 const app=document.querySelector("#app");
