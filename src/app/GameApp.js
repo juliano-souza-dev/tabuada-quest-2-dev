@@ -9,6 +9,7 @@ import { ServiceContainer } from '../services/ServiceContainer.js';
 import { LocalPersistenceService } from '../services/persistence/LocalPersistenceService.js';
 import { PlayerProfile } from '../game/player/PlayerProfile.js';
 import { WorldScene } from '../presentation/scenes/WorldScene.js';
+import { VirtualJoystick } from '../presentation/input/VirtualJoystick.js';
 
 export class GameApp {
   constructor({ mount }) {
@@ -22,6 +23,7 @@ export class GameApp {
     this.services = new ServiceContainer();
     this.services.register('persistence', new LocalPersistenceService());
     this.scenes = null;
+    this.joystick = new VirtualJoystick({ input: this.input });
     this.loop = new GameLoop({ update: (dt) => this.update(dt), render: (alpha) => this.render(alpha) });
   }
 
@@ -38,6 +40,7 @@ export class GameApp {
     this.scenes = new SceneManager({ stage: this.renderer.stage });
     this.mount.appendChild(this.renderer.canvas);
     this.input.attach(this.renderer.canvas);
+    this.joystick.mount(document.body);
     await this.scenes.change(new WorldScene({ renderer: this.renderer, assets: this.assets, input: this.input }));
     this.loop.start();
   }
@@ -49,6 +52,7 @@ export class GameApp {
     this.loop.stop();
     this.scenes?.clear();
     this.audio.stopAll();
+    this.joystick.destroy();
     this.input.detach();
     this.session.end();
     this.renderer.destroy(true);
