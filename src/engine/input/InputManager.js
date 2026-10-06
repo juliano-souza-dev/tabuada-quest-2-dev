@@ -2,6 +2,7 @@ export class InputManager {
   constructor() {
     this.canvas = null;
     this.pointer = { x: 0, y: 0, down: false, pressed: false };
+    this.analog = { x: 0, y: 0, magnitude: 0, active: false };
 
     this.onPointer = (event) => {
       const rect = event.currentTarget.getBoundingClientRect();
@@ -30,6 +31,13 @@ export class InputManager {
     window.addEventListener('pointercancel', this.onPointerUp);
   }
 
+  setAnalog(x, y, magnitude, active = true) {
+    this.analog.x = Number.isFinite(x) ? x : 0;
+    this.analog.y = Number.isFinite(y) ? y : 0;
+    this.analog.magnitude = Math.max(0, Math.min(1, Number(magnitude) || 0));
+    this.analog.active = active === true;
+  }
+
   consumePointerPress() {
     if (!this.pointer.pressed) return null;
     this.pointer.pressed = false;
@@ -46,6 +54,7 @@ export class InputManager {
     this.canvas = null;
     this.pointer.down = false;
     this.pointer.pressed = false;
+    this.setAnalog(0, 0, 0, false);
   }
 
   update() {}
