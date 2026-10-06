@@ -1,14 +1,23 @@
 export class InputManager {
   constructor() {
     this.canvas = null;
-    this.pointer = { x: 0, y: 0, down: false };
+    this.pointer = { x: 0, y: 0, down: false, pressed: false };
+
     this.onPointer = (event) => {
       const rect = event.currentTarget.getBoundingClientRect();
       this.pointer.x = event.clientX - rect.left;
       this.pointer.y = event.clientY - rect.top;
     };
-    this.onPointerDown = (event) => { this.pointer.down = true; this.onPointer(event); };
-    this.onPointerUp = () => { this.pointer.down = false; };
+
+    this.onPointerDown = (event) => {
+      this.pointer.down = true;
+      this.pointer.pressed = true;
+      this.onPointer(event);
+    };
+
+    this.onPointerUp = () => {
+      this.pointer.down = false;
+    };
   }
 
   attach(canvas) {
@@ -21,6 +30,12 @@ export class InputManager {
     window.addEventListener('pointercancel', this.onPointerUp);
   }
 
+  consumePointerPress() {
+    if (!this.pointer.pressed) return null;
+    this.pointer.pressed = false;
+    return { x: this.pointer.x, y: this.pointer.y };
+  }
+
   detach() {
     if (this.canvas) {
       this.canvas.removeEventListener('pointerdown', this.onPointerDown);
@@ -30,6 +45,7 @@ export class InputManager {
     window.removeEventListener('pointercancel', this.onPointerUp);
     this.canvas = null;
     this.pointer.down = false;
+    this.pointer.pressed = false;
   }
 
   update() {}
