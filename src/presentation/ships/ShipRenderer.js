@@ -1,4 +1,5 @@
-import { Container, Sprite } from 'pixi.js';
+import { Container } from 'pixi.js';
+import { DirectionalSprite } from './DirectionalSprite.js';
 
 const SHIP_ASSET_URL = new URL(
   '../../../assets/ships/player/starter/galeao_halloween_400x400.webp',
@@ -8,33 +9,35 @@ const SHIP_ASSET_URL = new URL(
 export class ShipRenderer {
   constructor() {
     this.view = new Container();
-    this.sprite = null;
+    this.directional = null;
     this.elapsed = 0;
     this.view.eventMode = 'none';
   }
 
   async init(assets) {
-    if (!assets || this.sprite) return;
+    if (!assets || this.directional) return;
 
-    const texture = await assets.load(SHIP_ASSET_URL);
-    const sprite = new Sprite(texture);
+    const sheetTexture = await assets.load(SHIP_ASSET_URL);
 
-    sprite.anchor.set(0.5);
-    sprite.width = 190;
-    sprite.height = 190;
-    sprite.eventMode = 'none';
+    this.directional = new DirectionalSprite(sheetTexture, {
+      columns: 4,
+      rows: 4,
+      displaySize: 190
+    });
 
-    this.sprite = sprite;
-    this.view.addChild(sprite);
+    this.view.addChild(this.directional.sprite);
   }
 
   update(transform, dt) {
     this.elapsed += dt;
     this.view.position.set(transform.x, transform.y);
 
-    if (!this.sprite) return;
+    if (!this.directional) return;
 
-    this.sprite.y = Math.sin(this.elapsed * 1.8) * 2.5;
-    this.sprite.rotation = Math.sin(this.elapsed * 1.1) * 0.008;
+    this.directional.setDirection(transform.rotation);
+
+    const sprite = this.directional.sprite;
+    sprite.y = Math.sin(this.elapsed * 1.8) * 2.5;
+    sprite.rotation = Math.sin(this.elapsed * 1.1) * 0.008;
   }
 }
