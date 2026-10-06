@@ -51,14 +51,14 @@ vec3 saturateColor(vec3 color, float amount) {
 void main() {
   vec2 uv = vTextureCoord;
 
-  // Valores equivalentes ao preset adventure da versão anterior depois
-  // dos redutores usados no caminho WebGL real.
+  // Mesmo conceito do oceano antigo: uma única textura alimenta
+  // profundidade, ondas e espuma. A câmera nunca altera a velocidade.
   const float speed = 28.0;
-  const float swell = 8.4;
-  const float distortion = 13.44;
-  const float waveMix = 14.28;
-  const float foamMix = 6.0;
-  const float sparkleIntensity = 7.48;
+  const float swell = 28.0;
+  const float distortion = 48.0;
+  const float waveMix = 34.0;
+  const float foamMix = 20.0;
+  const float sparkleIntensity = 34.0;
   const float sparkleSharpness = 18.0;
   const float tileSize = 720.0;
 
@@ -66,7 +66,11 @@ void main() {
     uWorldLeft + uv.x * uWorldWidth,
     uWorldTop + uv.y * uWorldHeight
   );
+
   vec2 baseCoord = world / tileSize;
+  float motion = uTime * (0.025 + speed * 0.0015);
+
+  vec2 dir = normalize(vec2(0.82, 0.32));
 
   float waveA = sin(
     baseCoord.y * 18.0 +
@@ -83,13 +87,34 @@ void main() {
   float swellAmount = 0.0015 + swell * 0.000045;
   float distortionStrength = 0.15 + distortion * 0.0125;
 
-  vec2 offset =
+  vec2 distortionOffset =
     vec2(waveA, waveB) *
     swellAmount *
     distortionStrength;
 
-  vec2 sampleUv = clamp(uv + offset, vec2(0.001), vec2(0.999));
-  vec3 color = texture(uTexture, sampleUv).rgb;
+  // A base permanece reconhecível. As outras duas leituras da MESMA
+  // textura criam movimento superficial, não um novo background.
+  vec2 deepUv = clamp(
+    uv + dir * motion * 0.010 + distortionOffset * 0.45,
+    vec2(0.002),
+    vec2(0.998)
+  );
+
+  vec2 waveUv = clamp(
+    uv + dir.yx * motion * 0.017 + distortionOffset,
+    vec2(0.002),
+    vec2(0.998)
+  );
+
+  vec2 foamUv = clamp(
+    uv - dir * motion * 0.024 + distortionOffset * 1.55,
+    vec2(0.002),
+    vec2(0.998)
+  );
+
+  vec3 deep = texture(uTexture, deepUv).rgb;
+  vec3 wave = texture(uTexture, waveUv).rgb;
+  vec3 foamTexture = texture(uTexture, foamUv).rgb;
 
   float crest = smoothstep(
     0.40,
@@ -102,31 +127,28 @@ void main() {
   );
 
   float waveAmount = clamp(waveMix * 0.01, 0.0, 1.0);
-  color += vec3(0.12, 0.30, 0.38) * crest * waveAmount * 0.12;
+  float foamAmount = clamp(foamMix * 0.01, 0.0, 1.0);
 
-  float foamBand =
-    0.5 +
-    0.5 * sin(
-      baseCoord.y * 73.0 +
-      baseCoord.x * 19.0 +
-      uTime * 0.72
-    );
-
-  float foam =
-    smoothstep(0.84, 0.98, foamBand) *
-    smoothstep(0.38, 0.92, crest) *
-    clamp(foamMix * 0.01, 0.0, 1.0);
+  // Fundo um pouco mais escuro e profundo, como no vídeo antigo.
+  vec3 color = deep * vec3(0.82, 0.90, 0.94);
 
   color = mix(
     color,
-    vec3(0.91, 0.98, 1.0),
-    clamp(foam * 0.34, 0.0, 0.20)
+    wave * vec3(0.90, 0.97, 1.03),
+    clamp(waveAmount * (0.58 + crest * 0.26), 0.0, 0.38)
+  );
+
+  color = mix(
+    color,
+    foamTexture * vec3(1.02, 1.05, 1.06),
+    crest * foamAmount * 0.24
   );
 
   vec2 sparkleGrid = baseCoord * 34.0;
   vec2 sparkleCell = floor(sparkleGrid);
   vec2 sparkleLocal = fract(sparkleGrid) - 0.5;
   float sparkleHash = hash21(sparkleCell);
+
   float sparklePulse =
     0.5 +
     0.5 * sin(
@@ -146,9 +168,12 @@ void main() {
     vec3(1.0, 0.86, 0.52) *
     sparkle *
     clamp(sparkleIntensity * 0.01, 0.0, 1.0) *
-    0.50;
+    0.34;
 
   color = saturateColor(color, 1.05);
+  color = (color - 0.5) * 1.03 + 0.5;
+  color *= 1.02;
+
   gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
 `;
@@ -171,7 +196,7 @@ export class OceanSurfaceFilter extends Filter {
       }
     });
 
-    this.padding = 4;
+    this.padding = 8;
   }
 
   setWorldRect(left, top, width, height) {
