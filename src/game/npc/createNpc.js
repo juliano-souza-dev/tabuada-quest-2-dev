@@ -20,14 +20,30 @@ export function createNpc({
     extraComponents: {
       npc: {
         disposition,
+        state: 'roam',
         targetId: null,
         attackedById: null,
+
+        homeX: x,
+        homeY: y,
+        roamRadius: 1100,
+        roamTargetX: x,
+        roamTargetY: y,
+        roamDecisionIndex: 0,
+        nextRoamDecisionAt: 0,
+        pauseUntil: 0,
+
+        detectionRadius: 620,
+        disengageRadius: 980,
+        engageDistance: 280,
+
         retaliationUntil: 0,
-        fleeUntil: 0,
-        detectionRadius: 900,
         retaliationDuration: 12,
+
+        fleeUntil: 0,
         fleeDuration: 9,
         fleeSpeedMultiplier: 1.85,
+
         baseMaxSpeed: shipDefinition.movement.maxSpeed
       }
     }
