@@ -1,6 +1,18 @@
 export class GameSession {
   constructor() { this.reset(); }
-  reset() { this.userId = null; this.mode = 'offline'; this.connected = false; }
-  authenticate(userId) { this.userId = userId; }
-  setConnection({ mode, connected }) { this.mode = mode; this.connected = connected; }
+
+  reset() {
+    this.id = null;
+    this.mode = 'offline';
+    this.startedAt = null;
+    this.playerProfile = null;
+  }
+
+  start(playerProfile) {
+    this.id = crypto.randomUUID();
+    this.startedAt = Date.now();
+    this.playerProfile = playerProfile;
+  }
+
+  end() { this.reset(); }
 }
