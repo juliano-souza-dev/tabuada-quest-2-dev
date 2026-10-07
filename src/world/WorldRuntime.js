@@ -1495,7 +1495,11 @@ export class WorldRuntime {
     }
     this.renderMinimap(true);
     this.lastTime=performance.now();
-    this.raf=requestAnimationFrame(t=>this.tick(t));
+    this.gameLoop?.stop?.();
+    this.gameLoop=new WorldGameLoop(this);
+    this.gameLoop.lastTime=this.lastTime;
+    this.gameLoop.start();
+    this.raf=this.gameLoop.frameId;
     return this;
   }
 
