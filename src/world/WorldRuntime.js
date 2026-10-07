@@ -4979,6 +4979,7 @@ export class WorldRuntime {
         this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
         if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
         this.actionButton.textContent=collisionActionLabel(entity,collision);
+        this.actionButton.disabled=false;
         this.actionWrap.hidden=false;
         return;
       }
