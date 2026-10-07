@@ -349,10 +349,11 @@
       "width": 320,
       "height": 320,
       "navigation": {
-        "minSpeed": 22,
-        "speed": 82,
-        "acceleration": 230,
-        "behavior": "roam"
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary",
+        "braking": 0.18
       },
       "combat": {
         "hp": 1200,
