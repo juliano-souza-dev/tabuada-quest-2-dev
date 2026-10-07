@@ -286,7 +286,20 @@ export class WorldRuntime {
             :0,
           repairAvailable:this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true&&!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
-          tutorialGuide:this.getTutorialGuide?.()||null,
+          tutorialGuide:(()=>{
+            const guide=this.getTutorialGuide?.()||null;
+            if(!guide)return null;
+            const stage=String(guide.stage||"");
+            if(stage==="attack-ship"||stage==="attack-ship-2"){
+              const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
+              const phase=String(locked?.tutorialCombatPhase||"follow");
+              if(phase==="ready-fire")return {...guide,title:"Ataque!",text:"Toque em Atirar para abrir fogo contra o corsário."};
+              if(phase==="firing")return {...guide,title:"Mantenha o ataque",text:"Continue atacando. Quando ele fugir, vá atrás dele."};
+              if(phase==="chase")return {...guide,title:"Ele está fugindo!",text:"Siga a seta e alcance o corsário para terminar o combate."};
+              return {...guide,title:"Encontre o alvo",text:"Siga a seta até entrar na área de combate do corsário."};
+            }
+            return guide;
+          })(),
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           hullReinforcementQuantity:this.getConsumableQuantity("hull-reinforcement"),
@@ -4893,6 +4906,10 @@ export class WorldRuntime {
     if(this.navalDestroying.has(id))return false;
 
     this.navalDestroying.add(id);
+    const tutorialStageAtKill=String(this.getTutorialGuide?.()?.stage||"");
+    if(["attack-ship","attack-ship-2"].includes(tutorialStageAtKill)&&entity.tutorialCombatTarget===true){
+      Promise.resolve(this.onTutorialNpcDestroyed?.(entity)).catch(error=>console.warn("[TabuadaQuest] tutorial destruction hook failed",error));
+    }
     if(String(this.tutorialIsolatedTargetId||"")===id){
       this.tutorialIsolatedTargetId="";
       for(const other of this.entities){
