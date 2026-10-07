@@ -1881,6 +1881,114 @@
       },
       "schema": "tq.ship",
       "version": 2
+    },
+    {
+      "id": "monster-guardiao-abissal",
+      "name": "Guardião Abissal",
+      "type": "npc",
+      "entityKind": "monster",
+      "available": true,
+      "description": "Monstro marinho de águas profundas. Animação manual em atlas 4x4, sem Pixi, com idle cíclico de 16 quadros.",
+      "spriteMode": "animated-atlas",
+      "autoFrame": false,
+      "cellSize": 400,
+      "asset": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
+      "animations": {
+        "idle": {
+          "frameMs": 110,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ]
+        },
+        "swim": {
+          "frameMs": 95,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ]
+        }
+      },
+      "animationGroups": {
+        "idle": "navigation",
+        "swim": "navigation"
+      },
+      "navigation": {
+        "width": 320,
+        "height": 320,
+        "minSpeed": 22,
+        "speed": 82,
+        "acceleration": 230,
+        "braking": 0.2,
+        "roll": 0,
+        "heave": 3.2,
+        "sway": 1.4,
+        "periodMs": 2600,
+        "wake": false,
+        "shadow": true,
+        "src": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
+        "sprite": {
+          "src": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
+          "columns": 4,
+          "rows": 4,
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "initialFrame": 0,
+          "animationOnly": true
+        },
+        "compiled": {}
+      },
+      "combat": {
+        "hp": 1200,
+        "attackRange": 420,
+        "attackCooldownMs": 1600,
+        "damage": 8,
+        "recoil": 0,
+        "shake": 3,
+        "muzzleFlash": false,
+        "smoke": false,
+        "impact": true,
+        "useNavigationAtlas": false,
+        "cannonSlots": 0
+      },
+      "schema": "tq.ship",
+      "version": 2
     }
   ],
   "shipTypes": [
