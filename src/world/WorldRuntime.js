@@ -5249,6 +5249,13 @@ export class WorldRuntime {
     const targetDistance=this.navalTargetDistance(entity);
     let selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
     let ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
+    // Selection state can arrive from persistence/server/dev tools. Revalidate
+    // at the actual use boundary so locked event ammo can never be fired.
+    if(ammo&&this.canSelectAmmo(ammo)!==true){
+      this.showGameplayToast("🔒 Esta munição de evento ainda não foi liberada.",1800);
+      this.stopNavalAutoFire({keepTarget:true});
+      return false;
+    }
     const requiredAmmoEvent=String(entity?.requiredAmmoEvent||entity?.combat?.requiredAmmoEvent||"").toLowerCase();
     if(requiredAmmoEvent&&String(ammo?.event||"").toLowerCase()!==requiredAmmoEvent){
       this.showGameplayToast("🎃 O Terror só recebe dano de munição do evento.",2000);
