@@ -4834,6 +4834,8 @@ export class WorldRuntime {
         }
       };
     }
+    if(entity.interaction==="shipyard")return {actionId:"open-shipyard",params:{}};
+    if(entity.interaction==="missions")return {actionId:"open-missions",params:{}};
     if(entity.scene){
       return {
         actionId:"open-scene",
@@ -5979,6 +5981,17 @@ export class WorldRuntime {
     }
 
     const interaction=this.entityInteraction(entity);
+    if(interaction?.actionId==="open-shipyard"){
+      this.actionWrap.hidden=true;
+      this.shipyardOverlay?.open?.();
+      return;
+    }
+    if(interaction?.actionId==="open-missions"){
+      this.actionWrap.hidden=true;
+      this.missionOverlay?.open?.();
+      return;
+    }
+
     if(interaction?.actionId==="open-scene"&&this.onExecuteAction){
       this.actionWrap.hidden=true;
       this.onExecuteAction(interaction,this.cleanEntity(entity),this.getState());
