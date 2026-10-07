@@ -83,11 +83,10 @@ export class MobileHudOverlay{
       '</section>'+
       '<div class="tq-combat-dock" data-combat-dock></div>'+
       '<div class="tq-ammo-popover" data-ammo-popover hidden><div class="tq-ammo-popover__list" data-ammo-list></div></div>'+
-      '<button type="button" class="tq-tutorial-guide" data-tutorial-guide hidden>'+
-        '<span class="tq-tutorial-guide__icon" data-tutorial-icon>📜</span>'+
-        '<span class="tq-tutorial-guide__copy"><small data-tutorial-step></small><strong data-tutorial-title></strong><em data-tutorial-text></em></span>'+
-        '<span class="tq-tutorial-guide__arrow" aria-hidden="true">➜</span>'+
-      '</button>'+
+      '<div class="tq-tutorial-hint" data-tutorial-guide hidden>'+
+        '<span data-tutorial-icon>📜</span>'+
+        '<strong data-tutorial-title></strong>'+
+      '</div>'+
       '<div class="tq-mobile-hud__toast" data-hud-toast></div>';
 
     const dock=wrap.querySelector("[data-combat-dock]");
@@ -159,13 +158,6 @@ export class MobileHudOverlay{
     bind(shipyard,()=>{
       const result=this.onShipyard?.();
       if(result===false||result==null)this.toast("Estaleiro em preparação.");
-    });
-    const tutorialGuide=wrap.querySelector("[data-tutorial-guide]");
-    if(tutorialGuide)bind(tutorialGuide,()=>{
-      const action=String(tutorialGuide.dataset.action||"");
-      if(!action)return;
-      const target=wrap.querySelector('[data-hud-action="'+action+'"]');
-      if(target&&!target.disabled)target.click();
     });
     drawer.querySelectorAll("[data-mission-close]").forEach(el=>bind(el,()=>this.closeMissions()));
     settingsDrawer.querySelectorAll("[data-settings-close]").forEach(el=>bind(el,()=>this.closeSettings()));
@@ -337,26 +329,27 @@ export class MobileHudOverlay{
     const state=this.getState()||{};
     const guide=state.tutorialGuide&&typeof state.tutorialGuide==="object"?state.tutorialGuide:null;
     const guideEl=this.wrap.querySelector("[data-tutorial-guide]");
-    this.wrap.querySelectorAll(".is-tutorial-target").forEach(el=>el.classList.remove("is-tutorial-target"));
+    this.wrap.querySelectorAll(".is-tutorial-target").forEach(el=>{
+      el.classList.remove("is-tutorial-target");
+      el.removeAttribute("data-tutorial-label");
+    });
     if(guideEl){
       if(!guide){
         guideEl.hidden=true;
-        guideEl.dataset.action="";
       }else{
-        guideEl.hidden=false;
-        guideEl.dataset.action=String(guide.action||"");
-        const icon=guideEl.querySelector("[data-tutorial-icon]");
-        const step=guideEl.querySelector("[data-tutorial-step]");
-        const title=guideEl.querySelector("[data-tutorial-title]");
-        const text=guideEl.querySelector("[data-tutorial-text]");
-        if(icon)icon.textContent=String(guide.icon||"📜");
-        if(step)step.textContent="PASSO "+String(guide.step||1)+" DE "+String(guide.total||1);
-        if(title)title.textContent=String(guide.title||"Objetivo atual");
-        if(text)text.textContent=String(guide.text||"");
         const action=String(guide.action||"");
-        const target=action?this.wrap.querySelector('[data-hud-action="'+action+'"]'):null;
-        if(target&&!target.hidden)target.classList.add("is-tutorial-target");
-        guideEl.classList.toggle("is-actionable",Boolean(target&&!target.hidden&&!target.disabled));
+        const targetButton=action?this.wrap.querySelector('[data-hud-action="'+action+'"]'):null;
+        if(targetButton&&!targetButton.hidden){
+          guideEl.hidden=true;
+          targetButton.classList.add("is-tutorial-target");
+          targetButton.setAttribute("data-tutorial-label",String(guide.title||"Toque aqui"));
+        }else{
+          guideEl.hidden=false;
+          const icon=guideEl.querySelector("[data-tutorial-icon]");
+          const title=guideEl.querySelector("[data-tutorial-title]");
+          if(icon)icon.textContent=String(guide.icon||"📜");
+          if(title)title.textContent=String(guide.text||guide.title||"Objetivo atual");
+        }
       }
     }
 
