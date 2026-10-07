@@ -1272,7 +1272,6 @@ export class WorldRuntime {
             <div class="tq-world-joystick__thumb" data-world-joystick-thumb></div>
           </div>
         </div>
-        <div class="tq-world-help">Joystick analógico · WASD / setas<br>toque ou clique no oceano para navegar</div>
         <button type="button" class="tq-world-recenter" data-world-recenter hidden aria-label="Centralizar câmera no navio">🎯 Navio</button>
       </div>`;
 
