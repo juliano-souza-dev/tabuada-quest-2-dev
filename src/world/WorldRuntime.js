@@ -2934,12 +2934,6 @@ export class WorldRuntime {
         this.shipyardOverlay?.open?.();
         return;
       }
-      if(directAction==="open-missions"){
-        this.actionWrap.hidden=true;
-        this.mobileHud?.openMissions?.();
-        this.mobileHud?.onMissionsOpen?.();
-        return;
-      }
       this.activateNearby();
     };
     const recenter=event=>{
@@ -5955,12 +5949,6 @@ export class WorldRuntime {
       this.shipyardOverlay?.open?.();
       return;
     }
-    if(mapInteraction?.actionId==="open-missions"){
-      this.actionWrap.hidden=true;
-      this.mobileHud?.openMissions?.();
-      this.mobileHud?.onMissionsOpen?.();
-      return;
-    }
 
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
@@ -6049,12 +6037,6 @@ export class WorldRuntime {
     if(interaction?.actionId==="open-shipyard"){
       this.actionWrap.hidden=true;
       this.shipyardOverlay?.open?.();
-      return;
-    }
-    if(interaction?.actionId==="open-missions"){
-      this.actionWrap.hidden=true;
-      this.mobileHud?.openMissions?.();
-      this.mobileHud?.onMissionsOpen?.();
       return;
     }
 
