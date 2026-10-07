@@ -38,6 +38,8 @@ export class ShopOverlay{
     };
     this.getBalances=typeof options.getBalances==="function"?options.getBalances:()=>({gold:0,rubies:0});
     this.onPurchase=typeof options.onPurchase==="function"?options.onPurchase:null;
+    this.canOpen=typeof options.canOpen==="function"?options.canOpen:()=>true;
+    this.onLocked=typeof options.onLocked==="function"?options.onLocked:null;
     this.category="ammo";
     this.quantities=new Map();
     this.root=null;
@@ -140,6 +142,7 @@ export class ShopOverlay{
 
   open(){
     if(!this.overlay)return;
+    if(this.canOpen()!==true){this.onLocked?.();return false;}
     this.overlay.hidden=false;
     this.overlay.classList.add("is-open");
     this.refreshBalances();
