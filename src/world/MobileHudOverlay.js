@@ -136,9 +136,28 @@ export class MobileHudOverlay{
     this.ammoMenu=wrap.querySelector("[data-ammo-popover]");
 
     const bind=(el,fn)=>{
-      const handler=event=>{event.preventDefault();event.stopPropagation();fn?.(event)};
-      el.addEventListener("click",handler);
-      this.cleanups.push(()=>el.removeEventListener("click",handler));
+      let lastPointerAt=0;
+      const run=event=>{
+        event.preventDefault();
+        event.stopPropagation();
+        fn?.(event);
+      };
+      const pointerHandler=event=>{
+        if(event.pointerType==="mouse")return;
+        lastPointerAt=performance.now();
+        run(event);
+      };
+      const clickHandler=event=>{
+        // Mobile browsers can synthesize a click after pointerup. Do not fire twice.
+        if(performance.now()-lastPointerAt<500){event.preventDefault();event.stopPropagation();return;}
+        run(event);
+      };
+      el.addEventListener("pointerup",pointerHandler);
+      el.addEventListener("click",clickHandler);
+      this.cleanups.push(()=>{
+        el.removeEventListener("pointerup",pointerHandler);
+        el.removeEventListener("click",clickHandler);
+      });
     };
 
     bind(ammo,()=>this.toggleAmmoMenu());
