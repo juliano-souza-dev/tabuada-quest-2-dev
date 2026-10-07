@@ -1681,11 +1681,22 @@ export class GameRuntime {
     this.flags=this.flags&&typeof this.flags==="object"?this.flags:{};
     const version=1;
     if(Math.floor(Number(this.flags.r1TutorialBaselineVersion)||0)>=version)return false;
-    const started=["HALLOWEEN_M01","HALLOWEEN_M02","HALLOWEEN_M03","HALLOWEEN_M04","HALLOWEEN_M05","HALLOWEEN_M06","HALLOWEEN_M07","HALLOWEEN_M08","HALLOWEEN_M09","HALLOWEEN_BOSS_10"].some(id=>this.missionClaimed(id));
+    const tutorialIds=["HALLOWEEN_M01","HALLOWEEN_M02","HALLOWEEN_M03","HALLOWEEN_M04","HALLOWEEN_M05","HALLOWEEN_M06","HALLOWEEN_M07","HALLOWEEN_M08","HALLOWEEN_M09","HALLOWEEN_BOSS_10"];
     const completed=Array.isArray(this.flags.completedRegions)&&this.flags.completedRegions.map(String).includes("r1-enseada-aprendizes");
-    if(!started&&!completed){
+    if(!completed){
       this.playerCannons={owned:{},equippedByShip:{}};
       this.playerAmmo=normalizeGlobalAmmo({});
+      const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+      const game=base.game&&typeof base.game==="object"?base.game:{};
+      const missions=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
+      const progress=missions.progress&&typeof missions.progress==="object"?clone(missions.progress):{};
+      for(const id of tutorialIds)delete progress[id];
+      const claimed=(Array.isArray(missions.claimedRewards)?missions.claimedRewards:[]).map(String).filter(id=>!tutorialIds.includes(id));
+      this.accountState={...base,game:{...game,missions:{...missions,progress,claimedRewards:claimed}}};
+      const rewardShip="ship-halloween-terror-reward-400";
+      this.playerShips.ownedShips=(Array.isArray(this.playerShips?.ownedShips)?this.playerShips.ownedShips:[]).filter(id=>String(id)!==rewardShip);
+      if(String(this.playerShips?.equippedShip||"")===rewardShip)this.playerShips.equippedShip=null;
+      this.ensurePlayerShips();
     }
     this.flags.r1TutorialBaselineVersion=version;
     return true;
@@ -1852,7 +1863,8 @@ export class GameRuntime {
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     let configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
     if(cleanEntity?.npcId){
-      const chance=Math.max(0,Math.min(100,Number(configured.rubyDropChance)||0));
+      const isBoss=String(cleanEntity.npcId||"").startsWith("boss-")||cleanEntity.boss===true||cleanEntity.coopBoss===true;
+      const chance=Math.max(0,Math.min(100,Number(configured.rubyDropChance??(isBoss?0:3))||0));
       if(chance>0&&Math.random()*100<chance){
         const min=Math.max(1,Math.floor(Number(configured.rubyDropMin)||1));
         const max=Math.max(min,Math.floor(Number(configured.rubyDropMax)||min));
@@ -2444,7 +2456,7 @@ export class GameRuntime {
         return this.missionClaimed("HALLOWEEN_M01")&&Number(hp)<Number(world.tutorial.lockRepairUntilHpBelow||750);
       },
       shouldForceRepair:({hp})=>Boolean(world?.tutorial&&!this.missionClaimed(world.tutorial.repairMission)&&this.missionClaimed("HALLOWEEN_M01")&&Number(hp)>0&&Number(hp)<Number(world.tutorial.lockRepairUntilHpBelow||750)),
-      onRepairCompleted:()=>this.advanceMissions("repair_ship",{worldId,region:1,amount:1}),
+      onRepairCompleted:()=>this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1}),
       canSelectAmmo:item=>{
         const event=String(item?.event||"").toLowerCase();
         if(!world?.tutorial||event!==String(world.tutorial.eventAmmoEvent||"halloween").toLowerCase())return true;
@@ -2478,7 +2490,7 @@ export class GameRuntime {
       onEquipShip:async id=>{const ok=await this.equipShip(id);return ok?{ok:true,message:"Navio equipado."}:{ok:false,message:"Não foi possível equipar este navio."};},
       onEquipCannon:async id=>{
         const result=this.equipCannonToShip(id);
-        if(result.ok)await this.advanceMissions("equip_cannon",{worldId,region:1,amount:1});
+        if(result.ok)await this.advanceMissions("equip_cannon",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
         return result.ok?{ok:true,message:"Canhão equipado."}:result;
       },
       onRemoveCannon:(id,shipId)=>{const result=this.removeCannonFromShip(id,shipId);return result.ok?{ok:true,message:"Canhão guardado."}:result;},
