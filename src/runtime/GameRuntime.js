@@ -2173,6 +2173,20 @@ export class GameRuntime {
       cannonCatalog:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):Array.isArray(this.cannonCatalog)?clone(this.cannonCatalog):[],
       graphicsSettings:clone(this.graphicsSettings),
       playerName:String(this.accountState?.profile?.displayName||"Jogador"),
+      resolveShip:(shipId,role="npc")=>{
+        const ship=this.shipEntry(String(shipId||""));
+        if(!ship||ship.available===false)return null;
+        return {
+          ...clone(ship),
+          ...this.shipRuntimeProfile(ship,role),
+          combat:ship.combat&&typeof ship.combat==="object"?clone(ship.combat):{},
+          navigation:ship.navigation&&typeof ship.navigation==="object"?clone(ship.navigation):{}
+        };
+      },
+      resolveNpc:npcId=>{
+        const npc=this.npcEntry(String(npcId||""));
+        return npc?clone(npc):null;
+      },
       onGraphicsSettingsChange:settings=>{
         this.graphicsSettings=normalizeGraphicsSettings(settings);
         this.saveState();
