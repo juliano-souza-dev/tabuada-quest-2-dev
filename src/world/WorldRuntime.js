@@ -8,6 +8,7 @@ import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=202
 import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1912";
 import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
+import { hasTimelineSpriteAnimation, timelineAnimationFrame, atlasFrameStyle } from "./WorldSpriteAnimation.mjs?v=20261007-leviathan-v1";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v4";
@@ -824,6 +825,14 @@ export class WorldRuntime {
       ...(npcProfile&&typeof npcProfile==="object"?structuredClone(npcProfile):{}),
       sprite:shipProfile.sprite?structuredClone(shipProfile.sprite):null,
       src:String(shipProfile.src||shipProfile.sprite?.src||""),
+      entityKind:String(npcProfile?.entityKind||shipProfile.entityKind||"ship"),
+      spriteAnimationMode:String(npcProfile?.spriteAnimationMode||shipProfile.spriteAnimationMode||""),
+      animations:npcProfile?.animations&&typeof npcProfile.animations==="object"
+        ?structuredClone(npcProfile.animations)
+        :(shipProfile.animations&&typeof shipProfile.animations==="object"?structuredClone(shipProfile.animations):{}),
+      motion:npcProfile?.motion&&typeof npcProfile.motion==="object"
+        ?structuredClone(npcProfile.motion)
+        :(shipProfile.motion&&typeof shipProfile.motion==="object"?structuredClone(shipProfile.motion):null),
       width:Number(npcProfile?.width??shipProfile.width)||180,
       height:Number(npcProfile?.height??shipProfile.height)||180,
       combat:{
@@ -871,6 +880,9 @@ export class WorldRuntime {
       label:String(npcProfile?.name||shipProfile.shipName||shipProfile.name||backingShipId),
       src,
       sprite,
+      entityKind:String(profile.entityKind||"ship"),
+      spriteAnimationMode:String(profile.spriteAnimationMode||""),
+      animations:profile.animations&&typeof profile.animations==="object"?structuredClone(profile.animations):{},
       width:Math.max(32,Number(profile.width)||180),
       height:Math.max(32,Number(profile.height)||180),
       x:point.x,
@@ -922,7 +934,12 @@ export class WorldRuntime {
         fixedDamagePerShot:Math.max(0,Number(profile.combat?.fixedDamagePerShot)||0),
         requiredAmmoEvent:String(typeConfig?.requiredAmmoEvent||profile.combat?.requiredAmmoEvent||"")
       },
-      motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
+      motion:normalizeEntityMotion(
+        profile.motion&&typeof profile.motion==="object"
+          ?profile.motion
+          :{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
+        "ship"
+      ),
       effect:{category:"ship",preset:"none",active:false},
       collision:{
         active:true,
@@ -1258,6 +1275,30 @@ export class WorldRuntime {
     entity.anchorY=entity.y;
   }
 
+  applyEntityTimelineVisual(entity,time=performance.now()){
+    const el=entity?.el;
+    if(!el||!hasTimelineSpriteAnimation(entity))return false;
+    const spriteEl=el.querySelector(".tq-world-entity__timeline-sprite");
+    const frame=timelineAnimationFrame(entity,time,(Number(entity.index)||0)*37);
+    const style=frame?atlasFrameStyle(entity.sprite,frame.frame):null;
+    if(!spriteEl||!frame||!style)return false;
+
+    Object.assign(spriteEl.style,style);
+    el.dataset.renderMode="atlas";
+    el.dataset.animationName=frame.name;
+    el.dataset.animationFrame=String(frame.frame);
+    el.style.backgroundImage="";
+    el.style.backgroundSize="";
+    el.style.backgroundPosition="";
+    el.style.backgroundRepeat="";
+    el.style.clipPath="";
+    el.style.webkitClipPath="";
+
+    const img=el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
+    if(img)img.hidden=true;
+    return true;
+  }
+
   applyEntityDirectionalVisual(entity){
     const el=entity?.el;
     if(!el)return false;
@@ -1526,6 +1567,9 @@ export class WorldRuntime {
       el.dataset.entityId=entity.id;
       el.dataset.renderMode=presentation.renderMode;
       el.dataset.logicalType=entity.type||"object";
+      el.dataset.entityKind=String(entity.entityKind||"");
+      const timelineAnimated=hasTimelineSpriteAnimation(entity);
+      el.classList.toggle("tq-world-entity--monster",String(entity.entityKind||"")==="monster");
       if(String(entity.type||"")==="region-exit"){
         const dx=Number(entity.x||0)-Number(this.config.width||0)/2;
         const dy=Number(entity.y||0)-Number(this.config.height||0)/2;
@@ -1536,6 +1580,28 @@ export class WorldRuntime {
       el.style.zIndex=String(entity.z??10);
 
       if(presentation.hasSprite){
+        if(timelineAnimated){
+          const shadow=document.createElement("span");
+          shadow.className="tq-world-monster-shadow";
+          shadow.setAttribute("aria-hidden","true");
+          el.append(shadow);
+
+          const animatedSprite=document.createElement("span");
+          animatedSprite.className="tq-world-entity__timeline-sprite";
+          animatedSprite.setAttribute("aria-hidden","true");
+          el.append(animatedSprite);
+
+          const waterFront=document.createElement("span");
+          waterFront.className="tq-world-monster-water-front";
+          waterFront.setAttribute("aria-hidden","true");
+          el.append(waterFront);
+
+          const waveRing=document.createElement("span");
+          waveRing.className="tq-world-monster-wave-ring";
+          waveRing.setAttribute("aria-hidden","true");
+          el.append(waveRing);
+        }
+
         const img=document.createElement("img");
         img.src=entity.src||"";
         img.alt=entity.label||entity.type||"Objeto";
@@ -1970,7 +2036,8 @@ export class WorldRuntime {
       }
     }
     this.syncCombatClickableEntity(entity);
-    this.applyEntityDirectionalVisual(entity);
+    const timelineApplied=this.applyEntityTimelineVisual(entity);
+    if(!timelineApplied)this.applyEntityDirectionalVisual(entity);
     this.syncCollisionVisual(entity);
   }
 
@@ -2120,8 +2187,8 @@ export class WorldRuntime {
     entity.effect=effect;
     const img=entity.el.querySelector("img");
     const canvas=entity.el.querySelector(".tq-world-entity__webgl");
-    const atlasMode=entity.el.dataset.renderMode==="atlas";
-    // Directional atlases are rendered by CSS background cropping. Never
+    const atlasMode=hasTimelineSpriteAnimation(entity)||entity.el.dataset.renderMode==="atlas";
+    // Atlas sprites are rendered by CSS background cropping. Never
     // reveal the raw <img>, otherwise the whole spritesheet is compressed
     // into the entity on top of the selected frame.
     const wantsWebGL=Boolean(
@@ -3581,8 +3648,9 @@ export class WorldRuntime {
 
       const offsetX=Number(motionFrame.offsetX||0)+Number(effectFrame.offsetX||0);
       const offsetY=Number(motionFrame.offsetY||0)+Number(effectFrame.offsetY||0);
-      const hasDirectionalSprite=Boolean(entity.sprite?.src&&entity.sprite?.regions);
-      const rotation=(hasDirectionalSprite?0:Number(entity.rotation||0))+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
+      const timelineAnimated=hasTimelineSpriteAnimation(entity);
+      const hasDirectionalSprite=!timelineAnimated&&Boolean(entity.sprite?.src&&entity.sprite?.regions);
+      const rotation=((hasDirectionalSprite||timelineAnimated)?0:Number(entity.rotation||0))+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
       const scaleX=Number(effectFrame.scaleX||1);
       const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
 
@@ -3598,7 +3666,8 @@ export class WorldRuntime {
         entity.nameEl.style.top=(entity.visualY+Math.max(18,Number(entity.height)||96)*Math.abs(scaleY)*.54+10)+"px";
         entity.nameEl.hidden=entity.el.hidden===true;
       }
-      if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
+      if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
+      else if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
       const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
       const canvas=entity.el.querySelector(".tq-world-entity__webgl");
@@ -3608,7 +3677,7 @@ export class WorldRuntime {
       if(img)img.style.filter=maskedDepth?"drop-shadow(0 6px 4px #001a2e80)":`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
       if(depthLayer)depthLayer.style.filter=`blur(${blur}px)`;
 
-      const atlasMode=hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
+      const atlasMode=timelineAnimated||hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
       if(effect.active&&effect.renderer==="webgl"&&!atlasMode){
         const renderer=this.entityEffectRenderers.get(entity.id);
         const rendered=renderer?.render?.(time,effect,entity.width||96,entity.height||96)===true;
