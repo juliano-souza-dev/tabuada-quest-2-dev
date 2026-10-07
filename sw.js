@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261007-r1-tutorial-progression-v2";
+const CACHE_NAME="tq-pwa-runtime-20261007-r1-tutorial-progression-v3";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
