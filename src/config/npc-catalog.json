@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 8,
+  "version": 9,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -296,6 +296,28 @@
         "ammoId": "cannonball-standard",
         "ammoUnlimited": true,
         "fixedDamagePerShot": 25
+      }
+    },
+    {
+      "id": "npc-kraken-brasas",
+      "name": "Kraken das Brasas",
+      "shipId": "monster-kraken-brasas",
+      "entityKind": "monster",
+      "width": 300,
+      "height": 300,
+      "navigation": {
+        "minSpeed": 28,
+        "speed": 95,
+        "acceleration": 260,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 1200,
+        "attitude": "retaliate",
+        "damage": 8,
+        "maxTargets": 1,
+        "cannonLoadout": [],
+        "ammoUnlimited": false
       }
     }
   ]

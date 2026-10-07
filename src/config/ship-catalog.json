@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 5,
+  "version": 6,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -1464,6 +1464,230 @@
         "impact": true,
         "useNavigationAtlas": true,
         "cannonSlots": 6
+      },
+      "schema": "tq.ship",
+      "version": 2
+    },
+    {
+      "id": "monster-kraken-brasas",
+      "name": "Kraken das Brasas",
+      "type": "npc",
+      "entityKind": "monster",
+      "available": true,
+      "description": "Primeiro monstro marinho do Tabuada Quest. Kraken vulcânico animado por sprite durante o nado.",
+      "spriteMode": "combined",
+      "autoFrame": true,
+      "cellSize": 400,
+      "asset": "./assets/monsters/file_00000000cd18820eb2f8589b1db8dad0.png",
+      "animations": {
+        "idle": {
+          "frameMs": 110,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ]
+        },
+        "swim": {
+          "frameMs": 95,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ]
+        }
+      },
+      "animationGroups": {
+        "idle": "navigation",
+        "swim": "navigation"
+      },
+      "navigation": {
+        "width": 300,
+        "height": 300,
+        "minSpeed": 28,
+        "speed": 95,
+        "acceleration": 260,
+        "braking": 0.18,
+        "roll": 0,
+        "heave": 3,
+        "sway": 2,
+        "periodMs": 2600,
+        "wake": false,
+        "shadow": true,
+        "src": "./assets/monsters/file_00000000cd18820eb2f8589b1db8dad0.png",
+        "sprite": {
+          "src": "./assets/monsters/file_00000000cd18820eb2f8589b1db8dad0.png",
+          "columns": 4,
+          "rows": 4,
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
+          },
+          "directionFrames": {
+            "n": 0,
+            "nne": 1,
+            "ne": 2,
+            "ene": 3,
+            "e": 4,
+            "ese": 5,
+            "se": 6,
+            "sse": 7,
+            "s": 8,
+            "ssw": 9,
+            "sw": 10,
+            "wsw": 11,
+            "w": 12,
+            "wnw": 13,
+            "nw": 14,
+            "nnw": 15
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
+        },
+        "compiled": {}
+      },
+      "combat": {
+        "hp": 1200,
+        "attackRange": 420,
+        "attackCooldownMs": 1600,
+        "damage": 8,
+        "recoil": 0,
+        "shake": 3,
+        "muzzleFlash": false,
+        "smoke": false,
+        "impact": true,
+        "useNavigationAtlas": true,
+        "cannonSlots": 0
       },
       "schema": "tq.ship",
       "version": 2
