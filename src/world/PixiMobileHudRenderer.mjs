@@ -235,6 +235,16 @@ export class PixiMobileHudRenderer{
     if(!this.ready)return false;
     this.layout();
     const r=this.refs;
+    const tutorialMode=state.tutorialMode===true;
+    const tutorialAction=String(state.tutorialAction||"");
+    if(r.joystick)r.joystick.visible=true;
+    if(r.minimapBack)r.minimapBack.visible=!tutorialMode;
+    if(r.minimapFrame)r.minimapFrame.visible=!tutorialMode;
+    if(r.mapMarkers)r.mapMarkers.visible=!tutorialMode;
+    if(r.actions)r.actions.visible=!tutorialMode||tutorialAction==="shipyard";
+    for(const [key,sprite] of Object.entries(r.sprites||{}))sprite.visible=!tutorialMode||(tutorialAction==="shipyard"&&key==="shipyard");
+    if(r.configBack)r.configBack.visible=!tutorialMode;
+    if(r.configIcon)r.configIcon.visible=!tutorialMode;
     const maxHp=Math.max(1,Number(state.playerMaxHp)||1);
     const hp=clamp(Number(state.playerHp)||0,0,maxHp);
     const pct=hp/maxHp;
@@ -279,7 +289,7 @@ export class PixiMobileHudRenderer{
     const repair=r.sprites.repair;
     if(repair){
       const canRepair=hp>0&&hp<maxHp&&state.attacking!==true&&state.repairAvailable===true;
-      repair.visible=canRepair;
+      repair.visible=!tutorialMode&&canRepair;
       repair.alpha=canRepair?1:.45;
     }
     return true;
