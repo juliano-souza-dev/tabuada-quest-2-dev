@@ -934,6 +934,7 @@ export class GameRuntime {
     const currency=String(product.currency||"gold").toLowerCase();
     if(currency==="event")return {ok:false,message:"Este item só pode ser obtido durante o evento."};
     const walletKey=["rubies","ruby","gem","gems","diamond","diamonds"].includes(currency)?"rubies":"gold";
+    if(walletKey!=="rubies")return {ok:false,message:"A loja aceita somente rubis."};
     const unitPrice=Math.max(0,Math.floor(Number(product.price)||0));
     const total=unitPrice*amount;
     const balances=this.getWalletBalances();
@@ -1427,6 +1428,9 @@ export class GameRuntime {
     this.playerShips.equippedShip=shipId;
     if(save)this.saveState();
     globalThis.dispatchEvent?.(new CustomEvent("tq:shipequipped",{detail:{ship:clone(ship)}}));
+    if(String(id)==="ship-halloween-terror-reward-400"&&this.missionClaimed("HALLOWEEN_BOSS_10")){
+      this.worldRuntime?.showGameplayToast?.("🧭 Tutorial concluído · navegue para a próxima região.",3600);
+    }
 
     if(reloadWorld&&this.current?.kind==="world"){
       this.captureCurrentState();
@@ -1841,6 +1845,17 @@ export class GameRuntime {
           4200
         );
       },850);
+      globalThis.setTimeout(()=>{
+        if(id==="HALLOWEEN_BOSS_10"){
+          this.worldRuntime?.showGameplayToast?.("⚓ Vá ao estaleiro, equipe o Terror do Halloween e navegue para a próxima região.",4200);
+          return;
+        }
+        const next=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
+          .filter(item=>Number(item?.region)===region&&item?.required===true&&!claimed.has(String(item?.id||"")))
+          .sort((a,b)=>Number(a?.order||0)-Number(b?.order||0))
+          .find(item=>(Array.isArray(item?.unlockAfter)?item.unlockAfter:[]).every(req=>claimed.has(String(req))));
+        if(next)this.worldRuntime?.showGameplayToast?.("➡ Próxima missão: "+String(next.name||next.id)+" · "+String(next.description||""),4200);
+      },2500);
     }
 
     if(!changed)return {changed:false,completed:[]};
