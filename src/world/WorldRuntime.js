@@ -1428,7 +1428,7 @@ export class WorldRuntime {
       el.append(collider);
 
       const isNamedShip=String(entity.type||"")==="ship"
-        &&(entity.role==="npc"||entity.role==="multiplayer"||entity.runtimeGenerated===true||Boolean(entity.npcId));
+        &&(entity.role==="npc"||entity.runtimeGenerated===true||Boolean(entity.npcId));
       if(isNamedShip){
         const name=document.createElement("span");
         name.className="tq-world-ship-name";
@@ -1466,23 +1466,13 @@ export class WorldRuntime {
   syncCombatClickableEntity(entity){
     const el=entity?.el;
     if(!el)return;
-    const multiplayerInvite=entity.runtimeMultiplayer===true;
     const clickable=this.isClickableCombatShip(entity);
     el.dataset.combatClickable=clickable?"true":"false";
-    el.dataset.partyClickable=multiplayerInvite?"true":"false";
-    el.classList.toggle("is-combat-clickable",clickable||multiplayerInvite);
+    el.classList.toggle("is-combat-clickable",clickable);
     if(el.dataset.combatClickBound==="1")return;
     el.dataset.combatClickBound="1";
     el.addEventListener("click",event=>{
-      if(this.mode!=="play"||this.challengeActive||this.combatActive)return;
-      if(entity.runtimeMultiplayer===true){
-        event.preventDefault();
-        event.stopPropagation();
-        const uid=String(entity.id||"").replace(/^multiplayer\./,"");
-        if(uid)this.onInviteParty?.({uid,name:String(entity.label||"Pirata"),shipId:String(entity.shipId||"")});
-        return;
-      }
-      if(!this.isClickableCombatShip(entity))return;
+      if(this.mode!=="play"||this.challengeActive||this.combatActive||!this.isClickableCombatShip(entity))return;
       event.preventDefault();
       event.stopPropagation();
       this.selectCombatTarget(entity);
@@ -5524,8 +5514,7 @@ export class WorldRuntime {
 
   updateDirectNavalCombat(time=performance.now()){
     if(this.mode!=="play"||this.combatActive)return;
-    // A forced repair only disables the destroyed local ship. The shared ocean,
-    // NPCs, bosses and remote players must keep simulating in multiplayer.
+    // A forced repair only disables the destroyed local ship; the local world keeps simulating.
     if(this.challengeActive&&!this.repairActive?.forced)return;
 
     const target=this.combatTarget;
