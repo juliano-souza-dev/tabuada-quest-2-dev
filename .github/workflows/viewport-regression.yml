@@ -16,5 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run viewport regression tests
-        run: node --test tests/viewport-width.test.mjs
+      - name: Check world runtime syntax
+        run: node --check src/world/WorldRuntime.js
+
+      - name: Run viewport and sprite regression tests
+        run: node --test tests/viewport-width.test.mjs tests/world-sprite-animation.test.mjs
