@@ -23,6 +23,7 @@ const [
   { createWorldSimulationPipeline },
   { integratePlayerVelocity },
   { selectVisibleTreasures },
+  { composeEntityVisualFrame },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -55,6 +56,7 @@ const [
   import("./systems/WorldSimulationPipeline.mjs?v="+__tqDevStamp),
   import("./navigation/PlayerKinematics.mjs?v="+__tqDevStamp),
   import("./presentation/TreasureRenderModel.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityVisualFrame.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -3619,24 +3621,19 @@ export class WorldRuntime {
         worldHeight:this.config.height
       });
 
-      const offsetX=Number(motionFrame.offsetX||0)+Number(effectFrame.offsetX||0);
-      const offsetY=Number(motionFrame.offsetY||0)+Number(effectFrame.offsetY||0);
       const timelineAnimated=hasTimelineSpriteAnimation(entity);
       const hasDirectionalSprite=!timelineAnimated&&Boolean(entity.sprite?.src&&entity.sprite?.regions);
-      const rotation=((hasDirectionalSprite||timelineAnimated)?0:Number(entity.rotation||0))+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
-      const scaleX=Number(effectFrame.scaleX||1);
-      const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
-
-      entity.visualX=entity.x+offsetX;
-      entity.visualY=entity.y+offsetY;
+      const visual=composeEntityVisualFrame({entity,motionFrame,effectFrame,timelineAnimated,hasDirectionalSprite});
+      entity.visualX=visual.x;
+      entity.visualY=visual.y;
       entity.visualRotation=Number(entity.rotation||0);
-      entity.el.style.left=entity.visualX+"px";
-      entity.el.style.top=entity.visualY+"px";
+      entity.el.style.left=visual.x+"px";
+      entity.el.style.top=visual.y+"px";
       entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
-      entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
+      entity.el.style.transform=`translate(-50%,-50%) rotate(${visual.rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${visual.scaleX},${visual.scaleY})`;
       if(entity.nameEl){
-        entity.nameEl.style.left=entity.visualX+"px";
-        entity.nameEl.style.top=(entity.visualY+Math.max(18,Number(entity.height)||96)*Math.abs(scaleY)*.54+10)+"px";
+        entity.nameEl.style.left=visual.x+"px";
+        entity.nameEl.style.top=(visual.y+visual.nameOffset)+"px";
         entity.nameEl.hidden=entity.el.hidden===true;
       }
       if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
