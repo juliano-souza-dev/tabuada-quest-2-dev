@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-dev-assets-20261005-ammo-sync-cache-v2";
+const CACHE_NAME="tq-dev-assets-20261007-no-pixi-tutorial-v1";
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
@@ -26,11 +26,14 @@ self.addEventListener("fetch",event=>{
 
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE_NAME);
-    const cached=await cache.match(request,{ignoreSearch:true});
-    if(cached)return cached;
-
-    const response=await fetch(request);
-    if(response.ok)await cache.put(request,response.clone());
-    return response;
+    try{
+      const response=await fetch(request,{cache:"no-store"});
+      if(response.ok)await cache.put(request,response.clone());
+      return response;
+    }catch{
+      const cached=await cache.match(request,{ignoreSearch:true});
+      if(cached)return cached;
+      throw new Error("Offline and asset is not cached");
+    }
   })());
 });
