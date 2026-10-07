@@ -14,8 +14,30 @@
       },
       "reward": {
         "cannonId": "cannon-basic",
-        "cannonQuantity": 3
+        "cannonQuantity": 3,
+        "ammoId": "cannonball-halloween-purple",
+        "ammoQuantity": 2000
       },
+      "required": true,
+      "tutorial": true
+    },
+    {
+      "id": "R1_TUTORIAL_PREP_NEXT_MAP",
+      "region": 1,
+      "order": 2,
+      "name": "Preparar para o próximo mapa",
+      "description": "Colete 2 tesouros para reforçar o arsenal antes de seguir viagem.",
+      "objective": {
+        "type": "collect_treasure",
+        "target": 2
+      },
+      "reward": {
+        "cannonId": "cannon-bronze",
+        "cannonQuantity": 5
+      },
+      "unlockAfter": [
+        "R1_TUTORIAL_CORSARIOS_5"
+      ],
       "required": true,
       "tutorial": true
     },
