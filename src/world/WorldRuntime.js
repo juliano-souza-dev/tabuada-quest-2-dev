@@ -5130,12 +5130,18 @@ export class WorldRuntime {
       return false;
     }
     const targetDistance=this.navalTargetDistance(entity);
-    const selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
-    const ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
-    const ammoStock=Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
+    let selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
+    let ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
+    let ammoStock=Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
     if(!selectedAmmoId||!ammo||ammoStock<=0){
-      this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição: "+String(ammo?.name||selectedAmmoId)+"."});
-      return false;
+      const switched=this.autoSwitchAmmoIfEmpty({announce:Boolean(selectedAmmoId)});
+      selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
+      ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
+      ammoStock=Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
+      if(!switched||!selectedAmmoId||!ammo||ammoStock<=0){
+        this.stopNavalAutoFire({keepTarget:true,message:!ammo?"Munição inválida ou inexistente.":"Sem munição disponível."});
+        return false;
+      }
     }
     const cannons=(Array.isArray(this.playerCannonIds)?this.playerCannonIds:[])
       .map(id=>this.cannonCatalog.find(item=>String(item?.id||"")===id))
@@ -5258,6 +5264,7 @@ export class WorldRuntime {
 
     if(!firedCount)return false;
     this.audio?.play("cannon-shot");
+    if(ammoRemaining<=0)this.autoSwitchAmmoIfEmpty({announce:true});
     this.onAmmoChange?.(structuredClone(this.state.ammo));
 
     const resolveVolley=()=>{
@@ -5559,12 +5566,53 @@ export class WorldRuntime {
     }else this.challengeWrap.style.removeProperty("--tq-popup-layout");
   }
 
+  ammoAutoSortValue(item){
+    const shop=item?.shop&&typeof item.shop==="object"?item.shop:{};
+    const currency=String(shop.currency||"gold").toLowerCase();
+    const currencyRank=currency==="gold"?0:(currency==="rubies"||currency==="ruby"?1:2);
+    const price=Math.max(0,Number(shop.price)||0);
+    const pack=Math.max(1,Number(shop.packQuantity)||1);
+    const unit=shop.purchasable===false&&currencyRank>=2?Number.POSITIVE_INFINITY:(price/pack);
+    return {currencyRank,unit,price};
+  }
+
+  cheapestStockedAmmo(excludeId=""){
+    const excluded=String(excludeId||"");
+    const stocked=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[])
+      .filter(item=>{
+        const id=String(item?.id||"");
+        return id&&id!==excluded&&item?.available!==false
+          &&Math.max(0,Math.floor(Number(this.state?.ammo?.stock?.[id])||0))>0;
+      })
+      .sort((a,b)=>{
+        const av=this.ammoAutoSortValue(a);
+        const bv=this.ammoAutoSortValue(b);
+        return av.currencyRank-bv.currencyRank
+          ||av.unit-bv.unit
+          ||av.price-bv.price
+          ||String(a?.name||a?.id||"").localeCompare(String(b?.name||b?.id||""),"pt-BR");
+      });
+    return stocked[0]||null;
+  }
+
+  autoSwitchAmmoIfEmpty({announce=false}={}){
+    if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
+    const currentId=String(this.state.ammo.selectedAmmoId||"");
+    const currentQty=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[currentId])||0));
+    if(currentId&&currentQty>0)return null;
+    const next=this.cheapestStockedAmmo(currentId);
+    this.state.ammo.selectedAmmoId=String(next?.id||"");
+    if(next&&announce){
+      const quantity=Math.max(0,Math.floor(Number(this.state.ammo.stock?.[next.id])||0));
+      this.showGameplayToast?.("💣 "+String(next.name||next.id)+" equipada · ×"+quantity,1600);
+      if(this.actionMessage)this.actionMessage.textContent="Munição esgotada · equipada "+String(next.name||next.id)+" · "+quantity;
+    }
+    return next;
+  }
+
   replaceAmmoInventory(ammo={}, {emit=true}={}){
     this.state.ammo=normalizeAmmoInventory(ammo);
-    const selected=String(this.state.ammo.selectedAmmoId||"");
-    if(selected&&!(Number(this.state.ammo.stock?.[selected])>0)){
-      this.state.ammo.selectedAmmoId=Object.keys(this.state.ammo.stock).find(id=>Number(this.state.ammo.stock[id])>0)||"";
-    }
+    this.autoSwitchAmmoIfEmpty({announce:false});
     const snapshot={
       selectedAmmoId:String(this.state.ammo.selectedAmmoId||""),
       stock:{...(this.state.ammo.stock||{})}
