@@ -714,7 +714,8 @@ export class WorldRuntime {
     }
     if(this.treasureCombatWasBlocking){
       this.treasureCombatWasBlocking=false;
-      this.treasureCombatLockUntil=Math.max(Number(this.treasureCombatLockUntil)||0,Date.now()+20000);
+      const cooldown=String(this.getTutorialGuide?.()?.stage||"")==="collect-10"?2000:20000;
+      this.treasureCombatLockUntil=Math.max(Number(this.treasureCombatLockUntil)||0,Date.now()+cooldown);
     }
     return Date.now()<Number(this.treasureCombatLockUntil||0);
   }
@@ -2865,7 +2866,9 @@ export class WorldRuntime {
     this.mode=mode==="play"?"play":"edit";
     this.host?.classList.toggle("is-editor",this.mode==="edit");
     this.host?.classList.toggle("is-play",this.mode==="play");
-    if(this.modeEl)this.modeEl.textContent=this.mode==="edit"?"REGIÃO · EDITAR":"REGIÃO · PLAY";
+    if(this.modeEl)this.modeEl.textContent=this.mode==="edit"?"REGIÃO · EDITAR":"";
+    const technicalHud=this.host?.querySelector?.(".tq-world-hud");
+    if(technicalHud)technicalHud.hidden=this.mode==="play";
     if(this.mode==="play"){
       this.keys.clear();
       this.pointerDirections.clear();
@@ -4919,7 +4922,7 @@ export class WorldRuntime {
       entity.tutorialCombatPhase="";
       this.navalAutoFire=false;
       this.treasureCombatWasBlocking=false;
-      this.treasureCombatLockUntil=Date.now()+20000;
+      this.treasureCombatLockUntil=Date.now()+(tutorialStageAtKill==="attack-ship-2"?2000:20000);
       Promise.resolve(this.onTutorialNpcDestroyed?.(entity)).catch(error=>console.warn("[TabuadaQuest] tutorial destruction hook failed",error));
       if(this.combatTarget===entity)this.clearCombatTarget({hideAction:true});
       this.navalHostile.delete(id);
@@ -4985,14 +4988,14 @@ export class WorldRuntime {
       if(parts.length)this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído · "+parts.join(" · "),1900);
     }
 
-    const respawnDelay=entity.runtimeGenerated&&entity.respawn===true
-      ?Math.max(0,Number(entity.respawnDelayMs)||0)
-      :0;
+    const respawnDelay=entity.tutorialDefeated===true
+      ?0
+      :(entity.runtimeGenerated&&entity.respawn===true?Math.max(0,Number(entity.respawnDelayMs)||0):0);
     const timer=setTimeout(()=>{
       this.navalDestroyTimers.delete(id);
       this.navalDestroying.delete(id);
-      if(entity.runtimeGenerated&&entity.respawn===true){
-        const wasTutorialDefeated=entity.tutorialDefeated===true;
+      if(entity.runtimeGenerated&&entity.respawn===true&&entity.tutorialDefeated!==true){
+        const wasTutorialDefeated=false;
         const tutorialDefeatedStage=entity.tutorialDefeatedStage;
         const population=normalizeNpcPopulation(this.config.npcPopulation||{});
         const occupied=this.entities
