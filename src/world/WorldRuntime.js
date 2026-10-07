@@ -5258,7 +5258,16 @@ export class WorldRuntime {
     }
 
     if(!firedCount)return false;
-    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship")this.onTutorialAttack?.(entity);
+    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"){
+      if(!entity.tutorialCombatTarget){
+        entity.tutorialCombatTarget=true;
+        const perHit=Math.max(.1,Number(volleyShots[0]?.shotDamage)||1);
+        const exactHp=Math.round(perHit*19.5*10)/10;
+        entity.combat={...(entity.combat||{}),hp:exactHp};
+        this.navalHp.set(String(entity.id),exactHp);
+      }
+      this.onTutorialAttack?.(entity);
+    }
     this.audio?.play("cannon-shot");
     if(ammoRemaining<=0)this.autoSwitchAmmoIfEmpty({announce:true});
     this.onAmmoChange?.(structuredClone(this.state.ammo));
@@ -5344,6 +5353,9 @@ export class WorldRuntime {
     if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
     let incoming=Math.max(1,Number(amount)||1);
+    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&source?.tutorialCombatTarget===true){
+      incoming=Math.min(incoming,Math.max(1,this.navalPlayerMaxHp*.03));
+    }
     const immunityQty=Math.max(0,Math.floor(Number(this.getConsumableQuantity("halloween-immunity-charm"))||0));
     if(immunityQty>0){
       incoming=Math.max(.1,Math.round(incoming*.5*10)/10);
@@ -6623,9 +6635,10 @@ export class WorldRuntime {
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }else if(stage==="attack-ship"){
-      target=this.entities
-        .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-        .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
+      target=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+        ||this.entities
+          .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+          .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
       this.tutorialArrowEl?.remove();
