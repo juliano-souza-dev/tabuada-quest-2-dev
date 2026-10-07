@@ -194,6 +194,7 @@ export class WorldRuntime {
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.getTutorialGuide=typeof options.getTutorialGuide==="function"?options.getTutorialGuide:()=>null;
     this.onTutorialAttack=typeof options.onTutorialAttack==="function"?options.onTutorialAttack:()=>{};
+    this.onTutorialNpcDestroyed=typeof options.onTutorialNpcDestroyed==="function"?options.onTutorialNpcDestroyed:()=>{};
     this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
     this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
     this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
