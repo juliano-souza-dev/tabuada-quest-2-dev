@@ -5,22 +5,6 @@ const [{ GameRuntime },{ installAuthRuntime }]=await Promise.all([
   import("./runtime/auth/AuthRuntimeBridge.js?v="+__tqDevStamp)
 ]);
 
-// Older saves can have mission progress at target while claimedRewards is missing.
-// Runtime gates (NPC spawns, shop unlocks, tutorial steps) must treat that state
-// as completed, while advanceMissions still owns reward idempotency separately.
-const originalMissionClaimed=GameRuntime.prototype.missionClaimed;
-GameRuntime.prototype.missionClaimed=function(id){
-  const key=String(id||"").trim();
-  if(!key)return false;
-  if(typeof originalMissionClaimed==="function"&&originalMissionClaimed.call(this,key))return true;
-  const mission=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
-    .find(item=>String(item?.id||"")===key);
-  if(!mission)return false;
-  const target=Math.max(1,Math.floor(Number(mission?.objective?.target)||1));
-  const current=Math.max(0,Math.floor(Number(this.accountState?.game?.missions?.progress?.[key])||0));
-  return current>=target;
-};
-
 const app=document.querySelector("#app");
 const params=new URLSearchParams(location.search);
 const rawStart=params.get("start");
