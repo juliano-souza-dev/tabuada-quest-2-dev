@@ -1,88 +1,7 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 3,
+  "version": 4,
   "missions": [
-    {
-      "id": "R1_M01",
-      "region": 1,
-      "order": 1,
-      "name": "Primeiro Tesouro",
-      "objective": {
-        "type": "collect_treasure",
-        "target": 3
-      },
-      "reward": {
-        "gold": 34,
-        "rubies": 0
-      },
-      "required": true
-    },
-    {
-      "id": "R1_M02",
-      "region": 1,
-      "order": 2,
-      "name": "Mantimentos Perdidos",
-      "objective": {
-        "type": "collect_item",
-        "target": 5
-      },
-      "reward": {
-        "gold": 42,
-        "rubies": 0
-      },
-      "required": true
-    },
-    {
-      "id": "R1_M03",
-      "region": 1,
-      "order": 3,
-      "name": "Caçada da Abóbora Maldita",
-      "objective": {
-        "type": "defeat_npc",
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "targetLabel": "Corsários da Abóbora Maldita",
-        "target": 20
-      },
-      "reward": {
-        "gold": 50,
-        "rubies": 0,
-        "cannonId": "cannon-halloween-pumpkin-terror",
-        "cannonQuantity": 1
-      },
-      "required": true
-    },
-    {
-      "id": "R1_M04",
-      "region": 1,
-      "order": 4,
-      "name": "Preparando o Navio",
-      "objective": {
-        "type": "purchase_upgrade",
-        "target": 1
-      },
-      "reward": {
-        "gold": 62,
-        "rubies": 0
-      },
-      "required": true
-    },
-    {
-      "id": "R1_M05",
-      "region": 1,
-      "order": 5,
-      "name": "Capitão da Enseada",
-      "objective": {
-        "type": "defeat_boss",
-        "target": 1
-      },
-      "reward": {
-        "gold": 92,
-        "rubies": 0,
-        "shipId": "ship-halloween-galleon-reward",
-        "equipShip": true
-      },
-      "required": true
-    },
     {
       "id": "R2_M01",
       "region": 2,
@@ -911,121 +830,121 @@
     {
       "id": "HALLOWEEN_M01",
       "region": 1,
-      "order": 81,
+      "order": 1,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Sinais na Névoa",
-      "description": "Colete tesouros de Halloween para iniciar a preparação contra o Terror do Halloween.",
+      "name": "Primeiro Tesouro",
+      "description": "Colete o primeiro tesouro e arme o navio.",
       "unlockAfter": [],
       "objective": {
         "type": "collect_treasure",
-        "target": 5
+        "target": 1
       },
       "reward": {
-        "gold": 200,
-        "rubies": 0
+        "cannonId": "cannon-basic",
+        "cannonQuantity": 1,
+        "ammoId": "cannonball-standard",
+        "ammoQuantity": 100
       }
     },
     {
       "id": "HALLOWEEN_M02",
       "region": 1,
-      "order": 82,
+      "order": 2,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Corsários da Abóbora",
-      "description": "Afunde corsários da Abóbora Maldita e limpe a rota.",
+      "name": "Reparo Completo",
+      "description": "Quando o casco cair abaixo de 750, conserte o navio por inteiro.",
       "unlockAfter": [
         "HALLOWEEN_M01"
       ],
       "objective": {
-        "type": "defeat_npc",
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "targetLabel": "Corsários da Abóbora Maldita",
-        "target": 5
+        "type": "repair_ship",
+        "target": 1
       },
       "reward": {
-        "gold": 350,
-        "rubies": 0
+        "cannonId": "cannon-basic",
+        "cannonQuantity": 5
       }
     },
     {
       "id": "HALLOWEEN_M03",
       "region": 1,
-      "order": 83,
+      "order": 3,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Primeiro Reforço",
-      "description": "Compre um upgrade para fortalecer o navio.",
+      "name": "Reserva de Halloween",
+      "description": "Colete mais 10 tesouros. Cada um entrega 250 munições de Halloween.",
       "unlockAfter": [
         "HALLOWEEN_M02"
       ],
       "objective": {
-        "type": "purchase_upgrade",
-        "target": 1
+        "type": "collect_treasure",
+        "target": 10
+      },
+      "progressReward": {
+        "ammoId": "cannonball-halloween-purple",
+        "ammoPerStep": 250
       },
       "reward": {
-        "gold": 500,
-        "rubies": 1
+        "rubies": 2
       }
     },
     {
       "id": "HALLOWEEN_M04",
       "region": 1,
-      "order": 84,
+      "order": 4,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Carga das Almas",
-      "description": "Colete mais tesouros para financiar a preparação da frota.",
+      "name": "Ao Estaleiro",
+      "description": "Vá ao estaleiro e equipe um dos canhões recebidos.",
       "unlockAfter": [
         "HALLOWEEN_M03"
       ],
       "objective": {
-        "type": "collect_treasure",
-        "target": 8
+        "type": "equip_cannon",
+        "target": 1
       },
       "reward": {
-        "gold": 750,
         "rubies": 1
       }
     },
     {
       "id": "HALLOWEEN_M05",
       "region": 1,
-      "order": 85,
+      "order": 5,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Caçada Maldita",
-      "description": "Afunde uma nova leva de corsários de Halloween.",
+      "name": "Corsário da Tabuada Sombria",
+      "description": "Afunde o Corsário da Tabuada Sombria.",
       "unlockAfter": [
         "HALLOWEEN_M04"
       ],
       "objective": {
         "type": "defeat_npc",
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "targetLabel": "Corsários da Abóbora Maldita",
-        "target": 10
+        "npcId": "npc-corsario-tabuada-sombria",
+        "targetLabel": "Corsário da Tabuada Sombria",
+        "target": 1
       },
       "reward": {
-        "gold": 1000,
-        "rubies": 2,
-        "cannonId": "cannon-halloween-pumpkin-terror",
-        "cannonQuantity": 1
+        "rubies": 3,
+        "xp": 150
       }
     },
     {
       "id": "HALLOWEEN_M06",
       "region": 1,
-      "order": 86,
+      "order": 6,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Arsenal Assombrado",
-      "description": "Faça mais um upgrade antes do confronto final.",
+      "name": "Mercado de Rubis",
+      "description": "Visite a loja desbloqueada e compre um item usando rubis.",
       "unlockAfter": [
         "HALLOWEEN_M05"
       ],
@@ -1034,84 +953,85 @@
         "target": 1
       },
       "reward": {
-        "gold": 1250,
-        "rubies": 3
+        "rubies": 2
       }
     },
     {
       "id": "HALLOWEEN_M07",
       "region": 1,
-      "order": 87,
+      "order": 7,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Reserva de Guerra",
-      "description": "Colete tesouros para completar a reserva de combate.",
+      "name": "Contas na Névoa",
+      "description": "Resolva mais contas coletando 15 tesouros.",
       "unlockAfter": [
         "HALLOWEEN_M06"
       ],
       "objective": {
         "type": "collect_treasure",
-        "target": 12
+        "target": 15
       },
       "reward": {
-        "gold": 1600,
-        "rubies": 4
+        "rubies": 4,
+        "xp": 250
       }
     },
     {
       "id": "HALLOWEEN_M08",
       "region": 1,
-      "order": 88,
+      "order": 8,
       "category": "event",
       "event": "halloween",
       "required": true,
-      "name": "Última Patrulha",
-      "description": "Afunde a última patrulha antes de desafiar o Terror.",
+      "name": "Patrulha das Cem Vidas",
+      "description": "Afunde 5 navios comuns de 100 HP.",
       "unlockAfter": [
         "HALLOWEEN_M07"
       ],
       "objective": {
         "type": "defeat_npc",
         "npcId": "npc-halloween-pumpkin-corsair",
-        "targetLabel": "Corsários da Abóbora Maldita",
-        "target": 15
+        "targetLabel": "Navios de treino",
+        "target": 5
       },
       "reward": {
-        "gold": 2000,
-        "rubies": 5
+        "rubies": 5,
+        "xp": 400
       }
     },
     {
       "id": "HALLOWEEN_M09",
       "region": 1,
-      "order": 89,
+      "order": 9,
       "category": "event",
       "event": "halloween",
       "required": true,
       "name": "Preparação Final",
-      "description": "Conclua o último upgrade. Depois disso o Terror do Halloween poderá ser atacado.",
+      "description": "Colete 20 tesouros e conclua a preparação contra o Terror.",
       "unlockAfter": [
         "HALLOWEEN_M08"
       ],
       "objective": {
-        "type": "purchase_upgrade",
-        "target": 1
+        "type": "collect_treasure",
+        "target": 20
       },
       "reward": {
-        "gold": 2500,
-        "rubies": 10
+        "cannonId": "cannon-halloween-pumpkin-terror",
+        "cannonQuantity": 1,
+        "rubies": 6,
+        "xp": 600
       }
     },
     {
       "id": "HALLOWEEN_BOSS_10",
       "region": 1,
-      "order": 90,
+      "order": 10,
       "category": "event",
       "event": "halloween",
       "required": true,
       "name": "Afundar o Terror do Halloween",
-      "description": "As nove missões foram concluídas. Agora afunde o Terror do Halloween e conquiste seu galeão.",
+      "description": "Use munição de Halloween para afundar o Terror e conquistar seu navio.",
       "unlockAfter": [
         "HALLOWEEN_M01",
         "HALLOWEEN_M02",
@@ -1130,11 +1050,10 @@
         "target": 1
       },
       "reward": {
-        "gold": 5000,
-        "rubies": 20,
+        "rubies": 10,
         "xp": 3000,
         "shipId": "ship-halloween-terror-reward-400",
-        "equipShip": true
+        "equipShip": false
       }
     }
   ]
