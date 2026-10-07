@@ -924,6 +924,34 @@ export class WorldRuntime {
     return entity;
   }
 
+  spawnTutorialCorsairForSecondDuel(){
+    if(String(this.getTutorialGuide?.()?.stage||"")!=="attack-ship-2")return null;
+    const live=this.entities.find(entity=>this.isClickableCombatShip(entity)&&entity.tutorialDefeated!==true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id));
+    if(live)return live;
+    const defeated=this.entities.find(entity=>String(entity?.type||"")==="ship"&&entity.tutorialDefeated===true)||null;
+    const population=normalizeNpcPopulation(this.config.npcPopulation||{});
+    const typeConfig=population.types.find(type=>type.enabled!==false)||null;
+    if(!typeConfig)return null;
+    const occupied=this.entities.filter(entity=>!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)).map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}));
+    occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
+    const random=createSeededRandom(hashString(String(this.config.id||"world")+".tutorial-second-corsair."+Date.now()));
+    const tutorialType={...typeConfig,respawn:false,spawn:{...(typeConfig.spawn||{}),nearPlayerMin:650,nearPlayerMax:1000}};
+    const entity=this.createGeneratedNpc({shipId:tutorialType.shipId||tutorialType.npcId,index:this.entities.length,typeConfig:tutorialType,population,random,occupied});
+    if(!entity)return null;
+    entity.id="npc.tutorial.corsair.second."+Date.now().toString(36);
+    entity.tutorialSecondCorsair=true;
+    entity.tutorialCombatTarget=false;
+    entity.tutorialCombatPhase="";
+    entity.tutorialDefeated=false;
+    entity.index=this.entities.length;
+    this.entities.push(entity);
+    this.generatedNpcIds.add(entity.id);
+    this.entityById?.set(String(entity.id),entity);
+    this.navalHp.set(String(entity.id),Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
+    this.renderEntities();
+    return entity;
+  }
+
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
     // NPC refresh must never remove runtime treasures. Both NPCs and treasures
