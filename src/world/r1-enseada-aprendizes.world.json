@@ -426,25 +426,6 @@
           "rubyDropMax": 1
         },
         "hp": 400
-      },
-      {
-        "npcId": "npc-kraken-brasas",
-        "shipId": "monster-kraken-brasas",
-        "count": 3,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 1500,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 950,
-          "minDistance": 900,
-          "seed": 8301
-        },
-        "rewards": {
-          "gold": 350,
-          "xp": 120
-        },
-        "hp": 1200
       }
     ]
   },
@@ -456,7 +437,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-r1-kraken-brasas-v1",
+    "sourceRevision": "20261007-r1-no-monsters-tutorial-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
