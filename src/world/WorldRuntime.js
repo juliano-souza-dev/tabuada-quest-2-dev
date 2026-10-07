@@ -132,11 +132,9 @@ export class WorldRuntime {
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
-    this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.getTutorialGuide=typeof options.getTutorialGuide==="function"?options.getTutorialGuide:()=>null;
     this.onTutorialAttack=typeof options.onTutorialAttack==="function"?options.onTutorialAttack:()=>{};
     this.onTutorialNpcDestroyed=typeof options.onTutorialNpcDestroyed==="function"?options.onTutorialNpcDestroyed:()=>{};
-    this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
     this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
     this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
     this.shouldForceRepair=typeof options.shouldForceRepair==="function"?options.shouldForceRepair:()=>false;
@@ -173,9 +171,7 @@ export class WorldRuntime {
     });
     const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
     this.mobileHud=new MobileHudOverlay({
-      missions:Array.isArray(options.missionCatalog)?options.missionCatalog:[],
       region:regionNumber,
-      onMissionsOpen:()=>options.onMissionsOpen?.(),
       getState:()=>{
         const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
         const targetInRange=Boolean(target&&this.isNavalTargetInRange(target));
@@ -4860,7 +4856,6 @@ export class WorldRuntime {
       };
     }
     if(entity.interaction==="shipyard")return {actionId:"open-shipyard",params:{}};
-    if(entity.interaction==="missions")return {actionId:"open-missions",params:{}};
     if(entity.scene){
       return {
         actionId:"open-scene",
