@@ -19,6 +19,7 @@ const [
   { MobileHudOverlay },
   { normalizeNpcPopulation,normalizeTreasurePopulation,normalizeNpcAmmoIds },
   { normalizeAmmoInventory,ammoDamageFactor,cannonDamagePerShot,navalShotDamage,resolvePlayerHullHp },
+  { WorldGameLoop },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -47,6 +48,7 @@ const [
   import("./MobileHudOverlay.js?v="+__tqDevStamp),
   import("./entities/PopulationRules.mjs?v="+__tqDevStamp),
   import("./combat/NavalCombatRules.mjs?v="+__tqDevStamp),
+  import("./systems/WorldGameLoop.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -7034,18 +7036,10 @@ export class WorldRuntime {
     this.tutorialArrowEl.style.transform="translate(-50%,-50%) rotate("+angle+"rad)";
   }
 
-  tick(time){
-    // Do not turn frame drops into slow motion. A 40 ms cap makes the whole
-    // simulation run slower whenever rendering falls below 25 FPS. Keep a
-    // broader safety cap so movement remains tied to real elapsed time.
-    const dt=Math.min(.10,Math.max(.001,(time-this.lastTime)/1000));
-    this.lastTime=time;
+  updateSimulationFrame(time,dt){
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);
-    this.updatePlayerVisual(time,dt);
-    this.updatePlayerWaterEffects(time);
-    // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
     this.updateTreasurePopulation(time);
     this.treasureCombatLocked();
@@ -7054,10 +7048,14 @@ export class WorldRuntime {
       this.syncAutomaticCombatTarget();
       this.updateDirectNavalCombat(time);
     }
-    this.updateTutorialGuideArrow();
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     this.updateEnvironmentCycle(time);
+  }
+
+  updatePresentationFrame(time,dt){
+    this.updatePlayerVisual(time,dt);
+    this.updatePlayerWaterEffects(time);
     if(this.graphicsSettings?.clouds!==false&&this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
       this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
@@ -7083,17 +7081,29 @@ export class WorldRuntime {
           phase:(Math.abs(hashString(String(entity.id||"treasure")))%6283)/1000
         }))
     });
+  }
+
+  updateInterfaceFrame(time){
+    this.updateTutorialGuideArrow();
     this.updateNearby();
     this.renderMinimap(false,time);
-
     if(this.coordsEl){
       const target=this.mode==="edit"?this.camera:this.player;
       this.coordsEl.textContent=`x ${Math.round(target.x)} · y ${Math.round(target.y)}`;
     }
     if(this.directionEl)this.directionEl.textContent=(this.config.player?.sprite||this.config.player?.directions)?`Direção: ${String(this.player.direction||"n").toUpperCase()}`:"";
     if(this.zoomEl)this.zoomEl.textContent=this.mode==="edit"?`zoom ${Math.round(this.zoom*100)}%`:"";
+  }
 
-    this.raf=requestAnimationFrame(t=>this.tick(t));
+  tick(time){
+    if(!this.gameLoop){
+      this.gameLoop=new WorldGameLoop(this);
+      this.gameLoop.running=true;
+      this.gameLoop.lastTime=this.lastTime||0;
+    }
+    this.gameLoop.frame(time);
+    this.lastTime=this.gameLoop.lastTime;
+    this.raf=this.gameLoop.frameId;
   }
 
   getState(){
@@ -7130,7 +7140,10 @@ export class WorldRuntime {
     this.combatTimer=0;
     this.combatSpriteTimers={player:0,enemy:0};
     this.combatFxTimer=0;
+    this.gameLoop?.stop?.();
+    this.gameLoop=null;
     cancelAnimationFrame(this.raf);
+    this.raf=0;
     this.resetOceanRenderer();
     for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
     this.navalDestroyTimers.clear();
