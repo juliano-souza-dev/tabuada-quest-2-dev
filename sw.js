@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261006-opening-banner-play-v2";
+const CACHE_NAME="tq-pwa-runtime-20261007-hp-hud-restore-v1";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
