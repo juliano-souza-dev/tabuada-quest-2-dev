@@ -235,7 +235,6 @@ export class WorldRuntime {
             ?Math.max(0,this.playCameraRecenterAt-performance.now())
             :0,
           repairAvailable:this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true&&!this.isPlayerInNavalCombat(),
-          missionProgress:this.getMissionProgress()||{},
           tutorialGuide:(()=>{
             const guide=this.getTutorialGuide?.()||null;
             if(!guide)return null;
@@ -1032,7 +1031,6 @@ export class WorldRuntime {
       let total=0;
       for(const typeConfig of population.types){
         if(typeConfig.enabled===false)continue;
-        if(typeConfig.unlockAfterMission&&!this.isMissionComplete(typeConfig.unlockAfterMission))continue;
         const typePopulation={...population,spread:{...population.spread,...(typeConfig.spawn||{})}};
         const typeRandom=typeConfig.spawn?.seed>0?createSeededRandom(hashString(this.config.id||"world")^Number(typeConfig.spawn.seed)):random;
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
@@ -4902,7 +4900,7 @@ export class WorldRuntime {
         if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
         this.actionButton.textContent=collisionActionLabel(entity,collision);
         const directAction=String(interaction?.actionId||"");
-        if(directAction==="open-shipyard"||directAction==="open-missions"){
+        if(directAction==="open-shipyard"){
           this.actionButton.dataset.interactionAction=directAction;
         }else{
           delete this.actionButton.dataset.interactionAction;
