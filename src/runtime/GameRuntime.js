@@ -1579,7 +1579,12 @@ export class GameRuntime {
       }
     };
     this.worldRuntime?.shopOverlay?.refreshBalances?.();
-    this.worldRuntime?.rebuildNpcPopulation?.({render:true});
+    // Updating mission counters must not rebuild the whole NPC population.
+    // Runtime mission corsairs are part of that population, so rebuilding here
+    // made the four surviving ships disappear after every defeat.
+    if(completed.length>0&&this.r1TutorialStage()!=="missions-hunt"){
+      this.worldRuntime?.rebuildNpcPopulation?.({render:true});
+    }
 
 
 
