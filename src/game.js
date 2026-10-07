@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-answer-feedback-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-halloween-boss-prep-v3";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
 
 const app=document.querySelector("#app");
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-r1-tutorial-progression-v4");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-halloween-boss-prep-v3");
 
 if(flowTest){
   try{
