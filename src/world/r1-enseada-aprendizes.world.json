@@ -411,7 +411,6 @@
         "shipId": "ship-halloween-tabuada-sombria",
         "count": 1,
         "enabled": true,
-        "unlockAfterMission": "HALLOWEEN_M04",
         "respawn": false,
         "spawn": {
           "mode": "random-spaced",
