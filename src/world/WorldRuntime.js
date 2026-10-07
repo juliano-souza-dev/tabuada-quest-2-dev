@@ -3338,8 +3338,16 @@ export class WorldRuntime {
     // penetration resolution. The interaction detector owns release hysteresis.
     if(resolved.contact){
       this.contactEntity=resolved.contact;
-    }else if(!(this.contactEntity&&inferCollisionAction(this.contactEntity,normalizeCollision(this.contactEntity.collision||{},this.contactEntity))==="interact")){
-      this.contactEntity=null;
+    }else if(this.contactEntity){
+      const latched=this.contactEntity;
+      const latchedAction=inferCollisionAction(latched,normalizeCollision(latched.collision||{},latched));
+      const stillNear=latchedAction==="interact"&&resolveCircleVsEntity(
+        this.player,
+        this.playerCollisionRadius()+72,
+        latched,
+        latched.collision
+      ).collided;
+      if(!stillNear)this.contactEntity=null;
     }
 
     speed=Math.hypot(this.player.vx,this.player.vy);
