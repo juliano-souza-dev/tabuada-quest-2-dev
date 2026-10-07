@@ -2219,7 +2219,8 @@ export class GameRuntime {
       onMissionsOpen:()=>{
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions"){
           this.setR1TutorialStage("missions-hunt",{save:true,sync:true});
-          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Missão iniciada: afunde 5 corsários. Recompensa: 3 Canhões do Marujo.",3600);
+          this.worldRuntime?.spawnTutorialCorsairMissionFleet?.(5);
+          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Missão iniciada: 5 corsários entraram no mar. Afunde todos. Recompensa: 3 Canhões do Marujo.",3600);
         }
       },
       getTutorialGuide:()=>this.r1TutorialGuide(worldId),
