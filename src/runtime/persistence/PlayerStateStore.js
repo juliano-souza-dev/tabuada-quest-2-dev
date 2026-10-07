@@ -242,7 +242,16 @@ export class PlayerStateStore extends EventTarget {
 
   async restore(){
     const result=await this.fetchRemote();
-    if(result.ok&&result.state)this.save(result.state,{sync:false});
+    if(result.ok&&result.state){
+      this.save(result.state,{sync:false});
+    }else if(result.code==="remote_state_empty"||result.code==="remote_state_reset"){
+      // Firestore is authoritative while online. If its player state was
+      // intentionally deleted/reset, an old browser cache must not resurrect it
+      // and upload the stale progress again.
+      clearTimeout(this.syncTimer);
+      this.syncTimer=0;
+      this.clearCurrentAccount();
+    }
     this.emit("restore",result);
     return result;
   }
