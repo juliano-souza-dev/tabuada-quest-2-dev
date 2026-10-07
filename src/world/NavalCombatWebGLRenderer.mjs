@@ -323,7 +323,7 @@ export class NavalCombatWebGLRenderer{
       // Optional live target keeps the visual projectile attached to the same
       // collision result while ships are moving.
       target:to?.target&&typeof to.target==="object"?to.target:null,
-      duration:clamp(Number(duration)||620,120,2400),
+      duration:clamp(Number(duration)||620,80,8000),
       startTime:Number(startTime)||performance.now(),
       impactSpawned:false,
       impactKind:impactKind==="water"?"water":"ship",
@@ -344,6 +344,27 @@ export class NavalCombatWebGLRenderer{
     if(textureSrc)this.loadProjectileTexture(normalizedAmmo?.id,textureSrc);
     const shotCap=this.reducedFx?8:16;
     if(this.shots.length>shotCap)this.shots.splice(0,this.shots.length-shotCap);
+    return true;
+  }
+
+  impact({at,ammo=null,kind="ship",size=1,startTime=performance.now()}={}){
+    if(!this.init()||!at)return false;
+    const fx=normalizeAmmoFx(ammo&&typeof ammo==="object"?ammo:{});
+    const section=kind==="water"?fx.impactWater:fx.impactShip;
+    if(!section?.enabled)return true;
+    this.impacts.push({
+      x:Number(at.x)||0,
+      y:Number(at.y)||0,
+      startTime:Number(startTime)||performance.now(),
+      duration:Math.min(680,Math.max(120,Number(section.durationMs)||420)),
+      kind:kind==="water"?"water":"ship",
+      effect:kind!=="water"&&String(fx?.preset||"")==="piercing"?"piercing-shrapnel":"profile",
+      fx,
+      size:clamp(Number(size)||1,.25,4),
+      seed:Math.abs(Math.sin((Number(at.x)||0)*.017+(Number(at.y)||0)*.031+(Number(startTime)||0)*.0001))
+    });
+    const impactCap=this.reducedFx?5:12;
+    if(this.impacts.length>impactCap)this.impacts.splice(0,this.impacts.length-impactCap);
     return true;
   }
 
