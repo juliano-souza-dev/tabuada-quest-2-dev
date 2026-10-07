@@ -445,6 +445,25 @@
           "rubies": 2,
           "xp": 500
         }
+      },
+      {
+        "npcId": "npc-corsario-tabuada-sombria",
+        "shipId": "ship-halloween-tabuada-sombria",
+        "count": 2,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 40,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 900,
+          "minDistance": 560,
+          "seed": 7204
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 220,
+          "xp": 65
+        }
       }
     ]
   },
@@ -456,7 +475,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "regions-halloween-20261002",
+    "sourceRevision": "20261006-corsario-tabuada-sombria-all-maps",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 4,
