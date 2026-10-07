@@ -1009,7 +1009,7 @@
       "event": "halloween",
       "required": true,
       "name": "Preparação Final",
-      "description": "Colete 20 tesouros e conclua a preparação contra o Terror.",
+      "description": "Colete 20 tesouros e conclua a preparação contra o Terror. Ao terminar, você recebe a bateria Halloween, munição extra e o Amuleto da Imunidade.",
       "unlockAfter": [
         "HALLOWEEN_M08"
       ],
@@ -1019,9 +1019,13 @@
       },
       "reward": {
         "cannonId": "cannon-halloween-pumpkin-terror",
-        "cannonQuantity": 1,
+        "cannonQuantity": 5,
         "rubies": 6,
-        "xp": 600
+        "xp": 600,
+        "ammoId": "cannonball-halloween-purple",
+        "ammoQuantity": 500,
+        "itemId": "halloween-immunity-charm",
+        "itemQuantity": 1
       }
     },
     {
@@ -1032,7 +1036,7 @@
       "event": "halloween",
       "required": true,
       "name": "Afundar o Terror do Halloween",
-      "description": "Use munição de Halloween para afundar o Terror e conquistar seu navio.",
+      "description": "Use os canhões e a munição de Halloween, protegido pelo Amuleto da Imunidade, para afundar o Terror e conquistar seu navio.",
       "unlockAfter": [
         "HALLOWEEN_M01",
         "HALLOWEEN_M02",
