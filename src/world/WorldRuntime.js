@@ -213,6 +213,7 @@ export class WorldRuntime {
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
     this.onRemoveCannon=typeof options.onRemoveCannon==="function"?options.onRemoveCannon:null;
     this.shipCatalog=Array.isArray(options.shipCatalog)?structuredClone(options.shipCatalog):[];
+    this.contextGuideTarget=null;
     this.shopOverlay=new ShopOverlay({
       ammoCatalog:Array.isArray(options.ammoCatalog)?options.ammoCatalog:[],
       cannonCatalog:Array.isArray(options.cannonCatalog)?options.cannonCatalog:[],
@@ -316,6 +317,13 @@ export class WorldRuntime {
         };
       },
       onAttack:()=>{
+        if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
+          this.contextGuideTarget="shipyard";
+          this.showGameplayToast("⚓ Você precisa de canhões. Siga a seta até o Arsenal Naval.",2600);
+          this.updateTutorialGuideArrow();
+          return false;
+        }
+        this.contextGuideTarget=null;
         const stage=String(this.getTutorialGuide?.()?.stage||"");
         if(stage==="missions-hunt"){
           const target=this.combatTarget&&this.combatTarget.tutorialMissionCorsair===true
@@ -6881,13 +6889,23 @@ export class WorldRuntime {
   updateTutorialGuideArrow(){
     const guide=this.getTutorialGuide?.();
     const stage=String(guide?.stage||"");
-    if(!guide||stage==="complete"){
+    if(this.contextGuideTarget==="shipyard"){
+      const shipyard=this.entities.find(entity=>entity?.interaction==="shipyard")||null;
+      if(shipyard&&distance(this.player,shipyard)>Math.max(300,Number(shipyard.width||0)*.55)){
+        guide||(this.contextGuideTarget="shipyard");
+      }else{
+        this.contextGuideTarget=null;
+      }
+    }
+    if(!guide&&!this.contextGuideTarget){
       this.tutorialArrowEl?.remove();
       this.tutorialArrowEl=null;
       return;
     }
-    let target=null;
-    if(stage==="treasure"||stage==="collect-10"||stage==="prepare-next-map"){
+    let target=this.contextGuideTarget==="shipyard"
+      ?(this.entities.find(entity=>entity?.interaction==="shipyard")||null)
+      :null;
+    if(!target&&(stage==="treasure"||stage==="collect-10"||stage==="prepare-next-map")){
 
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
