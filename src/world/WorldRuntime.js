@@ -10,7 +10,7 @@ import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } f
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
-import { ShopOverlay } from "./ShopOverlay.js?v=20261004-1014-ammo-economy";
+import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v1";
 import { ShipyardOverlay } from "./ShipyardOverlay.js";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261006-halloween-10-mission-gate-v1";
 import { PixiWorldRenderer } from "./PixiWorldRenderer.mjs?v=20261005-seafight-vfx-v3";
