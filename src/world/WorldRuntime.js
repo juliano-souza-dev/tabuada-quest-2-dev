@@ -1310,6 +1310,12 @@ export class WorldRuntime {
     this.zoomEl=this.host.querySelector("[data-world-zoom]");
     this.modeEl=this.host.querySelector("[data-world-mode]");
     this.nameEl=this.host.querySelector("[data-world-name]");
+    if(!this.editorEnabled){
+      for(const node of [this.coordsEl,this.progressEl,this.directionEl,this.zoomEl,this.modeEl,this.nameEl])node?.remove?.();
+      this.coordsEl=null;this.progressEl=null;this.directionEl=null;this.zoomEl=null;this.modeEl=null;this.nameEl=null;
+      const telemetry=this.host.querySelector(".tq-world-hud");
+      telemetry?.remove?.();
+    }
     this.actionWrap=this.host.querySelector(".tq-world-action");
     this.actionMessage=this.host.querySelector("[data-world-action-message]");
     this.actionButton=this.host.querySelector("[data-world-action]");
