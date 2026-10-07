@@ -6730,7 +6730,7 @@ export class WorldRuntime {
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }else if(stage==="attack-ship"||stage==="attack-ship-2"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
-      if(locked?.tutorialCombatPhase==="ready-fire"||locked?.tutorialCombatPhase==="firing"){
+      if(locked?.tutorialCombatPhase==="ready-fire"){
         const fireButton=this.mobileHud?.wrap?.querySelector?.('[data-hud-action="fire"]');
         const rect=fireButton?.getBoundingClientRect?.();
         if(rect&&rect.width>0&&rect.height>0){
@@ -6752,6 +6752,11 @@ export class WorldRuntime {
           this.tutorialArrowEl.style.zIndex="10050";
           return;
         }
+      }
+      if(locked?.tutorialCombatPhase==="firing"){
+        this.tutorialArrowEl?.remove();
+        this.tutorialArrowEl=null;
+        return;
       }
       target=locked||this.entities
         .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
