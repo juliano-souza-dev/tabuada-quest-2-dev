@@ -347,7 +347,7 @@ export class MobileHudOverlay{
     const tutorialActive=Boolean(guide);
     for(const button of this.wrap.querySelectorAll("[data-hud-action]")){
       const action=String(button.dataset.hudAction||"");
-      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire")||(tutorialStage==="repair-ship"&&action==="repair");
+      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire")||(tutorialStage==="attack-ship-2"&&action==="fire")||(tutorialStage==="shop-cannon"&&action==="shop")||(tutorialStage==="equip-shop-cannon"&&action==="shipyard")||(tutorialStage==="switch-ammo"&&action==="ammo")||(tutorialStage==="repair-ship"&&action==="repair");
       button.hidden=!allowed;
       button.style.display=allowed?"":"none";
     }
@@ -357,7 +357,7 @@ export class MobileHudOverlay{
     if(targetStatus&&tutorialActive)targetStatus.hidden=true;
 
     const targetWrap=this.wrap.querySelector("[data-target-status]");
-    const targetVisible=(!tutorialActive||tutorialStage==="attack-ship")&&Boolean(state.target?.visible);
+    const targetVisible=(!tutorialActive||tutorialStage==="attack-ship"||tutorialStage==="attack-ship-2")&&Boolean(state.target?.visible);
     if(targetWrap){
       targetWrap.hidden=!targetVisible;
       if(targetVisible){
