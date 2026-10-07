@@ -4483,71 +4483,12 @@ export class WorldRuntime {
   async beginStarterCannonChallenge(){
     if(this.challengeActive||this.mode!=="play"||this.navalPlayerHp<=0)return false;
     if(Array.isArray(this.playerCannonIds)&&this.playerCannonIds.length>0)return false;
-
-    const yard=this.getShipyardState?.()||{};
-    const storedTotal=Object.values(yard.storage&&typeof yard.storage==="object"?yard.storage:{})
-      .reduce((sum,value)=>sum+Math.max(0,Math.floor(Number(value)||0)),0);
-    const installedTotal=(Array.isArray(yard.ships)?yard.ships:[])
-      .reduce((sum,ship)=>sum+(Array.isArray(ship?.cannons)?ship.cannons.length:0),0);
-    if(storedTotal+installedTotal>0){
-      this.stopNavalAutoFire({keepTarget:true});
-      if(this.actionMessage)this.actionMessage.textContent="Você possui canhão, mas nenhum está equipado neste navio.";
-      this.showGameplayToast("⚓ Equipe um canhão no estaleiro");
-      this.shipyardOverlay?.open?.();
-      return false;
-    }
-
-    this.beginPedagogyProtection();
     this.stopNavalAutoFire({keepTarget:true});
-    this.stopForChallenge();
+    this.contextGuideTarget="shipyard";
     if(this.actionWrap)this.actionWrap.hidden=true;
-
-    const entity={
-      id:"starter-cannon-rescue",
-      type:"cannon-rescue",
-      label:"Canhão básico"
-    };
-    let challenge=null;
-    try{
-      challenge=this.createPedagogyChallenge
-        ?await this.createPedagogyChallenge({entity,worldState:this.getState()})
-        :null;
-    }catch(error){
-      console.warn("Starter cannon challenge creation failed",error);
-    }
-
-    this.challengeActive={entity,challenge,kind:"starter-cannon"};
-    this.clearAnswerFeedback();
-    if(this.challengeKicker)this.challengeKicker.textContent="SEM CANHÃO EQUIPADO";
-    if(this.challengeTitle)this.challengeTitle.textContent="Ganhe um canhão básico";
-    if(this.challengeWrap)this.challengeWrap.hidden=false;
-    if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
-    if(this.repairHp)this.repairHp.hidden=true;
-    if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Você não tem nenhum canhão equipado. Acerte a multiplicação para receber o Canhão do Marujo.";
-    if(this.repairOptions){
-      this.repairOptions.hidden=false;
-      this.repairOptions.replaceChildren();
-      if(challenge?.available){
-        for(const value of this.combatChoices(challenge)){
-          const button=document.createElement("button");
-          button.type="button";
-          button.className="tq-world-combat__option";
-          button.dataset.repairAnswer=String(value);
-          button.textContent=String(value);
-          this.repairOptions.append(button);
-        }
-      }
-    }
-
-    if(!challenge?.available){
-      if(this.challengePrompt)this.challengePrompt.textContent="Desafio indisponível";
-      if(this.challengeFeedback)this.challengeFeedback.textContent=
-        String(challenge?.message||"Não foi possível gerar a multiplicação agora.");
-      return false;
-    }
-    if(this.challengePrompt)this.challengePrompt.textContent=String(challenge.prompt||"");
-    return true;
+    this.showGameplayToast("⚓ Sem canhão equipado. Siga a seta até o Arsenal Naval.",2600);
+    this.updateTutorialGuideArrow();
+    return false;
   }
 
   resolveStarterCannonChallenge(result,challenge,selectedButton=null){
@@ -5918,10 +5859,6 @@ export class WorldRuntime {
       return;
     }
     if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
-      if(this.config?.tutorial){
-        this.showGameplayToast("🧰 Colete seu primeiro tesouro para receber o canhão.",2200);
-        return;
-      }
       this.beginStarterCannonChallenge();
       return;
     }
