@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 7,
+  "version": 8,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -262,6 +262,33 @@
           }
         ],
         "ammoId": "cannonball-piercing",
+        "ammoUnlimited": true
+      }
+    },
+    {
+      "id": "npc-corsario-tabuada-sombria",
+      "name": "Corsário da Tabuada Sombria",
+      "shipId": "ship-halloween-tabuada-sombria",
+      "width": 260,
+      "height": 260,
+      "navigation": {
+        "minSpeed": 65,
+        "speed": 230,
+        "acceleration": 700,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 9000,
+        "attitude": "hostile",
+        "damage": 3,
+        "maxTargets": 1,
+        "cannonLoadout": [
+          {
+            "cannonId": "cannon-bronze",
+            "quantity": 6
+          }
+        ],
+        "ammoId": "cannonball-standard",
         "ammoUnlimited": true
       }
     }
