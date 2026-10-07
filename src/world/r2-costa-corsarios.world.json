@@ -408,6 +408,22 @@
           "minDistance": 700,
           "seed": 7402
         }
+      },
+      {
+        "npcId": "npc-guardiao-abissal",
+        "shipId": "monster-guardiao-abissal",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 60,
+        "hp": 1200,
+        "rewards": {},
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 520,
+          "minDistance": 760,
+          "seed": 9102
+        }
       }
     ]
   },
@@ -419,7 +435,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-corsario-rubro-npc-v1",
+    "sourceRevision": "20261007-guardiao-abissal-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 2,
