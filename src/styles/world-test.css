@@ -2450,15 +2450,16 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 }
 
 
-/* HP HUD mobile stack 20261007-hp-above-hud-v3 */
+/* HP HUD mobile: single winning rule, clear of the permanent action grid. */
 @media (max-width:720px){
   .tq-mobile-combat-ui .tq-player-status{
     top:auto!important;
     left:auto!important;
-    right:max(10px,env(safe-area-inset-right))!important;
-    bottom:max(92px,calc(env(safe-area-inset-bottom) + 84px))!important;
-    width:clamp(170px,46vw,205px)!important;
-    z-index:625!important;
+    right:max(14px,env(safe-area-inset-right))!important;
+    bottom:max(330px,calc(env(safe-area-inset-bottom) + 322px))!important;
+    width:clamp(170px,46vw,210px)!important;
+    z-index:610!important;
+    pointer-events:none!important;
   }
   .tq-mobile-combat-ui .tq-player-status>small{
     text-align:right;
