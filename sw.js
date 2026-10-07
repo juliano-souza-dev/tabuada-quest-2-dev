@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261006-prod-boot-fix-v1";
+const CACHE_NAME="tq-pwa-runtime-20261006-opening-banner-play-v2";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
@@ -8,6 +8,7 @@ const CORE_URLS=[
   "./src/runtime/PwaGate.js",
   "./src/game.js",
   "./assets/ui/evento_halloween_terror_em_alto_mar.webp",
+  "./assets/ui/icons/events/halloween/jogar.png",
   "./src/styles/app.css",
   "./src/styles/world-test.css"
 ];
