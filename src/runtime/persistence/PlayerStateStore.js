@@ -29,7 +29,8 @@ export class PlayerStateStore extends EventTarget {
     this.auth=auth;
     this.config=config||{};
     this.storage=options.storage||globalThis.localStorage;
-    this.keyPrefix=options.keyPrefix||"tq.player.state.v2";
+    this.keyPrefix=options.keyPrefix||"tq.player.state.v3";
+    this.progressEpoch=3;
     this.legacyKey=options.legacyKey||"tabuadaQuest.playerState";
     this.syncTimer=0;
     this.syncDelay=Math.max(250,Number(options.syncDelay)||1600);
@@ -72,29 +73,21 @@ export class PlayerStateStore extends EventTarget {
     });
   }
 
+  isCurrentProgress(state){
+    return Number(state?.progressEpoch)===this.progressEpoch;
+  }
+
   load(){
     const auth=this.auth.status();
     if(!auth.authenticated||!auth.uid)return null;
-
-    const key=this.accountKey(auth.uid);
-    const scoped=parsePayload(this.storage?.getItem?.(key));
-    if(scoped)return scoped;
-
-    const legacy=parsePayload(this.storage?.getItem?.(this.legacyKey));
-    if(legacy){
-      try{
-        this.storage?.setItem?.(key,JSON.stringify(legacy));
-        this.storage?.removeItem?.(this.legacyKey);
-      }catch{}
-      return legacy;
-    }
-    return null;
+    const scoped=parsePayload(this.storage?.getItem?.(this.accountKey(auth.uid)));
+    return this.isCurrentProgress(scoped)?scoped:null;
   }
 
   save(state,{sync=true}={}){
     const auth=this.auth.status();
     if(!auth.authenticated||!auth.uid)return state;
-    const payload=JSON.stringify(state);
+    const payload=JSON.stringify({...state,progressEpoch:this.progressEpoch});
     try{this.storage?.setItem?.(this.accountKey(auth.uid),payload)}catch{}
     const previous=this.readMeta(auth.uid);
     this.writeMeta(auth.uid,{
@@ -224,9 +217,9 @@ export class PlayerStateStore extends EventTarget {
       const document=await response.json();
       const raw=String(document?.fields?.payload?.stringValue||"");
       const state=parsePayload(raw);
-      return state
+      return state&&this.isCurrentProgress(state)
         ? {ok:true,code:"restored",state}
-        : {ok:false,code:"remote_state_empty",state:null};
+        : {ok:false,code:"remote_state_reset",state:null};
     }catch{
       return {ok:false,code:"restore_failed",state:null};
     }
