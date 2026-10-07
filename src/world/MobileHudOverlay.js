@@ -1,4 +1,4 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261007-hp-hud-restore-v1";
+import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261007-repair-asset-v1";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
@@ -423,6 +423,7 @@ export class MobileHudOverlay{
       fire:"fire",
       follow:"follow",
       center:"center",
+      repair:"repair",
       shipyard:"shipyard",
       missions:"missions",
       shop:"shop",
