@@ -63,7 +63,6 @@ export class GameRuntime {
     this.treasureCatalog=null;
     this.ammoCatalog=null;
     this.cannonCatalog=null;
-    this.missionCatalog=null;
     this.pedagogyCurriculum=null;
     this.actionCatalog=null;
     this.soundCatalog=null;
@@ -112,7 +111,7 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog,soundCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,pedagogyCurriculum,actionCatalog,soundCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
@@ -120,7 +119,6 @@ export class GameRuntime {
       this.loadJson(catalogs.treasures||"./src/config/treasure-catalog.json"),
       this.loadJson(catalogs.ammo||"./src/config/ammo-catalog.json"),
       this.loadJson(catalogs.cannons||"./src/config/cannon-catalog.json"),
-      this.loadJson(catalogs.missions||"./src/config/mission-catalog.json"),
       this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       this.loadJson(catalogs.actions||"./src/config/action-catalog.json"),
       this.loadJson(catalogs.sounds||"./src/config/sound-catalog.json")
@@ -132,7 +130,6 @@ export class GameRuntime {
     this.treasureCatalog=treasureCatalog;
     this.ammoCatalog=ammoCatalog;
     this.cannonCatalog=cannonCatalog;
-    this.missionCatalog=missionCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
     this.soundCatalog=soundCatalog;
@@ -705,7 +702,6 @@ export class GameRuntime {
       total,
       currency:walletKey
     }}));
-    await this.advanceMissions("purchase_upgrade",{worldId,amount:1});
     if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="shop-cannon"&&String(product.type)==="cannon"&&String(product.id)==="cannon-bronze"){
       this.setR1TutorialStage("equip-shop-cannon",{save:true,sync:true});
       this.worldRuntime?.showGameplayToast?.("⚓ Canhão comprado! Agora equipe-o no Estaleiro.",2600);
@@ -1363,14 +1359,6 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
-  missionClaimed(){
-    return false;
-  }
-
-  async advanceMissions(){
-    return {changed:false,completed:[]};
-  }
-
   async handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     let configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
@@ -1586,17 +1574,9 @@ export class GameRuntime {
         game:{
           ...game,
           rewards:clone(this.rewards),
-          missions:game.missions&&typeof game.missions==="object"?clone(game.missions):{}
+          ...{}
         }
       };
-
-      const tutorialMissionCorsair=String(cleanEntity.id||"").startsWith("npc.tutorial.mission.corsair.");
-      if(tutorialMissionCorsair){
-        await this.advanceMissions("defeat_npc",{worldId,region:1,npcId:"tutorial-corsair",amount:1});
-        if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
-      }else if(cleanEntity.npcId){
-        await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId),amount:1});
-      }
 
       const balances=this.getWalletBalances();
       const detail={
@@ -1667,10 +1647,7 @@ export class GameRuntime {
     configuredRewards.ammoRewards=ammoRewards;
     const rewardResult=await this.handleCombatVictory({entity,rewards:configuredRewards,claimKey});
     if(!rewardResult)return false;
-
-    await this.advanceMissions("defeat_boss",{worldId:String(this.current?.id||""),amount:1});
     if(Number(String(this.current?.id||"").match(/^r(\d+)/i)?.[1])===12){
-      await this.advanceMissions("defeat_final_boss",{worldId:String(this.current?.id||""),amount:1});
     }
 
     const rewardShipId=String(entity?.rewardShipId||"").trim();
@@ -1751,7 +1728,6 @@ export class GameRuntime {
 
     // Mission progress is driven by the successful collection event itself.
     // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
-    await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
 
     if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="treasure"){
       const cannonId=String(this.cannonCatalog?.defaultCannonId||"cannon-basic");
@@ -2048,7 +2024,6 @@ export class GameRuntime {
       canRepairPlayer:()=>true,
       shouldForceRepair:()=>false,
       onRepairCompleted:async ({hp,maxHp}={})=>{
-        await this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="repair-ship"&&Number(hp)>=Number(maxHp)){
           this.setR1TutorialStage("attack-ship-2",{save:true,sync:true});
           this.worldRuntime?.spawnTutorialCorsairForSecondDuel?.();
