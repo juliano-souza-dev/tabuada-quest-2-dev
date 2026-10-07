@@ -217,7 +217,9 @@ export class WorldRuntime {
       cannonCatalog:Array.isArray(options.cannonCatalog)?options.cannonCatalog:[],
       shipCatalog:this.shipCatalog,
       getBalances:()=>this.shopBalances(),
-      onPurchase:request=>this.onShopPurchase?.(request)
+      onPurchase:request=>this.onShopPurchase?.(request),
+      canOpen:()=>this.canUseShop()===true,
+      onLocked:()=>this.showGameplayToast("🔒 A loja será liberada após derrotar o Corsário da Tabuada Sombria.",2200)
     });
     this.shipyardOverlay=new ShipyardOverlay({
       getState:()=>this.getShipyardState?.()||{},
@@ -4063,6 +4065,7 @@ export class WorldRuntime {
 
   async beginPlayerRepair({forced=false}={}){
     if(this.mode!=="play"||this.navalPlayerHp>=this.navalPlayerMaxHp)return false;
+    if(!forced&&this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})!==true)return false;
     if(this.repairActive){
       if(forced===true&&this.repairActive.forced!==true){
         this.beginPedagogyProtection();
@@ -5668,7 +5671,7 @@ export class WorldRuntime {
 
   cyclePlayerAmmo(){
     const available=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[])
-      .filter(item=>item&&item.available!==false);
+      .filter(item=>item&&item.available!==false&&this.canSelectAmmo(item)===true);
     if(!available.length)return null;
 
     const stocked=available.filter(item=>{
