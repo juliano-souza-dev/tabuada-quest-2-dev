@@ -789,7 +789,28 @@ export class WorldRuntime {
         ...(npcProfile?.navigation&&typeof npcProfile.navigation==="object"?structuredClone(npcProfile.navigation):{})
       }
     };
-    const point=this.npcSpawnPoint(random,occupied,population);
+    let point;
+    const nearMin=Math.max(0,Number(typeConfig?.spawn?.nearPlayerMin)||0);
+    const nearMax=Math.max(nearMin,Number(typeConfig?.spawn?.nearPlayerMax)||0);
+    if(nearMax>0&&this.player){
+      const area=this.getPlayableBounds();
+      const angle=random()*Math.PI*2;
+      const radius=nearMin+(nearMax-nearMin)*random();
+      point={
+        x:clamp((Number(this.player.x)||0)+Math.cos(angle)*radius,area.left+180,area.right-180),
+        y:clamp((Number(this.player.y)||0)+Math.sin(angle)*radius,area.top+180,area.bottom-180)
+      };
+      for(let attempt=0;attempt<24&&occupied.some(other=>distance(point,other)<Math.max(220,Number(population.spread.minDistance)||0));attempt++){
+        const a=random()*Math.PI*2;
+        const r=nearMin+(nearMax-nearMin)*random();
+        point={
+          x:clamp((Number(this.player.x)||0)+Math.cos(a)*r,area.left+180,area.right-180),
+          y:clamp((Number(this.player.y)||0)+Math.sin(a)*r,area.top+180,area.bottom-180)
+        };
+      }
+    }else{
+      point=this.npcSpawnPoint(random,occupied,population);
+    }
     occupied.push(point);
     const heading=random()*360-180;
     const sprite=profile.sprite&&typeof profile.sprite==="object"?structuredClone(profile.sprite):null;
