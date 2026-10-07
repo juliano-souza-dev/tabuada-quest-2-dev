@@ -6053,6 +6053,11 @@ export class WorldRuntime {
     const action=inferCollisionAction(entity,collision);
 
     if(this.combatTarget?.id===entity.id&&this.isClickableCombatShip(entity)){
+      if(this.navalAutoFire===true){
+        // Repeated fire commands must not reset the weapon clock. The battery
+        // owns its cadence; input only starts the attack once.
+        return;
+      }
       if(this.canAttackEntity(entity)!==true){
         this.navalAutoFire=false;
         const message=String(this.attackLockMessage(entity)||"Alvo bloqueado.");
@@ -6077,6 +6082,7 @@ export class WorldRuntime {
     }
 
     if(action==="combat"&&String(entity.type||"")==="ship"){
+      if(this.navalAutoFire===true&&this.combatTarget?.id===entity.id)return;
       this.selectCombatTarget(entity);
       if(this.canAttackEntity(entity)!==true){
         this.navalAutoFire=false;
