@@ -1460,6 +1460,7 @@ export class GameRuntime {
     for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
       const eventMission=String(mission?.event||"").toLowerCase()==="halloween";
       if(String(mission?.id||"")==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()!=="missions-hunt")continue;
+      if(String(mission?.id||"")==="R1_TUTORIAL_PREP_NEXT_MAP"&&this.r1TutorialStage()!=="prepare-next-map")continue;
       if(!eventMission&&Number(mission?.region)!==region)continue;
       const unlockAfter=Array.isArray(mission?.unlockAfter)?mission.unlockAfter.map(String).filter(Boolean):[];
       if(unlockAfter.length&&!unlockAfter.every(id=>claimed.has(id)))continue;
@@ -1536,6 +1537,9 @@ export class GameRuntime {
 
       claimed.add(id);
       completed.push(id);
+      if(id==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()==="missions-hunt"){
+        this.setR1TutorialStage("prepare-next-map",{save:false});
+      }
       changed=true;
       globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
         missionId:id,gold,rubies,xp,cannonId,
@@ -1943,6 +1947,7 @@ export class GameRuntime {
     if(stage==="collect-10")return {stage,action:"treasure",icon:"📦",title:"Caça ao tesouro",text:"Colete 10 tesouros.",hudMode:"analog-only"};
     if(stage==="missions")return {stage,action:"missions",icon:"📜",title:"Conheça as Missões",text:"Abra Missões. Sua próxima tarefa é afundar 5 corsários.",hudMode:"missions-only"};
     if(stage==="missions-hunt")return {stage,action:"fire",icon:"🏴‍☠️",title:"Caçada aos Corsários",text:"Siga a marcação até os corsários e use Atirar. Afunde 5.",hudMode:"combat-missions"};
+    if(stage==="prepare-next-map")return {stage,action:"treasure",icon:"🧰",title:"Preparar para o próximo mapa",text:"Colete 2 tesouros. Recompensa: 5 Canhões Corsários.",hudMode:"analog-only"};
     return null;
   }
 
