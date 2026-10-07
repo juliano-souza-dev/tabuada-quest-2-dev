@@ -1602,6 +1602,12 @@ export class GameRuntime {
       delete configured.rubyDropChance;delete configured.rubyDropMin;delete configured.rubyDropMax;
     }
     const worldId=String(this.current?.id||"");
+    if(cleanEntity.tutorialMissionCorsair===true){
+      const ammoRewards=Array.isArray(configured.ammoRewards)?configured.ammoRewards.slice():[];
+      ammoRewards.push({id:"cannonball-standard",quantity:1000});
+      ammoRewards.push({id:"cannonball-halloween-purple",quantity:1000});
+      configured.ammoRewards=ammoRewards;
+    }
 
     const claimKey=String(explicitClaimKey||worldId+":"+String(cleanEntity.id||""));
     if(!cleanEntity.id||!claimKey)return false;
@@ -2238,7 +2244,11 @@ export class GameRuntime {
           this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! Um novo corsário apareceu. Volte ao combate.",3000);
         }
       },
-      canSelectAmmo:()=>true,
+      canSelectAmmo:ammoId=>{
+        const id=String(ammoId||"");
+        const ammo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]).find(item=>String(item?.id||"")===id);
+        return String(ammo?.event||"").toLowerCase()!=="halloween";
+      },
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
       onTutorialAttack:()=>{},
