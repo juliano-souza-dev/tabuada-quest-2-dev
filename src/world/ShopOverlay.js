@@ -40,6 +40,7 @@ export class ShopOverlay{
     this.onPurchase=typeof options.onPurchase==="function"?options.onPurchase:null;
     this.canOpen=typeof options.canOpen==="function"?options.canOpen:()=>true;
     this.onLocked=typeof options.onLocked==="function"?options.onLocked:null;
+    this.getTutorialStage=typeof options.getTutorialStage==="function"?options.getTutorialStage:()=>null;
     this.category="ammo";
     this.quantities=new Map();
     this.root=null;
@@ -143,8 +144,16 @@ export class ShopOverlay{
   open(){
     if(!this.overlay)return;
     if(this.canOpen()!==true){this.onLocked?.();return false;}
+    const tutorialStage=String(this.getTutorialStage?.()||"");
+    if(tutorialStage==="shop-cannon")this.category="cannons";
     this.overlay.hidden=false;
     this.overlay.classList.add("is-open");
+    this.overlay.querySelectorAll("[data-shop-category]").forEach(tab=>{
+      const category=String(tab.dataset.shopCategory||"");
+      const tutorialLocked=tutorialStage==="shop-cannon"&&category!=="cannons";
+      tab.disabled=tutorialLocked||category==="crew";
+      tab.classList.toggle("is-active",category===this.category);
+    });
     this.refreshBalances();
     this.render();
     document.documentElement.classList.add("tq-shop-open");
@@ -273,7 +282,11 @@ export class ShopOverlay{
   render(){
     if(!this.list)return;
     this.refreshBalances();
-    const items=this.catalogs[this.category]||[];
+    const tutorialStage=String(this.getTutorialStage?.()||"");
+    const sourceItems=this.catalogs[this.category]||[];
+    const items=tutorialStage==="shop-cannon"
+      ?sourceItems.filter(item=>this.category==="cannons"&&item.id==="cannon-bronze")
+      :sourceItems;
     this.list.innerHTML="";
     if(!items.length){
       const empty=document.createElement("div");
