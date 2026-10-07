@@ -5446,8 +5446,7 @@ export class WorldRuntime {
         x:Number(this.player?.x)||0,
         y:Number(this.player?.y)||0,
         distance:Math.hypot((Number(entity.x)||0)-(Number(this.player?.x)||0),(Number(entity.y)||0)-(Number(this.player?.y)||0))
-      }]:[]),
-)
+      }]:[])
     ]
       .filter(target=>target.distance<=stats.attackRange)
       .sort((a,b)=>a.distance-b.distance)
