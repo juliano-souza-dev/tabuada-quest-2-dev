@@ -132,7 +132,6 @@ if(flowTest){
 
   services=createLocalFlowTestServices();
   game.attachPlayerStateStore(services.playerState);
-  game.attachMultiplayer?.(null);
 
   const detail={
     reason:"flowtest-local-session",
@@ -147,9 +146,6 @@ if(flowTest){
     configUrl:"./src/config/firebase-public.json?v=20260930-1851"
   });
   game.attachPlayerStateStore(services.playerState);
-  // Gameplay is offline-only. Firebase account/persistence may remain available,
-  // but the websocket multiplayer runtime is never attached to the game.
-  game.attachMultiplayer?.(null);
 }
 
 await game.start(start);
@@ -162,7 +158,6 @@ globalThis.TabuadaQuest={
   runtime:game,
   auth:services.auth,
   playerState:services.playerState,
-  multiplayer:null,
   flowTestLocalAccount:flowTest===true,
   getAccessStatus:services.getStatus,
   rewardDiagnostics
