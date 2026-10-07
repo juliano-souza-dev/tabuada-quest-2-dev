@@ -2378,9 +2378,7 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 
 
 
-/* HUD semantic v7 fallback.
-   If Pixi HUD cannot initialize, the DOM controls use the same uploaded compact
-   artwork instead of the legacy emoji/icon set. */
+
 .tq-mobile-combat-ui .tq-combat-dock__button--ammo,
 .tq-mobile-combat-ui .tq-combat-dock__button--fire,
 .tq-mobile-combat-ui .tq-combat-dock__button--follow,
@@ -2683,3 +2681,25 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
   pointer-events:none;
 }
 @keyframes tqTutorialTarget{from{transform:scale(1)}to{transform:scale(1.08)}}
+
+/* Tutorial stage 1: a physical world-space pointer that follows the player. */
+.tq-tutorial-guide-arrow{
+  position:absolute;
+  z-index:80;
+  width:72px;
+  height:72px;
+  display:grid;
+  place-items:center;
+  color:#ffd34d;
+  font-size:58px;
+  font-weight:900;
+  line-height:1;
+  pointer-events:none;
+  transform-origin:50% 50%;
+  text-shadow:0 3px 0 #6f3500,0 0 10px rgba(255,211,77,.95),0 0 18px rgba(0,0,0,.8);
+  animation:tq-tutorial-arrow-pulse .7s ease-in-out infinite alternate;
+}
+@keyframes tq-tutorial-arrow-pulse{
+  from{filter:brightness(1);scale:.92}
+  to{filter:brightness(1.25);scale:1.12}
+}
