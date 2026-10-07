@@ -585,7 +585,7 @@ export class GameRuntime {
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     return {
       ...base,
-      progressEpoch:5,
+      progressEpoch:6,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
         settings:{
@@ -1878,6 +1878,29 @@ export class GameRuntime {
     return rewardResult;
   }
 
+  r1TutorialStage(){
+    const tutorial=this.accountState?.game?.tutorial&&typeof this.accountState.game.tutorial==="object"?this.accountState.game.tutorial:{};
+    return String(tutorial.stage||"treasure");
+  }
+
+  setR1TutorialStage(stage,{save=true,sync=false}={}){
+    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
+    const game=base.game&&typeof base.game==="object"?base.game:{};
+    this.accountState={...base,game:{...game,tutorial:{...(game.tutorial&&typeof game.tutorial==="object"?game.tutorial:{}),stage:String(stage||"treasure"),updatedAt:Date.now()}}};
+    if(save)this.saveState();
+    if(sync)this.syncCloud("tutorial-stage");
+    return this.r1TutorialStage();
+  }
+
+  r1TutorialGuide(worldId=this.current?.id){
+    if(String(worldId||"")!=="r1-enseada-aprendizes")return null;
+    const stage=this.r1TutorialStage();
+    if(stage==="treasure")return {stage,action:"treasure",icon:"📦",title:"Primeiro tesouro",text:"Siga a seta até o tesouro e toque nele.",hudMode:"analog-only"};
+    if(stage==="shipyard")return {stage,action:"shipyard",icon:"⚓",title:"Abra o Estaleiro",text:"Toque no Estaleiro para preparar seu primeiro canhão.",hudMode:"shipyard-only"};
+    if(stage==="equip-cannon")return {stage,action:"equip-cannon",icon:"💥",title:"Equipe o canhão",text:"Na aba Canhões, equipe o Canhão do Marujo no seu navio.",hudMode:"shipyard-only"};
+    return null;
+  }
+
   async handleTreasureCollected({entity,challenge,rewards}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
@@ -1916,6 +1939,18 @@ export class GameRuntime {
     // Mission progress is driven by the successful collection event itself.
     // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
     await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
+
+    if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="treasure"){
+      const cannonId=String(this.cannonCatalog?.defaultCannonId||"cannon-basic");
+      const ammoId=String(this.ammoCatalog?.defaultAmmoId||"cannonball-standard");
+      this.playerCannons={owned:{[cannonId]:1},equippedByShip:{}};
+      this.playerAmmo=normalizeGlobalAmmo({selectedAmmoId:ammoId,stock:{[ammoId]:1000}});
+      this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+      this.setR1TutorialStage("shipyard",{save:false});
+      this.saveState();
+      this.syncCloud("tutorial-first-treasure");
+      this.worldRuntime?.showGameplayToast?.("🎁 Você ganhou 1 canhão e 1000 munições. Abra o Estaleiro.",3200);
+    }
 
     // Treasure rewards are granted separately. WorldRuntime may emit the generic
     // reward callback later; using the same claim key keeps payout idempotent.
@@ -2131,6 +2166,7 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
+      getTutorialGuide:()=>this.r1TutorialGuide(worldId),
       isMissionComplete:id=>this.missionClaimed(id),
       shopBalances:()=>this.getWalletBalances(),
       canUseShop:()=>true,
@@ -2154,12 +2190,20 @@ export class GameRuntime {
       getShipyardState:()=>({
         ships:this.listOwnedShips().map(ship=>({id:ship.id,name:ship.name||ship.id,equipped:ship.id===this.playerShips.equippedShip,cannons:this.getShipCannons(ship.id).map(id=>this.cannonEntry(id)).filter(Boolean).map(c=>({id:c.id,name:c.name||c.id}))})),
         cannons:(Array.isArray(this.cannonCatalog?.cannons)?this.cannonCatalog.cannons:[]).map(c=>({id:c.id,name:c.name||c.id})),
-        storage:this.getCannonStorage()
+        storage:this.getCannonStorage(),
+        tutorialStage:this.r1TutorialStage(),
+        tabs:{ships:this.r1TutorialStage()==="complete",cannons:true}
       }),
       onEquipShip:async id=>{const ok=await this.equipShip(id);return ok?{ok:true,message:"Navio equipado."}:{ok:false,message:"Não foi possível equipar este navio."};},
       onEquipCannon:async id=>{
         const result=this.equipCannonToShip(id);
-        if(result.ok)await this.advanceMissions("equip_cannon",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
+        if(result.ok){
+          await this.advanceMissions("equip_cannon",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
+          if(worldId==="r1-enseada-aprendizes"&&["shipyard","equip-cannon"].includes(this.r1TutorialStage())){
+            this.setR1TutorialStage("complete",{save:true,sync:true});
+            this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Etapa 1 concluída! Seu navio está armado.",3600);
+          }
+        }
         return result.ok?{ok:true,message:"Canhão equipado."}:result;
       },
       onRemoveCannon:(id,shipId)=>{const result=this.removeCannonFromShip(id,shipId);return result.ok?{ok:true,message:"Canhão guardado."}:result;},
