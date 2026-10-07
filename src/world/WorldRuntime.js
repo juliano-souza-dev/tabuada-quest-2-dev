@@ -192,6 +192,7 @@ export class WorldRuntime {
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
+    this.getTutorialGuide=typeof options.getTutorialGuide==="function"?options.getTutorialGuide:()=>null;
     this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
     this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
     this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
@@ -285,6 +286,7 @@ export class WorldRuntime {
             :0,
           repairAvailable:this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true&&!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
+          tutorialGuide:this.getTutorialGuide?.()||null,
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
           hullReinforcementQuantity:this.getConsumableQuantity("hull-reinforcement"),
