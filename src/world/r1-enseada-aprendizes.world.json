@@ -250,14 +250,56 @@
   },
   "entities": [
     {
-      "id": "r1-enseada-aprendizes.ilha-fundo-transparente-1",
+      "id": "r1-enseada-aprendizes.island-shipyard",
       "type": "island",
-      "label": "ilha_fundo_transparente",
+      "label": "Estaleiro",
+      "src": "./assets/regions/islands/ilha_estaleiro.webp",
+      "width": 1100,
+      "height": 780,
+      "x": 1500,
+      "y": 1800,
+      "rotation": 0,
+      "interaction": "shipyard",
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": "Estaleiro"
+      }
+    },
+    {
+      "id": "r1-enseada-aprendizes.island-missions",
+      "type": "island",
+      "label": "Missões",
+      "src": "./assets/regions/islands/ilha_missoes.webp",
+      "width": 1100,
+      "height": 780,
+      "x": 6500,
+      "y": 1800,
+      "rotation": 0,
+      "interaction": "missions",
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": "Missões"
+      }
+    },
+    {
+      "id": "r1-enseada-aprendizes.island-3",
+      "type": "island",
+      "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
       "width": 980,
       "height": 700,
-      "x": 1360,
-      "y": 1530,
+      "x": 1700,
+      "y": 5650,
       "rotation": 0,
       "collision": {
         "active": true,
@@ -270,53 +312,13 @@
       }
     },
     {
-      "id": "r1-enseada-aprendizes.ilha-fundo-transparente-2",
+      "id": "r1-enseada-aprendizes.island-4",
       "type": "island",
-      "label": "ilha_fundo_transparente",
-      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 1120,
-      "height": 760,
-      "x": 6180,
-      "y": 1430,
-      "rotation": 0,
-      "collision": {
-        "active": true,
-        "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
-        "action": "auto",
-        "message": ""
-      }
-    },
-    {
-      "id": "r1-enseada-aprendizes.ilha-fundo-transparente-3",
-      "type": "island",
-      "label": "ilha_fundo_transparente",
-      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 900,
-      "height": 660,
-      "x": 1660,
-      "y": 5550,
-      "rotation": 0,
-      "collision": {
-        "active": true,
-        "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
-        "action": "auto",
-        "message": ""
-      }
-    },
-    {
-      "id": "r1-enseada-aprendizes.ilha-fundo-transparente-4",
-      "type": "island",
-      "label": "ilha_fundo_transparente",
+      "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
       "width": 1040,
       "height": 720,
-      "x": 6030,
+      "x": 6300,
       "y": 5650,
       "rotation": 0,
       "collision": {
@@ -354,80 +356,8 @@
     }
   ],
   "npcPopulation": {
-    "enabled": true,
-    "seed": 3101,
-    "spread": {
-      "mode": "random-spaced",
-      "margin": 900,
-      "minDistance": 520
-    },
-    "movement": {
-      "mode": "straight",
-      "speed": 0
-    },
-    "types": [
-      {
-        "npcId": "boss-halloween-dreadnought",
-        "shipId": "ship-halloween-terror-galleon-400",
-        "count": 0,
-        "enabled": false,
-        "respawn": false,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 1100,
-          "minDistance": 900,
-          "seed": 6101
-        },
-        "rewards": {
-          "xp": 1200
-        },
-        "hp": 5000,
-        "requiredAmmoEvent": "halloween"
-      },
-      {
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "shipId": "ship-halloween-pumpkin-corsair",
-        "count": 1,
-        "enabled": true,
-        "respawn": false,
-        "respawnDelaySec": 35,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 900,
-          "minDistance": 420,
-          "seed": 4101
-        },
-        "rewards": {
-          "xp": 35,
-          "rubyDropChance": 5,
-          "rubyDropMin": 1,
-          "rubyDropMax": 1
-        },
-        "hp": 80
-      },
-      {
-        "npcId": "npc-corsario-tabuada-sombria",
-        "shipId": "ship-halloween-tabuada-sombria",
-        "count": 0,
-        "enabled": false,
-        "respawn": false,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 1000,
-          "minDistance": 650,
-          "seed": 7201,
-          "nearPlayerMin": 520,
-          "nearPlayerMax": 900
-        },
-        "rewards": {
-          "xp": 150,
-          "rubyDropChance": 8,
-          "rubyDropMin": 1,
-          "rubyDropMax": 1
-        },
-        "hp": 400
-      }
-    ]
+    "enabled": false,
+    "types": []
   },
   "editor": {
     "cameraX": 4065.902094123714,
@@ -437,7 +367,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-r1-single-corsair-progressive-v1",
+    "sourceRevision": "20261007-clean-island-regions-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
@@ -478,22 +408,8 @@
     }
   },
   "treasurePopulation": {
-    "enabled": true,
-    "seed": 101,
-    "spread": {
-      "mode": "random-spaced",
-      "margin": 180,
-      "minDistance": 110
-    },
-    "types": [
-      {
-        "treasureId": "tesouro-halloween-abobora",
-        "count": 200,
-        "respawn": false,
-        "spawnIntervalSec": 0.03,
-        "respawnDelaySec": 30
-      }
-    ]
+    "enabled": false,
+    "types": []
   },
   "region": {
     "index": 1,
