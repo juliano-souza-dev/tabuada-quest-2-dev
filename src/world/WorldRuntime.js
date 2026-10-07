@@ -5972,6 +5972,22 @@ export class WorldRuntime {
   }
 
   activateNearby(){
+    // Map interactions have priority over weapon prerequisites. A dock/menu
+    // must always open when its own prompt is visible.
+    const mapEntity=this.nearby&&!this.collected.has(this.nearby.id)?this.nearby:null;
+    const mapInteraction=mapEntity?this.entityInteraction(mapEntity):null;
+    if(mapInteraction?.actionId==="open-shipyard"){
+      this.actionWrap.hidden=true;
+      this.shipyardOverlay?.open?.();
+      return;
+    }
+    if(mapInteraction?.actionId==="open-missions"){
+      this.actionWrap.hidden=true;
+      this.mobileHud?.openMissions?.();
+      this.mobileHud?.onMissionsOpen?.();
+      return;
+    }
+
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
         this.actionButton.disabled=true;
