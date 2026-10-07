@@ -79,9 +79,6 @@ export class GameRuntime {
     this.playerStateStore=null;
     this.contentStore=options.contentStore||null;
     this.contentSource=this.contentStore?.status?.().ready?"canonical":"bootstrap";
-    this.multiplayer=null;
-    this.multiplayerCleanups=[];
-    this.coopParty={partyId:"",members:[]};
     this.ammoSyncTimer=0;
     this.accountState={};
     this.pedagogyRuntime=new PedagogyRuntime({getState:()=>this.accountState});
@@ -479,22 +476,6 @@ export class GameRuntime {
   registerAction(id,handler,options={}){
     this.sceneRuntime.registerAction(id,handler,options);
     return this;
-  }
-
-  attachMultiplayer(service){
-    this.multiplayer=service||null;
-    return this;
-  }
-
-  stopMultiplayerWorld(){
-    for(const cleanup of this.multiplayerCleanups.splice(0))cleanup();
-    this.worldRuntime?.setServerWorldAuthority?.(false);
-    this.coopParty={partyId:"",members:[]};
-    this.multiplayer?.leaveWorld?.().catch?.(()=>{});
-  }
-
-  partySize(){
-    return Math.max(1,Array.isArray(this.coopParty?.members)?this.coopParty.members.length:0);
   }
 
   grantPartyRewardShare(event={}){
@@ -1945,19 +1926,7 @@ export class GameRuntime {
       delete configured.rubyDropChance;delete configured.rubyDropMin;delete configured.rubyDropMax;
     }
     const worldId=String(this.current?.id||"");
-    const partyMembers=Array.isArray(this.coopParty?.members)?this.coopParty.members:[];
-    const partyActive=partyMembers.length>1&&this.multiplayer?.socketReady===true;
-    if(partyActive){
-      const shareGold=Math.max(0,Math.floor(Number(configured.gold ?? configured.coins)||0));
-      const shareXp=Math.max(0,Math.floor(Number(configured.xp)||0));
-      if((shareGold>0||shareXp>0)&&this.multiplayer?.sharePartyReward?.({
-        claimKey:String(explicitClaimKey||worldId+":"+String(cleanEntity.id||"")),
-        gold:shareGold,
-        xp:shareXp
-      })===true){
-        configured={...configured,gold:0,coins:0,xp:0};
-      }
-    }
+
     const claimKey=String(explicitClaimKey||worldId+":"+String(cleanEntity.id||""));
     if(!cleanEntity.id||!claimKey)return false;
 
