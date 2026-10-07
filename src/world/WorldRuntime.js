@@ -1600,6 +1600,22 @@ export class WorldRuntime {
           waveRing.className="tq-world-monster-wave-ring";
           waveRing.setAttribute("aria-hidden","true");
           el.append(waveRing);
+
+          if(String(entity.entityKind||"")==="monster"){
+            const bubbles=document.createElement("span");
+            bubbles.className="tq-world-monster-bubbles";
+            bubbles.setAttribute("aria-hidden","true");
+            for(let bubbleIndex=0;bubbleIndex<6;bubbleIndex++){
+              const bubble=document.createElement("i");
+              bubble.style.setProperty("--bubble-index",String(bubbleIndex));
+              bubble.style.setProperty("--bubble-left",(13+bubbleIndex*14)+"%");
+              bubble.style.setProperty("--bubble-delay",(-bubbleIndex*.47)+"s");
+              bubble.style.setProperty("--bubble-duration",(2.7+(bubbleIndex%3)*.55)+"s");
+              bubble.style.setProperty("--bubble-size",(5+(bubbleIndex%4)*2)+"px");
+              bubbles.append(bubble);
+            }
+            el.append(bubbles);
+          }
         }
 
         const img=document.createElement("img");
@@ -1960,7 +1976,9 @@ export class WorldRuntime {
     el.style.top=entity.y+"px";
     el.style.width=(entity.width||96)+"px";
     el.style.height=(entity.height||96)+"px";
-    el.style.transform=`translate(-50%,-50%) rotate(${Number(entity.rotation||0)}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg)`;
+    const timelineAnimated=hasTimelineSpriteAnimation(entity);
+    const baseRotation=timelineAnimated?0:Number(entity.rotation||0);
+    el.style.transform=`translate(-50%,-50%) rotate(${baseRotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg)`;
     if(entity.nameEl){
       entity.nameEl.textContent=String(entity.label||entity.shipName||"Navio");
       entity.nameEl.style.left=(Number(entity.x)||0)+"px";
