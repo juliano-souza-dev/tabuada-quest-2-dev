@@ -381,8 +381,35 @@
     }
   ],
   "npcPopulation": {
-    "enabled": false,
-    "types": []
+    "enabled": true,
+    "seed": 7303,
+    "spread": {
+      "mode": "random-spaced",
+      "margin": 420,
+      "minDistance": 620
+    },
+    "movement": {
+      "mode": "straight",
+      "speed": 115
+    },
+    "types": [
+      {
+        "npcId": "npc-corsario-rubro",
+        "shipId": "ship-corsario-rubro",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 45,
+        "hp": 250,
+        "rewards": {},
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 520,
+          "minDistance": 700,
+          "seed": 7403
+        }
+      }
+    ]
   },
   "editor": {
     "cameraX": 4065.902094123714,
@@ -392,7 +419,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-clean-island-regions-v1",
+    "sourceRevision": "20261007-corsario-rubro-npc-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 3,
