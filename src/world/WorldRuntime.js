@@ -233,6 +233,7 @@ export class WorldRuntime {
     this.mobileHud=new MobileHudOverlay({
       missions:Array.isArray(options.missionCatalog)?options.missionCatalog:[],
       region:regionNumber,
+      onMissionsOpen:()=>options.onMissionsOpen?.(),
       getState:()=>{
         const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
         const targetInRange=Boolean(target&&this.isNavalTargetInRange(target));
