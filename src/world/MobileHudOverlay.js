@@ -96,7 +96,7 @@ export class MobileHudOverlay{
     const repair=iconButton("repair","Reparar","🔧");
     const missions=iconButton("missions","Missões","📜");
     const shop=iconButton("shop","Loja","🪙");
-    const shipyard=iconButton("shipyard","Estaleiro","⚓");
+    const shipyard=iconButton("shipyard","Estaleiro",'<img src="./assets/hud/shipyard_halloween.webp" alt="" draggable="false">');
     const settings=iconButton("settings","Config","⚙️");
     fire.classList.add("is-primary");
     dock.append(ammo,fire,follow,center,shield,repair,missions,shop,shipyard,settings);
@@ -355,7 +355,7 @@ export class MobileHudOverlay{
       button.dataset.tutorialLocked=allowed?"false":"true";
       button.classList.toggle("is-tutorial-locked",!allowed);
       button.setAttribute("aria-disabled",allowed?"false":"true");
-      if(!allowed)button.disabled=true;
+      button.disabled=!allowed;
     }
     const playerStatus=this.wrap.querySelector(".tq-player-status");
     if(playerStatus)playerStatus.hidden=tutorialActive;
