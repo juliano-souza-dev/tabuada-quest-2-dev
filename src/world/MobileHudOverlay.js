@@ -1,4 +1,3 @@
-import { PixiMobileHudRenderer } from "./PixiMobileHudRenderer.mjs?v=20261007-repair-asset-v1";
 
 const formatHp=value=>{
   const rounded=Math.round((Number(value)||0)*10)/10;
@@ -63,7 +62,6 @@ export class MobileHudOverlay{
     this.lastAmmoSignature="";
     this.lastMissionSignature="";
     this.cleanups=[];
-    this.pixiHud=null;
   }
 
   mount(root){
@@ -168,14 +166,6 @@ export class MobileHudOverlay{
     });
 
     this.renderMissions();
-    this.pixiHud=new PixiMobileHudRenderer(root);
-    this.pixiHud.init().then(ok=>{
-      if(ok){
-        this.wrap?.classList.add("is-pixi-hud");
-        this.root?.classList.add("tq-pixi-hud-active");
-        this.sync();
-      }
-    });
     this.sync();
     this.timer=globalThis.setInterval(()=>this.sync(),120);
     this.cleanups.push(()=>globalThis.clearInterval(this.timer));
@@ -365,11 +355,6 @@ export class MobileHudOverlay{
     const targetStatus=this.wrap.querySelector("[data-target-status]");
     if(targetStatus&&tutorialActive)targetStatus.hidden=true;
 
-    if(this.pixiHud?.ready){
-      this.pixiHud.sync({...state,tutorialMode:tutorialActive,tutorialAction:tutorialStage==="shipyard"||tutorialStage==="equip-cannon"?"shipyard":""});
-      this.syncPixiHitAreas();
-    }
-
     const targetWrap=this.wrap.querySelector("[data-target-status]");
     const targetVisible=Boolean(state.target?.visible);
     if(targetWrap){
@@ -458,45 +443,11 @@ export class MobileHudOverlay{
     }
   }
 
-  syncPixiHitAreas(){
-    if(!this.pixiHud?.ready||!this.wrap)return false;
-    const map={
-      ammo:"ammo",
-      fire:"fire",
-      follow:"follow",
-      center:"center",
-      repair:"repair",
-      shipyard:"shipyard",
-      missions:"missions",
-      shop:"shop",
-      settings:"config"
-    };
-    for(const [action,key] of Object.entries(map)){
-      const button=this.wrap.querySelector('[data-hud-action="'+action+'"]');
-      const rect=this.pixiHud.buttonRects?.[key];
-      if(!button||!rect)continue;
-      Object.assign(button.style,{
-        position:"fixed",
-        left:rect.left+"px",
-        top:rect.top+"px",
-        width:rect.width+"px",
-        height:rect.height+"px",
-        right:"auto",
-        bottom:"auto",
-        margin:"0"
-      });
-    }
-    return true;
-  }
-
   destroy(){
     this.closeMissions();
     this.closeSettings();
     this.closeAmmoMenu();
     for(const cleanup of this.cleanups.splice(0)){try{cleanup()}catch{}}
-    this.root?.classList.remove("tq-pixi-hud-active");
-    this.pixiHud?.destroy?.();
-    this.pixiHud=null;
     this.wrap?.remove();
     this.drawer?.remove();
     this.settingsDrawer?.remove();
