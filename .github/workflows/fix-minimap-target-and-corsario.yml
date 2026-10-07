@@ -1,0 +1,139 @@
+name: Fix minimap target and Corsario spawn
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-minimap-target-and-corsario.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch minimap and mission NPC
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+
+          const worldRuntimePath='src/world/WorldRuntime.js';
+          let wr=fs.readFileSync(worldRuntimePath,'utf8');
+          const oldBlock=`      if(logicalType==="ship"){
+        const remotePlayer=entity.runtimeMultiplayer===true||entity.role==="multiplayer";
+        const bossShip=this.isCoopBoss(entity);
+        ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
+        ctx.beginPath();
+        ctx.moveTo(0,-6);
+        ctx.lineTo(4.5,5);
+        ctx.lineTo(0,2.8);
+        ctx.lineTo(-4.5,5);
+        ctx.closePath();
+        // Minimap ship colors: bosses yellow, remote players green, regular NPCs red.
+        ctx.fillStyle=bossShip
+          ?"rgba(255,213,74,.99)"
+          :(remotePlayer?"rgba(92,232,132,.98)":"rgba(255,111,92,.98)");
+        ctx.strokeStyle=bossShip
+          ?"rgba(255,250,210,.99)"
+          :(remotePlayer?"rgba(226,255,234,.98)":"rgba(255,235,228,.98)");
+        ctx.lineWidth=1.5;
+        ctx.fill();
+        ctx.stroke();
+`;
+          const newBlock=`      if(logicalType==="ship"){
+        const remotePlayer=entity.runtimeMultiplayer===true||entity.role==="multiplayer";
+        const bossShip=this.isCoopBoss(entity);
+        const selectedTarget=String(this.combatTarget?.id||"")===String(entity.id||"");
+        if(selectedTarget){
+          ctx.beginPath();
+          ctx.arc(0,0,9,0,Math.PI*2);
+          ctx.strokeStyle="rgba(72,225,255,.98)";
+          ctx.lineWidth=2.4;
+          ctx.stroke();
+        }
+        ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
+        ctx.beginPath();
+        ctx.moveTo(0,selectedTarget?-7:-6);
+        ctx.lineTo(selectedTarget?5.5:4.5,selectedTarget?6:5);
+        ctx.lineTo(0,selectedTarget?3.2:2.8);
+        ctx.lineTo(selectedTarget?-5.5:-4.5,selectedTarget?6:5);
+        ctx.closePath();
+        // Minimap: selected target cyan, bosses yellow, remote players green, regular NPCs red.
+        ctx.fillStyle=selectedTarget
+          ?"rgba(72,225,255,.99)"
+          :(bossShip?"rgba(255,213,74,.99)":(remotePlayer?"rgba(92,232,132,.98)":"rgba(255,111,92,.98)"));
+        ctx.strokeStyle=selectedTarget
+          ?"rgba(225,252,255,.99)"
+          :(bossShip?"rgba(255,250,210,.99)":(remotePlayer?"rgba(226,255,234,.98)":"rgba(255,235,228,.98)"));
+        ctx.lineWidth=selectedTarget?2:1.5;
+        ctx.fill();
+        ctx.stroke();
+`;
+          if(!wr.includes(oldBlock))throw new Error('Minimap ship block not found');
+          wr=wr.replace(oldBlock,newBlock);
+          fs.writeFileSync(worldRuntimePath,wr);
+
+          const gameRuntimePath='src/runtime/GameRuntime.js';
+          let gr=fs.readFileSync(gameRuntimePath,'utf8');
+          gr=gr.replace(
+            'import { WorldRuntime } from "../world/WorldRuntime.js?v=20261007-corsario-visible-v1";',
+            'import { WorldRuntime } from "../world/WorldRuntime.js?v=20261007-minimap-target-corsario-v1";'
+          );
+          const gateNeedle='    if(npcId==="boss-halloween-dreadnought"||coopBossId==="boss-halloween-dreadnought"){';
+          if(!gr.includes(gateNeedle))throw new Error('canAttackWorldEntity gate not found');
+          gr=gr.replace(gateNeedle,
+            '    if(npcId==="npc-corsario-tabuada-sombria")return this.missionClaimed("HALLOWEEN_M04");\n'+gateNeedle
+          );
+          fs.writeFileSync(gameRuntimePath,gr);
+
+          const worldPath='src/world/r1-enseada-aprendizes.world.json';
+          const world=JSON.parse(fs.readFileSync(worldPath,'utf8'));
+          const corsario=world?.npcPopulation?.types?.find(x=>x.npcId==='npc-corsario-tabuada-sombria');
+          if(!corsario)throw new Error('Corsario population entry not found');
+          delete corsario.unlockAfterMission;
+          corsario.enabled=true;
+          corsario.count=1;
+          corsario.respawn=false;
+          corsario.spawn={
+            ...(corsario.spawn||{}),
+            mode:'random-spaced',
+            margin:900,
+            minDistance:620,
+            seed:7201,
+            nearPlayerMin:420,
+            nearPlayerMax:760
+          };
+          world.meta ||= {};
+          world.meta.sourceRevision='20261007-r1-corsario-guaranteed-v2';
+          fs.writeFileSync(worldPath,JSON.stringify(world,null,2)+'\n');
+
+          const gamePath='src/game.js';
+          let game=fs.readFileSync(gamePath,'utf8');
+          game=game.replace(
+            './runtime/GameRuntime.js?v=20261007-corsario-authority-v2',
+            './runtime/GameRuntime.js?v=20261007-minimap-target-corsario-v1'
+          );
+          fs.writeFileSync(gamePath,game);
+
+          const testPath='src/world/WorldTestLauncher.js';
+          let test=fs.readFileSync(testPath,'utf8');
+          test=test.replace(
+            './WorldRuntime.js?v=20261007-answer-feedback-v1',
+            './WorldRuntime.js?v=20261007-minimap-target-corsario-v1'
+          );
+          fs.writeFileSync(testPath,test);
+          NODE
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/world/WorldRuntime.js src/runtime/GameRuntime.js src/world/r1-enseada-aprendizes.world.json src/game.js src/world/WorldTestLauncher.js
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "fix: highlight minimap target and guarantee mission corsario spawn"
+            git push
+          fi
