@@ -254,8 +254,8 @@
       "type": "island",
       "label": "Estaleiro",
       "src": "./assets/regions/islands/ilha_estaleiro.webp",
-      "width": 1100,
-      "height": 780,
+      "width": 1485,
+      "height": 1053,
       "x": 1500,
       "y": 1800,
       "rotation": 0,
@@ -266,8 +266,9 @@
         "scaleX": 0.72,
         "scaleY": 0.52,
         "padding": 10,
-        "action": "auto",
-        "message": "Estaleiro"
+        "action": "interact",
+        "message": "⚓ Atracar no Arsenal Naval",
+        "actionLabel": "Atracar"
       }
     },
     {
@@ -275,8 +276,8 @@
       "type": "island",
       "label": "Missões",
       "src": "./assets/regions/islands/ilha_missoes.webp",
-      "width": 1100,
-      "height": 780,
+      "width": 1485,
+      "height": 1053,
       "x": 6500,
       "y": 1800,
       "rotation": 0,
@@ -287,8 +288,9 @@
         "scaleX": 0.72,
         "scaleY": 0.52,
         "padding": 10,
-        "action": "auto",
-        "message": "Missões"
+        "action": "interact",
+        "message": "📜 Entrar na Taverna dos Contratos",
+        "actionLabel": "Entrar"
       }
     },
     {
@@ -296,8 +298,8 @@
       "type": "island",
       "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 1100,
-      "height": 780,
+      "width": 1485,
+      "height": 1053,
       "x": 1700,
       "y": 5650,
       "rotation": 0,
@@ -316,8 +318,8 @@
       "type": "island",
       "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 1100,
-      "height": 780,
+      "width": 1485,
+      "height": 1053,
       "x": 6300,
       "y": 5650,
       "rotation": 0,
