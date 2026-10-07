@@ -22,6 +22,7 @@ const [
   { WorldGameLoop },
   { createWorldSimulationPipeline },
   { integratePlayerVelocity },
+  { selectVisibleTreasures },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -53,6 +54,7 @@ const [
   import("./systems/WorldGameLoop.mjs?v="+__tqDevStamp),
   import("./systems/WorldSimulationPipeline.mjs?v="+__tqDevStamp),
   import("./navigation/PlayerKinematics.mjs?v="+__tqDevStamp),
+  import("./presentation/TreasureRenderModel.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -7049,17 +7051,7 @@ export class WorldRuntime {
       width:this.viewportSize?.width||this.viewport?.clientWidth||1,
       height:this.viewportSize?.height||this.viewport?.clientHeight||1,
       damagedShips:this.navalDamageVisuals(),
-      treasures:this.entities
-        .filter(entity=>String(entity?.type||"")==="treasure"
-          &&!this.collected.has(entity.id)
-          &&!entity.treasurePending
-          &&entity.el?.hidden!==true)
-        .map(entity=>({
-          x:Number(entity.visualX??entity.x)||0,
-          y:Number(entity.visualY??entity.y)||0,
-          size:Math.max(42,Number(entity.width)||0,Number(entity.height)||0),
-          phase:(Math.abs(hashString(String(entity.id||"treasure")))%6283)/1000
-        }))
+      treasures:selectVisibleTreasures(this.entities,this.collected,hashString)
     });
   }
 
