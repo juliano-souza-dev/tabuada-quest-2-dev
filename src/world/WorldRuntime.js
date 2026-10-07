@@ -702,16 +702,17 @@ export class WorldRuntime {
 
   treasureCombatLocked(){
     const target=this.combatTarget;
-    const targetInSight=Boolean(target&&this.isClickableCombatShip(target)&&this.isNavalTargetInRange(target));
+    const targetId=String(target?.id||"");
+    const targetAlive=Boolean(target&&targetId&&!this.collected.has(targetId)&&!this.navalDestroying.has(targetId));
+    const targetInSight=Boolean(targetAlive&&this.isClickableCombatShip(target)&&this.isNavalTargetInRange(target));
     const blocking=this.navalAutoFire===true||targetInSight;
     if(blocking){
       this.treasureCombatWasBlocking=true;
-      this.treasureCombatLockUntil=0;
       return true;
     }
     if(this.treasureCombatWasBlocking){
       this.treasureCombatWasBlocking=false;
-      this.treasureCombatLockUntil=Date.now()+20000;
+      this.treasureCombatLockUntil=Math.max(Number(this.treasureCombatLockUntil)||0,Date.now()+20000);
     }
     return Date.now()<Number(this.treasureCombatLockUntil||0);
   }
@@ -4914,6 +4915,9 @@ export class WorldRuntime {
       entity.tutorialDefeatedStage=tutorialStageAtKill;
       entity.tutorialCombatTarget=false;
       entity.tutorialCombatPhase="";
+      this.navalAutoFire=false;
+      this.treasureCombatWasBlocking=false;
+      this.treasureCombatLockUntil=Date.now()+20000;
       Promise.resolve(this.onTutorialNpcDestroyed?.(entity)).catch(error=>console.warn("[TabuadaQuest] tutorial destruction hook failed",error));
     }
     if(String(this.tutorialIsolatedTargetId||"")===id){
