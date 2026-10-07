@@ -3487,12 +3487,6 @@ export class WorldRuntime {
     const tx=Math.round(vw/2-this.camera.x*zoom);
     const ty=Math.round(vh/2-this.camera.y*zoom);
     this.stage.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${zoom})`;
-    this.pixiRenderer?.setCamera?.({
-      camera:this.camera,
-      zoom,
-      width:vw,
-      height:vh
-    });
     this.syncGizmo();
   }
 
