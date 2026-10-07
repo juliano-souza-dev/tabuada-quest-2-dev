@@ -1457,7 +1457,6 @@ export class WorldRuntime {
     return Boolean(
       entity
       &&String(entity.type||"")==="ship"
-      &&entity.runtimeMultiplayer!==true
       &&!this.collected.has(entity.id)
       &&!this.navalDestroying.has(entity.id)
     );
