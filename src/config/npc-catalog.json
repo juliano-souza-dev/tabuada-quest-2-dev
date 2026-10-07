@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 9,
+  "version": 10,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -317,6 +317,27 @@
         "damage": 8,
         "maxTargets": 1,
         "cannonLoadout": [],
+        "ammoUnlimited": false
+      }
+    },
+    {
+      "id": "npc-corsario-rubro",
+      "name": "Corsário Rubro",
+      "shipId": "ship-corsario-rubro",
+      "width": 250,
+      "height": 250,
+      "navigation": {
+        "minSpeed": 45,
+        "speed": 115,
+        "acceleration": 420,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 250,
+        "attitude": "peaceful",
+        "damage": 1,
+        "cannonLoadout": [],
+        "ammoId": "cannonball-standard",
         "ammoUnlimited": false
       }
     }
