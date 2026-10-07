@@ -5058,6 +5058,7 @@ export class WorldRuntime {
         x:Number(entity.visualX??entity.x)||0,
         y:Number(entity.visualY??entity.y)||0,
         size:Math.max(48,Number(entity.width)||96,Number(entity.height)||96),
+        kind:String(entity.entityKind||"")==="monster"?"monster":"ship",
         damageRatio
       });
     }
@@ -5467,8 +5468,8 @@ export class WorldRuntime {
     });
   }
 
-  renderCannonProjectile({from,to,duration=620,ammo=null}={}){
-    return this.navalRenderer?.fire?.({from,to,duration,ammo})===true;
+  renderCannonProjectile({from,to,duration=620,ammo=null,impactKind="ship"}={}){
+    return this.navalRenderer?.fire?.({from,to,duration,ammo,impactKind})===true;
   }
 
   renderCannonImpact({at,ammo=null,kind="ship",size=1}={}){
@@ -5533,6 +5534,7 @@ export class WorldRuntime {
     }
 
     const volleyShots=[];
+    const targetImpactKind=String(entity?.entityKind||"")==="monster"?"monster":"ship";
     let firedCount=0;
     let maxDuration=0;
 
@@ -5554,7 +5556,7 @@ export class WorldRuntime {
         to:{x:intercept.x,y:intercept.y},
         duration
       };
-      this.renderCannonProjectile({...visualShot,ammo});
+      this.renderCannonProjectile({...visualShot,ammo,impactKind:targetImpactKind});
 
       firedCount+=1;
       ammoRemaining=Math.max(0,ammoRemaining-1);
@@ -5605,7 +5607,7 @@ export class WorldRuntime {
       this.renderCannonImpact({
         at:{x:Number(entity.visualX??entity.x)||0,y:Number(entity.visualY??entity.y)||0},
         ammo,
-        kind:"ship",
+        kind:targetImpactKind,
         size:clamp(Math.max(Number(entity.width)||96,Number(entity.height)||96)/150,.75,1.55)
       });
 

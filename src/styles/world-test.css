@@ -105,50 +105,50 @@
 .tq-world-entity--monster>.tq-world-monster-shadow{
   position:absolute;
   left:50%;
-  bottom:1%;
+  bottom:0;
   z-index:1;
-  width:72%;
-  height:18%;
-  transform:translateX(-50%) scale(1,.82);
+  width:68%;
+  height:14%;
+  transform:translateX(-50%) scale(1,.68);
   border-radius:50%;
-  background:radial-gradient(ellipse at center,rgba(0,10,24,.52) 0%,rgba(0,14,30,.30) 42%,transparent 72%);
+  background:radial-gradient(ellipse at center,rgba(0,10,24,.48) 0%,rgba(0,14,30,.25) 44%,transparent 74%);
   filter:blur(3px);
   pointer-events:none;
   animation:tq-monster-shadow-pulse 2.6s ease-in-out infinite;
 }
 .tq-world-entity--monster>.tq-world-monster-water-front{
   position:absolute;
-  left:-7%;
-  right:-7%;
-  bottom:-1%;
-  z-index:4;
-  height:31%;
+  left:9%;
+  right:9%;
+  bottom:-2%;
+  z-index:3;
+  height:17%;
   pointer-events:none;
   border-radius:50%;
   background:
-    linear-gradient(to top,rgba(5,51,88,.86) 4%,rgba(7,91,128,.52) 48%,rgba(22,151,183,.12) 72%,transparent 100%);
-  clip-path:ellipse(76% 94% at 50% 100%);
-  backdrop-filter:blur(.7px);
-  -webkit-backdrop-filter:blur(.7px);
+    linear-gradient(to top,rgba(5,51,88,.70) 0%,rgba(7,91,128,.34) 38%,rgba(22,151,183,.08) 65%,transparent 86%);
+  clip-path:ellipse(70% 74% at 50% 100%);
+  backdrop-filter:blur(.45px);
+  -webkit-backdrop-filter:blur(.45px);
 }
 .tq-world-entity--monster>.tq-world-monster-wave-ring{
   position:absolute;
   left:50%;
-  bottom:8%;
-  z-index:5;
-  width:76%;
-  height:21%;
-  transform:translateX(-50%) scale(.76,.56);
-  border:2px solid rgba(198,246,255,.58);
+  bottom:0;
+  z-index:0;
+  width:84%;
+  height:17%;
+  transform:translateX(-50%) scale(.84,.44);
+  border:2px solid rgba(198,246,255,.54);
   border-radius:50%;
-  box-shadow:0 0 8px rgba(119,220,245,.24),inset 0 0 8px rgba(119,220,245,.18);
-  opacity:.44;
+  box-shadow:0 0 7px rgba(119,220,245,.18),inset 0 0 7px rgba(119,220,245,.12);
+  opacity:.38;
   pointer-events:none;
   animation:tq-monster-wave-ring 2.5s ease-out infinite;
 }
 .tq-world-entity--monster.is-combat-target>.tq-world-monster-wave-ring{
-  border-color:rgba(255,217,104,.75);
-  box-shadow:0 0 12px rgba(255,182,64,.34),inset 0 0 10px rgba(255,182,64,.18);
+  border-color:rgba(255,217,104,.64);
+  box-shadow:0 0 9px rgba(255,182,64,.22),inset 0 0 8px rgba(255,182,64,.12);
 }
 .tq-world-entity--monster>.tq-world-monster-bubbles{
   position:absolute;
@@ -188,7 +188,7 @@
   100%{transform:translateX(-50%) scale(1.06,.78);opacity:0}
 }
 @media(max-width:620px){
-  .tq-world-entity--monster>.tq-world-monster-water-front{height:29%}
+  .tq-world-entity--monster>.tq-world-monster-water-front{height:16%}
   .tq-world-entity--monster>.tq-world-monster-wave-ring{border-width:1.5px}
 }
 @media(prefers-reduced-motion:reduce){

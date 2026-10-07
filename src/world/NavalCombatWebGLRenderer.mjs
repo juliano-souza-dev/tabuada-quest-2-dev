@@ -326,7 +326,7 @@ export class NavalCombatWebGLRenderer{
       duration:clamp(Number(duration)||620,80,8000),
       startTime:Number(startTime)||performance.now(),
       impactSpawned:false,
-      impactKind:impactKind==="water"?"water":"ship",
+      impactKind:impactKind==="water"?"water":(impactKind==="monster"?"monster":"ship"),
       ammo:normalizedAmmo,
       fx,
       onImpact:typeof onImpact==="function"?onImpact:null
@@ -350,15 +350,16 @@ export class NavalCombatWebGLRenderer{
   impact({at,ammo=null,kind="ship",size=1,startTime=performance.now()}={}){
     if(!this.init()||!at)return false;
     const fx=normalizeAmmoFx(ammo&&typeof ammo==="object"?ammo:{});
-    const section=kind==="water"?fx.impactWater:fx.impactShip;
+    const impactKind=kind==="water"?"water":(kind==="monster"?"monster":"ship");
+    const section=impactKind==="water"?fx.impactWater:fx.impactShip;
     if(!section?.enabled)return true;
     this.impacts.push({
       x:Number(at.x)||0,
       y:Number(at.y)||0,
       startTime:Number(startTime)||performance.now(),
       duration:Math.min(680,Math.max(120,Number(section.durationMs)||420)),
-      kind:kind==="water"?"water":"ship",
-      effect:kind!=="water"&&String(fx?.preset||"")==="piercing"?"piercing-shrapnel":"profile",
+      kind:impactKind,
+      effect:impactKind==="monster"?"blood":(impactKind==="ship"&&String(fx?.preset||"")==="piercing"?"piercing-shrapnel":"profile"),
       fx,
       size:clamp(Number(size)||1,.25,4),
       seed:Math.abs(Math.sin((Number(at.x)||0)*.017+(Number(at.y)||0)*.031+(Number(startTime)||0)*.0001))
@@ -399,14 +400,14 @@ export class NavalCombatWebGLRenderer{
         shot.impactSpawned=true;
         const section=shot.impactKind==="water"?shot.fx.impactWater:shot.fx.impactShip;
         if(section.enabled){
-          const piercing=shot.impactKind!=="water"&&String(shot.fx?.preset||"")==="piercing";
+          const piercing=shot.impactKind==="ship"&&String(shot.fx?.preset||"")==="piercing";
           this.impacts.push({
             x:shot.to.x,
             y:shot.to.y,
             startTime:shot.startTime+shot.duration,
             duration:Math.min(680,section.durationMs),
             kind:shot.impactKind,
-            effect:piercing?"piercing-shrapnel":"profile",
+            effect:shot.impactKind==="monster"?"blood":(piercing?"piercing-shrapnel":"profile"),
             fx:shot.fx,
             seed:Math.abs(Math.sin(shot.to.x*.017+shot.to.y*.031+shot.startTime*.0001))
           });
@@ -787,6 +788,47 @@ export class NavalCombatWebGLRenderer{
         }
         continue;
       }
+      if(impact.kind==="monster"||impact.effect==="blood"){
+        const shipFx=impact.fx.impactShip;
+        const scale=clamp(Number(impact.size)||1,.25,4);
+        const bloodSize=Math.max(34,shipFx.size*scale*.82);
+        const fade=clamp(1-progress,0,1);
+        const burst=Math.sin(Math.min(1,progress)*Math.PI);
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        drawPoint(
+          impact.x,
+          impact.y+bloodSize*.035,
+          bloodSize*(.28+.28*burst),
+          4,
+          progress,
+          true,
+          {color:"#5b0812",coreColor:"#b51d2d",glow:.04,opacity:fade*.92}
+        );
+        const dropCount=this.reducedFx?7:13;
+        for(let i=0;i<dropCount;i++){
+          const hash=Math.sin((i+1)*83.73+(impact.seed||0)*691.31)*43758.5453;
+          const jitter=hash-Math.floor(hash);
+          const angle=(-Math.PI*.92)+(i/Math.max(1,dropCount-1))*Math.PI*.84+(jitter-.5)*.24;
+          const travel=bloodSize*(.10+.62*Math.pow(progress,.72))*(.55+jitter*.62);
+          const gravity=bloodSize*.34*progress*progress;
+          drawPoint(
+            impact.x+Math.cos(angle)*travel,
+            impact.y+Math.sin(angle)*travel+gravity,
+            (3.5+jitter*6.5)*fade,
+            4,
+            clamp(progress+jitter*.08,0,1),
+            true,
+            {
+              color:i%3===0?"#3d050b":"#720b18",
+              coreColor:i%2?"#b71f31":"#8f1221",
+              glow:0,
+              opacity:fade*(.72+jitter*.24)
+            }
+          );
+        }
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+        continue;
+      }
       const shipFx=impact.fx.impactShip;
       if(shipFx.flash>0&&progress<.24){
         const flashProgress=clamp(progress/.24,0,1);
@@ -903,6 +945,42 @@ export class NavalCombatWebGLRenderer{
       const smokeCycle=((phase*.43)%1+1)%1;
       const x=Number(ship.x)||0;
       const y=Number(ship.y)||0;
+
+      if(String(ship.kind||"")==="monster"){
+        const bloodPulse=((phase*.31)%1+1)%1;
+        const bloodFade=clamp(1-bloodPulse,0,1);
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+        drawPoint(
+          x+worldSize*.025*sway,
+          y-worldSize*.10,
+          screenSize*(.12+.035*intensity),
+          4,
+          bloodPulse,
+          true,
+          {color:"#4a060d",coreColor:"#a91527",glow:0,opacity:.48+.28*intensity}
+        );
+        const woundCount=this.reducedFx?2:4;
+        for(let i=0;i<woundCount;i++){
+          const cycle=((bloodPulse+i/woundCount)%1+1)%1;
+          const side=(i-(woundCount-1)/2)*worldSize*.045;
+          drawPoint(
+            x+side+sway*worldSize*.012,
+            y-worldSize*.045+worldSize*.24*cycle*cycle,
+            screenSize*(.022+.018*(1-cycle))*intensity,
+            4,
+            cycle,
+            true,
+            {
+              color:i%2?"#650a16":"#3d050b",
+              coreColor:"#a91527",
+              glow:0,
+              opacity:clamp((1-cycle)*(.58+.28*intensity),0,.88)
+            }
+          );
+        }
+        gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+        continue;
+      }
 
       drawPoint(
         x+worldSize*.045*sway,
