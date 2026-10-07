@@ -7044,6 +7044,8 @@ export class WorldRuntime {
     if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);
+    this.updatePlayerVisual(time,dt);
+    this.updatePlayerWaterEffects(time);
     this.updateEntityMotionFrame(time,dt);
     this.updateTreasurePopulation(time);
     this.treasureCombatLocked();
@@ -7052,14 +7054,13 @@ export class WorldRuntime {
       this.syncAutomaticCombatTarget();
       this.updateDirectNavalCombat(time);
     }
+    this.updateTutorialGuideArrow();
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     this.updateEnvironmentCycle(time);
   }
 
   updatePresentationFrame(time,dt){
-    this.updatePlayerVisual(time,dt);
-    this.updatePlayerWaterEffects(time);
     if(this.graphicsSettings?.clouds!==false&&this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
       this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
@@ -7088,7 +7089,6 @@ export class WorldRuntime {
   }
 
   updateInterfaceFrame(time){
-    this.updateTutorialGuideArrow();
     this.updateNearby();
     this.renderMinimap(false,time);
     if(this.coordsEl){
@@ -7099,16 +7099,6 @@ export class WorldRuntime {
     if(this.zoomEl)this.zoomEl.textContent=this.mode==="edit"?`zoom ${Math.round(this.zoom*100)}%`:"";
   }
 
-  tick(time){
-    if(!this.gameLoop){
-      this.gameLoop=new WorldGameLoop(this);
-      this.gameLoop.running=true;
-      this.gameLoop.lastTime=this.lastTime||0;
-    }
-    this.gameLoop.frame(time);
-    this.lastTime=this.gameLoop.lastTime;
-    this.raf=this.gameLoop.frameId;
-  }
 
   getState(){
     return {
