@@ -369,8 +369,8 @@
       {
         "npcId": "boss-halloween-dreadnought",
         "shipId": "ship-halloween-terror-galleon-400",
-        "count": 1,
-        "enabled": true,
+        "count": 0,
+        "enabled": false,
         "respawn": false,
         "spawn": {
           "mode": "random-spaced",
@@ -387,9 +387,9 @@
       {
         "npcId": "npc-halloween-pumpkin-corsair",
         "shipId": "ship-halloween-pumpkin-corsair",
-        "count": 8,
+        "count": 1,
         "enabled": true,
-        "respawn": true,
+        "respawn": false,
         "respawnDelaySec": 35,
         "spawn": {
           "mode": "random-spaced",
@@ -408,8 +408,8 @@
       {
         "npcId": "npc-corsario-tabuada-sombria",
         "shipId": "ship-halloween-tabuada-sombria",
-        "count": 1,
-        "enabled": true,
+        "count": 0,
+        "enabled": false,
         "respawn": false,
         "spawn": {
           "mode": "random-spaced",
@@ -437,7 +437,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-r1-no-monsters-tutorial-v1",
+    "sourceRevision": "20261007-r1-single-corsair-progressive-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
