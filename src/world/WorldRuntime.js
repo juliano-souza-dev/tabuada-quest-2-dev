@@ -6695,8 +6695,8 @@ export class WorldRuntime {
     const zoom=Math.max(.01,Number(this.mode==="play"?this.playZoom:this.zoom)||1);
     const px=viewportW/2+(Number(this.player?.x||0)-Number(this.camera?.x||0))*zoom;
     const py=viewportH/2+(Number(this.player?.y||0)-Number(this.camera?.y||0))*zoom;
-    const tx=viewportW/2+(Number(target.visualX??target.x||0)-Number(this.camera?.x||0))*zoom;
-    const ty=viewportH/2+(Number(target.visualY??target.y||0)-Number(this.camera?.y||0))*zoom;
+    const tx=viewportW/2+(Number(target.visualX??target.x??0)-Number(this.camera?.x||0))*zoom;
+    const ty=viewportH/2+(Number(target.visualY??target.y??0)-Number(this.camera?.y||0))*zoom;
     const angle=Math.atan2(ty-py,tx-px);
     const radius=Math.min(135,Math.max(72,Math.min(viewportW,viewportH)*.18));
     const left=clamp(px+Math.cos(angle)*radius,42,viewportW-42);
