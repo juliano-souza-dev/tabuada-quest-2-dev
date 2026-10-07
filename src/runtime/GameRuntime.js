@@ -2300,6 +2300,14 @@ export class GameRuntime {
       },
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
+      onRuntimeStateChange:()=>{
+        if(this.current?.kind!=="world"||String(this.current?.id||"")!==String(worldId||""))return;
+        const snapshot=this.worldRuntime?.getState?.();
+        if(!snapshot||typeof snapshot!=="object")return;
+        if(snapshot.ammo)delete snapshot.ammo;
+        this.worldStates[worldId]=clone(snapshot);
+        this.saveState();
+      },
       onTutorialAttack:()=>{},
       onTutorialNpcDestroyed:()=>{},
       onRewardCollected:()=>false,
