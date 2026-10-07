@@ -85,7 +85,9 @@ const showOpeningBanner=async()=>{
 const gate=await enforcePwaOnly(app);
 if(gate.allowed){
   await showOpeningBanner();
-  await import("./game.js?v=20261007-mission-progress-unlock-v3");
+  const devStamp=Date.now();
+  globalThis.__TQ_DEV_STAMP__=devStamp;
+  await import("./game.js?v="+devStamp);
 }else{
   globalThis.TabuadaQuest={
     ...(globalThis.TabuadaQuest||{}),
