@@ -220,6 +220,7 @@ export class WorldRuntime {
       getBalances:()=>this.shopBalances(),
       onPurchase:request=>this.onShopPurchase?.(request),
       canOpen:()=>this.canUseShop()===true,
+      getTutorialStage:()=>String(this.getTutorialGuide?.()?.stage||""),
       onLocked:()=>this.showGameplayToast("🔒 A loja será liberada após derrotar o Corsário da Tabuada Sombria.",2200)
     });
     this.shipyardOverlay=new ShipyardOverlay({
