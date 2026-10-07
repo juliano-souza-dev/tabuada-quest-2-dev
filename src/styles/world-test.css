@@ -2567,3 +2567,156 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
     height:22px!important;
   }
 }
+
+
+/* Math answer impact feedback v1 */
+.tq-world-challenge__card::after,
+.tq-world-combat__card::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:34%;
+  width:clamp(76px,16vw,150px);
+  height:clamp(76px,16vw,150px);
+  display:grid;
+  place-items:center;
+  transform:translate(-50%,-50%) scale(.35);
+  border-radius:50%;
+  opacity:0;
+  pointer-events:none;
+  z-index:20;
+  font:1000 clamp(56px,12vw,112px)/1 system-ui;
+  text-shadow:0 4px 10px rgba(0,0,0,.72);
+}
+.tq-world-challenge.is-answer-correct .tq-world-challenge__card::after,
+.tq-world-combat.is-answer-correct .tq-world-combat__card::after{
+  content:"✓";
+  color:#efffe7;
+  background:rgba(34,153,73,.92);
+  border:5px solid #caffb7;
+  box-shadow:0 0 0 10px rgba(72,255,130,.14),0 0 42px rgba(74,255,132,.9);
+  animation:tq-answer-correct-pop .72s cubic-bezier(.15,.9,.28,1) both;
+}
+.tq-world-challenge.is-answer-wrong .tq-world-challenge__card::after,
+.tq-world-combat.is-answer-wrong .tq-world-combat__card::after{
+  content:"✕";
+  color:#fff1eb;
+  background:rgba(183,43,43,.94);
+  border:5px solid #ffd0c7;
+  box-shadow:0 0 0 10px rgba(255,67,67,.12),0 0 42px rgba(255,66,52,.82);
+  animation:tq-answer-wrong-pop .72s cubic-bezier(.2,.75,.3,1) both;
+}
+.tq-world-challenge.is-answer-correct,
+.tq-world-combat.is-answer-correct{animation:tq-answer-screen-correct .48s ease-out}
+.tq-world-challenge.is-answer-wrong,
+.tq-world-combat.is-answer-wrong{animation:tq-answer-screen-wrong .42s ease-out}
+
+.tq-world-challenge .tq-world-combat__option.is-muted,
+.tq-world-combat .tq-world-combat__option.is-muted{
+  opacity:.34!important;
+  filter:saturate(.35) brightness(.72);
+}
+.tq-world-challenge .tq-world-combat__option.is-correct,
+.tq-world-combat .tq-world-combat__option.is-correct{
+  opacity:1!important;
+  color:#f4ffe9!important;
+  background:linear-gradient(180deg,rgba(57,190,94,.96),rgba(20,112,53,.96))!important;
+  border:3px solid #d9ffba!important;
+  box-shadow:0 0 0 4px rgba(82,255,131,.18),0 0 24px rgba(71,255,124,.72),inset 0 -4px 0 rgba(0,0,0,.22)!important;
+  transform:scale(1.055);
+  animation:tq-answer-choice-correct .58s ease-out both;
+}
+.tq-world-challenge .tq-world-combat__option.is-wrong,
+.tq-world-combat .tq-world-combat__option.is-wrong{
+  opacity:1!important;
+  color:#fff2ee!important;
+  background:linear-gradient(180deg,rgba(222,73,61,.97),rgba(130,35,35,.97))!important;
+  border:3px solid #ffd0c7!important;
+  box-shadow:0 0 0 4px rgba(255,72,62,.15),0 0 22px rgba(255,65,49,.62),inset 0 -4px 0 rgba(0,0,0,.22)!important;
+  animation:tq-answer-choice-wrong .45s ease-out both;
+}
+.tq-world-challenge .tq-world-combat__option.is-reveal-correct::after,
+.tq-world-combat .tq-world-combat__option.is-reveal-correct::after{
+  content:" ✓";
+  font-weight:1000;
+}
+
+.tq-world-challenge__feedback[data-state="correct"],
+.tq-world-combat__feedback[data-state="correct"]{
+  color:#efffe5!important;
+  border-color:#8cff9a!important;
+  background:rgba(15,99,49,.92)!important;
+  box-shadow:0 0 22px rgba(69,255,121,.28);
+}
+.tq-world-challenge__feedback[data-state="wrong"],
+.tq-world-combat__feedback[data-state="wrong"]{
+  color:#fff0ea!important;
+  border-color:#ff8b7e!important;
+  background:rgba(111,25,25,.94)!important;
+  box-shadow:0 0 22px rgba(255,70,55,.25);
+}
+.tq-world-challenge__feedback[data-state],
+.tq-world-combat__feedback[data-state]{
+  padding:9px 12px;
+  border:2px solid transparent;
+  border-radius:12px;
+  font-size:clamp(14px,2vw,19px)!important;
+  font-weight:1000!important;
+  letter-spacing:.01em;
+}
+.tq-world-challenge.is-treasure-challenge .tq-world-challenge__feedback[data-state],
+.tq-world-challenge.is-repair-challenge .tq-world-challenge__feedback[data-state]{
+  left:23%;
+  right:23%;
+  bottom:7.2%;
+  padding:7px 9px;
+  font:1000 clamp(12px,1.55vw,19px)/1.12 system-ui!important;
+}
+
+@keyframes tq-answer-correct-pop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.28) rotate(-10deg)}
+  38%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(4deg)}
+  72%{opacity:1;transform:translate(-50%,-50%) scale(.94) rotate(0)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.06)}
+}
+@keyframes tq-answer-wrong-pop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0)}
+  24%{opacity:1;transform:translate(calc(-50% - 9px),-50%) scale(1.08) rotate(-7deg)}
+  42%{transform:translate(calc(-50% + 9px),-50%) scale(1.08) rotate(7deg)}
+  60%{transform:translate(calc(-50% - 6px),-50%) scale(1) rotate(-4deg)}
+  78%{opacity:1;transform:translate(calc(-50% + 4px),-50%) scale(1) rotate(2deg)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.96)}
+}
+@keyframes tq-answer-choice-correct{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.12)}
+  100%{transform:scale(1.055)}
+}
+@keyframes tq-answer-choice-wrong{
+  0%,100%{transform:translateX(0)}
+  22%{transform:translateX(-7px)}
+  44%{transform:translateX(7px)}
+  66%{transform:translateX(-4px)}
+  82%{transform:translateX(3px)}
+}
+@keyframes tq-answer-screen-correct{
+  0%,100%{box-shadow:inset 0 0 0 rgba(80,255,125,0)}
+  45%{box-shadow:inset 0 0 85px rgba(68,255,122,.28)}
+}
+@keyframes tq-answer-screen-wrong{
+  0%,100%{box-shadow:inset 0 0 0 rgba(255,62,48,0)}
+  45%{box-shadow:inset 0 0 90px rgba(255,55,45,.3)}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .tq-world-challenge.is-answer-correct,
+  .tq-world-challenge.is-answer-wrong,
+  .tq-world-combat.is-answer-correct,
+  .tq-world-combat.is-answer-wrong,
+  .tq-world-challenge .tq-world-combat__option.is-correct,
+  .tq-world-challenge .tq-world-combat__option.is-wrong,
+  .tq-world-combat .tq-world-combat__option.is-correct,
+  .tq-world-combat .tq-world-combat__option.is-wrong,
+  .tq-world-challenge__card::after,
+  .tq-world-combat__card::after{animation-duration:.01ms!important}
+}
