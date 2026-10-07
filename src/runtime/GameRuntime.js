@@ -1898,7 +1898,8 @@ export class GameRuntime {
     if(stage==="treasure")return {stage,action:"treasure",icon:"📦",title:"Primeiro tesouro",text:"Siga a seta até o tesouro e toque nele.",hudMode:"analog-only"};
     if(stage==="shipyard")return {stage,action:"shipyard",icon:"⚓",title:"Abra o Estaleiro",text:"Toque no Estaleiro para preparar seu primeiro canhão.",hudMode:"shipyard-only"};
     if(stage==="equip-cannon")return {stage,action:"equip-cannon",icon:"💥",title:"Equipe o canhão",text:"Na aba Canhões, equipe o Canhão do Marujo no seu navio.",hudMode:"shipyard-only"};
-    if(stage==="attack-ship")return {stage,action:"attack-ship",icon:"🔥",title:"Primeiro combate",text:"Siga a seta até um navio inimigo e use Atirar.",hudMode:"fire-only"};
+    if(stage==="attack-ship")return {stage,action:"attack-ship",icon:"🔥",title:"Primeiro combate",text:"Siga a seta e destrua o navio inimigo. Ele cairá no 20º disparo.",hudMode:"fire-only"};
+    if(stage==="repair-ship")return {stage,action:"repair-ship",icon:"🔧",title:"Conserte seu navio",text:"Use Reparar e restaure todo o casco.",hudMode:"repair-only"};
     return null;
   }
 
@@ -2174,14 +2175,30 @@ export class GameRuntime {
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       canRepairPlayer:()=>true,
       shouldForceRepair:()=>false,
-      onRepairCompleted:()=>this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1}),
+      onRepairCompleted:async ({hp,maxHp}={})=>{
+        await this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
+        if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="repair-ship"&&Number(hp)>=Number(maxHp)){
+          const strongest=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+            .filter(ammo=>ammo?.available!==false&&!ammo?.event)
+            .sort((a,b)=>Number(b.damageFactor||0)-Number(a.damageFactor||0))[0];
+          if(strongest?.id)this.grantAmmo(strongest.id,1000,{save:false,syncServer:false,source:"tutorial-repair"});
+          this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+          this.setR1TutorialStage("complete",{save:false});
+          this.saveState();this.syncCloud("tutorial-repair-complete");
+          this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! +1000 "+String(strongest?.name||"munições")+".",3600);
+        }
+      },
       canSelectAmmo:()=>true,
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
-      onTutorialAttack:entity=>{
+      onTutorialAttack:()=>{},
+      onTutorialNpcDestroyed:async entity=>{
         if(worldId!=="r1-enseada-aprendizes"||this.r1TutorialStage()!=="attack-ship")return;
-        this.setR1TutorialStage("complete",{save:true,sync:true});
-        this.worldRuntime?.showGameplayToast?.("💥 Etapa 2 concluída! Primeiro disparo realizado.",3200);
+        this.grantAmmo("cannonball-halloween-purple",5,{save:false,syncServer:false,source:"tutorial"});
+        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+        this.setR1TutorialStage("repair-ship",{save:false});
+        this.saveState();this.syncCloud("tutorial-stage-two");
+        this.worldRuntime?.showGameplayToast?.("🎃 Navio destruído! +5 Bolas Halloween. Agora repare seu navio.",3600);
       },
       onRuntimeStateChange:()=>{
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
