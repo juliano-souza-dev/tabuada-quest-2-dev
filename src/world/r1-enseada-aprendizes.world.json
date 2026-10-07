@@ -162,13 +162,13 @@
       "idlePeriod": 3600
     },
     "combat": {
-      "hp": 50,
+      "hp": 1000,
       "attackRange": 1200,
       "attackCooldownMs": 900,
       "damage": 1
     },
     "combatVisual": {
-      "hp": 50,
+      "hp": 1000,
       "attackRange": 1200,
       "attackCooldownMs": 900,
       "damage": 1,
@@ -358,8 +358,8 @@
     "seed": 3101,
     "spread": {
       "mode": "random-spaced",
-      "margin": 950,
-      "minDistance": 650
+      "margin": 900,
+      "minDistance": 520
     },
     "movement": {
       "mode": "straight",
@@ -367,81 +367,65 @@
     },
     "types": [
       {
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "shipId": "ship-halloween-pumpkin-corsair",
-        "count": 4,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 25,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 900,
-          "minDistance": 460,
-          "seed": 4101
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 100
-        }
-      },
-      {
-        "npcId": "npc-halloween-galleon",
-        "shipId": "ship-halloween-galleon-reward",
-        "count": 5,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 30,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 950,
-          "minDistance": 520,
-          "seed": 5101
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 150,
-          "xp": 40
-        }
-      },
-      {
         "npcId": "boss-halloween-dreadnought",
         "shipId": "ship-halloween-terror-galleon-400",
         "count": 1,
         "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 300,
+        "respawn": false,
         "spawn": {
           "mode": "random-spaced",
           "margin": 1100,
           "minDistance": 900,
           "seed": 6101
         },
-        "hitRewardGold": 0,
         "rewards": {
-          "gold": 1000,
-          "rubies": 2,
-          "xp": 500
+          "xp": 1200
         },
-        "hp": 100000
+        "hp": 25000,
+        "requiredAmmoEvent": "halloween"
+      },
+      {
+        "npcId": "npc-halloween-pumpkin-corsair",
+        "shipId": "ship-halloween-pumpkin-corsair",
+        "count": 8,
+        "enabled": true,
+        "unlockAfterMission": "HALLOWEEN_M01",
+        "respawn": true,
+        "respawnDelaySec": 35,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 900,
+          "minDistance": 420,
+          "seed": 4101
+        },
+        "rewards": {
+          "xp": 35,
+          "rubyDropChance": 5,
+          "rubyDropMin": 1,
+          "rubyDropMax": 1
+        },
+        "hp": 100
       },
       {
         "npcId": "npc-corsario-tabuada-sombria",
         "shipId": "ship-halloween-tabuada-sombria",
-        "count": 2,
+        "count": 1,
         "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 40,
+        "unlockAfterMission": "HALLOWEEN_M04",
+        "respawn": false,
         "spawn": {
           "mode": "random-spaced",
-          "margin": 900,
-          "minDistance": 560,
+          "margin": 1000,
+          "minDistance": 650,
           "seed": 7201
         },
-        "hitRewardGold": 0,
         "rewards": {
-          "gold": 220,
-          "xp": 65
-        }
+          "xp": 150,
+          "rubyDropChance": 8,
+          "rubyDropMin": 1,
+          "rubyDropMax": 1
+        },
+        "hp": 1200
       }
     ]
   },
@@ -453,7 +437,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261006-corsario-tabuada-sombria-all-maps",
+    "sourceRevision": "20261007-r1-progression-tutorial-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
@@ -498,15 +482,15 @@
     "seed": 101,
     "spread": {
       "mode": "random-spaced",
-      "margin": 240,
-      "minDistance": 190
+      "margin": 180,
+      "minDistance": 110
     },
     "types": [
       {
         "treasureId": "tesouro-halloween-abobora",
-        "count": 18,
+        "count": 200,
         "respawn": false,
-        "spawnIntervalSec": 0.12,
+        "spawnIntervalSec": 0.03,
         "respawnDelaySec": 30
       }
     ]
@@ -517,5 +501,17 @@
     "nextWorldId": "r2-costa-corsarios",
     "previousWorldId": null,
     "halloween": true
+  },
+  "tutorial": {
+    "id": "r1-halloween-tutorial-v1",
+    "lockShopUntilMission": "HALLOWEEN_M05",
+    "lockRepairUntilHpBelow": 750,
+    "repairMission": "HALLOWEEN_M02",
+    "eventAmmoUnlockMission": "HALLOWEEN_M06",
+    "eventAmmoEvent": "halloween",
+    "bossMission": "HALLOWEEN_BOSS_10",
+    "rewardShipId": "ship-halloween-terror-reward-400",
+    "nextWorldId": "r2-costa-corsarios",
+    "blockReturnAfterComplete": true
   }
 }
