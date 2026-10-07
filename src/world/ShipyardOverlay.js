@@ -11,7 +11,7 @@ export class ShipyardOverlay {
     this.onEquipShip=onEquipShip;
     this.onEquipCannon=onEquipCannon;
     this.onRemoveCannon=onRemoveCannon;
-    this.overlay=null;this.content=null;this.message=null;
+    this.overlay=null;this.content=null;this.message=null;this.activeTab="ships";
   }
   mount(root){
     if(this.overlay)return this;
@@ -35,7 +35,22 @@ export class ShipyardOverlay {
   render(){
     if(!this.content)return;
     const state=this.getState()||{},ships=Array.isArray(state.ships)?state.ships:[],cannons=Array.isArray(state.cannons)?state.cannons:[],storage=state.storage&&typeof state.storage==="object"?state.storage:{};
-    this.content.replaceChildren();this.content.append(element("h3","tq-shipyard__title","Sua frota"));
+    const tabs=state.tabs&&typeof state.tabs==="object"?state.tabs:{ships:true,cannons:true};
+    if(tabs.ships===false)this.activeTab="cannons";
+    this.content.replaceChildren();
+    const nav=element("nav","tq-shipyard__tabs");
+    const shipsTab=element("button","tq-shipyard__tab","🚢 Navios");shipsTab.type="button";shipsTab.disabled=tabs.ships===false;shipsTab.classList.toggle("is-active",this.activeTab==="ships");
+    const cannonsTab=element("button","tq-shipyard__tab","💥 Canhões");cannonsTab.type="button";cannonsTab.disabled=tabs.cannons===false;cannonsTab.classList.toggle("is-active",this.activeTab==="cannons");
+    shipsTab.addEventListener("click",()=>{this.activeTab="ships";this.render()});
+    cannonsTab.addEventListener("click",()=>{this.activeTab="cannons";this.render()});
+    nav.append(shipsTab,cannonsTab);this.content.append(nav);
+    if(this.activeTab==="cannons"){
+      this.content.append(element("h3","tq-shipyard__title","Canhões"));const available=cannons.filter(cannon=>Math.max(0,Number(storage[cannon?.id])||0)>0);
+      if(!available.length){this.content.append(element("p","tq-shipyard__empty","Não há canhões guardados no depósito."));return}
+      const stock=element("div","tq-shipyard__stock");for(const cannon of available){const button=element("button","tq-shipyard__stock-item");button.type="button";button.textContent=`Equipar ${cannon.name||cannon.id} ×${Math.max(0,Number(storage[cannon.id])||0)}`;button.addEventListener("click",()=>this.run(this.onEquipCannon,String(cannon.id||"")));stock.append(button)}this.content.append(stock);
+      return;
+    }
+    this.content.append(element("h3","tq-shipyard__title","Sua frota"));
     if(!ships.length)this.content.append(element("p","tq-shipyard__empty","Você ainda não possui navios. Visite a loja para ampliar a frota."));
     for(const ship of ships){
       const card=element("article","tq-shipyard__ship"+(ship.equipped?" is-equipped":""));const top=element("div","tq-shipyard__ship-top");top.append(element("strong","",String(ship.name||ship.id||"Navio")));if(ship.equipped)top.append(element("span","tq-shipyard__badge","Em uso"));card.append(top);
@@ -44,9 +59,6 @@ export class ShipyardOverlay {
       for(const cannon of installed){const row=element("div","tq-shipyard__installed-row");row.append(element("span","",String(cannon.name||cannon.id||"Canhão")));const remove=element("button","tq-shipyard__remove","Guardar");remove.type="button";remove.addEventListener("click",()=>this.run(this.onRemoveCannon,String(cannon.id||""),String(ship.id||"")));row.append(remove);cannonList.append(row)}
       card.append(cannonList);this.content.append(card);
     }
-    this.content.append(element("h3","tq-shipyard__title","Depósito de canhões"));const available=cannons.filter(cannon=>Math.max(0,Number(storage[cannon?.id])||0)>0);
-    if(!available.length){this.content.append(element("p","tq-shipyard__empty","Não há canhões guardados no depósito."));return}
-    const stock=element("div","tq-shipyard__stock");for(const cannon of available){const button=element("button","tq-shipyard__stock-item");button.type="button";button.textContent=`Equipar ${cannon.name||cannon.id} ×${Math.max(0,Number(storage[cannon.id])||0)}`;button.addEventListener("click",()=>this.run(this.onEquipCannon,String(cannon.id||"")));stock.append(button)}this.content.append(stock);
   }
   destroy(){this.overlay?.remove();this.overlay=null;this.content=null;this.message=null}
 }
