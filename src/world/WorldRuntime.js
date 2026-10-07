@@ -21,6 +21,7 @@ const [
   { normalizeAmmoInventory,ammoDamageFactor,cannonDamagePerShot,navalShotDamage,resolvePlayerHullHp },
   { WorldGameLoop },
   { createWorldSimulationPipeline },
+  { integratePlayerVelocity },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -51,6 +52,7 @@ const [
   import("./combat/NavalCombatRules.mjs?v="+__tqDevStamp),
   import("./systems/WorldGameLoop.mjs?v="+__tqDevStamp),
   import("./systems/WorldSimulationPipeline.mjs?v="+__tqDevStamp),
+  import("./navigation/PlayerKinematics.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -3254,29 +3256,18 @@ export class WorldRuntime {
 
   updatePlayer(dt){
     const input=this.inputVector();
-    const accel=Math.max(100,Number(this.config.player?.acceleration)||1100);
-    const maxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
-    const minSpeed=clamp(Number(this.config.player?.minSpeed)||0,0,maxSpeed);
-    const braking=clamp(Number(this.config.player?.braking??.12),.01,.98);
-    const drag=Math.pow(braking,dt);
-
-    this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
-    this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
-
-    let speed=Math.hypot(this.player.vx,this.player.vy);
-    const steering=Math.hypot(Number(input.x)||0,Number(input.y)||0);
-    if(steering>.001&&speed>0&&speed<minSpeed){
-      const scale=minSpeed/speed;
-      this.player.vx*=scale;
-      this.player.vy*=scale;
-      speed=minSpeed;
-    }
-    if(speed>maxSpeed){
-      const scale=maxSpeed/speed;
-      this.player.vx*=scale;
-      this.player.vy*=scale;
-      speed=maxSpeed;
-    }
+    const velocity=integratePlayerVelocity({
+      vx:this.player.vx,
+      vy:this.player.vy,
+      input,
+      acceleration:this.config.player?.acceleration,
+      maxSpeed:this.config.player?.speed,
+      minSpeed:this.config.player?.minSpeed,
+      braking:this.config.player?.braking,
+      dt
+    });
+    this.player.vx=velocity.vx;
+    this.player.vy=velocity.vy;
 
     const travel=this.getPlayerTravelBounds();
     const candidate={
@@ -3304,7 +3295,7 @@ export class WorldRuntime {
       if(!stillNear)this.contactEntity=null;
     }
 
-    speed=Math.hypot(this.player.vx,this.player.vy);
+    const speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
     }
