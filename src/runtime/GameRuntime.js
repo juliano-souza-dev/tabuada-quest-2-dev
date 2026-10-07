@@ -747,13 +747,7 @@ export class GameRuntime {
       if(snapshot&&typeof snapshot==="object")delete snapshot.ammo;
       this.worldStates[worldId]=clone(snapshot||{});
     }
-
-    // Persist the complete transaction first. Only then publish the final ammo
-    // inventory to the realtime server, so every layer sees the same total.
     this.saveState();
-    if(purchasedAmmoId){
-      this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"shop-purchase"});
-    }
     this.syncCloud("shop-purchase");
 
     globalThis.dispatchEvent?.(new CustomEvent("tq:shoppurchase",{detail:{
@@ -944,7 +938,6 @@ export class GameRuntime {
 
     if(!this.playerAmmo.selectedAmmoId)this.playerAmmo.selectedAmmoId=id;
     this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-    if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:source});
     if(save)this.saveState();
     return true;
   }
@@ -953,7 +946,6 @@ export class GameRuntime {
     this.playerAmmo=normalizeGlobalAmmo(ammo);
     this.ensurePlayerAmmo();
     this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-    if(syncServer)this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason});
     if(save)this.saveState();
     return clone(this.playerAmmo);
   }
@@ -1848,9 +1840,6 @@ export class GameRuntime {
           }
         }
         this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-        if(grantedAmmo.length){
-          this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"reward"});
-        }
       }
 
       if(itemId){
@@ -2231,7 +2220,6 @@ export class GameRuntime {
       onStarterCannonEarned:()=>this.grantStarterCannon(),
       onStarterAmmoEarned:()=>{
         this.markStarterAmmoChallengeCompleted();
-        this.multiplayer?.syncAmmoInventory?.(this.playerAmmo,{reason:"starter-ammo-reward"});
         queueMicrotask(()=>this.saveState());
       },
       onAmmoChange:ammo=>{
@@ -2279,14 +2267,6 @@ export class GameRuntime {
       },
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
-      onInviteParty:player=>{
-        const uid=String(player?.uid||"");
-        if(!uid)return false;
-        const sent=this.multiplayer?.inviteParty?.(uid)===true;
-        this.worldRuntime?.showGameplayToast?.(sent?"Convite cooperativo enviado para "+String(player?.name||"Pirata"):"Servidor multiplayer indisponível.",1500);
-        return sent;
-      },
-      onPartyNpcDefeat:payload=>this.recordPartyNpcDefeat(payload),
       onRuntimeStateChange:()=>{
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
