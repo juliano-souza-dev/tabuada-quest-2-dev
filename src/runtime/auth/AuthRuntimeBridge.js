@@ -1,4 +1,3 @@
-import { MultiplayerRuntime } from "../multiplayer/MultiplayerRuntime.js?v=20261005-ammo-sync-cache-v2";
 import { FirebaseAuthService } from "./FirebaseAuthService.js?v=20261004-auth-trace";
 import { PlayerStateStore } from "../persistence/PlayerStateStore.js?v=20261004-1924-runtime-refresh";
 import { GameContentStore } from "../content/GameContentStore.js?v=20261003-2630";
@@ -10,7 +9,6 @@ export async function createAuthRuntimeServices({configUrl="./src/config/firebas
 
   const auth=new FirebaseAuthService(config);
   const playerState=new PlayerStateStore(auth,config);
-  const multiplayer=new MultiplayerRuntime(auth,config,{snapshotHz:Number(config.multiplayer?.snapshotHz)||20});
   const gameContent=new GameContentStore(auth,config);
 
   await auth.init();
@@ -19,12 +17,12 @@ export async function createAuthRuntimeServices({configUrl="./src/config/firebas
     await gameContent.prepare({preferRemote:true,allowCache:true}).catch(()=>{});
   }
 
-  return {config,auth,playerState,multiplayer,gameContent};
+  return {config,auth,playerState,gameContent};
 }
 
 export async function installAuthRuntime(runtime,{configUrl="./src/config/firebase-public.json",services=null}={}){
   const resolved=services||await createAuthRuntimeServices({configUrl});
-  const {auth,playerState,multiplayer,gameContent}=resolved;
+  const {auth,playerState,gameContent}=resolved;
 
   const signalReady=async(reason)=>{
     const status=auth.status();
@@ -158,7 +156,6 @@ export async function installAuthRuntime(runtime,{configUrl="./src/config/fireba
   return Object.freeze({
     auth,
     playerState,
-    multiplayer,
     gameContent,
     getStatus:()=>Object.freeze({
       ...playerState.status(),
