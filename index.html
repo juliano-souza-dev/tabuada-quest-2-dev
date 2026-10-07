@@ -25,12 +25,6 @@
       manifest.href=versioned("./manifest.webmanifest");
       document.head.append(manifest);
 
-      for(const href of ["./src/styles/app.css","./src/styles/world-test.css"]){
-        const link=document.createElement("link");
-        link.rel="stylesheet";
-        link.href=versioned(href);
-        document.head.append(link);
-      }
     })();
   </script>
   <title>Tabuada Quest</title>
