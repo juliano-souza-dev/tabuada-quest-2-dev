@@ -6869,9 +6869,14 @@ export class WorldRuntime {
       return;
     }
     let target=null;
-    if(stage==="treasure"||stage==="collect-10"){
+    if(stage==="treasure"||stage==="collect-10"||stage==="prepare-next-map"){
+
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
+        .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
+    }else if(stage==="sail-next-map"){
+      target=this.entities
+        .filter(entity=>String(entity?.type||"")==="region-exit"&&String(entity?.destinationWorldId||"")==="r2-costa-corsarios")
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }else if(stage==="attack-ship"||stage==="attack-ship-2"||stage==="missions-hunt"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
