@@ -1614,7 +1614,7 @@ export class GameRuntime {
       delete configured.rubyDropChance;delete configured.rubyDropMin;delete configured.rubyDropMax;
     }
     const worldId=String(this.current?.id||"");
-    if(cleanEntity.tutorialMissionCorsair===true){
+    if(String(cleanEntity.id||"").startsWith("npc.tutorial.mission.corsair.")){
       const ammoRewards=Array.isArray(configured.ammoRewards)?configured.ammoRewards.slice():[];
       ammoRewards.push({id:"cannonball-standard",quantity:1000});
       ammoRewards.push({id:"cannonball-halloween-purple",quantity:1000});
@@ -1819,8 +1819,9 @@ export class GameRuntime {
         }
       };
 
-      if(cleanEntity.tutorialMissionCorsair===true){
-        await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId||cleanEntity.shipId||"tutorial-corsair"),amount:1});
+      const tutorialMissionCorsair=String(cleanEntity.id||"").startsWith("npc.tutorial.mission.corsair.");
+      if(tutorialMissionCorsair){
+        await this.advanceMissions("defeat_npc",{worldId,region:1,npcId:"tutorial-corsair",amount:1});
         if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
       }else if(cleanEntity.npcId){
         await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId),amount:1});
@@ -2380,25 +2381,6 @@ export class GameRuntime {
     this.worldRuntime.setMode("play");
 
     this.current={kind:"world",id:worldId||null,path:entry.path};
-
-    // Repair saves created while tutorial corsair defeats were rewarded but did
-    // not advance mission progress. Reward claimDetails are canonical evidence
-    // of each already-defeated generated mission corsair, so never make the
-    // player sink the same tutorial quota twice.
-    if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions-hunt"){
-      const missionId="R1_TUTORIAL_CORSARIOS_5";
-      const savedKills=Math.max(0,Math.floor(Number(this.accountState?.game?.missions?.progress?.[missionId])||0));
-      const defeatedIds=new Set(
-        Object.values(this.rewards?.claimDetails||{})
-          .filter(detail=>String(detail?.worldId||"")===worldId&&String(detail?.entityId||"").startsWith("npc.tutorial.mission.corsair."))
-          .map(detail=>String(detail.entityId))
-      );
-      const recoveredKills=Math.min(5,defeatedIds.size);
-      if(recoveredKills>savedKills){
-        await this.advanceMissions("defeat_npc",{worldId,region:1,npcId:"tutorial-corsair",amount:recoveredKills-savedKills});
-      }
-      if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
-    }
 
 
     this.saveState();
