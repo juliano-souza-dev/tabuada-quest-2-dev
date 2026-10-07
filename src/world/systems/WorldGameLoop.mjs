@@ -12,7 +12,6 @@ export class WorldGameLoop{
   start(){
     if(this.running)return false;
     this.running=true;
-    this.lastTime=0;
     this.schedule();
     return true;
   }
@@ -25,7 +24,7 @@ export class WorldGameLoop{
 
   schedule(){
     if(!this.running)return;
-    this.frameId=this.requestFrame(time=>this.frame(time));
+    this.frameId=this.requestFrame(time=>{this.frameId=0;this.frame(time);});
   }
 
   frame(time){
@@ -36,9 +35,14 @@ export class WorldGameLoop{
     this.lastTime=now;
 
     const runtime=this.runtime;
-    runtime.updateSimulationFrame(now,dt);
-    runtime.updatePresentationFrame(now,dt);
-    runtime.updateInterfaceFrame(now,dt);
-    this.schedule();
+    try{
+      runtime.updateSimulationFrame(now,dt);
+      if(!this.running)return;
+      runtime.updatePresentationFrame(now,dt);
+      if(!this.running)return;
+      runtime.updateInterfaceFrame(now,dt);
+    }finally{
+      if(this.running)this.schedule();
+    }
   }
 }
