@@ -1,5 +1,5 @@
 import { SceneRuntime } from "./SceneRuntime.js?v=20260930-2350";
-import { WorldRuntime } from "../world/WorldRuntime.js?v=20261006-halloween-10-mission-gate-v1";
+import { WorldRuntime } from "../world/WorldRuntime.js?v=20261007-live-player-hp-v1";
 import { PedagogyRuntime } from "./pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { ActionRuntime } from "./actions/ActionRuntime.js?v=20261001-1848";
 
