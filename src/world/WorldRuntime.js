@@ -5972,9 +5972,11 @@ export class WorldRuntime {
   }
 
   activateNearby(){
-    // Map interactions have priority over weapon prerequisites. A dock/menu
-    // must always open when its own prompt is visible.
-    const mapEntity=this.nearby&&!this.collected.has(this.nearby.id)?this.nearby:null;
+    // Resolve the visible island action from the live collision contact first.
+    // "nearby" can be stale for one frame while the shoreline latch changes.
+    const contactCandidate=this.contactEntity&&!this.collected.has(this.contactEntity.id)?this.contactEntity:null;
+    const nearbyCandidate=this.nearby&&!this.collected.has(this.nearby.id)?this.nearby:null;
+    const mapEntity=contactCandidate||nearbyCandidate;
     const mapInteraction=mapEntity?this.entityInteraction(mapEntity):null;
     if(mapInteraction?.actionId==="open-shipyard"){
       this.actionWrap.hidden=true;
