@@ -270,19 +270,6 @@ export class WorldRuntime {
           return false;
         }
         this.contextGuideTarget=null;
-        const stage=String(this.getTutorialGuide?.()?.stage||"");
-        if(stage==="missions-hunt"){
-          const target=this.combatTarget&&this.combatTarget.tutorialMissionCorsair===true
-            ?this.combatTarget
-            :this.nearestCombatTarget();
-          if(target){
-            if(this.combatTarget!==target)this.selectCombatTarget(target,{preserveMovement:true});
-            if(!this.isNavalTargetInRange(target)){
-              this.showGameplayToast("🏴‍☠️ Aproxime-se mais do corsário para disparar.",1800);
-              return false;
-            }
-          }
-        }
         return this.activateNearby();
       },
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
@@ -946,65 +933,6 @@ export class WorldRuntime {
     return entity;
   }
 
-  restoreTutorialCorsairMissionFleet(){
-    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
-    const progress=this.getMissionProgress?.()||{};
-    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
-    const requiredIds=Array.from({length:5-defeated},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
-    const liveById=new Map(this.entities
-      .filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-      .map(entity=>[String(entity.id),entity]));
-    const missing=requiredIds.filter(id=>!liveById.has(id));
-    if(missing.length)this.spawnTutorialCorsairMissionFleet(missing);
-    const targets=requiredIds.map(id=>this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id)).filter(Boolean);
-    for(const entity of targets){
-      entity.tutorialCombatTarget=true;
-      entity.tutorialCombatPhase="hunt";
-    }
-    this.syncAutomaticCombatTarget();
-    this.updateTutorialGuideArrow();
-    return targets;
-  }
-
-  spawnTutorialCorsairMissionFleet(slots=5){
-    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
-    const progress=this.getMissionProgress?.()||{};
-    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
-    const ids=Array.isArray(slots)
-      ?slots.map(String)
-      :Array.from({length:Math.max(0,5-defeated)},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
-    const population=normalizeNpcPopulation(this.config.npcPopulation||{});
-    const typeConfig=population.types.find(type=>type.enabled!==false)||null;
-    if(!typeConfig)return [];
-    const occupied=this.entities.filter(entity=>!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)).map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}));
-    occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
-    const spawned=[];
-    for(const id of ids){
-      const existing=this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id);
-      if(existing&&!this.collected.has(id)&&!this.navalDestroying.has(id)){spawned.push(existing);continue;}
-      if(this.collected.has(id))continue;
-      const random=createSeededRandom(hashString(String(this.config.id||"world")+"."+id));
-      const missionType={...typeConfig,respawn:false,spawn:{...(typeConfig.spawn||{}),nearPlayerMin:700,nearPlayerMax:1500}};
-      const entity=this.createGeneratedNpc({shipId:missionType.shipId||missionType.npcId,index:this.entities.length,typeConfig:missionType,population,random,occupied});
-      if(!entity)continue;
-      entity.id=id;
-      entity.npcId=String(entity.npcId||missionType.npcId||missionType.shipId||"tutorial-corsair");
-      entity.tutorialMissionCorsair=true;
-      entity.tutorialCombatTarget=true;
-      entity.tutorialCombatPhase="hunt";
-      entity.tutorialDefeated=false;
-      entity.index=this.entities.length;
-      this.entities.push(entity);
-      this.generatedNpcIds.add(id);
-      this.entityById?.set(id,entity);
-      this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
-      occupied.push({x:Number(entity.x)||0,y:Number(entity.y)||0});
-      spawned.push(entity);
-    }
-    this.renderEntities();
-    return spawned;
-  }
-
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
     // NPC refresh must never remove runtime treasures. Both NPCs and treasures
@@ -1496,9 +1424,6 @@ export class WorldRuntime {
     this.cleanups.push(()=>window.removeEventListener("resize",this.onResize));
 
     this.setMode(this.mode);
-    if(String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt"){
-      this.restoreTutorialCorsairMissionFleet();
-    }
     this.renderMinimap(true);
     this.lastTime=performance.now();
     this.gameLoop?.stop?.();
@@ -1837,7 +1762,6 @@ export class WorldRuntime {
       if(!this.isClickableCombatShip(entity))continue;
       const tutorialStage=String(this.getTutorialGuide?.()?.stage||"");
       if(["attack-ship","attack-ship-2"].includes(tutorialStage)&&entity.tutorialDefeated===true)continue;
-      if(tutorialStage==="missions-hunt"&&entity.tutorialMissionCorsair!==true)continue;
       const distance=this.navalTargetDistance(entity);
       if(!Number.isFinite(distance)||distance>=nearestDistance)continue;
       nearest=entity;
@@ -5935,12 +5859,7 @@ export class WorldRuntime {
       this.beginStarterAmmoChallenge();
       return;
     }
-    const tutorialMissionHunt=String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt";
-    const missionTarget=tutorialMissionHunt
-      ?(this.combatTarget?.tutorialMissionCorsair===true?this.combatTarget:this.nearestCombatTarget())
-      :null;
-    const entity=missionTarget
-      ||(this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:this.nearby);
+    const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:this.nearby;
     if(!entity||this.mode!=="play")return;
 
     const collision=normalizeCollision(entity.collision||{},entity);
@@ -6920,9 +6839,9 @@ export class WorldRuntime {
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="region-exit"&&String(entity?.destinationWorldId||"")==="r2-costa-corsarios")
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
-    }else if(stage==="attack-ship"||stage==="attack-ship-2"||stage==="missions-hunt"){
+    }else if(stage==="attack-ship"||stage==="attack-ship-2"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
-      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="ready-fire"){
+      if(locked?.tutorialCombatPhase==="ready-fire"){
         const fireButton=this.mobileHud?.wrap?.querySelector?.('[data-hud-action="fire"]');
         const rect=fireButton?.getBoundingClientRect?.();
         if(rect&&rect.width>0&&rect.height>0){
@@ -6945,13 +6864,13 @@ export class WorldRuntime {
           return;
         }
       }
-      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="firing"){
+      if(locked?.tutorialCombatPhase==="firing"){
         this.tutorialArrowEl?.remove();
         this.tutorialArrowEl=null;
         return;
       }
       target=locked||this.entities
-        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)&&(stage!=="missions-hunt"||entity.tutorialMissionCorsair===true))
+        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
