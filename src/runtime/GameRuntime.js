@@ -2220,8 +2220,18 @@ export class GameRuntime {
         this.playerAmmo=normalizeGlobalAmmo(ammo);
         this.ensurePlayerAmmo();
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="switch-ammo"&&String(this.playerAmmo.selectedAmmoId||"")==="cannonball-piercing"){
-          this.setR1TutorialStage("repair-ship",{save:false});
-          queueMicrotask(()=>this.worldRuntime?.showGameplayToast?.("🔧 Munição equipada. Agora restaure todo o casco.",2800));
+          const hp=Math.max(0,Number(this.worldRuntime?.playerHp)||0);
+          const maxHp=Math.max(1,Number(this.worldRuntime?.playerMaxHp)||1000);
+          if(hp<maxHp){
+            this.setR1TutorialStage("repair-ship",{save:false});
+            queueMicrotask(()=>this.worldRuntime?.showGameplayToast?.("🔧 Munição equipada. Agora restaure todo o casco.",2800));
+          }else{
+            this.setR1TutorialStage("attack-ship-2",{save:true,sync:true});
+            queueMicrotask(()=>{
+              this.worldRuntime?.spawnTutorialCorsairForSecondDuel?.();
+              this.worldRuntime?.showGameplayToast?.("💥 Casco já está completo. Siga para o segundo combate.",2800);
+            });
+          }
         }
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
