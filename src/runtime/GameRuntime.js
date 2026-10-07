@@ -1819,7 +1819,10 @@ export class GameRuntime {
         }
       };
 
-      if(cleanEntity.npcId){
+      if(cleanEntity.tutorialMissionCorsair===true){
+        await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId||cleanEntity.shipId||"tutorial-corsair"),amount:1});
+        if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
+      }else if(cleanEntity.npcId){
         await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId),amount:1});
       }
 
