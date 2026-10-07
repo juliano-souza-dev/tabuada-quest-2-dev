@@ -1,7 +1,7 @@
 // Explicit frame-phase contract. The caller supplies operations, not a mutable
 // WorldRuntime reference, so this module owns ordering without owning entities.
 export function createWorldSimulationPipeline(steps){
-  const required=["movePlayer","correctAuthority","renderPlayer","animatePlayerWater","moveEntities","populateTreasures","lockTreasureCombat","collectTreasures","selectCombatTarget","updateCombat","updateTutorial","updateCameraInput","updateCamera","updateEnvironment"];
+  const required=["movePlayer","correctAuthority","renderPlayer","animatePlayerWater","moveEntities","populateTreasures","lockTreasureCombat","collectTreasures","selectCombatTarget","updateCombat","updateCameraInput","updateCamera","updateEnvironment"];
   for(const key of required){
     if(typeof steps?.[key]!=="function")throw new TypeError("Missing simulation step: "+key);
   }
@@ -18,7 +18,6 @@ export function createWorldSimulationPipeline(steps){
       steps.selectCombatTarget();
       steps.updateCombat(time);
     }
-    steps.updateTutorial();
     steps.updateCameraInput(dt);
     steps.updateCamera(dt);
     steps.updateEnvironment(time);
