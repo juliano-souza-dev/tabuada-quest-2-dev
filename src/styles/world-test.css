@@ -1833,14 +1833,14 @@ html.tq-missions-open .tq-mobile-hud__missions{pointer-events:auto}
 
 .tq-player-status{
   position:absolute;
-  right:max(14px,env(safe-area-inset-right));
+  right:max(18px,env(safe-area-inset-right));
   left:auto;
-  bottom:max(318px,calc(env(safe-area-inset-bottom) + 310px));
-  width:min(210px,46vw);
+  bottom:max(330px,calc(env(safe-area-inset-bottom) + 322px));
+  width:min(220px,48vw);
   display:grid;
   gap:4px;
   pointer-events:none;
-  z-index:1;
+  z-index:2;
 }
 .tq-player-status>small{
   padding-left:6px;
