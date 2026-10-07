@@ -144,7 +144,7 @@ export class GameRuntime {
     if(this.restoreSession)this.localRestored=this.restorePersistedState();
 
     const save=()=>this.saveState();
-    const visibility=()=>{if(document.visibilityState==="hidden")save()};
+    const visibility=()=>{if(document.visibilityState==="hidden"){save();this.syncCloud("visibility-hidden");}};
     const onlineRewardSync=()=>{
       this.syncRewardClaimMarkers().catch(error=>console.warn("Reward claim marker sync failed",error));
     };
@@ -199,13 +199,14 @@ export class GameRuntime {
       if(this.current?.kind==="world")this.saveState();
     },3000);
 
-    globalThis.addEventListener?.("pagehide",save);
+    const pagehide=()=>{save();this.syncCloud("pagehide");};
+    globalThis.addEventListener?.("pagehide",pagehide);
     globalThis.addEventListener?.("online",onlineRewardSync);
     globalThis.addEventListener?.("tq:auth-entry-ready",authReady);
     globalThis.addEventListener?.("tq:auth-signed-out",signedOut);
     document.addEventListener?.("visibilitychange",visibility);
     this.cleanups.push(()=>{
-      globalThis.removeEventListener?.("pagehide",save);
+      globalThis.removeEventListener?.("pagehide",pagehide);
       globalThis.removeEventListener?.("online",onlineRewardSync);
       globalThis.removeEventListener?.("tq:auth-entry-ready",authReady);
       globalThis.removeEventListener?.("tq:auth-signed-out",signedOut);
