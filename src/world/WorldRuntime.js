@@ -522,6 +522,14 @@ export class WorldRuntime {
     this.navalAttackCooldown=clamp(Number(config.combat?.attackCooldownMs??900),300,5000);
     this.navalHp=new Map();
     this.navalHostile=new Map();
+    const restoredNpcHp=this.state?.navalNpcHp&&typeof this.state.navalNpcHp==="object"?this.state.navalNpcHp:{};
+    for(const entity of this.entities){
+      if(String(entity?.type||"")!=="ship"||!entity?.id)continue;
+      const id=String(entity.id);
+      const max=Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3));
+      const saved=Number(restoredNpcHp[id]);
+      this.navalHp.set(id,Number.isFinite(saved)?clamp(saved,0,max):max);
+    }
     this.navalPlayerMaxHp=resolvePlayerHullHp(this.config.player,this.config.combat||{});
     this.navalPlayerHp=clamp(
       Math.floor(Number(this.state.navalPlayerHp??this.navalPlayerMaxHp)||this.navalPlayerMaxHp),
@@ -7129,6 +7137,14 @@ export class WorldRuntime {
       player:{x:this.player.x,y:this.player.y,vx:this.player.vx,vy:this.player.vy,rotation:this.player.rotation,direction:this.player.direction},
       collected:[...this.collected],
       navalPlayerHp:this.navalPlayerHp,
+      navalNpcHp:Object.fromEntries(
+        this.entities
+          .filter(entity=>String(entity?.type||"")==="ship"&&entity?.id&&!this.collected.has(entity.id)&&!this.navalDestroying.has(String(entity.id)))
+          .map(entity=>{
+            const hp=this.navalHpState(entity);
+            return [String(entity.id),Math.max(0,Number(hp.current)||0)];
+          })
+      ),
       hullReinforcement:this.hullReinforcement?.hp>0&&Date.now()<Number(this.hullReinforcement.expiresAt||0)
         ?{
           hp:Math.max(0,Number(this.hullReinforcement.hp)||0),
