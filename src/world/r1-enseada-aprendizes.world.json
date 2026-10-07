@@ -417,7 +417,9 @@
           "mode": "random-spaced",
           "margin": 1000,
           "minDistance": 650,
-          "seed": 7201
+          "seed": 7201,
+          "nearPlayerMin": 520,
+          "nearPlayerMax": 900
         },
         "rewards": {
           "xp": 150,
@@ -437,7 +439,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-r1-halloween-boss-prep-v3",
+    "sourceRevision": "20261007-r1-corsario-visible-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
