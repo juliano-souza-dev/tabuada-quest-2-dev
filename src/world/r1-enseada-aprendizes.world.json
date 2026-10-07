@@ -521,17 +521,5 @@
     "nextWorldId": "r2-costa-corsarios",
     "previousWorldId": null,
     "halloween": true
-  },
-  "tutorial": {
-    "id": "r1-halloween-tutorial-v1",
-    "lockShopUntilMission": "HALLOWEEN_M05",
-    "lockRepairUntilHpBelow": 750,
-    "repairMission": "HALLOWEEN_M02",
-    "eventAmmoUnlockMission": "HALLOWEEN_M06",
-    "eventAmmoEvent": "halloween",
-    "bossMission": "HALLOWEEN_BOSS_10",
-    "rewardShipId": "ship-halloween-terror-reward-400",
-    "nextWorldId": "r2-costa-corsarios",
-    "blockReturnAfterComplete": true
   }
 }
