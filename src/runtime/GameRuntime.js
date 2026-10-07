@@ -1898,6 +1898,7 @@ export class GameRuntime {
     if(stage==="treasure")return {stage,action:"treasure",icon:"📦",title:"Primeiro tesouro",text:"Siga a seta até o tesouro e toque nele.",hudMode:"analog-only"};
     if(stage==="shipyard")return {stage,action:"shipyard",icon:"⚓",title:"Abra o Estaleiro",text:"Toque no Estaleiro para preparar seu primeiro canhão.",hudMode:"shipyard-only"};
     if(stage==="equip-cannon")return {stage,action:"equip-cannon",icon:"💥",title:"Equipe o canhão",text:"Na aba Canhões, equipe o Canhão do Marujo no seu navio.",hudMode:"shipyard-only"};
+    if(stage==="attack-ship")return {stage,action:"attack-ship",icon:"🔥",title:"Primeiro combate",text:"Siga a seta até um navio inimigo e use Atirar.",hudMode:"fire-only"};
     return null;
   }
 
@@ -2177,6 +2178,11 @@ export class GameRuntime {
       canSelectAmmo:()=>true,
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
+      onTutorialAttack:entity=>{
+        if(worldId!=="r1-enseada-aprendizes"||this.r1TutorialStage()!=="attack-ship")return;
+        this.setR1TutorialStage("complete",{save:true,sync:true});
+        this.worldRuntime?.showGameplayToast?.("💥 Etapa 2 concluída! Primeiro disparo realizado.",3200);
+      },
       onRuntimeStateChange:()=>{
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
@@ -2200,8 +2206,8 @@ export class GameRuntime {
         if(result.ok){
           await this.advanceMissions("equip_cannon",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
           if(worldId==="r1-enseada-aprendizes"&&["shipyard","equip-cannon"].includes(this.r1TutorialStage())){
-            this.setR1TutorialStage("complete",{save:true,sync:true});
-            this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Etapa 1 concluída! Seu navio está armado.",3600);
+            this.setR1TutorialStage("attack-ship",{save:true,sync:true});
+            this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Etapa 1 concluída! Agora siga a seta até um navio inimigo.",3600);
           }
         }
         return result.ok?{ok:true,message:"Canhão equipado."}:result;
