@@ -937,7 +937,7 @@ export class WorldRuntime {
     if(!this.entities)return;
     // NPC refresh must never remove runtime treasures. Both NPCs and treasures
     // are runtimeGenerated, so filtering only by runtimeGenerated erased every
-    // treasure when a mission completion rebuilt the NPC population.
+    // Preserve uncollected treasure when rebuilding NPC population.
     for(const entity of this.entities){
       const runtimeNpc=entity?.runtimeGenerated===true&&entity?.runtimeTreasure!==true&&String(entity?.type||"")==="ship";
       if(runtimeNpc&&entity.id)this.navalHp?.delete(String(entity.id));
