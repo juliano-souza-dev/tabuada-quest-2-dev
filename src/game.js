@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-ammo-auto-cheapest-v1";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-r1-tutorial-progression-v1";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
 
 const app=document.querySelector("#app");
