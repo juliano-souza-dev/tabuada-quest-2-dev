@@ -1783,7 +1783,20 @@ export class GameRuntime {
 
       const cannonId=String(reward.cannonId||"").trim();
       const cannonQuantity=Math.max(1,Math.floor(Number(reward.cannonQuantity)||1));
-      if(cannonId)this.grantCannon(cannonId,cannonQuantity,{save:false});
+      if(cannonId){
+        this.grantCannon(cannonId,cannonQuantity,{save:false});
+        if(reward.equipCannon===true){
+          const shipIdForCannon=String(this.playerShips?.equippedShip||"");
+          if(shipIdForCannon){
+            const equipped=this.getShipCannons(shipIdForCannon);
+            if(equipped.length<this.shipCannonCapacity(shipIdForCannon)){
+              equipped.push(cannonId);
+              this.playerCannons.equippedByShip[shipIdForCannon]=equipped;
+              this.ensurePlayerCannons();
+            }
+          }
+        }
+      }
       const ammoId=String(reward.ammoId||"").trim();
       const ammoQuantity=Math.max(0,Math.floor(Number(reward.ammoQuantity)||0));
       if(ammoId&&ammoQuantity>0)this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"mission-reward"});
