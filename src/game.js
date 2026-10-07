@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-halloween-boss-prep-v3");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-tabuada-sombria-sprite-v1");
 
 if(flowTest){
   try{
