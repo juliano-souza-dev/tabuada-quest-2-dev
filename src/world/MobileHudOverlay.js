@@ -97,8 +97,10 @@ export class MobileHudOverlay{
     const shield=iconButton("shield","Reforço","🛡️");
     const repair=iconButton("repair","Reparar","🔧");
     const missions=iconButton("missions","Missões","📜");
+    missions.hidden=true;
     const shop=iconButton("shop","Loja","🪙");
     const shipyard=iconButton("shipyard","Estaleiro","⚓");
+    shipyard.hidden=true;
     const settings=iconButton("settings","Config","⚙️");
     fire.classList.add("is-primary");
     dock.append(ammo,fire,follow,center,shield,repair,missions,shop,shipyard,settings);
