@@ -6645,128 +6645,15 @@ export class WorldRuntime {
     if(this.progressEl)this.progressEl.textContent=`Barris: ${collected}/${total}`;
   }
 
-  captureOfflineDynamicState(){
-    const entities={};
-    for(const entity of this.entities){
-      if(!entity?.runtimeGenerated||String(entity.type||"")!=="ship")continue;
-      const hp=this.navalHpState(entity);
-      entities[String(entity.id)]={
-        x:Number(entity.x)||0,y:Number(entity.y)||0,rotation:Number(entity.rotation)||0,
-        direction:String(entity.direction||"n"),hp:hp.current,
-        vx:Number(entity.npcNavigation?.vx)||0,vy:Number(entity.npcNavigation?.vy)||0,
-        hidden:entity.el?.hidden===true,
-        spawnCycle:Math.max(1,Number(entity.npcSpawnCycle)||1)
-      };
-    }
-    this.offlineDynamicState={entities,capturedAt:Date.now()};
-    return this.offlineDynamicState;
-  }
 
-  restoreOfflineDynamicState(){
-    const states=this.offlineDynamicState?.entities||{};
-    for(const entity of this.entities){
-      if(!entity?.runtimeGenerated)continue;
-      const state=states[String(entity.id)];
-      entity.serverAuthoritative=false;
-      entity.serverNetFrom=null;
-      entity.serverNetTo=null;
-      if(!state)continue;
-      entity.x=Number(state.x)||0;
-      entity.y=Number(state.y)||0;
-      entity.rotation=Number(state.rotation)||0;
-      entity.direction=String(state.direction||entity.direction||"n");
-      entity.anchorX=entity.x;entity.anchorY=entity.y;
-      entity.visualX=entity.x;entity.visualY=entity.y;entity.visualRotation=entity.rotation;
-      if(entity.npcNavigation){
-        entity.npcNavigation.vx=Number(state.vx)||0;
-        entity.npcNavigation.vy=Number(state.vy)||0;
-        entity.npcNavigation.heading=entity.rotation;
-        entity.npcNavigation.targetHeading=entity.rotation;
-      }
-      this.navalHp.set(String(entity.id),Math.max(0,Number(state.hp)||0));
-      entity.npcSpawnCycle=Math.max(1,Number(state.spawnCycle)||1);
-      this.navalDestroying.delete(String(entity.id));
-      if(entity.el)entity.el.hidden=state.hidden===true;
-      if(entity.nameEl)entity.nameEl.hidden=state.hidden===true;
-      entity.collision=normalizeCollision({...entity.collision,active:state.hidden!==true,action:"none"},entity);
-      this.syncCombatClickableEntity(entity);
-      this.syncCollisionVisual(entity);
-      this.applyEntityVisual(entity);
-    }
-    return true;
-  }
 
-  setServerWorldAuthority(active=false){
-    const next=active===true;
-    if(next&&!this.serverWorldAuthority)this.captureOfflineDynamicState();
-    this.serverWorldAuthority=next;
-    if(!next){
-      this.serverEntityStates.clear();
-      this.restoreOfflineDynamicState();
-    }
-    return this.serverWorldAuthority;
-  }
 
-  dynamicWorldSeed(){
-    const area=this.getPlayableBounds();
-    const dynamicShips=this.entities
-      .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship");
-    const revisionPayload=dynamicShips.map(entity=>[
-      String(entity.id||""),String(entity.npcId||""),Math.max(0,Number(entity.npcNavigation?.speed)||0),
-      Math.max(1,Number(this.navalHpState(entity).max)||1),Math.max(0,Number(entity.hitRewardGold)||0)
-    ]);
-    const revision=String(this.config.id||"world")+"-"+hashString(JSON.stringify(revisionPayload)).toString(36);
-    return {
-      revision,
-      bounds:{left:area.left,top:area.top,right:area.right,bottom:area.bottom},
-      entities:dynamicShips
-        .filter(entity=>entity?.runtimeGenerated===true&&String(entity.type||"")==="ship")
-        .map((entity,serverSlot)=>{
-          const hp=this.navalHpState(entity);
-          const nav=entity.npcNavigation||{};
-          return {
-            id:String(entity.id||""),
-            serverSlot,
-            npcId:String(entity.npcId||""),
-            shipId:String(entity.shipId||""),
-            name:String(entity.label||entity.shipName||"NPC"),
-            x:Number(entity.x)||0,
-            y:Number(entity.y)||0,
-            rotation:Number(entity.rotation)||0,
-            direction:String(entity.direction||"n"),
-            speed:Math.max(0,Number(nav.speed)||0),
-            minSpeed:Math.max(0,Number(nav.minSpeed)||0),
-            acceleration:Math.max(0,Number(nav.acceleration)||0),
-            hp:hp.current,
-            maxHp:hp.max,
-            boss:this.isCoopBoss(entity),
-            hostile:String(entity.npcAttitude||"")!=="peaceful",
-            respawn:entity.respawn===true,
-            respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||30000),
-            spawnId:Math.max(1,Number(entity.npcSpawnCycle)||1),
-            attackRange:this.entityNavalCombatStats(entity).attackRange,
-            attackCooldownMs:this.entityNavalCombatStats(entity).attackCooldownMs,
-            projectileSpeed:this.entityNavalCombatStats(entity).projectileSpeed,
-            damage:(()=>{
-              const stats=this.entityNavalCombatStats(entity);
-              const cannon=stats.loadout?.cannons?.[0];
-              const ammo=stats.loadout?.ammo;
-              const fixed=Math.max(0,Number(entity?.combat?.fixedDamagePerShot)||0);
-              if(fixed>0)return fixed;
-              return ammo&&cannon
-                ?navalShotDamage(cannon,ammo)
-                :Math.max(.1,Number(stats.damage)||1);
-            })(),
-            ammoId:String(this.entityNavalCombatStats(entity).loadout?.ammo?.id||entity.combat?.ammoId||""),
-            volleyCount:Math.max(1,Math.floor((this.entityNavalCombatStats(entity).cannonCount||1)/2)),
-            hitRadius:Math.max(36,Math.min(220,Math.max(Number(entity.width)||96,Number(entity.height)||96)*.36)),
-            hitRewardGold:Math.max(0,Math.floor(Number(entity.hitRewardGold)||0))
-          };
-        })
-    };
-  }
 
-  syncServerEntities(states={}){
+
+
+
+
+){
     if(!states||typeof states!=="object")return false;
     this.serverWorldAuthority=true;
     const now=performance.now();
@@ -6819,31 +6706,9 @@ export class WorldRuntime {
     return true;
   }
 
-  updateServerEntities(time=performance.now()){
-    if(!this.serverWorldAuthority)return;
-    for(const entity of this.entities){
-      if(!entity?.serverAuthoritative)continue;
-      const a=entity.serverNetFrom,b=entity.serverNetTo;
-      if(!a||!b)continue;
-      const rawT=(time-a.at)/Math.max(1,b.at-a.at);
-      if(rawT<=1){
-        const t=clamp(rawT,0,1);
-        entity.x=a.x+(b.x-a.x)*t;
-        entity.y=a.y+(b.y-a.y)*t;
-        entity.rotation=lerpAngle(a.rotation,b.rotation,t);
-      }else{
-        const extraSec=clamp((time-b.at)/1000,0,.12);
-        const velocity=entity.serverNetVelocity||{};
-        entity.x=b.x+(Number(velocity.vx)||0)*extraSec;
-        entity.y=b.y+(Number(velocity.vy)||0)*extraSec;
-        entity.rotation=b.rotation;
-      }
-      entity.anchorX=entity.x;
-      entity.anchorY=entity.y;
-    }
-  }
 
-  applyAuthoritativeEntityHit(event={}){
+
+){
     const eventEntityId=String(event.entityId||"");
     const entity=this.entities.find(item=>String(item?.id||"")===eventEntityId||String(item?.serverEntityId||"")===eventEntityId);
     if(!entity)return false;
@@ -6936,22 +6801,7 @@ export class WorldRuntime {
     return true;
   }
 
-  setCoopTransport(transport=null){
-    this.coopTransport=transport||null;
-    this.coopLocalUid=String(transport?.uid||"");
-    for(const entity of this.entities){
-      if(this.isCoopBoss(entity)){
-        const hp=this.navalHpState(entity);
-        this.coopTransport?.ensureBoss?.({
-          bossId:this.coopBossId(entity),
-          entityId:entity.id,
-          name:entity.label||entity.shipName||"Boss",
-          maxHp:hp.max,
-          respawnDelayMs:Math.max(1000,Number(entity.respawnDelayMs)||300000)
-        }).catch?.(()=>{});
-      }
-    }
-  }
+
 
   isCoopBoss(entity){
     return Boolean(entity&&String(entity.type||"")==="ship"&&(entity.coopBoss===true||entity.boss===true||entity.combat?.boss===true||entity.npcRole==="boss"));
@@ -6959,35 +6809,9 @@ export class WorldRuntime {
 
   coopBossId(entity){return String(entity?.coopBossId||entity?.npcId||entity?.id||"").replace(/[^a-z0-9._-]+/gi,"-");}
 
-  notifyCoopBossDefeated(entity){
-    if(!this.isCoopBoss(entity))return false;
-    const bossId=this.coopBossId(entity);
-    const state=this.coopBossStates.get(bossId)||{};
-    const spawnId=String(state.spawnId||entity.bossSpawnCycle||1);
-    const notifyKey=bossId+":"+spawnId;
-    const authoritativeHp=Math.max(0,Number(state.hp));
-    if(!bossId||state.defeated!==true||authoritativeHp>0||this.coopBossRewardNotified.has(notifyKey))return false;
-    this.coopBossRewardNotified.add(notifyKey);
-    const maxHp=Math.max(1,Number(state.maxHp)||Number(entity.combat?.hp)||1);
-    const serverContribution=Math.max(0,Number(state.contributors?.[this.coopLocalUid])||0);
-    const localContribution=Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0);
-    const damage=Math.max(serverContribution,localContribution);
-    const damageRatio=clamp(damage/maxHp,0,1);
-    const minimumRatio=clamp(Number(entity.combat?.rewardMinDamageRatio)||0,0,1);
-    this.onBossDefeated?.({
-      bossId,
-      spawnId,
-      entity:this.cleanEntity(entity),
-      rewards:structuredClone(entity?.rewards||{}),
-      defeated:true,
-      hp:authoritativeHp,
-      maxHp,
-      contribution:{damage,damageRatio,minimumRatio,eligible:damageRatio>=minimumRatio}
-    });
-    return true;
-  }
 
-  syncCoopBosses(bosses={}){
+
+){
     this.coopBossStates=new Map(Object.entries(bosses&&typeof bosses==="object"?bosses:{}));
     for(const entity of this.entities){
       if(!this.isCoopBoss(entity))continue;const bossId=this.coopBossId(entity),state=this.coopBossStates.get(bossId);if(!state)continue;
@@ -7012,7 +6836,7 @@ export class WorldRuntime {
     }
   }
 
-  syncRemotePlayers(players=[],meta={}){
+){
     const seen=new Set();
     const receivedAt=performance.now();
     for(const remote of Array.isArray(players)?players:[]){
@@ -7074,45 +6898,9 @@ export class WorldRuntime {
     this.entities.forEach((e,i)=>e.index=i);
   }
 
-  updateRemotePlayers(time=performance.now()){
-    const renderTime=time-100;
-    for(const entity of this.remotePlayers.values()){
-      const snapshots=Array.isArray(entity.netSnapshots)?entity.netSnapshots:null;
-      if(!snapshots?.length)continue;
 
-      while(snapshots.length>2&&snapshots[1].at<renderTime-250)snapshots.shift();
 
-      let a=snapshots[0],b=null;
-      for(let i=1;i<snapshots.length;i++){
-        if(snapshots[i].at>=renderTime){
-          b=snapshots[i];
-          break;
-        }
-        a=snapshots[i];
-      }
-
-      if(b&&b.at>a.at){
-        const t=clamp((renderTime-a.at)/(b.at-a.at),0,1);
-        entity.x=a.x+(b.x-a.x)*t;
-        entity.y=a.y+(b.y-a.y)*t;
-        entity.rotation=lerpAngle(a.rotation,b.rotation,t);
-      }else if(renderTime<=a.at){
-        entity.x=a.x;entity.y=a.y;entity.rotation=a.rotation;
-      }else{
-        const extraSec=clamp((renderTime-a.at)/1000,0,.12);
-        entity.x=a.x+(Number(a.vx)||0)*extraSec;
-        entity.y=a.y+(Number(a.vy)||0)*extraSec;
-        entity.rotation=a.rotation;
-      }
-
-      entity.visualX=entity.x;
-      entity.visualY=entity.y;
-      entity.visualRotation=entity.rotation;
-      this.applyEntityVisual(entity);
-    }
-  }
-
-  syncServerProjectiles(projectiles={},meta={}){
+,meta={}){
     if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
     const serverNow=Number(meta?.serverTime)||Date.now();
     const now=performance.now();
@@ -7152,7 +6940,7 @@ export class WorldRuntime {
     }
   }
 
-  multiplayerNpcSource(event={}){
+){
     const ownerId=String(event.ownerId||"");
     if(!ownerId)return null;
     return this.entityByIdGet(ownerId)
@@ -7160,7 +6948,7 @@ export class WorldRuntime {
       ||null;
   }
 
-  multiplayerNpcCanRetaliateLocally(event={}){
+){
     if(String(event.ownerType||"")!=="entity")return true;
     if(String(event.targetType||"")!=="player")return true;
     if(String(event.targetId||"")!==String(this.coopLocalUid||""))return true;
@@ -7169,7 +6957,7 @@ export class WorldRuntime {
     return this.navalHostile.has(String(source.id||""));
   }
 
-  handleMultiplayerEvent(event={}){
+){
     if(event.type==="fire.rejected"){
       if(event.ammo)this.replaceAmmoInventory(event.ammo);
       const reason=String(event.reason||"");
