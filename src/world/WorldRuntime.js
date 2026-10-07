@@ -5300,10 +5300,11 @@ export class WorldRuntime {
     }
 
     if(this.actionMessage){
+      const currentHp=this.entityNavalHp(entity);
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
         +" · "+firedCount+" canhão"+(firedCount===1?"":"ões")+" disparado"+(firedCount===1?"":"s")
         +(ammoUnlimited?"":" · munição "+ammoRemaining)
-        +" · casco "+hp.current+"/"+hp.max;
+        +" · casco "+currentHp.current+"/"+currentHp.max;
     }
     return true;
   }
