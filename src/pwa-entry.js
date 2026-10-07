@@ -24,7 +24,7 @@ const showOpeningBanner=async()=>{
     inset:"0",
     width:"100%",
     height:"100%",
-    objectFit:"cover",
+    objectFit:"contain",
     objectPosition:"center",
     display:"block",
     imageRendering:"auto",
@@ -38,33 +38,18 @@ const showOpeningBanner=async()=>{
   Object.assign(play.style,{
     position:"absolute",
     left:"50%",
-    bottom:"clamp(20px, 4.5vh, 54px)",
+    bottom:"clamp(5.5%, 6.5vh, 9%)",
     transform:"translateX(-50%)",
-    width:"clamp(132px, 15vw, 220px)",
-    maxWidth:"42vw",
+    width:"min(72vw, 330px)",
+    height:"clamp(72px, 14vh, 132px)",
     border:"0",
     padding:"0",
     margin:"0",
     background:"transparent",
     cursor:"pointer",
     zIndex:"2",
-    WebkitTapHighlightColor:"transparent",
-    filter:"none"
+    WebkitTapHighlightColor:"transparent"
   });
-
-  const playImg=document.createElement("img");
-  playImg.src="./assets/ui/icons/events/halloween/jogar.png?v=20261006-opening-banner-play-v2";
-  playImg.alt="Jogar";
-  Object.assign(playImg.style,{
-    width:"100%",
-    height:"auto",
-    display:"block",
-    objectFit:"contain",
-    imageRendering:"auto",
-    filter:"none"
-  });
-  play.append(playImg);
-
   overlay.append(img,play);
   document.body.append(overlay);
 
