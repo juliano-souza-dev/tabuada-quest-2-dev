@@ -845,7 +845,8 @@
         "cannonId": "cannon-basic",
         "cannonQuantity": 1,
         "ammoId": "cannonball-standard",
-        "ammoQuantity": 100
+        "ammoQuantity": 100,
+        "equipCannon": true
       }
     },
     {
