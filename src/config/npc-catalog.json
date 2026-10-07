@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 10,
+  "version": 11,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -338,6 +338,28 @@
         "damage": 1,
         "cannonLoadout": [],
         "ammoId": "cannonball-standard",
+        "ammoUnlimited": false
+      }
+    },
+    {
+      "id": "npc-guardiao-abissal",
+      "name": "Guardião Abissal",
+      "shipId": "monster-guardiao-abissal",
+      "entityKind": "monster",
+      "width": 320,
+      "height": 320,
+      "navigation": {
+        "minSpeed": 22,
+        "speed": 82,
+        "acceleration": 230,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 1200,
+        "attitude": "peaceful",
+        "damage": 8,
+        "maxTargets": 1,
+        "cannonLoadout": [],
         "ammoUnlimited": false
       }
     }
