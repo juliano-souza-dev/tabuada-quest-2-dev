@@ -1,4 +1,4 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-r1-tutorial-progression-v3";
+import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-r1-tutorial-progression-v4";
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
 
 const app=document.querySelector("#app");
@@ -94,7 +94,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-r1-tutorial-progression-v3");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-r1-tutorial-progression-v4");
 
 if(flowTest){
   try{
