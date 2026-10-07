@@ -943,7 +943,9 @@ export class WorldRuntime {
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
-    if(entity.devFrozen||entity.bossCombatStopped===true){
+    const tutorialAttack=String(this.getTutorialGuide?.()?.stage||"")==="attack-ship";
+    const tutorialHold=tutorialAttack&&entity.tutorialCombatTarget===true&&entity.tutorialCombatPhase!=="chase";
+    if(entity.devFrozen||entity.bossCombatStopped===true||tutorialHold){
       if(nav){
         nav.vx=0;
         nav.vy=0;
@@ -1654,6 +1656,11 @@ export class WorldRuntime {
     if(!nearest){
       if(this.combatTarget)this.clearCombatTarget({hideAction:true});
       return false;
+    }
+    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&this.isNavalTargetInRange(nearest)&&nearest.tutorialCombatPhase!=="chase"){
+      nearest.tutorialCombatTarget=true;
+      nearest.tutorialCombatPhase=nearest.tutorialCombatPhase||"ready-fire";
+      if(nearest.npcNavigation){nearest.npcNavigation.vx=0;nearest.npcNavigation.vy=0;}
     }
     if(this.combatTarget===nearest)return false;
     return this.selectCombatTarget(nearest,{preserveMovement:true});
@@ -5021,6 +5028,18 @@ export class WorldRuntime {
       return;
     }
 
+    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&entity.tutorialCombatTarget===true&&entity.tutorialCombatPhase!=="chase"&&next/hp.max<=.10){
+      entity.tutorialCombatPhase="chase";
+      if(entity.npcNavigation){
+        entity.npcNavigation.mode="sailing";
+        entity.npcNavigation.vx=0;
+        entity.npcNavigation.vy=0;
+        entity.npcNavigation.nextCourseChange=0;
+      }
+      this.stopNavalAutoFire({keepTarget:true,message:"🏴‍☠️ O corsário está fugindo. Vá atrás dele!"});
+      this.showGameplayToast?.("🏴‍☠️ Ele está fugindo! Siga a seta.",2600);
+    }
+
     if(this.actionMessage){
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+next+"/"+hp.max;
     }
@@ -5252,13 +5271,15 @@ export class WorldRuntime {
 
     if(!firedCount)return false;
     if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"){
-      if(!entity.tutorialCombatTarget){
-        entity.tutorialCombatTarget=true;
+      entity.tutorialCombatTarget=true;
+      if(!entity.tutorialCombatCalibrated){
         const perHit=Math.max(.1,Number(volleyShots[0]?.shotDamage)||1);
         const exactHp=Math.round(perHit*19.5*10)/10;
         entity.combat={...(entity.combat||{}),hp:exactHp};
         this.navalHp.set(String(entity.id),exactHp);
+        entity.tutorialCombatCalibrated=true;
       }
+      if(entity.tutorialCombatPhase!=="chase")entity.tutorialCombatPhase="firing";
       this.onTutorialAttack?.(entity);
     }
     this.audio?.play("cannon-shot");
@@ -6629,10 +6650,15 @@ export class WorldRuntime {
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }else if(stage==="attack-ship"){
-      target=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-        ||this.entities
-          .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-          .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
+      const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
+      if(locked?.tutorialCombatPhase==="ready-fire"||locked?.tutorialCombatPhase==="firing"){
+        this.tutorialArrowEl?.remove();
+        this.tutorialArrowEl=null;
+        return;
+      }
+      target=locked||this.entities
+        .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+        .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
       this.tutorialArrowEl?.remove();
