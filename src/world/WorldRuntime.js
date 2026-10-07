@@ -972,50 +972,54 @@ export class WorldRuntime {
     if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
     const progress=this.getMissionProgress?.()||{};
     const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
-    const remaining=Math.max(0,5-defeated);
-    if(remaining<=0)return [];
-    const live=this.entities.filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id));
-    // Runtime-generated NPCs are not persisted as mission identity, so a page
-    // reload must reconstruct only the number still required by saved progress.
-    if(live.length<remaining)this.spawnTutorialCorsairMissionFleet(remaining);
-    const targets=this.entities
+    const requiredIds=Array.from({length:5-defeated},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
+    const liveById=new Map(this.entities
       .filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-      .slice(0,remaining);
+      .map(entity=>[String(entity.id),entity]));
+    const missing=requiredIds.filter(id=>!liveById.has(id));
+    if(missing.length)this.spawnTutorialCorsairMissionFleet(missing);
+    const targets=requiredIds.map(id=>this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id)).filter(Boolean);
     for(const entity of targets){
       entity.tutorialCombatTarget=true;
-      entity.tutorialCombatPhase=entity.tutorialCombatPhase||"hunt";
+      entity.tutorialCombatPhase="hunt";
     }
     this.syncAutomaticCombatTarget();
     this.updateTutorialGuideArrow();
     return targets;
   }
 
-  spawnTutorialCorsairMissionFleet(count=5){
+  spawnTutorialCorsairMissionFleet(slots=5){
     if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
-    const wanted=Math.max(1,Math.min(5,Math.floor(Number(count)||5)));
-    const existing=this.entities.filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id));
-    if(existing.length>=wanted)return existing.slice(0,wanted);
+    const progress=this.getMissionProgress?.()||{};
+    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
+    const ids=Array.isArray(slots)
+      ?slots.map(String)
+      :Array.from({length:Math.max(0,5-defeated)},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
     const population=normalizeNpcPopulation(this.config.npcPopulation||{});
     const typeConfig=population.types.find(type=>type.enabled!==false)||null;
-    if(!typeConfig)return existing;
+    if(!typeConfig)return [];
     const occupied=this.entities.filter(entity=>!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)).map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}));
     occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
-    const spawned=[...existing];
-    for(let i=existing.length;i<wanted;i++){
-      const random=createSeededRandom(hashString(String(this.config.id||"world")+".tutorial-mission-corsair."+i+"."+Date.now()));
+    const spawned=[];
+    for(const id of ids){
+      const existing=this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id);
+      if(existing&&!this.collected.has(id)&&!this.navalDestroying.has(id)){spawned.push(existing);continue;}
+      if(this.collected.has(id))continue;
+      const random=createSeededRandom(hashString(String(this.config.id||"world")+"."+id));
       const missionType={...typeConfig,respawn:false,spawn:{...(typeConfig.spawn||{}),nearPlayerMin:700,nearPlayerMax:1500}};
       const entity=this.createGeneratedNpc({shipId:missionType.shipId||missionType.npcId,index:this.entities.length,typeConfig:missionType,population,random,occupied});
       if(!entity)continue;
-      entity.id="npc.tutorial.mission.corsair."+i+"."+Date.now().toString(36);
+      entity.id=id;
+      entity.npcId=String(entity.npcId||missionType.npcId||missionType.shipId||"tutorial-corsair");
       entity.tutorialMissionCorsair=true;
       entity.tutorialCombatTarget=true;
       entity.tutorialCombatPhase="hunt";
       entity.tutorialDefeated=false;
       entity.index=this.entities.length;
       this.entities.push(entity);
-      this.generatedNpcIds.add(entity.id);
-      this.entityById?.set(String(entity.id),entity);
-      this.navalHp.set(String(entity.id),Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
+      this.generatedNpcIds.add(id);
+      this.entityById?.set(id,entity);
+      this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
       occupied.push({x:Number(entity.x)||0,y:Number(entity.y)||0});
       spawned.push(entity);
     }
