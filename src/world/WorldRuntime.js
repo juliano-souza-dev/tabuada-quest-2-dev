@@ -4607,7 +4607,8 @@ export class WorldRuntime {
       };
       this.onPedagogyResult?.(detail);
       if(result.correct===true){
-        const repairGain=Math.max(1,Math.ceil(this.navalPlayerMaxHp*.25));\n        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+repairGain);
+        const repairGain=Math.max(1,Math.ceil(this.navalPlayerMaxHp*.25));
+        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+repairGain);
         if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
         this.showAnswerFeedback({
           correct:true,selectedButton,expected:result.expected,
