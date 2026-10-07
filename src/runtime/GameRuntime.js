@@ -586,7 +586,7 @@ export class GameRuntime {
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     return {
       ...base,
-      progressEpoch:3,
+      progressEpoch:4,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
         settings:{
@@ -2020,7 +2020,26 @@ export class GameRuntime {
 
     // Mission progress is driven by the successful collection event itself.
     // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
-    await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
+    const missionAdvance=await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
+
+    // Tutorial step 1 is atomic: the very first successful treasure collection
+    // must leave the player armed immediately. Never require a second chest,
+    // reload or UI refresh for the starter combat loadout to exist.
+    if(missionAdvance?.completed?.includes("HALLOWEEN_M01")){
+      const starterCannonId="cannon-basic";
+      const starterAmmoId="cannonball-standard";
+      const shipId=String(this.playerShips?.equippedShip||"");
+      const owned=Math.max(0,Math.floor(Number(this.playerCannons?.owned?.[starterCannonId])||0));
+      if(owned<1)this.grantCannon(starterCannonId,1-owned,{save:false});
+      if(this.ammoQuantity(starterAmmoId)<100)this.grantAmmo(starterAmmoId,100-this.ammoQuantity(starterAmmoId),{save:false,source:"tutorial-first-treasure"});
+      if(shipId&&!this.getShipCannons(shipId).includes(starterCannonId)&&this.getShipCannons(shipId).length<this.shipCannonCapacity(shipId)){
+        this.playerCannons.equippedByShip[shipId]=[...this.getShipCannons(shipId),starterCannonId];
+        this.ensurePlayerCannons();
+      }
+      this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+      this.saveState();
+      this.syncCloud("tutorial-first-treasure");
+    }
 
     // Treasure rewards are granted separately. WorldRuntime may emit the generic
     // reward callback later; using the same claim key keeps payout idempotent.
