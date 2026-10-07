@@ -3010,23 +3010,17 @@ export class WorldRuntime {
         this.beginPlayerRepair({forced:false});
         return;
       }
-      // Bind the visible prompt to the entity that produced it. Combat state
-      // must never be able to steal or invalidate a dock click.
-      const promptEntityId=String(this.actionButton?.dataset?.interactionEntityId||"");
-      if(promptEntityId){
-        const promptEntity=this.entityById?.get(promptEntityId)||this.entities.find(entity=>String(entity?.id||"")===promptEntityId);
-        const interaction=promptEntity?this.entityInteraction(promptEntity):null;
-        if(interaction?.actionId==="open-shipyard"){
-          this.actionWrap.hidden=true;
-          this.shipyardOverlay?.open?.();
-          return;
-        }
-        if(interaction?.actionId==="open-missions"){
-          this.actionWrap.hidden=true;
-          this.mobileHud?.openMissions?.();
-          this.mobileHud?.onMissionsOpen?.();
-          return;
-        }
+      const directAction=String(this.actionButton?.dataset?.interactionAction||"");
+      if(directAction==="open-shipyard"){
+        this.actionWrap.hidden=true;
+        this.shipyardOverlay?.open?.();
+        return;
+      }
+      if(directAction==="open-missions"){
+        this.actionWrap.hidden=true;
+        this.mobileHud?.openMissions?.();
+        this.mobileHud?.onMissionsOpen?.();
+        return;
       }
       this.activateNearby();
     };
@@ -5027,7 +5021,12 @@ export class WorldRuntime {
         this.actionWrap.style.setProperty("--tq-world-message-asset",safeAsset?'url("'+safeAsset+'")':"none");
         if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
         this.actionButton.textContent=collisionActionLabel(entity,collision);
-        this.actionButton.dataset.interactionEntityId=String(entity.id||"");
+        const directAction=String(interaction?.actionId||"");
+        if(directAction==="open-shipyard"||directAction==="open-missions"){
+          this.actionButton.dataset.interactionAction=directAction;
+        }else{
+          delete this.actionButton.dataset.interactionAction;
+        }
         this.actionButton.disabled=false;
         this.actionWrap.hidden=false;
         return;
@@ -5035,7 +5034,7 @@ export class WorldRuntime {
     }
 
     // No immediate map interaction: combat UI can use the interaction slot.
-    if(this.actionButton)delete this.actionButton.dataset.interactionEntityId;
+    if(this.actionButton)delete this.actionButton.dataset.interactionAction;
     if(this.combatTarget){
       if(this.isClickableCombatShip(this.combatTarget)){
         const combatEntity=this.combatTarget;
