@@ -5988,7 +5988,8 @@ export class WorldRuntime {
     }
     if(interaction?.actionId==="open-missions"){
       this.actionWrap.hidden=true;
-      this.missionOverlay?.open?.();
+      this.mobileHud?.openMissions?.();
+      this.mobileHud?.onMissionsOpen?.();
       return;
     }
 
