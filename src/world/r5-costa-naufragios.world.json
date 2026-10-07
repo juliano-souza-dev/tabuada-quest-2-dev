@@ -250,14 +250,56 @@
   },
   "entities": [
     {
-      "id": "r5-costa-naufragios.ilha-fundo-transparente-1",
+      "id": "r5-costa-naufragios.island-shipyard",
       "type": "island",
-      "label": "ilha_fundo_transparente",
+      "label": "Estaleiro",
+      "src": "./assets/regions/islands/ilha_estaleiro.webp",
+      "width": 1100,
+      "height": 780,
+      "x": 1500,
+      "y": 1800,
+      "rotation": 0,
+      "interaction": "shipyard",
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": "Estaleiro"
+      }
+    },
+    {
+      "id": "r5-costa-naufragios.island-missions",
+      "type": "island",
+      "label": "Missões",
+      "src": "./assets/regions/islands/ilha_missoes.webp",
+      "width": 1100,
+      "height": 780,
+      "x": 6500,
+      "y": 1800,
+      "rotation": 0,
+      "interaction": "missions",
+      "collision": {
+        "active": true,
+        "shape": "ellipse",
+        "scaleX": 0.72,
+        "scaleY": 0.52,
+        "padding": 10,
+        "action": "auto",
+        "message": "Missões"
+      }
+    },
+    {
+      "id": "r5-costa-naufragios.island-3",
+      "type": "island",
+      "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
       "width": 980,
       "height": 700,
-      "x": 1540,
-      "y": 1530,
+      "x": 1700,
+      "y": 5650,
       "rotation": 0,
       "collision": {
         "active": true,
@@ -270,53 +312,13 @@
       }
     },
     {
-      "id": "r5-costa-naufragios.ilha-fundo-transparente-2",
+      "id": "r5-costa-naufragios.island-4",
       "type": "island",
-      "label": "ilha_fundo_transparente",
-      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 1120,
-      "height": 760,
-      "x": 6360,
-      "y": 1430,
-      "rotation": 0,
-      "collision": {
-        "active": true,
-        "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
-        "action": "auto",
-        "message": ""
-      }
-    },
-    {
-      "id": "r5-costa-naufragios.ilha-fundo-transparente-3",
-      "type": "island",
-      "label": "ilha_fundo_transparente",
-      "src": "./assets/regions/islands/ilha_fundo_transparente.png",
-      "width": 900,
-      "height": 660,
-      "x": 1840,
-      "y": 5550,
-      "rotation": 0,
-      "collision": {
-        "active": true,
-        "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
-        "action": "auto",
-        "message": ""
-      }
-    },
-    {
-      "id": "r5-costa-naufragios.ilha-fundo-transparente-4",
-      "type": "island",
-      "label": "ilha_fundo_transparente",
+      "label": "Ilha",
       "src": "./assets/regions/islands/ilha_fundo_transparente.png",
       "width": 1040,
       "height": 720,
-      "x": 6210,
+      "x": 6300,
       "y": 5650,
       "rotation": 0,
       "collision": {
@@ -377,95 +379,8 @@
     }
   ],
   "npcPopulation": {
-    "enabled": true,
-    "seed": 3105,
-    "spread": {
-      "mode": "random-spaced",
-      "margin": 520,
-      "minDistance": 520
-    },
-    "movement": {
-      "mode": "straight",
-      "speed": 0
-    },
-    "types": [
-      {
-        "npcId": "npc-halloween-pumpkin-corsair",
-        "shipId": "ship-halloween-pumpkin-corsair",
-        "count": 4,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 25,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 480,
-          "minDistance": 460,
-          "seed": 4105
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 100
-        }
-      },
-      {
-        "npcId": "npc-halloween-galleon",
-        "shipId": "ship-halloween-galleon-reward",
-        "count": 5,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 30,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 520,
-          "minDistance": 520,
-          "seed": 5105
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 150,
-          "xp": 40
-        }
-      },
-      {
-        "npcId": "boss-halloween-galleon-100k",
-        "shipId": "ship-halloween-galleon-reward",
-        "count": 1,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 180,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 650,
-          "minDistance": 900,
-          "seed": 6105
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 1000,
-          "rubies": 2,
-          "xp": 500
-        }
-      },
-      {
-        "npcId": "npc-corsario-tabuada-sombria",
-        "shipId": "ship-halloween-tabuada-sombria",
-        "count": 2,
-        "enabled": true,
-        "respawn": true,
-        "respawnDelaySec": 40,
-        "spawn": {
-          "mode": "random-spaced",
-          "margin": 900,
-          "minDistance": 560,
-          "seed": 7205
-        },
-        "hitRewardGold": 0,
-        "rewards": {
-          "gold": 220,
-          "xp": 65
-        }
-      }
-    ]
+    "enabled": false,
+    "types": []
   },
   "editor": {
     "cameraX": 4065.902094123714,
@@ -475,7 +390,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261006-corsario-tabuada-sombria-all-maps",
+    "sourceRevision": "20261007-clean-island-regions-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 5,
@@ -523,22 +438,8 @@
     "ammoQuantity": 10000
   },
   "treasurePopulation": {
-    "enabled": true,
-    "seed": 105,
-    "spread": {
-      "mode": "random-spaced",
-      "margin": 240,
-      "minDistance": 190
-    },
-    "types": [
-      {
-        "treasureId": "tesouro-halloween-abobora",
-        "count": 26,
-        "respawn": false,
-        "spawnIntervalSec": 0.12,
-        "respawnDelaySec": 30
-      }
-    ]
+    "enabled": false,
+    "types": []
   },
   "region": {
     "index": 5,
