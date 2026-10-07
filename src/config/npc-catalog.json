@@ -40,7 +40,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 25000,
+        "hp": 5000,
         "attitude": "retaliate",
         "damage": 5,
         "maxTargets": 2,
@@ -68,7 +68,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 100,
+        "hp": 80,
         "attitude": "hostile",
         "damage": 2,
         "cannonLoadout": [
@@ -281,7 +281,7 @@
         "behavior": "roam"
       },
       "combat": {
-        "hp": 1200,
+        "hp": 400,
         "attitude": "hostile",
         "damage": 3,
         "maxTargets": 1,
