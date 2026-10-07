@@ -1255,6 +1255,7 @@ export class WorldRuntime {
     this.weatherEl=this.host.querySelector("[data-world-weather]");
     this.playableBoundaryEl=this.host.querySelector("[data-world-playable-boundary]");
     this.entityLayer=this.host.querySelector(".tq-world-entities");
+    this.tutorialArrowEl=null;
     this.playerWakeLayer=this.host.querySelector("[data-world-player-wake]");
     this.playerShadowEl=this.host.querySelector("[data-world-player-shadow]");
     this.playerEl=this.host.querySelector(".tq-world-player");
@@ -6605,6 +6606,43 @@ export class WorldRuntime {
   }
 
 
+  updateTutorialGuideArrow(){
+    const guide=this.getTutorialGuide?.();
+    const stage=String(guide?.stage||"");
+    if(!guide||stage==="complete"){
+      this.tutorialArrowEl?.remove();
+      this.tutorialArrowEl=null;
+      return;
+    }
+    let target=null;
+    if(stage==="treasure"){
+      target=this.entities
+        .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
+        .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
+    }
+    if(!target){
+      this.tutorialArrowEl?.remove();
+      this.tutorialArrowEl=null;
+      return;
+    }
+    if(!this.tutorialArrowEl){
+      const arrow=document.createElement("div");
+      arrow.className="tq-tutorial-guide-arrow";
+      arrow.textContent="➤";
+      this.entityLayer?.append(arrow);
+      this.tutorialArrowEl=arrow;
+    }
+    const px=Number(this.player?.x)||0;
+    const py=Number(this.player?.y)||0;
+    const tx=Number(target.visualX??target.x)||0;
+    const ty=Number(target.visualY??target.y)||0;
+    const angle=Math.atan2(ty-py,tx-px);
+    const radius=135;
+    this.tutorialArrowEl.style.left=(px+Math.cos(angle)*radius)+"px";
+    this.tutorialArrowEl.style.top=(py+Math.sin(angle)*radius)+"px";
+    this.tutorialArrowEl.style.transform="translate(-50%,-50%) rotate("+angle+"rad)";
+  }
+
   tick(time){
     // Do not turn frame drops into slow motion. A 40 ms cap makes the whole
     // simulation run slower whenever rendering falls below 25 FPS. Keep a
@@ -6624,7 +6662,7 @@ export class WorldRuntime {
       this.syncAutomaticCombatTarget();
       this.updateDirectNavalCombat(time);
     }
-    }
+    this.updateTutorialGuideArrow();
     this.updateCameraKeyboard(dt);
     this.updateCamera(false,dt);
     this.updateEnvironmentCycle(time);
