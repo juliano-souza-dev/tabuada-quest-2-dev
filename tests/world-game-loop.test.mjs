@@ -43,3 +43,32 @@ test("WorldGameLoop caps long frame deltas and stop cancels the scheduled frame"
   assert.equal(loop.running,false);
   assert.equal(loop.frameId,0);
 });
+
+test("start preserves the supplied clock and does not schedule twice",()=>{
+  let scheduled=0;
+  const loop=new WorldGameLoop({
+    updateSimulationFrame:()=>{},
+    updatePresentationFrame:()=>{},
+    updateInterfaceFrame:()=>{}
+  },{requestFrame:()=>++scheduled,cancelFrame:()=>{}});
+  loop.lastTime=2000;
+  assert.equal(loop.start(),true);
+  assert.equal(loop.start(),false);
+  assert.equal(loop.lastTime,2000);
+  assert.equal(scheduled,1);
+});
+
+test("stopping inside simulation skips later phases and does not reschedule",()=>{
+  let scheduled=0;
+  const calls=[];
+  let loop;
+  loop=new WorldGameLoop({
+    updateSimulationFrame:()=>{calls.push("simulation");loop.stop();},
+    updatePresentationFrame:()=>calls.push("presentation"),
+    updateInterfaceFrame:()=>calls.push("interface")
+  },{requestFrame:()=>++scheduled,cancelFrame:()=>{}});
+  loop.start();
+  loop.frame(1000);
+  assert.deepEqual(calls,["simulation"]);
+  assert.equal(scheduled,1);
+});
