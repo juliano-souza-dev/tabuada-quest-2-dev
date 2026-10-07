@@ -5042,6 +5042,25 @@ export class WorldRuntime {
         this.syncCollisionVisual(entity);
         return;
       }
+      if(entity.tutorialDefeated===true){
+        // Tutorial kills are terminal for this runtime entity. Remove every
+        // gameplay/render reference so the defeated slot cannot become a ghost target.
+        this.collected.add(id);
+        this.navalHp.delete(id);
+        this.navalHostile.delete(id);
+        if(this.combatTarget?.id===id)this.clearCombatTarget({hideAction:true});
+        if(this.contactEntity?.id===id)this.contactEntity=null;
+        if(this.nearby?.id===id)this.nearby=null;
+        entity.collision=normalizeCollision({...entity.collision,active:false,action:"none"},entity);
+        entity.el?.remove?.();
+        entity.el=null;
+        entity.nameEl=null;
+        this.entities=this.entities.filter(other=>other!==entity&&String(other?.id||"")!==id);
+        this.entityById?.delete?.(id);
+        this.rebuildEntityIndex();
+        this.mobileHud?.sync?.();
+        return;
+      }
       this.completeCollection(entity);
     },respawnDelay>0?Math.max(duration,respawnDelay):duration);
     this.navalDestroyTimers.set(id,timer);
