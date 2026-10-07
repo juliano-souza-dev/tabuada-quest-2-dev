@@ -20,6 +20,7 @@ const [
   { normalizeNpcPopulation,normalizeTreasurePopulation,normalizeNpcAmmoIds },
   { normalizeAmmoInventory,ammoDamageFactor,cannonDamagePerShot,navalShotDamage,resolvePlayerHullHp },
   { WorldGameLoop },
+  { createWorldSimulationPipeline },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -49,6 +50,7 @@ const [
   import("./entities/PopulationRules.mjs?v="+__tqDevStamp),
   import("./combat/NavalCombatRules.mjs?v="+__tqDevStamp),
   import("./systems/WorldGameLoop.mjs?v="+__tqDevStamp),
+  import("./systems/WorldSimulationPipeline.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -7041,23 +7043,29 @@ export class WorldRuntime {
   }
 
   updateSimulationFrame(time,dt){
-    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
-    else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
-    if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);
-    this.updatePlayerVisual(time,dt);
-    this.updatePlayerWaterEffects(time);
-    this.updateEntityMotionFrame(time,dt);
-    this.updateTreasurePopulation(time);
-    this.treasureCombatLocked();
-    const collectingTreasure=this.updateTreasureCollection();
-    if(!collectingTreasure&&!this.challengeActive){
-      this.syncAutomaticCombatTarget();
-      this.updateDirectNavalCombat(time);
+    if(!this.simulationPipeline){
+      this.simulationPipeline=createWorldSimulationPipeline({
+        movePlayer:(time,dt)=>{
+          if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
+          else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
+        },
+        correctAuthority:dt=>{if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);},
+        renderPlayer:(time,dt)=>this.updatePlayerVisual(time,dt),
+        animatePlayerWater:time=>this.updatePlayerWaterEffects(time),
+        moveEntities:(time,dt)=>this.updateEntityMotionFrame(time,dt),
+        populateTreasures:time=>this.updateTreasurePopulation(time),
+        lockTreasureCombat:()=>this.treasureCombatLocked(),
+        collectTreasures:()=>this.updateTreasureCollection(),
+        challengeActive:()=>this.challengeActive,
+        selectCombatTarget:()=>this.syncAutomaticCombatTarget(),
+        updateCombat:time=>this.updateDirectNavalCombat(time),
+        updateTutorial:()=>this.updateTutorialGuideArrow(),
+        updateCameraInput:dt=>this.updateCameraKeyboard(dt),
+        updateCamera:dt=>this.updateCamera(false,dt),
+        updateEnvironment:time=>this.updateEnvironmentCycle(time)
+      });
     }
-    this.updateTutorialGuideArrow();
-    this.updateCameraKeyboard(dt);
-    this.updateCamera(false,dt);
-    this.updateEnvironmentCycle(time);
+    this.simulationPipeline(time,dt);
   }
 
   updatePresentationFrame(time,dt){
