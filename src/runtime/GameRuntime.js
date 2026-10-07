@@ -1540,6 +1540,9 @@ export class GameRuntime {
       if(id==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()==="missions-hunt"){
         this.setR1TutorialStage("prepare-next-map",{save:false});
       }
+      if(id==="R1_TUTORIAL_PREP_NEXT_MAP"&&this.r1TutorialStage()==="prepare-next-map"){
+        this.setR1TutorialStage("sail-next-map",{save:false});
+      }
       changed=true;
       globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
         missionId:id,gold,rubies,xp,cannonId,
@@ -1948,6 +1951,7 @@ export class GameRuntime {
     if(stage==="missions")return {stage,action:"missions",icon:"📜",title:"Conheça as Missões",text:"Abra Missões. Sua próxima tarefa é afundar 5 corsários.",hudMode:"missions-only"};
     if(stage==="missions-hunt")return {stage,action:"fire",icon:"🏴‍☠️",title:"Caçada aos Corsários",text:"Siga a marcação até os corsários e use Atirar. Afunde 5.",hudMode:"combat-missions"};
     if(stage==="prepare-next-map")return {stage,action:"treasure",icon:"🧰",title:"Preparar para o próximo mapa",text:"Colete 2 tesouros. Recompensa: 5 Canhões Corsários.",hudMode:"analog-only"};
+    if(stage==="sail-next-map")return {stage,action:"travel",icon:"🧭",title:"Rumo à Costa dos Corsários",text:"Siga a seta até a saída do mapa.",hudMode:"analog-only"};
     return null;
   }
 
