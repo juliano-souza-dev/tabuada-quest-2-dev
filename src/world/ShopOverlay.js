@@ -5,10 +5,10 @@ const SHOP_BUTTON=new URL("../../assets/hud/halloween_hud_loja.webp",import.meta
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const money=value=>new Intl.NumberFormat("pt-BR").format(Math.max(0,Math.floor(Number(value)||0)));
 
-const HULL_REINFORCEMENT={id:"hull-reinforcement",type:"item",name:"Reforço de Casco",description:"+1.000.000 de proteção por até 5 min. Afundou, perdeu.",image:"",price:4,currency:"gold",purchasable:true};
+const HULL_REINFORCEMENT={id:"hull-reinforcement",type:"item",name:"Reforço de Casco",description:"+1.000.000 de proteção por até 5 min. Afundou, perdeu.",image:"",price:4,currency:"rubies",purchasable:true};
 const normalizeItems=(source,type)=>{
   const list=Array.isArray(source)?source:[];
-  return list.filter(item=>item&&item.available!==false&&item.shop?.purchasable===true).map(item=>({
+  return list.filter(item=>item&&item.available!==false&&item.shop?.purchasable===true&&["rubies","ruby","gem","gems","diamond","diamonds"].includes(String(item.shop?.currency||"").toLowerCase())).map(item=>({
     id:String(item.id||""),
     type,
     name:String(item.name||item.id||"Item"),
