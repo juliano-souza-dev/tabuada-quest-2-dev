@@ -24,6 +24,7 @@ const [
   { integratePlayerVelocity },
   { selectVisibleTreasures },
   { composeEntityVisualFrame },
+  { paintEntityEffects },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -57,6 +58,7 @@ const [
   import("./navigation/PlayerKinematics.mjs?v="+__tqDevStamp),
   import("./presentation/TreasureRenderModel.mjs?v="+__tqDevStamp),
   import("./presentation/EntityVisualFrame.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityEffectPainter.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -3639,24 +3641,10 @@ export class WorldRuntime {
       if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
       else if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
-      const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
-      const canvas=entity.el.querySelector(".tq-world-entity__webgl");
-      const blur=effect.active?Number(effectFrame.blur||0):0;
-      const depthLayer=entity.el.querySelector(".tq-world-island-depth-layer");
-      const maskedDepth=String(entity.type||"")==="island"&&Array.isArray(entity.depthMask?.points)&&entity.depthMask.points.length>=3;
-      if(img)img.style.filter=maskedDepth?"drop-shadow(0 6px 4px #001a2e80)":`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
-      if(depthLayer)depthLayer.style.filter=`blur(${blur}px)`;
-
-      const atlasMode=timelineAnimated||hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
-      if(effect.active&&effect.renderer==="webgl"&&!atlasMode){
-        const renderer=this.entityEffectRenderers.get(entity.id);
-        const rendered=renderer?.render?.(time,effect,entity.width||96,entity.height||96)===true;
-        if(canvas)canvas.hidden=!rendered;
-        if(img)img.hidden=rendered;
-      }else{
-        if(canvas)canvas.hidden=true;
-        if(img)img.hidden=atlasMode;
-      }
+      paintEntityEffects({
+        entity,effect,effectFrame,time,timelineAnimated,hasDirectionalSprite,
+        renderer:this.entityEffectRenderers.get(entity.id)
+      });
     }
   }
 
