@@ -67,6 +67,7 @@ const normalizeNpcPopulation=input=>{
       shipId:String(item?.shipId||""),
       count:clamp(Math.floor(Number(item?.count)||0),0,50),
       enabled:item?.enabled!==false,
+      unlockAfterMission:String(item?.unlockAfterMission||"").trim(),
       spawn:{
         mode:["random","random-spaced"].includes(String(item?.spawn?.mode))?String(item.spawn.mode):String(spread.mode||"random-spaced"),
         margin:clamp(Number(item?.spawn?.margin??spread.margin??320),0,2000),
