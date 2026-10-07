@@ -5114,8 +5114,11 @@ export class WorldRuntime {
         entity.npcNavigation.vy=0;
         entity.npcNavigation.nextCourseChange=0;
       }
-      this.stopNavalAutoFire({keepTarget:true,message:"🏴‍☠️ O corsário está fugindo. Vá atrás dele!"});
-      this.showGameplayToast?.("🏴‍☠️ Ele está fugindo! Siga a seta.",2600);
+      // Fugir muda a navegação do alvo, não cancela uma ordem de ataque já ativa.
+      // Se sair do alcance, o autofire fica armado e volta a disparar assim que o jogador o alcançar.
+      this.navalNextShotAt=Math.min(Number(this.navalNextShotAt)||Date.now(),Date.now()+this.navalAttackCooldown);
+      if(this.actionMessage)this.actionMessage.textContent="🏴‍☠️ O corsário está fugindo. Persiga-o, o ataque continua ativo.";
+      this.showGameplayToast?.("🏴‍☠️ Ele está fugindo! Persiga-o, seus canhões continuam armados.",2600);
     }
 
     if(this.actionMessage){
