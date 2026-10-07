@@ -18,7 +18,9 @@ const objectiveLabel=(objective,progress=0)=>{
     purchase_upgrade:"Compre uma melhoria",
     visit_point:"Visite pontos do mapa",
     travel_cargo:"Complete a rota de carga",
-    repair_ship:"Repare seu navio"
+    repair_ship:"Repare seu navio",
+    equip_cannon:"Equipe um canhão",
+    prepare_ship:"Prepare seu navio"
   };
   const base=objective?.targetLabel&&type==="defeat_npc"
     ?"Derrote "+String(objective.targetLabel)
