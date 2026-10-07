@@ -347,7 +347,7 @@ export class MobileHudOverlay{
     const tutorialActive=Boolean(guide);
     for(const button of this.wrap.querySelectorAll("[data-hud-action]")){
       const action=String(button.dataset.hudAction||"");
-      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard");
+      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire");
       button.hidden=!allowed;
       button.style.display=allowed?"":"none";
     }
@@ -357,7 +357,7 @@ export class MobileHudOverlay{
     if(targetStatus&&tutorialActive)targetStatus.hidden=true;
 
     const targetWrap=this.wrap.querySelector("[data-target-status]");
-    const targetVisible=!tutorialActive&&Boolean(state.target?.visible);
+    const targetVisible=(!tutorialActive||tutorialStage==="attack-ship")&&Boolean(state.target?.visible);
     if(targetWrap){
       targetWrap.hidden=!targetVisible;
       if(targetVisible){
