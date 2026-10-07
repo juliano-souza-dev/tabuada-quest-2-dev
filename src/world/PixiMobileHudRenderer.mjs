@@ -5,6 +5,7 @@ const ASSETS={
   fire:"./assets/hud/atirar.webp?v=20261005-hud-stable-v9",
   follow:"./assets/hud/seguir.webp?v=20261005-hud-stable-v9",
   center:"./assets/hud/centralizar.webp?v=20261005-hud-stable-v9",
+  repair:"./assets/hud/repair_halloween.webp?v=20261007-repair-asset-v1",
   shipyard:"./assets/hud/estaleiro.webp?v=20261005-hud-stable-v9",
   missions:"./assets/hud/missoes.webp?v=20261005-hud-stable-v9",
   shop:"./assets/hud/loja.webp?v=20261005-hud-stable-v9",
@@ -121,9 +122,13 @@ export class PixiMobileHudRenderer{
     if(minimapFrame)root.addChild(minimapFrame);
 
     const sprites={};
-    for(const key of ["ammo","fire","follow","center","shipyard","missions","shop"]){
+    for(const key of ["ammo","fire","follow","center","repair","shipyard","missions","shop"]){
       const sprite=this.makeSprite(key);
-      if(sprite){actions.addChild(sprite);sprites[key]=sprite}
+      if(sprite){
+        actions.addChild(sprite);
+        sprites[key]=sprite;
+        if(key==="repair")sprite.visible=false;
+      }
     }
 
     // Config has no uploaded asset yet, so draw a matching temporary button in Pixi.
@@ -201,7 +206,8 @@ export class PixiMobileHudRenderer{
       shop:{x:utilityX,y:utilityY,size:base},
       missions:{x:utilityX-base-gap,y:utilityY,size:base},
       config:{x:utilityX,y:utilityY-base-gap,size:base},
-      shipyard:{x:utilityX-base-gap,y:utilityY-base-gap,size:base}
+      shipyard:{x:utilityX-base-gap,y:utilityY-base-gap,size:base},
+      repair:{x:utilityX-(base+gap)*2,y:utilityY,size:base}
     };
 
     this.buttonRects={};
@@ -269,6 +275,13 @@ export class PixiMobileHudRenderer{
     if(center)center.alpha=state.cameraDetached===true?1:.38;
     const fire=r.sprites.fire;
     if(fire)fire.alpha=state.hasCannons!==false&&state.hasAmmo!==false?1:.45;
+
+    const repair=r.sprites.repair;
+    if(repair){
+      const canRepair=hp>0&&hp<maxHp&&state.attacking!==true&&state.repairAvailable===true;
+      repair.visible=canRepair;
+      repair.alpha=canRepair?1:.45;
+    }
     return true;
   }
 
