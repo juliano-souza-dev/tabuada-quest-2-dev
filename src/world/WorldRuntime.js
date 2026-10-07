@@ -953,6 +953,38 @@ export class WorldRuntime {
     return entity;
   }
 
+  spawnTutorialCorsairMissionFleet(count=5){
+    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
+    const wanted=Math.max(1,Math.min(5,Math.floor(Number(count)||5)));
+    const existing=this.entities.filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id));
+    if(existing.length>=wanted)return existing.slice(0,wanted);
+    const population=normalizeNpcPopulation(this.config.npcPopulation||{});
+    const typeConfig=population.types.find(type=>type.enabled!==false)||null;
+    if(!typeConfig)return existing;
+    const occupied=this.entities.filter(entity=>!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)).map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}));
+    occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
+    const spawned=[...existing];
+    for(let i=existing.length;i<wanted;i++){
+      const random=createSeededRandom(hashString(String(this.config.id||"world")+".tutorial-mission-corsair."+i+"."+Date.now()));
+      const missionType={...typeConfig,respawn:false,spawn:{...(typeConfig.spawn||{}),nearPlayerMin:700,nearPlayerMax:1500}};
+      const entity=this.createGeneratedNpc({shipId:missionType.shipId||missionType.npcId,index:this.entities.length,typeConfig:missionType,population,random,occupied});
+      if(!entity)continue;
+      entity.id="npc.tutorial.mission.corsair."+i+"."+Date.now().toString(36);
+      entity.tutorialMissionCorsair=true;
+      entity.tutorialCombatTarget=false;
+      entity.tutorialDefeated=false;
+      entity.index=this.entities.length;
+      this.entities.push(entity);
+      this.generatedNpcIds.add(entity.id);
+      this.entityById?.set(String(entity.id),entity);
+      this.navalHp.set(String(entity.id),Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
+      occupied.push({x:Number(entity.x)||0,y:Number(entity.y)||0});
+      spawned.push(entity);
+    }
+    this.renderEntities();
+    return spawned;
+  }
+
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
     // NPC refresh must never remove runtime treasures. Both NPCs and treasures
