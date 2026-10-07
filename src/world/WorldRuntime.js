@@ -3665,6 +3665,38 @@ export class WorldRuntime {
     },1280);
   }
 
+  clearAnswerFeedback({wrap=this.challengeWrap,feedback=this.challengeFeedback,options=this.repairOptions}={}){
+    wrap?.classList.remove("is-answer-correct","is-answer-wrong");
+    if(feedback)delete feedback.dataset.state;
+    options?.querySelectorAll("button").forEach(button=>{
+      button.classList.remove("is-correct","is-wrong","is-muted","is-reveal-correct");
+    });
+  }
+
+  showAnswerFeedback({correct=false,selectedButton=null,expected=null,message="",wrap=this.challengeWrap,feedback=this.challengeFeedback,options=this.repairOptions,revealExpected=true}={}){
+    this.clearAnswerFeedback({wrap,feedback,options});
+    const state=correct===true?"correct":"wrong";
+    wrap?.classList.add("is-answer-"+state);
+    if(feedback){
+      feedback.dataset.state=state;
+      feedback.textContent=String(message||"");
+    }
+    const buttons=[...(options?.querySelectorAll("button")||[])];
+    for(const button of buttons){
+      const raw=button.dataset.repairAnswer??button.dataset.combatAnswer??button.textContent;
+      const isExpected=expected!==null&&String(raw??"").trim()===String(expected).trim();
+      if(button===selectedButton)button.classList.add(correct===true?"is-correct":"is-wrong");
+      else button.classList.add("is-muted");
+      if(correct!==true&&revealExpected&&isExpected){
+        button.classList.remove("is-muted");
+        button.classList.add("is-correct","is-reveal-correct");
+      }
+    }
+    try{
+      if(navigator.vibrate)navigator.vibrate(correct===true?35:[45,55,45]);
+    }catch{}
+  }
+
   combatChoices(challenge){
     const a=Math.max(1,Number(challenge?.a)||1);
     const b=Math.max(1,Number(challenge?.b)||1);
@@ -3898,6 +3930,7 @@ export class WorldRuntime {
     for(const ship of [this.combatPlayerShip,this.combatEnemyShip]){
       ship?.classList.remove("is-taking-hit","is-firing","is-damaged","is-critical","is-defeated");
     }
+    this.clearAnswerFeedback({wrap:this.combatWrap,feedback:this.combatFeedback,options:this.combatOptions});
     if(this.combatWrap)this.combatWrap.hidden=true;
     if(this.combatFeedback)this.combatFeedback.textContent="";
     if(this.combatOptions)this.combatOptions.replaceChildren();
@@ -3917,6 +3950,7 @@ export class WorldRuntime {
     }
     if(!this.combatActive||this.combatActive.entity.id!==active.entity.id)return;
     active.challenge=challenge;
+    this.clearAnswerFeedback({wrap:this.combatWrap,feedback:this.combatFeedback,options:this.combatOptions});
     if(this.combatPrompt)this.combatPrompt.textContent=challenge?.available?String(challenge.prompt||""):"Desafio indisponível";
     if(this.combatFeedback)this.combatFeedback.textContent=challenge?.available?"Escolha uma das quatro respostas.":"Não foi possível gerar uma conta para este combate.";
     this.renderCombatChoices(challenge);
@@ -3957,11 +3991,14 @@ export class WorldRuntime {
       bonus:false,countsTowardPlanned:challenge.countsTowardPlanned!==false
     });
     this.combatOptions?.querySelectorAll("button").forEach(button=>{button.disabled=true});
-    selectedButton?.classList.add(result.correct===true?"is-correct":"is-wrong");
 
     if(result.correct===true){
       active.enemyHp=Math.max(0,active.enemyHp-1);
-      if(this.combatFeedback)this.combatFeedback.textContent="Acertou! Seu canhão atingiu o inimigo. O disparo dele caiu na água.";
+      this.showAnswerFeedback({
+        correct:true,selectedButton,expected:result.expected,
+        message:"✓ ACERTOU! Seu canhão atingiu o inimigo.",
+        wrap:this.combatWrap,feedback:this.combatFeedback,options:this.combatOptions
+      });
       this.playCombatSpriteAnimation("player","fireRight");
       this.playCombatFx({from:"player",hit:true});
       setTimeout(()=>this.playCombatDamageFx("enemy"),820);
@@ -3971,7 +4008,11 @@ export class WorldRuntime {
       },1120);
     }else{
       active.playerHp=Math.max(0,active.playerHp-1);
-      if(this.combatFeedback)this.combatFeedback.textContent="Errou. Seu tiro caiu na água e o inimigo acertou seu navio.";
+      this.showAnswerFeedback({
+        correct:false,selectedButton,expected:result.expected,
+        message:"✕ ERROU. O inimigo acertou seu navio.",
+        wrap:this.combatWrap,feedback:this.combatFeedback,options:this.combatOptions
+      });
       this.playCombatSpriteAnimation("player","fireRight");
       this.playCombatFx({from:"player",hit:false});
       setTimeout(()=>{
@@ -4027,6 +4068,7 @@ export class WorldRuntime {
     }
     if(!this.repairActive||this.repairActive!==active)return;
     active.challenge=challenge;
+    this.clearAnswerFeedback();
     this.challengeActive={entity:repairEntity,challenge,kind:"repair"};
     if(this.challengeWrap){this.applyPopupLayout("repair-ship");this.challengeWrap.hidden=false;this.challengeWrap.classList.remove("is-treasure-challenge");this.challengeWrap.classList.add("is-repair-challenge")}
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
@@ -4105,6 +4147,7 @@ export class WorldRuntime {
     if(this.challengeForm){this.challengeForm.hidden=false;this.challengeForm.style.removeProperty("display")}
     if(this.repairHp)this.repairHp.hidden=true;
     if(this.repairOptions){this.repairOptions.hidden=true;this.repairOptions.replaceChildren()}
+    this.clearAnswerFeedback();
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeAnswer){
       this.challengeAnswer.value="";
@@ -4188,6 +4231,7 @@ export class WorldRuntime {
     }
 
     this.challengeActive={entity,challenge,kind:"starter-ammo"};
+    this.clearAnswerFeedback();
     if(this.challengeKicker)this.challengeKicker.textContent="SEM MUNIÇÃO";
     if(this.challengeTitle)this.challengeTitle.textContent="Ganhe 1000 munições básicas";
     if(this.challengeWrap)this.challengeWrap.hidden=false;
@@ -4220,7 +4264,7 @@ export class WorldRuntime {
     return true;
   }
 
-  resolveStarterAmmoChallenge(result,challenge){
+  resolveStarterAmmoChallenge(result,challenge,selectedButton=null){
     const detail={
       entityId:"starter-ammo-rescue",
       challengeId:String(challenge?.id||""),
@@ -4236,8 +4280,10 @@ export class WorldRuntime {
     this.onPedagogyResult?.(detail);
 
     if(result?.correct!==true){
-      if(this.challengeFeedback)this.challengeFeedback.textContent=
-        "Ainda não. Tente novamente para receber a munição básica.";
+      this.showAnswerFeedback({
+        correct:false,selectedButton,expected:result?.expected,revealExpected:false,
+        message:"✕ Ainda não. Tente outra alternativa para receber a munição."
+      });
       return false;
     }
 
@@ -4261,8 +4307,10 @@ export class WorldRuntime {
       total:this.state.ammo.stock[ammoId]
     });
 
-    if(this.challengeFeedback)this.challengeFeedback.textContent=
-      "Acertou! +"+starterAmmoQuantity+" Bolas de Canhão recebidas e equipadas.";
+    this.showAnswerFeedback({
+      correct:true,selectedButton,expected:result?.expected,
+      message:"✓ Acertou! +"+starterAmmoQuantity+" Bolas de Canhão recebidas e equipadas."
+    });
     this.showGameplayToast("🎁 +"+starterAmmoQuantity+" Bolas de Canhão");
     this.challengeTimer=setTimeout(()=>this.closeTreasureChallenge(),850);
     return true;
@@ -4305,6 +4353,7 @@ export class WorldRuntime {
     }
 
     this.challengeActive={entity,challenge,kind:"starter-cannon"};
+    this.clearAnswerFeedback();
     if(this.challengeKicker)this.challengeKicker.textContent="SEM CANHÃO EQUIPADO";
     if(this.challengeTitle)this.challengeTitle.textContent="Ganhe um canhão básico";
     if(this.challengeWrap)this.challengeWrap.hidden=false;
@@ -4337,7 +4386,7 @@ export class WorldRuntime {
     return true;
   }
 
-  resolveStarterCannonChallenge(result,challenge){
+  resolveStarterCannonChallenge(result,challenge,selectedButton=null){
     const detail={
       entityId:"starter-cannon-rescue",
       challengeId:String(challenge?.id||""),
@@ -4353,8 +4402,10 @@ export class WorldRuntime {
     this.onPedagogyResult?.(detail);
 
     if(result?.correct!==true){
-      if(this.challengeFeedback)this.challengeFeedback.textContent=
-        "Ainda não. Tente novamente para conquistar o canhão básico.";
+      this.showAnswerFeedback({
+        correct:false,selectedButton,expected:result?.expected,revealExpected:false,
+        message:"✕ Ainda não. Tente outra alternativa para conquistar o canhão."
+      });
       return false;
     }
 
@@ -4367,10 +4418,12 @@ export class WorldRuntime {
 
     this.syncEquippedCannonsFromShipyard();
     const name=String(granted?.cannonName||"Canhão do Marujo");
-    if(this.challengeFeedback)this.challengeFeedback.textContent=
-      granted?.alreadyOwned
-        ?"Você já possui o canhão inicial."
-        :"Acertou! "+name+" recebido e equipado automaticamente.";
+    this.showAnswerFeedback({
+      correct:true,selectedButton,expected:result?.expected,
+      message:granted?.alreadyOwned
+        ?"✓ Você já possui o canhão inicial."
+        :"✓ Acertou! "+name+" recebido e equipado automaticamente."
+    });
     this.showGameplayToast(granted?.alreadyOwned
       ?"⚓ Canhão inicial disponível"
       :"🎁 "+name+" equipado");
@@ -4405,6 +4458,7 @@ export class WorldRuntime {
 
     if(this.challengeActive?.entity!==entity)return false;
     this.challengeActive={entity,challenge,pending:false};
+    this.clearAnswerFeedback();
     if(this.challengeWrap){this.applyPopupLayout("collect-treasure");this.challengeWrap.hidden=false;this.challengeWrap.classList.add("is-treasure-challenge")}
     if(this.challengeFeedback)this.challengeFeedback.textContent="";
     if(this.challengeForm){this.challengeForm.hidden=true;this.challengeForm.style.display="none"}
@@ -4517,11 +4571,11 @@ export class WorldRuntime {
     const result=challenge.evaluate(raw)||{};
 
     if(active?.kind==="starter-cannon"){
-      this.resolveStarterCannonChallenge(result,challenge);
+      this.resolveStarterCannonChallenge(result,challenge,selectedButton);
       return;
     }
     if(active?.kind==="starter-ammo"){
-      this.resolveStarterAmmoChallenge(result,challenge);
+      this.resolveStarterAmmoChallenge(result,challenge,selectedButton);
       return;
     }
 
@@ -4543,15 +4597,19 @@ export class WorldRuntime {
       if(result.correct===true){
         this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+25);
         if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
-        if(this.challengeFeedback)this.challengeFeedback.textContent=
-          "Acertou! +25 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+        this.showAnswerFeedback({
+          correct:true,selectedButton,expected:result.expected,
+          message:"✓ Acertou! +25 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+        });
         if(this.navalPlayerHp>=this.navalPlayerMaxHp){
           this.challengeTimer=setTimeout(()=>this.closePlayerRepair({completed:true}),650);
           return;
         }
-      }else if(this.challengeFeedback){
-        this.challengeFeedback.textContent=
-          "Resposta incorreta. Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;
+      }else{
+        this.showAnswerFeedback({
+          correct:false,selectedButton,expected:result.expected,
+          message:"✕ Resposta incorreta. A correta ficou marcada em verde."
+        });
       }
       if(this.challengeAnswer)this.challengeAnswer.disabled=true;
       if(this.challengeSubmit)this.challengeSubmit.disabled=true;
@@ -4580,7 +4638,10 @@ export class WorldRuntime {
     if(this.challengeSubmit)this.challengeSubmit.disabled=true;
 
     if(result.correct===true){
-      if(this.challengeFeedback)this.challengeFeedback.textContent="Acertou! Tesouro conquistado.";
+      this.showAnswerFeedback({
+        correct:true,selectedButton,expected:result.expected,
+        message:"✓ ACERTOU! Tesouro conquistado!"
+      });
       this.playTreasureSuccess(entity);
       this.challengeTimer=setTimeout(()=>{
         this.challengeTimer=0;
@@ -4590,7 +4651,10 @@ export class WorldRuntime {
       return;
     }
 
-    if(this.challengeFeedback)this.challengeFeedback.textContent="Resposta incorreta. O tesouro continua aqui.";
+    this.showAnswerFeedback({
+      correct:false,selectedButton,expected:result.expected,
+      message:"✕ ERROU. A resposta correta ficou marcada em verde."
+    });
     // Wrong answers never consume, hide, move or respawn the treasure.
     // Close only the pedagogy challenge; collection remains available at the
     // exact same world position for a future attempt.
