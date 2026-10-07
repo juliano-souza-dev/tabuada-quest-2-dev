@@ -1,34 +1,95 @@
-import { enforcePwaOnly } from "./runtime/PwaGate.js?v=20261006-prod-boot-fix-v1";
+import { enforcePwaOnly } from "./runtime/PwaGate.js?v=20261006-pwa-install-fix-v2";
 
 const app=document.querySelector("#app");
 if(!app)throw new Error("Tabuada Quest app root not found");
 
-const showFatalBootError=error=>{
-  console.error("[TQ PWA] boot failed",error);
-  app.innerHTML=
-    '<main style="min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#071927;color:#fff;font:15px/1.45 system-ui;text-align:center">'+
-      '<section style="max-width:460px;padding:24px;border:1px solid rgba(230,184,91,.45);border-radius:18px;background:#0a2233">'+
-        '<strong style="display:block;font-size:20px;margin-bottom:10px">Falha ao iniciar o Tabuada Quest</strong>'+
-        '<span data-tq-boot-error style="opacity:.82"></span>'+
-        '<button type="button" data-tq-reload style="display:block;width:100%;margin-top:18px;min-height:46px;border:0;border-radius:12px;background:#d99a32;color:#211306;font-weight:900">Tentar novamente</button>'+
-      '</section>'+
-    '</main>';
-  const span=app.querySelector("[data-tq-boot-error]");
-  if(span)span.textContent=String(error?.message||error||"Erro desconhecido");
-  app.querySelector("[data-tq-reload]")?.addEventListener("click",()=>location.reload());
+const showOpeningBanner=async()=>{
+  const overlay=document.createElement("div");
+  overlay.setAttribute("aria-label","Abertura Tabuada Quest Halloween");
+  Object.assign(overlay.style,{
+    position:"fixed",
+    inset:"0",
+    zIndex:"2147483647",
+    background:"#050709",
+    overflow:"hidden",
+    opacity:"1",
+    transition:"opacity 320ms ease"
+  });
+
+  const img=document.createElement("img");
+  img.src="./assets/ui/evento_halloween_terror_em_alto_mar.webp?v=20261006-opening-banner-play-v2";
+  img.alt="Evento Halloween: Terror em Alto Mar";
+  Object.assign(img.style,{
+    position:"absolute",
+    inset:"0",
+    width:"100%",
+    height:"100%",
+    objectFit:"cover",
+    objectPosition:"center",
+    display:"block",
+    imageRendering:"auto",
+    transform:"translateZ(0)",
+    backfaceVisibility:"hidden"
+  });
+
+  const play=document.createElement("button");
+  play.type="button";
+  play.setAttribute("aria-label","Jogar");
+  Object.assign(play.style,{
+    position:"absolute",
+    left:"50%",
+    bottom:"clamp(20px, 4.5vh, 54px)",
+    transform:"translateX(-50%)",
+    width:"clamp(132px, 15vw, 220px)",
+    maxWidth:"42vw",
+    border:"0",
+    padding:"0",
+    margin:"0",
+    background:"transparent",
+    cursor:"pointer",
+    zIndex:"2",
+    WebkitTapHighlightColor:"transparent",
+    filter:"none"
+  });
+
+  const playImg=document.createElement("img");
+  playImg.src="./assets/ui/icons/events/halloween/jogar.png?v=20261006-opening-banner-play-v2";
+  playImg.alt="Jogar";
+  Object.assign(playImg.style,{
+    width:"100%",
+    height:"auto",
+    display:"block",
+    objectFit:"contain",
+    imageRendering:"auto",
+    filter:"none"
+  });
+  play.append(playImg);
+
+  overlay.append(img,play);
+  document.body.append(overlay);
+
+  await new Promise(resolve=>{
+    const finish=()=>{
+      play.disabled=true;
+      overlay.style.opacity="0";
+      setTimeout(()=>{overlay.remove();resolve();},330);
+    };
+    play.addEventListener("click",finish,{once:true});
+    play.addEventListener("pointerup",event=>{
+      event.preventDefault();
+      event.stopPropagation();
+    },{passive:false});
+  });
 };
 
-try{
-  const gate=await enforcePwaOnly(app);
-  if(gate.allowed){
-    await import("./game.js?v=20261006-prod-boot-fix-v1");
-  }else{
-    globalThis.TabuadaQuest={
-      ...(globalThis.TabuadaQuest||{}),
-      pwaGate:gate,
-      pwaOnly:true
-    };
-  }
-}catch(error){
-  showFatalBootError(error);
+const gate=await enforcePwaOnly(app);
+if(gate.allowed){
+  await showOpeningBanner();
+  await import("./game.js?v=20261006-opening-banner-play-v2");
+}else{
+  globalThis.TabuadaQuest={
+    ...(globalThis.TabuadaQuest||{}),
+    pwaGate:gate,
+    pwaOnly:true
+  };
 }
