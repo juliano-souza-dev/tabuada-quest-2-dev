@@ -1,30 +1,50 @@
-import { GameAudio } from "./GameAudio.js?v=20261002-1740";
-import { normalizeOceanConfig, applyOceanPreset, computeOceanFrame, cameraFollowStep } from "./WorldOceanEffect.mjs?v=20261001-1512";
-import { WORLD_ENVIRONMENT_PRESETS, environmentPreset } from "./WorldEnvironmentPresets.mjs?v=20261001-0850";
-import { computeWorldWeatherCycle } from "./WorldWeatherCycle.mjs?v=20261003-2000";
-import { normalizeEntityMotion, applyEntityMotionPreset, computeEntityMotionFrame, defaultEntityMotion } from "./WorldEntityMotion.mjs?v=20260930-1912";
-import { normalizeEntityEffect, applyEntityEffectPreset, computeEntityEffectFrame, listEntityEffectPresets } from "./WorldEntityEffects.mjs?v=20260930-1912";
-import { EntityWebGLEffectRenderer } from "./EntityWebGLEffectRenderer.mjs?v=20260930-1912";
-import { resolveEntityPresentation } from "./WorldEntityPresentation.mjs?v=20260930-1912";
-import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } from "./WorldNavigationInput.mjs?v=20260930-1912";
-import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
-import { hasTimelineSpriteAnimation, timelineAnimationFrame, atlasFrameStyle } from "./WorldSpriteAnimation.mjs?v=20261007-leviathan-v1";
-import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v4";
-import { ShipyardOverlay } from "./ShipyardOverlay.js?v=20261007-shipyard-responsibilities-v1";
-import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261007-tutorial-guide-v2";
-import {
-  normalizeCollision,
-  inferCollisionAction,
-  collisionMessage,
-  collisionActionLabel,
-  resolveCircleVsEntity,
-  removeVelocityIntoNormal,
-  contourVelocity
-} from "./WorldCollision.mjs?v=20261001-1438";
 const __tqDevStamp=globalThis.__TQ_DEV_STAMP__||Date.now();
 globalThis.__TQ_DEV_STAMP__=__tqDevStamp;
-const { NavalCombatWebGLRenderer }=await import("./NavalCombatWebGLRenderer.mjs?v="+__tqDevStamp);
+const [
+  { GameAudio },
+  { normalizeOceanConfig,applyOceanPreset,computeOceanFrame,cameraFollowStep },
+  { WORLD_ENVIRONMENT_PRESETS,environmentPreset },
+  { computeWorldWeatherCycle },
+  { normalizeEntityMotion,applyEntityMotionPreset,computeEntityMotionFrame,defaultEntityMotion },
+  { normalizeEntityEffect,applyEntityEffectPreset,computeEntityEffectFrame,listEntityEffectPresets },
+  { EntityWebGLEffectRenderer },
+  { resolveEntityPresentation },
+  { normalizeJoystickVector,screenPointToWorld,targetNavigationVector },
+  { directionForHeading,resolveDirectionalSource,directionalRegionStyle },
+  { hasTimelineSpriteAnimation,timelineAnimationFrame,atlasFrameStyle },
+  { OceanWebGLRenderer },
+  { NavalCombatWebGLRenderer },
+  { ShopOverlay },
+  { ShipyardOverlay },
+  { MobileHudOverlay },
+  {
+    normalizeCollision,
+    inferCollisionAction,
+    collisionMessage,
+    collisionActionLabel,
+    resolveCircleVsEntity,
+    removeVelocityIntoNormal,
+    contourVelocity
+  }
+]=await Promise.all([
+  import("./GameAudio.js?v="+__tqDevStamp),
+  import("./WorldOceanEffect.mjs?v="+__tqDevStamp),
+  import("./WorldEnvironmentPresets.mjs?v="+__tqDevStamp),
+  import("./WorldWeatherCycle.mjs?v="+__tqDevStamp),
+  import("./WorldEntityMotion.mjs?v="+__tqDevStamp),
+  import("./WorldEntityEffects.mjs?v="+__tqDevStamp),
+  import("./EntityWebGLEffectRenderer.mjs?v="+__tqDevStamp),
+  import("./WorldEntityPresentation.mjs?v="+__tqDevStamp),
+  import("./WorldNavigationInput.mjs?v="+__tqDevStamp),
+  import("./WorldDirectionalSprite.mjs?v="+__tqDevStamp),
+  import("./WorldSpriteAnimation.mjs?v="+__tqDevStamp),
+  import("./OceanWebGLRenderer.mjs?v="+__tqDevStamp),
+  import("./NavalCombatWebGLRenderer.mjs?v="+__tqDevStamp),
+  import("./ShopOverlay.js?v="+__tqDevStamp),
+  import("./ShipyardOverlay.js?v="+__tqDevStamp),
+  import("./MobileHudOverlay.js?v="+__tqDevStamp),
+  import("./WorldCollision.mjs?v="+__tqDevStamp)
+]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const shortestAngleDelta=(from,to)=>((((Number(to)||0)-(Number(from)||0)+540)%360)-180);
 const lerpAngle=(from,to,t)=>(Number(from)||0)+shortestAngleDelta(from,to)*clamp(Number(t)||0,0,1);
