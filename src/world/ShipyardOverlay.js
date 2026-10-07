@@ -47,7 +47,7 @@ export class ShipyardOverlay {
     if(this.activeTab==="cannons"){
       this.content.append(element("h3","tq-shipyard__title","Canhões"));const available=cannons.filter(cannon=>Math.max(0,Number(storage[cannon?.id])||0)>0);
       if(!available.length){this.content.append(element("p","tq-shipyard__empty","Não há canhões guardados no depósito."));return}
-      const stock=element("div","tq-shipyard__stock");for(const cannon of available){const button=element("button","tq-shipyard__stock-item");button.type="button";button.textContent=`Equipar ${cannon.name||cannon.id} ×${Math.max(0,Number(storage[cannon.id])||0)}`;button.addEventListener("click",()=>this.run(this.onEquipCannon,String(cannon.id||"")));stock.append(button)}this.content.append(stock);
+      const stock=element("div","tq-shipyard__stock");for(const cannon of available){const button=element("button","tq-shipyard__stock-item");button.type="button";button.dataset.tutorialEquipCannon="true";button.textContent=`Equipar ${cannon.name||cannon.id} ×${Math.max(0,Number(storage[cannon.id])||0)}`;button.addEventListener("click",()=>this.run(this.onEquipCannon,String(cannon.id||"")));stock.append(button)}this.content.append(stock);
       return;
     }
     this.content.append(element("h3","tq-shipyard__title","Sua frota"));
