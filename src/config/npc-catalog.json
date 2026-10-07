@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 11,
+  "version": 12,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -359,6 +359,28 @@
         "hp": 1200,
         "attitude": "peaceful",
         "damage": 8,
+        "maxTargets": 1,
+        "cannonLoadout": [],
+        "ammoUnlimited": false
+      }
+    },
+    {
+      "id": "npc-kraken-esmeralda",
+      "name": "Kraken Esmeralda",
+      "shipId": "monster-kraken-esmeralda",
+      "entityKind": "monster",
+      "width": 300,
+      "height": 300,
+      "navigation": {
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 900,
+        "attitude": "peaceful",
+        "damage": 6,
         "maxTargets": 1,
         "cannonLoadout": [],
         "ammoUnlimited": false

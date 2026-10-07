@@ -1,0 +1,39 @@
+{
+  "schema": "tq.sprite-animation",
+  "version": 1,
+  "id": "sea-monster-idle",
+  "atlas": "assets/monsters/sea-monster-idle/sea_monster_idle.atlas.json",
+  "defaultAnimation": "idle",
+  "animations": {
+    "idle": {
+      "frameMs": 105,
+      "loop": true,
+      "cellWidth": 400,
+      "cellHeight": 400,
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "stationary": true,
+      "motion": "breathing-and-tentacle-sway",
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      }
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "schema": "tq2.sprite-atlas",
+  "version": 1,
+  "id": "sea-monster-idle",
+  "description": "Kraken parado no ponto de origem; ciclo de respiração e tentáculos.",
+  "source": "assets/monsters/sea-monster-idle/sea_monster_idle_4x4_400.webp",
+  "imageWidth": 1600,
+  "imageHeight": 1600,
+  "frameWidth": 400,
+  "frameHeight": 400,
+  "columns": 4,
+  "rows": 4,
+  "frameCount": 16,
+  "frameMs": 105,
+  "loop": true,
+  "anchor": {
+    "x": 0.5,
+    "y": 0.58,
+    "note": "The source cells were not trimmed or independently repositioned."
+  },
+  "frames": [
+    {
+      "index": 0,
+      "name": "sea_monster_idle_01.png",
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 1,
+      "name": "sea_monster_idle_02.png",
+      "x": 400,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 2,
+      "name": "sea_monster_idle_03.png",
+      "x": 800,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 3,
+      "name": "sea_monster_idle_04.png",
+      "x": 1200,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 4,
+      "name": "sea_monster_idle_05.png",
+      "x": 0,
+      "y": 400,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 5,
+      "name": "sea_monster_idle_06.png",
+      "x": 400,
+      "y": 400,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 6,
+      "name": "sea_monster_idle_07.png",
+      "x": 800,
+      "y": 400,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 7,
+      "name": "sea_monster_idle_08.png",
+      "x": 1200,
+      "y": 400,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 8,
+      "name": "sea_monster_idle_09.png",
+      "x": 0,
+      "y": 800,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 9,
+      "name": "sea_monster_idle_10.png",
+      "x": 400,
+      "y": 800,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 10,
+      "name": "sea_monster_idle_11.png",
+      "x": 800,
+      "y": 800,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 11,
+      "name": "sea_monster_idle_12.png",
+      "x": 1200,
+      "y": 800,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 12,
+      "name": "sea_monster_idle_13.png",
+      "x": 0,
+      "y": 1200,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 13,
+      "name": "sea_monster_idle_14.png",
+      "x": 400,
+      "y": 1200,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 14,
+      "name": "sea_monster_idle_15.png",
+      "x": 800,
+      "y": 1200,
+      "width": 400,
+      "height": 400
+    },
+    {
+      "index": 15,
+      "name": "sea_monster_idle_16.png",
+      "x": 1200,
+      "y": 1200,
+      "width": 400,
+      "height": 400
+    }
+  ]
+}
