@@ -2233,6 +2233,32 @@ export class GameRuntime {
           this.syncCloud("ammo-consumed");
         },900);
       },
+      getShipyardState:()=>{
+        this.ensurePlayerShips();
+        this.ensurePlayerCannons();
+        const ships=this.listOwnedShips().map(ship=>({
+          ...clone(ship),
+          equipped:String(this.playerShips.equippedShip||"")===String(ship.id||""),
+          cannons:this.getShipCannons(ship.id).map(id=>clone(this.cannonEntry(id))).filter(Boolean)
+        }));
+        const equippedCounts={};
+        for(const ids of Object.values(this.playerCannons.equippedByShip||{})){
+          for(const id of ids)equippedCounts[id]=(equippedCounts[id]||0)+1;
+        }
+        const storage={};
+        for(const [id,qty] of Object.entries(this.playerCannons.owned||{})){
+          storage[id]=Math.max(0,Math.floor(Number(qty)||0)-Math.max(0,Number(equippedCounts[id])||0));
+        }
+        return {
+          ships,
+          cannons:Array.isArray(this.cannonCatalog?.cannons)?clone(this.cannonCatalog.cannons):[],
+          storage,
+          tabs:{ships:true,cannons:true}
+        };
+      },
+      onEquipShip:id=>this.equipShip(id),
+      onEquipCannon:id=>this.equipCannonToShip(id),
+      onRemoveCannon:(cannonId,shipId)=>this.removeCannonFromShip(cannonId,shipId),
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
