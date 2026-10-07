@@ -272,7 +272,6 @@ export class GameRuntime {
       treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
       ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
-      missionCatalog:load(catalogs.missions||"./src/config/mission-catalog.json"),
       pedagogyCurriculum:load(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       actionCatalog:load(catalogs.actions||"./src/config/action-catalog.json"),
       soundCatalog:load(catalogs.sounds||"./src/config/sound-catalog.json")
@@ -1573,8 +1572,7 @@ export class GameRuntime {
         ...base,
         game:{
           ...game,
-          rewards:clone(this.rewards),
-          ...{}
+          rewards:clone(this.rewards)
         }
       };
 
@@ -2007,17 +2005,7 @@ export class GameRuntime {
       onEquipCannon:id=>this.equipCannonToShip(id),
       onRemoveCannon:(cannonId,shipId)=>this.removeCannonFromShip(cannonId,shipId),
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
-      missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
-      getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
-      onMissionsOpen:()=>{
-        if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions"){
-          this.setR1TutorialStage("missions-hunt",{save:true,sync:true});
-          this.worldRuntime?.spawnTutorialCorsairMissionFleet?.(5);
-          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Missão iniciada: 5 corsários entraram no mar. Afunde todos. Recompensa: 3 Canhões do Marujo.",3600);
-        }
-      },
       getTutorialGuide:()=>this.r1TutorialGuide(worldId),
-      isMissionComplete:id=>this.missionClaimed(id),
       shopBalances:()=>this.getWalletBalances(),
       canUseShop:()=>true,
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
