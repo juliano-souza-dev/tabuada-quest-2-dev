@@ -50,10 +50,10 @@
       "attackCooldownMs": 1100,
       "shop": {
         "purchasable": true,
-        "currency": "gold",
-        "price": 1,
-        "gold": 1,
-        "rubies": 0
+        "currency": "rubies",
+        "price": 10,
+        "gold": 0,
+        "rubies": 10
       },
       "acquisition": {
         "shop": true,
