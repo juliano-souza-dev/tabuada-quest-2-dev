@@ -477,6 +477,8 @@ export class WorldRuntime {
     this.combatTarget=null;
     this.navalAutoFire=false;
     this.navalNextShotAt=0;
+    this.treasureCombatLockUntil=0;
+    this.treasureCombatWasBlocking=false;
     this.navalAttackRange=clamp(Number(config.combat?.attackRange??1200),200,6000);
     this.navalAttackCooldown=clamp(Number(config.combat?.attackCooldownMs??900),300,5000);
     this.navalHp=new Map();
@@ -685,6 +687,22 @@ export class WorldRuntime {
     return nearest;
   }
 
+  treasureCombatLocked(){
+    const target=this.combatTarget;
+    const targetInSight=Boolean(target&&this.isClickableCombatShip(target)&&this.isNavalTargetInRange(target));
+    const blocking=this.navalAutoFire===true||targetInSight;
+    if(blocking){
+      this.treasureCombatWasBlocking=true;
+      this.treasureCombatLockUntil=0;
+      return true;
+    }
+    if(this.treasureCombatWasBlocking){
+      this.treasureCombatWasBlocking=false;
+      this.treasureCombatLockUntil=Date.now()+20000;
+    }
+    return Date.now()<Number(this.treasureCombatLockUntil||0);
+  }
+
   updateTreasureCollection(){
     const entity=this.treasureCollectionCandidate();
     this.treasureReady=entity||null;
@@ -692,7 +710,7 @@ export class WorldRuntime {
 
     // Treasure collection is automatic only while the player is not in naval
     // combat. A nearby treasure never interrupts an active fight.
-    if(this.isPlayerInNavalCombat())return false;
+    if(this.treasureCombatLocked())return false;
 
     this.treasureReady=null;
     this.treasureTarget=null;
@@ -6669,17 +6687,22 @@ export class WorldRuntime {
       const arrow=document.createElement("div");
       arrow.className="tq-tutorial-guide-arrow";
       arrow.textContent="➤";
-      this.entityLayer?.append(arrow);
+      this.host?.append(arrow);
       this.tutorialArrowEl=arrow;
     }
-    const px=Number(this.player?.x)||0;
-    const py=Number(this.player?.y)||0;
-    const tx=Number(target.visualX??target.x)||0;
-    const ty=Number(target.visualY??target.y)||0;
+    const viewportW=Math.max(1,Number(this.viewportSize?.width)||this.viewport?.clientWidth||this.host?.clientWidth||1);
+    const viewportH=Math.max(1,Number(this.viewportSize?.height)||this.viewport?.clientHeight||this.host?.clientHeight||1);
+    const zoom=Math.max(.01,Number(this.mode==="play"?this.playZoom:this.zoom)||1);
+    const px=viewportW/2+(Number(this.player?.x||0)-Number(this.camera?.x||0))*zoom;
+    const py=viewportH/2+(Number(this.player?.y||0)-Number(this.camera?.y||0))*zoom;
+    const tx=viewportW/2+(Number(target.visualX??target.x||0)-Number(this.camera?.x||0))*zoom;
+    const ty=viewportH/2+(Number(target.visualY??target.y||0)-Number(this.camera?.y||0))*zoom;
     const angle=Math.atan2(ty-py,tx-px);
-    const radius=135;
-    this.tutorialArrowEl.style.left=(px+Math.cos(angle)*radius)+"px";
-    this.tutorialArrowEl.style.top=(py+Math.sin(angle)*radius)+"px";
+    const radius=Math.min(135,Math.max(72,Math.min(viewportW,viewportH)*.18));
+    const left=clamp(px+Math.cos(angle)*radius,42,viewportW-42);
+    const top=clamp(py+Math.sin(angle)*radius,42,viewportH-42);
+    this.tutorialArrowEl.style.left=left+"px";
+    this.tutorialArrowEl.style.top=top+"px";
     this.tutorialArrowEl.style.transform="translate(-50%,-50%) rotate("+angle+"rad)";
   }
 
@@ -6697,6 +6720,7 @@ export class WorldRuntime {
     // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
     this.updateTreasurePopulation(time);
+    this.treasureCombatLocked();
     const collectingTreasure=this.updateTreasureCollection();
     if(!collectingTreasure&&!this.challengeActive){
       this.syncAutomaticCombatTarget();
