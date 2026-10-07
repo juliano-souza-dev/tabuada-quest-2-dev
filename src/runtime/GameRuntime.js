@@ -1815,6 +1815,11 @@ export class GameRuntime {
       const ammoId=String(reward.ammoId||"").trim();
       const ammoQuantity=Math.max(0,Math.floor(Number(reward.ammoQuantity)||0));
       if(ammoId&&ammoQuantity>0)this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"mission-reward"});
+      const itemId=String(reward.itemId||"").trim();
+      const itemQuantity=Math.max(0,Math.floor(Number(reward.itemQuantity??reward.quantity)||0));
+      if(itemId&&itemQuantity>0){
+        this.consumables[itemId]=Math.max(0,Math.floor(Number(this.consumables?.[itemId])||0))+itemQuantity;
+      }
       const shipId=String(reward.shipId||"").trim();
       if(shipId){
         await this.grantShip(shipId,{equip:reward.equipShip===true,save:false});
@@ -1838,6 +1843,7 @@ export class GameRuntime {
       if(xp>0)rewardParts.push("+"+xp+" XP");
       if(cannonId)rewardParts.push(String(reward.cannonQuantity||1)+"× canhão");
       if(ammoId&&ammoQuantity>0)rewardParts.push(ammoQuantity+"× munição");
+      if(itemId&&itemQuantity>0)rewardParts.push("🛡 Amuleto da Imunidade");
       if(shipId)rewardParts.push("navio "+String(shipId));
       globalThis.setTimeout(()=>{
         this.worldRuntime?.showGameplayToast?.(
