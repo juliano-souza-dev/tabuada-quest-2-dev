@@ -91,6 +91,7 @@ export class MobileHudOverlay{
     const dock=wrap.querySelector("[data-combat-dock]");
     const ammo=iconButton("ammo","Munição","💣");
     const fire=iconButton("fire","Atirar","🔥");
+    fire.hidden=true;
     const follow=iconButton("follow","Seguir","🎯");
     const center=iconButton("center","Centralizar","⌖");
     const shield=iconButton("shield","Reforço","🛡️");
