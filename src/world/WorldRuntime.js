@@ -4831,8 +4831,20 @@ export class WorldRuntime {
       ?this.contactEntity
       :null;
 
+    // Interaction hysteresis: once docked at a functional island, keep the
+    // prompt latched a little outside the collision edge. This prevents the
+    // collision resolver from toggling the prompt every frame at the shoreline.
+    if(!entity&&this.nearby&&!this.collected.has(this.nearby.id)){
+      const previous=this.nearby;
+      const previousAction=inferCollisionAction(previous,normalizeCollision(previous.collision||{},previous));
+      if(previousAction==="interact"){
+        const latchRadius=this.playerCollisionRadius()+72;
+        if(resolveCircleVsEntity(this.player,latchRadius,previous,previous.collision).collided)entity=previous;
+      }
+    }
+
     if(!entity){
-      const radius=this.playerCollisionRadius()+8;
+      const radius=this.playerCollisionRadius()+18;
       for(const candidate of this.entities){
         if(this.collected.has(candidate.id))continue;
         candidate.collision=normalizeCollision(candidate.collision||{},candidate);
