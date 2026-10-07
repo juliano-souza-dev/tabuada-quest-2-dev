@@ -1459,6 +1459,7 @@ export class GameRuntime {
 
     for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
       const eventMission=String(mission?.event||"").toLowerCase()==="halloween";
+      if(String(mission?.id||"")==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()!=="missions-hunt")continue;
       if(!eventMission&&Number(mission?.region)!==region)continue;
       const unlockAfter=Array.isArray(mission?.unlockAfter)?mission.unlockAfter.map(String).filter(Boolean):[];
       if(unlockAfter.length&&!unlockAfter.every(id=>claimed.has(id)))continue;
@@ -1929,7 +1930,8 @@ export class GameRuntime {
     if(stage==="repair-ship")return {stage,action:"repair-ship",icon:"🔧",title:"Conserte seu navio",text:"Use Reparar. Cada acerto recupera 25% do casco total.",hudMode:"repair-only"};
     if(stage==="attack-ship-2")return {stage,action:"attack-ship",icon:"🔥",title:"Segundo combate",text:"Agora destrua outro navio.",hudMode:"fire-only"};
     if(stage==="collect-10")return {stage,action:"treasure",icon:"📦",title:"Caça ao tesouro",text:"Colete 10 tesouros.",hudMode:"analog-only"};
-    if(stage==="tutorial-next")return {stage,action:"next",icon:"🧭",title:"Treinamento continua",text:"Próxima etapa será adicionada aqui.",hudMode:"analog-only"};
+    if(stage==="missions")return {stage,action:"missions",icon:"📜",title:"Conheça as Missões",text:"Abra Missões. Sua próxima tarefa é afundar 5 corsários.",hudMode:"missions-only"};
+    if(stage==="missions-hunt")return {stage,action:"missions",icon:"🏴‍☠️",title:"Caçada aos Corsários",text:"Afunde 5 corsários. Recompensa: 3 Canhões do Marujo.",hudMode:"combat-missions"};
     return null;
   }
 
@@ -1940,8 +1942,8 @@ export class GameRuntime {
       const game=this.accountState?.game||{};
       this.accountState={...this.accountState,game:{...game,tutorial:{...tutorial,treasuresCollected:count}}};
       if(count>=10){
-        this.setR1TutorialStage("tutorial-next",{save:false});
-        this.worldRuntime?.showGameplayToast?.("🧭 10/10 tesouros! Esta parte terminou. O tutorial continua daqui.",3400);
+        this.setR1TutorialStage("missions",{save:false});
+        this.worldRuntime?.showGameplayToast?.("📜 10/10 tesouros! Agora abra Missões.",3400);
       }else{
         this.worldRuntime?.showGameplayToast?.("📦 Tesouros do treino: "+count+"/10",1600);
       }
@@ -2214,6 +2216,12 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
+      onMissionsOpen:()=>{
+        if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions"){
+          this.setR1TutorialStage("missions-hunt",{save:true,sync:true});
+          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Missão iniciada: afunde 5 corsários. Recompensa: 3 Canhões do Marujo.",3600);
+        }
+      },
       getTutorialGuide:()=>this.r1TutorialGuide(worldId),
       isMissionComplete:id=>this.missionClaimed(id),
       shopBalances:()=>this.getWalletBalances(),
