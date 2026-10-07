@@ -5452,6 +5452,10 @@ export class WorldRuntime {
     if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
     let incoming=Math.max(1,Number(amount)||1);
+    const immunityQty=Math.max(0,Math.floor(Number(this.getConsumableQuantity("halloween-immunity-charm"))||0));
+    if(immunityQty>0){
+      incoming=Math.max(.1,Math.round(incoming*.5*10)/10);
+    }
     const now=Date.now();
     if(this.hullReinforcement?.hp>0&&now<this.hullReinforcement.expiresAt){
       const absorbed=Math.min(this.hullReinforcement.hp,incoming);
@@ -6818,6 +6822,8 @@ export class WorldRuntime {
               const stats=this.entityNavalCombatStats(entity);
               const cannon=stats.loadout?.cannons?.[0];
               const ammo=stats.loadout?.ammo;
+              const fixed=Math.max(0,Number(entity?.combat?.fixedDamagePerShot)||0);
+              if(fixed>0)return fixed;
               return ammo&&cannon
                 ?navalShotDamage(cannon,ammo)
                 :Math.max(.1,Number(stats.damage)||1);
