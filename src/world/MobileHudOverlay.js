@@ -52,6 +52,7 @@ export class MobileHudOverlay{
     this.onShipyard=typeof options.onShipyard==="function"?options.onShipyard:null;
     this.onGraphicsSettingsChange=typeof options.onGraphicsSettingsChange==="function"?options.onGraphicsSettingsChange:null;
     this.missions=Array.isArray(options.missions)?options.missions:[];
+    this.onMissionsOpen=typeof options.onMissionsOpen==="function"?options.onMissionsOpen:()=>{};
     this.region=Math.max(1,Number(options.region)||1);
     this.root=null;
     this.wrap=null;
@@ -150,7 +151,7 @@ export class MobileHudOverlay{
     bind(center,()=>this.onCenterCamera?.());
     bind(shield,()=>this.onUseHullReinforcement?.());
     bind(repair,()=>this.onRepair?.());
-    bind(missions,()=>this.openMissions());
+    bind(missions,()=>{this.openMissions();this.onMissionsOpen();});
     bind(settings,()=>this.openSettings());
     bind(shop,()=>this.onShop?.());
     bind(shipyard,()=>{
@@ -347,7 +348,7 @@ export class MobileHudOverlay{
     const tutorialActive=Boolean(guide);
     for(const button of this.wrap.querySelectorAll("[data-hud-action]")){
       const action=String(button.dataset.hudAction||"");
-      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire")||(tutorialStage==="attack-ship-2"&&action==="fire")||(tutorialStage==="shop-cannon"&&action==="shop")||(tutorialStage==="equip-shop-cannon"&&action==="shipyard")||(tutorialStage==="switch-ammo"&&action==="ammo")||(tutorialStage==="repair-ship"&&action==="repair");
+      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire")||(tutorialStage==="attack-ship-2"&&action==="fire")||(tutorialStage==="shop-cannon"&&action==="shop")||(tutorialStage==="equip-shop-cannon"&&action==="shipyard")||(tutorialStage==="switch-ammo"&&action==="ammo")||(tutorialStage==="repair-ship"&&action==="repair")||(tutorialStage==="missions"&&action==="missions")||(tutorialStage==="missions-hunt"&&(action==="missions"||action==="fire"));
       // Tutorial keeps the final HUD layout stable: every action stays in its
       // permanent slot and locked actions are only disabled, never removed.
       button.hidden=false;
