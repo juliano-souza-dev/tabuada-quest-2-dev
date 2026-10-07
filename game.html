@@ -10,15 +10,37 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Tabuada Quest">
   <meta name="format-detection" content="no">
-  <meta name="tq-build" content="20261007-no-pixi-tutorial-v1">
-  <link rel="manifest" href="./manifest.webmanifest?v=20261006-pwa-install-fix-v2">
+  <meta name="tq-build" content="dev-dynamic">
   <link rel="apple-touch-icon" href="./assets/pwa/icon-192.svg">
-  <link rel="stylesheet" href="./src/styles/app.css?v=20261007-no-pixi-tutorial-v1">
-  <link rel="stylesheet" href="./src/styles/world-test.css?v=20261007-monster-water-blood-v2">
+  <script>
+    (() => {
+      const stamp=Date.now();
+      globalThis.__TQ_DEV_STAMP__=stamp;
+      const versioned=path=>path+(path.includes("?")?"&":"?")+"v="+stamp;
+      const buildMeta=document.querySelector('meta[name="tq-build"]');
+      if(buildMeta)buildMeta.content=String(stamp);
+
+      const manifest=document.createElement("link");
+      manifest.rel="manifest";
+      manifest.href=versioned("./manifest.webmanifest");
+      document.head.append(manifest);
+
+      for(const href of ["./src/styles/app.css","./src/styles/world-test.css"]){
+        const link=document.createElement("link");
+        link.rel="stylesheet";
+        link.href=versioned(href);
+        document.head.append(link);
+      }
+    })();
+  </script>
   <title>Tabuada Quest</title>
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="./src/pwa-entry.js?v=20261007-monster-water-blood-v2"></script>
+  <script type="module">
+    const stamp=globalThis.__TQ_DEV_STAMP__||Date.now();
+    globalThis.__TQ_DEV_STAMP__=stamp;
+    await import("./src/pwa-entry.js?v="+stamp);
+  </script>
 </body>
 </html>
