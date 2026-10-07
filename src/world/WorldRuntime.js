@@ -1671,6 +1671,8 @@ export class WorldRuntime {
     let nearestDistance=Infinity;
     for(const entity of this.entities){
       if(!this.isClickableCombatShip(entity))continue;
+      const tutorialStage=String(this.getTutorialGuide?.()?.stage||"");
+      if(["attack-ship","attack-ship-2"].includes(tutorialStage)&&entity.tutorialDefeated===true)continue;
       const distance=this.navalTargetDistance(entity);
       if(!Number.isFinite(distance)||distance>=nearestDistance)continue;
       nearest=entity;
@@ -4908,6 +4910,10 @@ export class WorldRuntime {
     this.navalDestroying.add(id);
     const tutorialStageAtKill=String(this.getTutorialGuide?.()?.stage||"");
     if(["attack-ship","attack-ship-2"].includes(tutorialStageAtKill)&&entity.tutorialCombatTarget===true){
+      entity.tutorialDefeated=true;
+      entity.tutorialDefeatedStage=tutorialStageAtKill;
+      entity.tutorialCombatTarget=false;
+      entity.tutorialCombatPhase="";
       Promise.resolve(this.onTutorialNpcDestroyed?.(entity)).catch(error=>console.warn("[TabuadaQuest] tutorial destruction hook failed",error));
     }
     if(String(this.tutorialIsolatedTargetId||"")===id){
@@ -4978,6 +4984,8 @@ export class WorldRuntime {
       this.navalDestroyTimers.delete(id);
       this.navalDestroying.delete(id);
       if(entity.runtimeGenerated&&entity.respawn===true){
+        const wasTutorialDefeated=entity.tutorialDefeated===true;
+        const tutorialDefeatedStage=entity.tutorialDefeatedStage;
         const population=normalizeNpcPopulation(this.config.npcPopulation||{});
         const occupied=this.entities
           .filter(other=>other!==entity&&!this.collected.has(other.id)&&!this.navalDestroying.has(other.id))
@@ -5013,6 +5021,12 @@ export class WorldRuntime {
         entity.npcRewardClaimToken="";
         if(entity.el)entity.el.hidden=false;
         this.applyEntityVisual(entity);
+        if(wasTutorialDefeated){
+          entity.tutorialDefeated=true;
+          entity.tutorialDefeatedStage=tutorialDefeatedStage;
+          entity.tutorialCombatTarget=false;
+          entity.tutorialCombatPhase="";
+        }
         this.syncCombatClickableEntity(entity);
         this.syncCollisionVisual(entity);
         return;
@@ -6736,7 +6750,7 @@ export class WorldRuntime {
         }
       }
       target=locked||this.entities
-        .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
