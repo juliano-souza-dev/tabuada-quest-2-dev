@@ -1679,6 +1679,14 @@ export class WorldRuntime {
       nearest.tutorialCombatTarget=true;
       nearest.tutorialCombatPhase=nearest.tutorialCombatPhase||"ready-fire";
       if(nearest.npcNavigation){nearest.npcNavigation.vx=0;nearest.npcNavigation.vy=0;}
+      if(!this.tutorialIsolatedTargetId){
+        this.tutorialIsolatedTargetId=String(nearest.id);
+        for(const other of this.entities){
+          if(other===nearest||!this.isClickableCombatShip(other))continue;
+          other.tutorialHiddenForDuel=true;
+          if(other.el)other.el.hidden=true;
+        }
+      }
     }
     if(this.combatTarget===nearest)return false;
     return this.selectCombatTarget(nearest,{preserveMovement:true});
@@ -6688,9 +6696,27 @@ export class WorldRuntime {
     }else if(stage==="attack-ship"||stage==="attack-ship-2"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
       if(locked?.tutorialCombatPhase==="ready-fire"||locked?.tutorialCombatPhase==="firing"){
-        this.tutorialArrowEl?.remove();
-        this.tutorialArrowEl=null;
-        return;
+        const fireButton=this.mobileHud?.wrap?.querySelector?.('[data-hud-action="fire"]');
+        const rect=fireButton?.getBoundingClientRect?.();
+        if(rect&&rect.width>0&&rect.height>0){
+          if(!this.tutorialArrowEl){
+            const arrow=document.createElement("div");
+            arrow.className="tq-tutorial-guide-arrow";
+            arrow.textContent="➤";
+            document.body.append(arrow);
+            this.tutorialArrowEl=arrow;
+          }else if(this.tutorialArrowEl.parentElement!==document.body){
+            document.body.append(this.tutorialArrowEl);
+          }
+          const x=rect.left+rect.width/2;
+          const y=Math.max(32,rect.top-34);
+          this.tutorialArrowEl.style.position="fixed";
+          this.tutorialArrowEl.style.left=x+"px";
+          this.tutorialArrowEl.style.top=y+"px";
+          this.tutorialArrowEl.style.transform="translate(-50%,-50%) rotate(1.5708rad)";
+          this.tutorialArrowEl.style.zIndex="10050";
+          return;
+        }
       }
       target=locked||this.entities
         .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
@@ -6707,7 +6733,11 @@ export class WorldRuntime {
       arrow.textContent="➤";
       this.host?.append(arrow);
       this.tutorialArrowEl=arrow;
+    }else if(this.tutorialArrowEl.parentElement!==this.host){
+      this.host?.append(this.tutorialArrowEl);
     }
+    this.tutorialArrowEl.style.position="";
+    this.tutorialArrowEl.style.zIndex="";
     const viewportW=Math.max(1,Number(this.viewportSize?.width)||this.viewport?.clientWidth||this.host?.clientWidth||1);
     const viewportH=Math.max(1,Number(this.viewportSize?.height)||this.viewport?.clientHeight||this.host?.clientHeight||1);
     const zoom=Math.max(.01,Number(this.mode==="play"?this.playZoom:this.zoom)||1);
