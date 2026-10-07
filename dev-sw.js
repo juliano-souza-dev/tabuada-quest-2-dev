@@ -1,4 +1,5 @@
-const CACHE_NAME="tq-dev-assets-20261007-no-pixi-tutorial-v1";
+const CACHE_STAMP=new URL(self.location.href).searchParams.get("v")||"dev";
+const CACHE_NAME="tq-dev-assets-"+CACHE_STAMP;
 
 self.addEventListener("install",event=>{
   self.skipWaiting();
