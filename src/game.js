@@ -1,4 +1,5 @@
-import { GameRuntime } from "./runtime/GameRuntime.js?v=20261007-naval-freeze-fix-v1";
+const __tqDevStamp=globalThis.__TQ_DEV_STAMP__||Date.now();
+const { GameRuntime }=await import("./runtime/GameRuntime.js?v="+__tqDevStamp);
 import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
 
 // Older saves can have mission progress at target while claimedRewards is missing.
