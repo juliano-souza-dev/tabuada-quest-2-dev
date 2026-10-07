@@ -1,7 +1,24 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 4,
+  "version": 5,
   "missions": [
+    {
+      "id": "R1_TUTORIAL_CORSARIOS_5",
+      "region": 1,
+      "order": 1,
+      "name": "Caçada aos Corsários",
+      "description": "Afunde 5 corsários.",
+      "objective": {
+        "type": "defeat_npc",
+        "target": 5
+      },
+      "reward": {
+        "cannonId": "cannon-basic",
+        "cannonQuantity": 3
+      },
+      "required": true,
+      "tutorial": true
+    },
     {
       "id": "R2_M01",
       "region": 2,
