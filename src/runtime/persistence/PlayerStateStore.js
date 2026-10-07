@@ -29,8 +29,8 @@ export class PlayerStateStore extends EventTarget {
     this.auth=auth;
     this.config=config||{};
     this.storage=options.storage||globalThis.localStorage;
-    this.keyPrefix=options.keyPrefix||"tq.player.state.v3";
-    this.progressEpoch=3;
+    this.keyPrefix=options.keyPrefix||"tq.player.state.v4";
+    this.progressEpoch=4;
     this.legacyKey=options.legacyKey||"tabuadaQuest.playerState";
     this.syncTimer=0;
     this.syncDelay=Math.max(250,Number(options.syncDelay)||1600);
