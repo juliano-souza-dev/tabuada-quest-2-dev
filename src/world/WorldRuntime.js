@@ -847,7 +847,9 @@ export class WorldRuntime {
         rewardMinDamageRatio:clamp(Number(profile.combat?.rewardMinDamageRatio)||0,0,1),
         cannonLoadout:Array.isArray(profile.combat?.cannonLoadout)?structuredClone(profile.combat.cannonLoadout):[],
         ammoId:String(profile.combat?.ammoId||""),
-        ammoUnlimited:profile.combat?.ammoUnlimited===true
+        ammoUnlimited:profile.combat?.ammoUnlimited===true,
+        fixedDamagePerShot:Math.max(0,Number(profile.combat?.fixedDamagePerShot)||0),
+        requiredAmmoEvent:String(typeConfig?.requiredAmmoEvent||profile.combat?.requiredAmmoEvent||"")
       },
       motion:{active:true,preset:"navigation",speed:45,heave:26,pitch:18,roll:10,sway:8},
       effect:{category:"ship",preset:"none",active:false},
@@ -5701,6 +5703,10 @@ export class WorldRuntime {
       return;
     }
     if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
+      if(this.config?.tutorial){
+        this.showGameplayToast("🧰 Colete seu primeiro tesouro para receber o canhão.",2200);
+        return;
+      }
       this.beginStarterCannonChallenge();
       return;
     }
