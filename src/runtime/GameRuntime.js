@@ -1739,6 +1739,48 @@ export class GameRuntime {
     return "Alvo bloqueado.";
   }
 
+  tutorialGuide(worldId=this.current?.id){
+    if(String(worldId||"")!=="r1-enseada-aprendizes")return null;
+    const claimed=new Set(
+      Array.isArray(this.accountState?.game?.missions?.claimedRewards)
+        ?this.accountState.game.missions.claimedRewards.map(String)
+        :[]
+    );
+    const missions=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
+      .filter(m=>Number(m?.region)===1&&m?.required===true)
+      .sort((a,b)=>Number(a?.order||0)-Number(b?.order||0));
+    const active=missions.find(m=>{
+      const id=String(m?.id||"");
+      if(!id||claimed.has(id))return false;
+      const req=Array.isArray(m?.unlockAfter)?m.unlockAfter.map(String):[];
+      return req.every(x=>claimed.has(x));
+    });
+    if(!active)return null;
+    const id=String(active.id||"");
+    const map={
+      HALLOWEEN_M01:{icon:"📦",action:"",text:"Navegue até um baú brilhante. Ao chegar perto, a continha abre automaticamente."},
+      HALLOWEEN_M02:{icon:"🔧",action:"repair",text:"Entre em combate até o casco ficar abaixo de 750. Quando isso acontecer, toque em Reparar."},
+      HALLOWEEN_M03:{icon:"🎃",action:"",text:"Continue explorando o mar e colete 10 baús. Cada coleta entrega munição de Halloween."},
+      HALLOWEEN_M04:{icon:"⚓",action:"shipyard",text:"Toque no botão Estaleiro destacado no canto inferior direito e equipe um dos canhões recebidos."},
+      HALLOWEEN_M05:{icon:"☠️",action:"",text:"Procure o Corsário da Tabuada Sombria no mapa e afunde-o."},
+      HALLOWEEN_M06:{icon:"💎",action:"shop",text:"Toque no botão Loja destacado e compre um item usando rubis."},
+      HALLOWEEN_M07:{icon:"🧮",action:"",text:"Explore o mapa e resolva as continhas de mais 15 tesouros."},
+      HALLOWEEN_M08:{icon:"🔥",action:"fire",text:"Encontre os navios de treino, aproxime-se e use Atirar para afundar 5 deles."},
+      HALLOWEEN_M09:{icon:"🛡️",action:"",text:"Colete os 20 tesouros finais. Você receberá canhões Halloween, munição e o Amuleto da Imunidade."},
+      HALLOWEEN_BOSS_10:{icon:"🎃",action:"ammo",text:"Equipe a munição Halloween, aproxime-se do Terror do Halloween e ataque. O Amuleto reduz em 50% o dano recebido."}
+    };
+    const hint=map[id]||{icon:"📜",action:"missions",text:String(active.description||"Complete o objetivo atual.")};
+    return {
+      missionId:id,
+      step:Math.max(1,Number(active.order)||1),
+      total:missions.length,
+      title:String(active.name||id),
+      icon:hint.icon,
+      action:hint.action,
+      text:hint.text
+    };
+  }
+
   async advanceMissions(type,context={}){
     const eventType=String(type||"").trim();
     if(!eventType)return {changed:false,completed:[]};
@@ -2465,6 +2507,7 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
+      getTutorialGuide:()=>this.tutorialGuide(worldId),
       isMissionComplete:id=>this.missionClaimed(id),
       canAttackEntity:entity=>this.canAttackWorldEntity(entity),
       attackLockMessage:entity=>this.attackLockMessage(entity),
