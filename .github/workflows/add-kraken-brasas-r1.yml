@@ -1,0 +1,200 @@
+name: Add Kraken das Brasas to R1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-kraken-brasas-r1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-game-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Register monster and spawn in R1
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const readJson = p => JSON.parse(fs.readFileSync(p, 'utf8'));
+          const writeJson = (p, data) => fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n');
+
+          const asset = './assets/monsters/file_00000000cd18820eb2f8589b1db8dad0.png';
+          const shipId = 'monster-kraken-brasas';
+          const npcId = 'npc-kraken-brasas';
+          const name = 'Kraken das Brasas';
+
+          const dirs = ['n','nne','ne','ene','e','ese','se','sse','s','ssw','sw','wsw','w','wnw','nw','nnw'];
+          const regions = {};
+          const directionFrames = {};
+          dirs.forEach((dir, i) => {
+            regions[dir] = {
+              x: (i % 4) * 400,
+              y: Math.floor(i / 4) * 400,
+              width: 400,
+              height: 400
+            };
+            directionFrames[dir] = i;
+          });
+
+          const shipsPath = 'src/config/ship-catalog.json';
+          const ships = readJson(shipsPath);
+          const monsterShip = {
+            id: shipId,
+            name,
+            type: 'npc',
+            entityKind: 'monster',
+            available: true,
+            description: 'Primeiro monstro marinho do Tabuada Quest. Kraken vulcânico animado por sprite durante o nado.',
+            spriteMode: 'combined',
+            autoFrame: true,
+            cellSize: 400,
+            asset,
+            animations: {
+              idle: {
+                frameMs: 110,
+                loop: true,
+                cellWidth: 400,
+                cellHeight: 400,
+                frames: Array.from({length:16}, (_,i)=>i)
+              },
+              swim: {
+                frameMs: 95,
+                loop: true,
+                cellWidth: 400,
+                cellHeight: 400,
+                frames: Array.from({length:16}, (_,i)=>i)
+              }
+            },
+            animationGroups: {
+              idle: 'navigation',
+              swim: 'navigation'
+            },
+            navigation: {
+              width: 300,
+              height: 300,
+              minSpeed: 28,
+              speed: 95,
+              acceleration: 260,
+              braking: 0.18,
+              roll: 0,
+              heave: 3,
+              sway: 2,
+              periodMs: 2600,
+              wake: false,
+              shadow: true,
+              src: asset,
+              sprite: {
+                src: asset,
+                columns: 4,
+                rows: 4,
+                imageWidth: 1600,
+                imageHeight: 1600,
+                cellWidth: 400,
+                cellHeight: 400,
+                regions,
+                directionFrames,
+                initialDirection: 'n',
+                autoFrameExact: true
+              },
+              compiled: {}
+            },
+            combat: {
+              hp: 1200,
+              attackRange: 420,
+              attackCooldownMs: 1600,
+              damage: 8,
+              recoil: 0,
+              shake: 3,
+              muzzleFlash: false,
+              smoke: false,
+              impact: true,
+              useNavigationAtlas: true,
+              cannonSlots: 0
+            },
+            schema: 'tq.ship',
+            version: 2
+          };
+
+          const shipIndex = ships.ships.findIndex(x => x.id === shipId);
+          if (shipIndex >= 0) ships.ships[shipIndex] = monsterShip;
+          else ships.ships.push(monsterShip);
+          ships.version = Math.max(Number(ships.version)||0, 6);
+          writeJson(shipsPath, ships);
+
+          const npcsPath = 'src/config/npc-catalog.json';
+          const npcs = readJson(npcsPath);
+          const monsterNpc = {
+            id: npcId,
+            name,
+            shipId,
+            entityKind: 'monster',
+            width: 300,
+            height: 300,
+            navigation: {
+              minSpeed: 28,
+              speed: 95,
+              acceleration: 260,
+              behavior: 'roam'
+            },
+            combat: {
+              hp: 1200,
+              attitude: 'retaliate',
+              damage: 8,
+              maxTargets: 1,
+              cannonLoadout: [],
+              ammoUnlimited: false
+            }
+          };
+          const npcIndex = npcs.npcs.findIndex(x => x.id === npcId);
+          if (npcIndex >= 0) npcs.npcs[npcIndex] = monsterNpc;
+          else npcs.npcs.push(monsterNpc);
+          npcs.version = Math.max(Number(npcs.version)||0, 9);
+          writeJson(npcsPath, npcs);
+
+          const worldPath = 'src/world/r1-enseada-aprendizes.world.json';
+          const world = readJson(worldPath);
+          world.npcPopulation ||= { enabled: true, seed: 3101, types: [] };
+          world.npcPopulation.enabled = true;
+          world.npcPopulation.types ||= [];
+          const spawn = {
+            npcId,
+            shipId,
+            count: 3,
+            enabled: true,
+            respawn: true,
+            respawnDelaySec: 1500,
+            spawn: {
+              mode: 'random-spaced',
+              margin: 950,
+              minDistance: 900,
+              seed: 8301
+            },
+            rewards: {
+              gold: 350,
+              xp: 120
+            },
+            hp: 1200
+          };
+          const spawnIndex = world.npcPopulation.types.findIndex(x => x.npcId === npcId);
+          if (spawnIndex >= 0) world.npcPopulation.types[spawnIndex] = spawn;
+          else world.npcPopulation.types.push(spawn);
+          world.meta ||= {};
+          world.meta.sourceRevision = '20261007-r1-kraken-brasas-v1';
+          writeJson(worldPath, world);
+          NODE
+
+      - name: Commit game data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/config/ship-catalog.json src/config/npc-catalog.json src/world/r1-enseada-aprendizes.world.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "feat: add Kraken das Brasas to R1"
+            git push
+          fi
