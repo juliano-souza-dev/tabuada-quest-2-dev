@@ -971,7 +971,8 @@ export class WorldRuntime {
       if(!entity)continue;
       entity.id="npc.tutorial.mission.corsair."+i+"."+Date.now().toString(36);
       entity.tutorialMissionCorsair=true;
-      entity.tutorialCombatTarget=false;
+      entity.tutorialCombatTarget=true;
+      entity.tutorialCombatPhase="hunt";
       entity.tutorialDefeated=false;
       entity.index=this.entities.length;
       this.entities.push(entity);
@@ -1746,6 +1747,7 @@ export class WorldRuntime {
       if(!this.isClickableCombatShip(entity))continue;
       const tutorialStage=String(this.getTutorialGuide?.()?.stage||"");
       if(["attack-ship","attack-ship-2"].includes(tutorialStage)&&entity.tutorialDefeated===true)continue;
+      if(tutorialStage==="missions-hunt"&&entity.tutorialMissionCorsair!==true)continue;
       const distance=this.navalTargetDistance(entity);
       if(!Number.isFinite(distance)||distance>=nearestDistance)continue;
       nearest=entity;
@@ -6826,9 +6828,9 @@ export class WorldRuntime {
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
-    }else if(stage==="attack-ship"||stage==="attack-ship-2"){
+    }else if(stage==="attack-ship"||stage==="attack-ship-2"||stage==="missions-hunt"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
-      if(locked?.tutorialCombatPhase==="ready-fire"){
+      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="ready-fire"){
         const fireButton=this.mobileHud?.wrap?.querySelector?.('[data-hud-action="fire"]');
         const rect=fireButton?.getBoundingClientRect?.();
         if(rect&&rect.width>0&&rect.height>0){
@@ -6851,13 +6853,13 @@ export class WorldRuntime {
           return;
         }
       }
-      if(locked?.tutorialCombatPhase==="firing"){
+      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="firing"){
         this.tutorialArrowEl?.remove();
         this.tutorialArrowEl=null;
         return;
       }
       target=locked||this.entities
-        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)&&(stage!=="missions-hunt"||entity.tutorialMissionCorsair===true))
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
