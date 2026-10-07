@@ -2380,7 +2380,7 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 /* Pixi mobile HUD: DOM remains only as interaction/accessibility layer. */
 .tq-mobile-combat-ui.is-pixi-hud .tq-target-status,
 .tq-mobile-combat-ui.is-pixi-hud .tq-player-status{
-  visibility:hidden!important;
+  visibility:visible!important;
 }
 .tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock{
   position:fixed!important;
@@ -2514,4 +2514,33 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 .tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock__button--shield,
 .tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock__button--repair{
   display:none!important;
+}
+
+
+/* HP HUD restore 20261007-hp-hud-restore-v1: keep health visible above Pixi controls without restoring the old brown top bar. */
+.tq-mobile-combat-ui .tq-player-status{
+  top:max(14px,calc(env(safe-area-inset-top) + 10px));
+  bottom:auto;
+  left:max(14px,env(safe-area-inset-left));
+  width:clamp(132px,18vw,220px);
+  z-index:4;
+}
+.tq-mobile-combat-ui .tq-target-status{
+  z-index:4;
+}
+.tq-mobile-combat-ui.is-pixi-hud .tq-player-status,
+.tq-mobile-combat-ui.is-pixi-hud .tq-target-status{
+  opacity:1!important;
+  pointer-events:none!important;
+}
+@media(max-width:520px){
+  .tq-mobile-combat-ui .tq-player-status{
+    top:max(10px,calc(env(safe-area-inset-top) + 8px));
+    left:max(10px,env(safe-area-inset-left));
+    width:124px;
+  }
+  .tq-mobile-combat-ui .tq-target-status{
+    top:max(10px,calc(env(safe-area-inset-top) + 8px));
+    width:min(58vw,300px);
+  }
 }
