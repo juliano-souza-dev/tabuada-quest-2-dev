@@ -953,6 +953,28 @@ export class WorldRuntime {
     return entity;
   }
 
+  restoreTutorialCorsairMissionFleet(){
+    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
+    const progress=this.getMissionProgress?.()||{};
+    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
+    const remaining=Math.max(0,5-defeated);
+    if(remaining<=0)return [];
+    const live=this.entities.filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id));
+    // Runtime-generated NPCs are not persisted as mission identity, so a page
+    // reload must reconstruct only the number still required by saved progress.
+    if(live.length<remaining)this.spawnTutorialCorsairMissionFleet(remaining);
+    const targets=this.entities
+      .filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
+      .slice(0,remaining);
+    for(const entity of targets){
+      entity.tutorialCombatTarget=true;
+      entity.tutorialCombatPhase=entity.tutorialCombatPhase||"hunt";
+    }
+    this.syncAutomaticCombatTarget();
+    this.updateTutorialGuideArrow();
+    return targets;
+  }
+
   spawnTutorialCorsairMissionFleet(count=5){
     if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
     const wanted=Math.max(1,Math.min(5,Math.floor(Number(count)||5)));
@@ -1454,6 +1476,9 @@ export class WorldRuntime {
     this.cleanups.push(()=>window.removeEventListener("resize",this.onResize));
 
     this.setMode(this.mode);
+    if(String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt"){
+      this.restoreTutorialCorsairMissionFleet();
+    }
     this.renderMinimap(true);
     this.lastTime=performance.now();
     this.raf=requestAnimationFrame(t=>this.tick(t));
