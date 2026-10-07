@@ -30,7 +30,7 @@ export class PlayerStateStore extends EventTarget {
     this.config=config||{};
     this.storage=options.storage||globalThis.localStorage;
     this.keyPrefix=options.keyPrefix||"tq.player.state.v6";
-    this.progressEpoch=6;
+    this.progressEpoch=7;
     this.legacyKey=options.legacyKey||"tabuadaQuest.playerState";
     this.syncTimer=0;
     this.syncDelay=Math.max(250,Number(options.syncDelay)||1600);
@@ -77,11 +77,25 @@ export class PlayerStateStore extends EventTarget {
     return Number(state?.progressEpoch)===this.progressEpoch;
   }
 
+  migrateProgress(state){
+    if(!state||typeof state!=="object")return null;
+    const epoch=Number(state.progressEpoch||0);
+    if(epoch===this.progressEpoch)return state;
+    // Epoch 6 is the immediately previous account format. Preserve its actual
+    // progress and upgrade the marker instead of treating it as an empty game.
+    if(epoch===6)return {...state,progressEpoch:this.progressEpoch};
+    return null;
+  }
+
   load(){
     const auth=this.auth.status();
     if(!auth.authenticated||!auth.uid)return null;
     const scoped=parsePayload(this.storage?.getItem?.(this.accountKey(auth.uid)));
-    return this.isCurrentProgress(scoped)?scoped:null;
+    const migrated=this.migrateProgress(scoped);
+    if(migrated&&Number(scoped?.progressEpoch)!==this.progressEpoch){
+      try{this.storage?.setItem?.(this.accountKey(auth.uid),JSON.stringify(migrated))}catch{}
+    }
+    return migrated;
   }
 
   save(state,{sync=true}={}){
@@ -217,8 +231,9 @@ export class PlayerStateStore extends EventTarget {
       const document=await response.json();
       const raw=String(document?.fields?.payload?.stringValue||"");
       const state=parsePayload(raw);
-      return state&&this.isCurrentProgress(state)
-        ? {ok:true,code:"restored",state}
+      const migrated=this.migrateProgress(state);
+      return migrated
+        ? {ok:true,code:Number(state?.progressEpoch)===this.progressEpoch?"restored":"restored_migrated",state:migrated}
         : {ok:false,code:"remote_state_reset",state:null};
     }catch{
       return {ok:false,code:"restore_failed",state:null};
