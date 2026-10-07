@@ -84,6 +84,90 @@
 .tq-world-entity__webgl{display:block;width:100%;height:100%;pointer-events:none;background:transparent}
 .tq-world-entity__webgl[hidden]{display:none}
 
+
+/* Sea monsters: timeline atlas + waterline integration */
+.tq-world-entity--monster{
+  isolation:isolate;
+  overflow:visible;
+  transform-origin:50% 84%;
+}
+.tq-world-entity--monster>.tq-world-entity__timeline-sprite{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:block;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  filter:drop-shadow(0 14px 18px rgba(0,15,30,.56));
+  transform-origin:50% 85%;
+  will-change:background-position,transform;
+}
+.tq-world-entity--monster>.tq-world-monster-shadow{
+  position:absolute;
+  left:50%;
+  bottom:1%;
+  z-index:1;
+  width:72%;
+  height:18%;
+  transform:translateX(-50%) scale(1,.82);
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,10,24,.52) 0%,rgba(0,14,30,.30) 42%,transparent 72%);
+  filter:blur(3px);
+  pointer-events:none;
+  animation:tq-monster-shadow-pulse 2.6s ease-in-out infinite;
+}
+.tq-world-entity--monster>.tq-world-monster-water-front{
+  position:absolute;
+  left:-7%;
+  right:-7%;
+  bottom:-1%;
+  z-index:4;
+  height:31%;
+  pointer-events:none;
+  border-radius:50%;
+  background:
+    linear-gradient(to top,rgba(5,51,88,.86) 4%,rgba(7,91,128,.52) 48%,rgba(22,151,183,.12) 72%,transparent 100%);
+  clip-path:ellipse(76% 94% at 50% 100%);
+  backdrop-filter:blur(.7px);
+  -webkit-backdrop-filter:blur(.7px);
+}
+.tq-world-entity--monster>.tq-world-monster-wave-ring{
+  position:absolute;
+  left:50%;
+  bottom:8%;
+  z-index:5;
+  width:76%;
+  height:21%;
+  transform:translateX(-50%) scale(.76,.56);
+  border:2px solid rgba(198,246,255,.58);
+  border-radius:50%;
+  box-shadow:0 0 8px rgba(119,220,245,.24),inset 0 0 8px rgba(119,220,245,.18);
+  opacity:.44;
+  pointer-events:none;
+  animation:tq-monster-wave-ring 2.5s ease-out infinite;
+}
+.tq-world-entity--monster.is-combat-target>.tq-world-monster-wave-ring{
+  border-color:rgba(255,217,104,.75);
+  box-shadow:0 0 12px rgba(255,182,64,.34),inset 0 0 10px rgba(255,182,64,.18);
+}
+@keyframes tq-monster-shadow-pulse{
+  0%,100%{transform:translateX(-50%) scale(1,.82);opacity:.52}
+  50%{transform:translateX(-50%) scale(.86,.70);opacity:.34}
+}
+@keyframes tq-monster-wave-ring{
+  0%{transform:translateX(-50%) scale(.68,.50);opacity:.50}
+  65%{opacity:.20}
+  100%{transform:translateX(-50%) scale(1.06,.78);opacity:0}
+}
+@media(max-width:620px){
+  .tq-world-entity--monster>.tq-world-monster-water-front{height:29%}
+  .tq-world-entity--monster>.tq-world-monster-wave-ring{border-width:1.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .tq-world-entity--monster>.tq-world-monster-shadow,
+  .tq-world-entity--monster>.tq-world-monster-wave-ring{animation:none}
+}
+
 .tq-world-entity--island{isolation:isolate;overflow:visible}
 .tq-world-entity--island>.tq-world-island-water-canvas{
   position:absolute;
