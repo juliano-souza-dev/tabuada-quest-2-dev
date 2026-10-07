@@ -11,7 +11,7 @@ import { directionForHeading, resolveDirectionalSource, directionalRegionStyle }
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
 import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v4";
-import { ShipyardOverlay } from "./ShipyardOverlay.js";
+import { ShipyardOverlay } from "./ShipyardOverlay.js?v=20261007-shipyard-responsibilities-v1";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261007-tutorial-guide-v2";
 import {
   normalizeCollision,
