@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 8,
+  "version": 9,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -1888,9 +1888,10 @@
       "type": "npc",
       "entityKind": "monster",
       "available": true,
-      "description": "Monstro marinho de águas profundas. Animação manual em atlas 4x4, sem Pixi, com idle cíclico de 16 quadros.",
-      "spriteMode": "timeline-atlas",
-      "autoFrame": false,
+      "description": "Monstro marinho colossal de superfície. Usa atlas temporal 4x4 para idle, com integração visual à linha d'água.",
+      "spriteMode": "combined",
+      "spriteAnimationMode": "timeline",
+      "autoFrame": true,
       "cellSize": 400,
       "asset": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
       "animations": {
@@ -1917,47 +1918,31 @@
             14,
             15
           ]
-        },
-        "swim": {
-          "frameMs": 95,
-          "loop": true,
-          "cellWidth": 400,
-          "cellHeight": 400,
-          "frames": [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15
-          ]
         }
       },
       "animationGroups": {
-        "idle": "navigation",
-        "swim": "navigation"
+        "idle": "navigation"
+      },
+      "motion": {
+        "active": true,
+        "preset": "heavy",
+        "speed": 34,
+        "heave": 88,
+        "pitch": 100,
+        "roll": 16,
+        "sway": 18
       },
       "navigation": {
-        "width": 320,
-        "height": 320,
-        "minSpeed": 22,
-        "speed": 82,
-        "acceleration": 230,
-        "braking": 0.2,
+        "width": 420,
+        "height": 420,
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "braking": 0.18,
         "roll": 0,
-        "heave": 3.2,
-        "sway": 1.4,
-        "periodMs": 2600,
+        "heave": 3,
+        "sway": 2,
+        "periodMs": 2500,
         "wake": false,
         "shadow": true,
         "src": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
@@ -1969,36 +1954,142 @@
           "imageHeight": 1600,
           "cellWidth": 400,
           "cellHeight": 400,
-          "initialFrame": 0,
-          "animationOnly": true
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            }
+          },
+          "directionFrames": {
+            "n": 0,
+            "nne": 1,
+            "ne": 2,
+            "ene": 3,
+            "e": 4,
+            "ese": 5,
+            "se": 6,
+            "sse": 7,
+            "s": 8,
+            "ssw": 9,
+            "sw": 10,
+            "wsw": 11,
+            "w": 12,
+            "wnw": 13,
+            "nw": 14,
+            "nnw": 15
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
         },
         "compiled": {}
       },
       "combat": {
-        "hp": 1200,
-        "attackRange": 420,
-        "attackCooldownMs": 1600,
-        "damage": 8,
+        "hp": 15000,
+        "attackRange": 520,
+        "attackCooldownMs": 1800,
+        "damage": 12,
         "recoil": 0,
-        "shake": 3,
+        "shake": 4,
         "muzzleFlash": false,
         "smoke": false,
         "impact": true,
-        "useNavigationAtlas": false,
+        "useNavigationAtlas": true,
         "cannonSlots": 0
       },
       "schema": "tq.ship",
-      "version": 2,
-      "spriteAnimationMode": "timeline",
-      "motion": {
-        "active": true,
-        "preset": "heavy",
-        "speed": 30,
-        "heave": 18,
-        "pitch": 12,
-        "roll": 8,
-        "sway": 5
-      }
+      "version": 2
     }
   ],
   "shipTypes": [
