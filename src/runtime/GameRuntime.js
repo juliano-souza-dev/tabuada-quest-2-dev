@@ -2225,7 +2225,8 @@ export class GameRuntime {
         await this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="repair-ship"&&Number(hp)>=Number(maxHp)){
           this.setR1TutorialStage("attack-ship-2",{save:true,sync:true});
-          this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! Agora destrua outro alvo.",3000);
+          this.worldRuntime?.spawnTutorialCorsairForSecondDuel?.();
+          this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! Um novo corsário apareceu. Volte ao combate.",3000);
         }
       },
       canSelectAmmo:()=>true,
