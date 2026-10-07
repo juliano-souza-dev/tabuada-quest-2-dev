@@ -1,6 +1,9 @@
 const __tqDevStamp=globalThis.__TQ_DEV_STAMP__||Date.now();
-const { GameRuntime }=await import("./runtime/GameRuntime.js?v="+__tqDevStamp);
-import { installAuthRuntime } from "./runtime/auth/AuthRuntimeBridge.js?v=20261006-terror-local-content-v2";
+globalThis.__TQ_DEV_STAMP__=__tqDevStamp;
+const [{ GameRuntime },{ installAuthRuntime }]=await Promise.all([
+  import("./runtime/GameRuntime.js?v="+__tqDevStamp),
+  import("./runtime/auth/AuthRuntimeBridge.js?v="+__tqDevStamp)
+]);
 
 // Older saves can have mission progress at target while claimedRewards is missing.
 // Runtime gates (NPC spawns, shop unlocks, tutorial steps) must treat that state
@@ -111,7 +114,7 @@ const mountRewardDiagnostics=()=>{
 };
 const rewardDiagnostics=null;
 try{
-game=await GameRuntime.load(app,"./src/config/game.manifest.json?v=20261007-tabuada-sombria-sprite-v1");
+game=await GameRuntime.load(app,"./src/config/game.manifest.json?v="+__tqDevStamp);
 
 if(flowTest){
   try{
@@ -144,7 +147,7 @@ if(flowTest){
   globalThis.dispatchEvent?.(new CustomEvent("tq:auth-entry-ready",{detail}));
 }else{
   services=await installAuthRuntime(game,{
-    configUrl:"./src/config/firebase-public.json?v=20260930-1851"
+    configUrl:"./src/config/firebase-public.json?v="+__tqDevStamp
   });
   game.attachPlayerStateStore(services.playerState);
 }
