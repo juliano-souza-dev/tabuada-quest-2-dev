@@ -91,6 +91,23 @@
   overflow:visible;
   transform-origin:50% 84%;
 }
+.tq-world-entity--monster>.tq-world-monster-presence-webgl{
+  position:absolute;
+  left:-22%;
+  top:-15%;
+  z-index:0;
+  display:block;
+  width:144%;
+  height:134%;
+  max-width:none;
+  max-height:none;
+  pointer-events:none;
+  background:transparent;
+  opacity:.88;
+  mix-blend-mode:screen;
+}
+.tq-world-entity--monster>.tq-world-monster-presence-webgl[hidden]{display:none}
+
 .tq-world-entity--monster>.tq-world-entity__timeline-sprite{
   position:absolute;
   inset:0;
@@ -188,13 +205,61 @@
   100%{transform:translateX(-50%) scale(1.06,.78);opacity:0}
 }
 @media(max-width:620px){
+  .tq-world-entity--monster>.tq-world-monster-presence-webgl{opacity:.72}
   .tq-world-entity--monster>.tq-world-monster-water-front{height:16%}
   .tq-world-entity--monster>.tq-world-monster-wave-ring{border-width:1.5px}
+}
+/* Kraken Esmeralda: timeline = tentáculos; CSS = microvida e presença. */
+.tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-entity__timeline-sprite{
+  transform-origin:50% 63%;
+  animation:tq-kraken-esmeralda-life 3.15s ease-in-out infinite;
+  filter:saturate(1.10) contrast(1.035) drop-shadow(0 10px 11px rgba(0,14,25,.62)) drop-shadow(0 0 7px rgba(52,214,205,.16));
+}
+.tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-entity__timeline-sprite::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 42.5% 48%,rgba(255,184,65,.34) 0 1.7%,rgba(255,111,18,.12) 2.8%,transparent 6%),
+    radial-gradient(circle at 57.5% 48%,rgba(255,184,65,.34) 0 1.7%,rgba(255,111,18,.12) 2.8%,transparent 6%);
+  mix-blend-mode:screen;
+  opacity:.42;
+  animation:tq-kraken-esmeralda-eyes 2.25s ease-in-out infinite;
+}
+.tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-monster-water-front{
+  height:26%;
+  bottom:-2%;
+  opacity:.82;
+  animation:tq-kraken-esmeralda-waterline 2.8s ease-in-out infinite;
+}
+.tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-monster-shadow{
+  width:78%;
+  height:20%;
+  bottom:-1.5%;
+}
+@keyframes tq-kraken-esmeralda-life{
+  0%,100%{transform:translate3d(0,0,0) scale(1,1)}
+  28%{transform:translate3d(-.7px,-1.8px,0) scale(1.007,.996)}
+  55%{transform:translate3d(.5px,.7px,0) scale(.997,1.007)}
+  78%{transform:translate3d(.8px,-.8px,0) scale(1.004,.999)}
+}
+@keyframes tq-kraken-esmeralda-eyes{
+  0%,100%{opacity:.34;filter:blur(.1px)}
+  48%{opacity:.58;filter:blur(.5px)}
+  62%{opacity:.45;filter:blur(.25px)}
+}
+@keyframes tq-kraken-esmeralda-waterline{
+  0%,100%{transform:translateY(0) scaleX(1);opacity:.72}
+  50%{transform:translateY(1.4px) scaleX(1.035);opacity:.90}
 }
 @media(prefers-reduced-motion:reduce){
   .tq-world-entity--monster>.tq-world-monster-shadow,
   .tq-world-entity--monster>.tq-world-monster-wave-ring,
-  .tq-world-entity--monster>.tq-world-monster-bubbles>i{animation:none}
+  .tq-world-entity--monster>.tq-world-monster-bubbles>i,
+  .tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-entity__timeline-sprite,
+  .tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-entity__timeline-sprite::after,
+  .tq-world-entity[data-ship-id="monster-kraken-esmeralda"]>.tq-world-monster-water-front{animation:none}
 }
 
 .tq-world-entity--island{isolation:isolate;overflow:visible}

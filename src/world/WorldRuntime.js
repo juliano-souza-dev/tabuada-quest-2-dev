@@ -8,6 +8,7 @@ const [
   { normalizeEntityMotion,applyEntityMotionPreset,computeEntityMotionFrame,defaultEntityMotion },
   { normalizeEntityEffect,applyEntityEffectPreset,computeEntityEffectFrame,listEntityEffectPresets },
   { EntityWebGLEffectRenderer },
+  { MonsterPresenceWebGLRenderer },
   { resolveEntityPresentation },
   { normalizeJoystickVector,screenPointToWorld,targetNavigationVector },
   { directionForHeading,resolveDirectionalSource,directionalRegionStyle },
@@ -37,6 +38,7 @@ const [
   import("./WorldEntityMotion.mjs?v="+__tqDevStamp),
   import("./WorldEntityEffects.mjs?v="+__tqDevStamp),
   import("./EntityWebGLEffectRenderer.mjs?v="+__tqDevStamp),
+  import("./MonsterPresenceWebGLRenderer.mjs?v="+__tqDevStamp),
   import("./WorldEntityPresentation.mjs?v="+__tqDevStamp),
   import("./WorldNavigationInput.mjs?v="+__tqDevStamp),
   import("./WorldDirectionalSprite.mjs?v="+__tqDevStamp),
@@ -409,6 +411,7 @@ export class WorldRuntime {
     this.treasureReady=null;
     this.pedagogyInvulnerableUntil=0;
     this.entityEffectRenderers=new Map();
+    this.monsterPresenceRenderers=new Map();
     this.entityEffectOrigins=new Map();
     this.entityById=new Map();
     this.entities=(config.entities||[]).map((entity,index)=>{
@@ -1507,6 +1510,8 @@ export class WorldRuntime {
     if(!this.entityLayer)return;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
     this.entityEffectRenderers.clear();
+    for(const renderer of this.monsterPresenceRenderers.values())renderer?.destroy?.();
+    this.monsterPresenceRenderers.clear();
     this.entityLayer.replaceChildren();
     this.gizmoEl=null;
 
@@ -1518,6 +1523,8 @@ export class WorldRuntime {
       el.dataset.renderMode=presentation.renderMode;
       el.dataset.logicalType=entity.type||"object";
       el.dataset.entityKind=String(entity.entityKind||"");
+      el.dataset.shipId=String(entity.shipId||"");
+      el.dataset.npcId=String(entity.npcId||"");
       const timelineAnimated=hasTimelineSpriteAnimation(entity);
       el.classList.toggle("tq-world-entity--monster",String(entity.entityKind||"")==="monster");
       if(String(entity.type||"")==="region-exit"){
@@ -1531,6 +1538,13 @@ export class WorldRuntime {
 
       if(presentation.hasSprite){
         if(timelineAnimated){
+          if(String(entity.entityKind||"")==="monster"){
+            const presenceCanvas=document.createElement("canvas");
+            presenceCanvas.className="tq-world-monster-presence-webgl";
+            presenceCanvas.setAttribute("aria-hidden","true");
+            el.append(presenceCanvas);
+          }
+
           const shadow=document.createElement("span");
           shadow.className="tq-world-monster-shadow";
           shadow.setAttribute("aria-hidden","true");
@@ -1624,6 +1638,7 @@ export class WorldRuntime {
       this.entityLayer.append(el);
       if(entity.nameEl)this.entityLayer.append(entity.nameEl);
       this.syncEntityEffectRenderer(entity);
+      this.syncMonsterPresenceRenderer(entity);
     }
 
     this.ensureGizmo();
@@ -2147,6 +2162,39 @@ export class WorldRuntime {
     collider.style.width=`calc(${widthPct}% + ${paddingX}%)`;
     collider.style.height=`calc(${heightPct}% + ${paddingY}%)`;
     collider.style.borderRadius=entity.collision.shape==="ellipse"?"50%":"10px";
+  }
+
+  syncMonsterPresenceRenderer(entity){
+    if(!entity?.el||String(entity.entityKind||"")!=="monster")return false;
+    const canvas=entity.el.querySelector(".tq-world-monster-presence-webgl");
+    if(!canvas)return false;
+    let renderer=this.monsterPresenceRenderers.get(entity.id);
+    if(!renderer){
+      renderer=new MonsterPresenceWebGLRenderer(canvas);
+      this.monsterPresenceRenderers.set(entity.id,renderer);
+    }
+    return this.renderMonsterPresence(entity,performance.now());
+  }
+
+  renderMonsterPresence(entity,time=performance.now()){
+    if(!entity?.el||String(entity.entityKind||"")!=="monster")return false;
+    const canvas=entity.el.querySelector(".tq-world-monster-presence-webgl");
+    const renderer=this.monsterPresenceRenderers.get(entity.id);
+    if(!canvas||!renderer)return false;
+    const seed=(Math.abs(hashString(String(entity.id||entity.npcId||entity.shipId||"monster")))%10000)/10000;
+    const selected=entity.el.classList.contains("is-combat-target");
+    const active=renderer.render(
+      time,
+      Math.max(64,Number(entity.width)||300)*1.44,
+      Math.max(64,Number(entity.height)||300)*1.34,
+      {
+        seed,
+        target:selected,
+        intensity:String(entity.shipId||"")==="monster-kraken-esmeralda"?1.08:.82
+      }
+    );
+    canvas.hidden=!active;
+    return active;
   }
 
   syncEntityEffectRenderer(entity){
@@ -3656,6 +3704,7 @@ export class WorldRuntime {
       }
       if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
       else if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
+      if(String(entity.entityKind||"")==="monster")this.renderMonsterPresence(entity,time);
 
       const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
       const canvas=entity.el.querySelector(".tq-world-entity__webgl");
@@ -7158,6 +7207,8 @@ export class WorldRuntime {
     this.navalRenderer=null;
     for(const renderer of this.entityEffectRenderers.values())renderer?.destroy?.();
     this.entityEffectRenderers.clear();
+    for(const renderer of this.monsterPresenceRenderers.values())renderer?.destroy?.();
+    this.monsterPresenceRenderers.clear();
     this.clearPlayerWake();
     for(const cleanup of this.cleanups.splice(0))cleanup();
     this.shopOverlay?.destroy?.();

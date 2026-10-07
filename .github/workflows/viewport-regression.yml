@@ -17,7 +17,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check world runtime syntax
-        run: node --check src/world/WorldRuntime.js
+        run: |
+          node --check src/world/WorldRuntime.js
+          node --check src/world/MonsterPresenceWebGLRenderer.mjs
 
       - name: Run viewport and sprite regression tests
         run: node --test tests/viewport-width.test.mjs tests/world-sprite-animation.test.mjs tests/dev-dynamic-versioning.test.mjs
