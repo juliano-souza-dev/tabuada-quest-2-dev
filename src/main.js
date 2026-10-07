@@ -3,7 +3,7 @@ import { SceneRuntime } from "./runtime/SceneRuntime.js?v=20260930-2320";
 import { SceneResolver } from "./runtime/SceneResolver.js?v=20260930-1851";
 import { PedagogyRuntime } from "./runtime/pedagogy/PedagogyRuntime.js?v=20261003-2113-repair-region";
 import { DevOverlay } from "./dev/DevOverlay.js?v=20261007-r1-tutorial-progression-v4";
-import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261007-r1-tutorial-progression-v4";
+import { launchWorldTest } from "./world/WorldTestLauncher.js?v=20261007-answer-feedback-v1";
 import { readAppContinuity, installAppLifecycle } from "./runtime/AppLifecycle.js?v=20261005-hud-cache-hard-reset-v1";
 
 const app=document.querySelector("#app");
