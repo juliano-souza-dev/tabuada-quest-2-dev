@@ -34,7 +34,9 @@ const html=String.raw;
 async function registerWorker(){
   if(!("serviceWorker" in navigator))return null;
   try{
-    return await navigator.serviceWorker.register("./sw.js?v=20261007-monster-water-blood-v2",{
+    const stamp=globalThis.__TQ_DEV_STAMP__||Date.now();
+    globalThis.__TQ_DEV_STAMP__=stamp;
+    return await navigator.serviceWorker.register("./sw.js?v="+stamp,{
       scope:"./",
       updateViaCache:"none"
     });
