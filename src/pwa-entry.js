@@ -85,7 +85,7 @@ const showOpeningBanner=async()=>{
 const gate=await enforcePwaOnly(app);
 if(gate.allowed){
   await showOpeningBanner();
-  await import("./game.js?v=20261006-opening-banner-play-v2");
+  await import("./game.js?v=20261007-live-player-hp-v1");
 }else{
   globalThis.TabuadaQuest={
     ...(globalThis.TabuadaQuest||{}),
