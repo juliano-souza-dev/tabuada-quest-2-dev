@@ -706,7 +706,8 @@ export class WorldRuntime {
     const targetId=String(target?.id||"");
     const targetAlive=Boolean(target&&targetId&&!this.collected.has(targetId)&&!this.navalDestroying.has(targetId));
     const targetInSight=Boolean(targetAlive&&this.isClickableCombatShip(target)&&this.isNavalTargetInRange(target));
-    const blocking=this.navalAutoFire===true||targetInSight;
+    const tutorialStage=String(this.getTutorialGuide?.()?.stage||"");
+    const blocking=this.navalAutoFire===true||(tutorialStage!=="collect-10"&&targetInSight);
     if(blocking){
       this.treasureCombatWasBlocking=true;
       return true;
@@ -4920,6 +4921,8 @@ export class WorldRuntime {
       this.treasureCombatWasBlocking=false;
       this.treasureCombatLockUntil=Date.now()+20000;
       Promise.resolve(this.onTutorialNpcDestroyed?.(entity)).catch(error=>console.warn("[TabuadaQuest] tutorial destruction hook failed",error));
+      if(this.combatTarget===entity)this.clearCombatTarget({hideAction:true});
+      this.navalHostile.delete(id);
     }
     if(String(this.tutorialIsolatedTargetId||"")===id){
       this.tutorialIsolatedTargetId="";
