@@ -253,7 +253,7 @@ export class WorldRuntime {
         const minimapPoints=[
           {x:Number(this.player.x)||0,y:Number(this.player.y)||0,player:true},
           ...this.entities
-            .filter(entity=>String(entity?.type||"")==="ship"&&!this.collected.has(entity.id))
+            .filter(entity=>String(entity?.type||"")==="ship"&&!this.collected.has(entity.id)&&!this.navalDestroying.has(String(entity.id||""))&&entity?.el?.hidden!==true)
             .slice(0,40)
             .map(entity=>({
               x:Number(entity.visualX??entity.x)||0,
