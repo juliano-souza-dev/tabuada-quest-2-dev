@@ -961,7 +961,7 @@ export class WorldRuntime {
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
     const nav=entity.npcNavigation;
-    const tutorialAttack=String(this.getTutorialGuide?.()?.stage||"")==="attack-ship";
+    const tutorialAttack=["attack-ship","attack-ship-2"].includes(String(this.getTutorialGuide?.()?.stage||""));
     const tutorialHold=tutorialAttack&&entity.tutorialCombatTarget===true&&entity.tutorialCombatPhase!=="chase";
     if(entity.devFrozen||entity.bossCombatStopped===true||tutorialHold){
       if(nav){
@@ -1675,7 +1675,7 @@ export class WorldRuntime {
       if(this.combatTarget)this.clearCombatTarget({hideAction:true});
       return false;
     }
-    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&this.isNavalTargetInRange(nearest)&&nearest.tutorialCombatPhase!=="chase"){
+    if(["attack-ship","attack-ship-2"].includes(String(this.getTutorialGuide?.()?.stage||""))&&this.isNavalTargetInRange(nearest)&&nearest.tutorialCombatPhase!=="chase"){
       nearest.tutorialCombatTarget=true;
       nearest.tutorialCombatPhase=nearest.tutorialCombatPhase||"ready-fire";
       if(nearest.npcNavigation){nearest.npcNavigation.vx=0;nearest.npcNavigation.vy=0;}
@@ -4103,7 +4103,7 @@ export class WorldRuntime {
       ?String(challenge.prompt||"")
       :"Desafio indisponível";
     if(this.challengeFeedback)this.challengeFeedback.textContent=challenge?.available
-      ?"Cada acerto recupera 25 pontos de vida. Casco: "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+      ?"Cada acerto recupera 25% do casco total. Casco: "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
       :"Não foi possível gerar uma conta de multiplicação.";
     if(this.challengeAnswer){
       this.challengeAnswer.value="";
@@ -4607,11 +4607,11 @@ export class WorldRuntime {
       };
       this.onPedagogyResult?.(detail);
       if(result.correct===true){
-        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+25);
+        const repairGain=Math.max(1,Math.ceil(this.navalPlayerMaxHp*.25));\n        this.navalPlayerHp=Math.min(this.navalPlayerMaxHp,this.navalPlayerHp+repairGain);
         if(this.repairHp){const pct=Math.max(0,Math.min(100,this.navalPlayerHp/Math.max(1,this.navalPlayerMaxHp)*100));if(this.repairHpFill)this.repairHpFill.style.width=pct+"%";if(this.repairHpLabel)this.repairHpLabel.textContent="Casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp;this.repairHp.animate?.([{transform:"scale(1)"},{transform:"scale(1.035)"},{transform:"scale(1)"}],{duration:360,easing:"ease-out"});}
         this.showAnswerFeedback({
           correct:true,selectedButton,expected:result.expected,
-          message:"✓ Acertou! +25 de vida · casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
+          message:"✓ Acertou! +25% do casco · "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
         });
         if(this.navalPlayerHp>=this.navalPlayerMaxHp){
           this.challengeTimer=setTimeout(()=>this.closePlayerRepair({completed:true}),650);
@@ -4884,6 +4884,15 @@ export class WorldRuntime {
     if(this.navalDestroying.has(id))return false;
 
     this.navalDestroying.add(id);
+    if(String(this.tutorialIsolatedTargetId||"")===id){
+      this.tutorialIsolatedTargetId="";
+      for(const other of this.entities){
+        if(other.tutorialHiddenForDuel){
+          other.tutorialHiddenForDuel=false;
+          if(other.el)other.el.hidden=false;
+        }
+      }
+    }
     this.showGameplayToast((entity.label||entity.shipName||"Navio")+" destruído");
     if(entity.nameEl)entity.nameEl.hidden=true;
     this.navalHostile.delete(id);
@@ -5046,7 +5055,7 @@ export class WorldRuntime {
       return;
     }
 
-    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&entity.tutorialCombatTarget===true&&entity.tutorialCombatPhase!=="chase"&&next/hp.max<=.10){
+    if(["attack-ship","attack-ship-2"].includes(String(this.getTutorialGuide?.()?.stage||""))&&entity.tutorialCombatTarget===true&&entity.tutorialCombatPhase!=="chase"&&next/hp.max<=.10){
       entity.tutorialCombatPhase="chase";
       if(entity.npcNavigation){
         entity.npcNavigation.mode="sailing";
@@ -5288,7 +5297,7 @@ export class WorldRuntime {
     }
 
     if(!firedCount)return false;
-    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"){
+    if(["attack-ship","attack-ship-2"].includes(String(this.getTutorialGuide?.()?.stage||""))){
       entity.tutorialCombatTarget=true;
       if(!entity.tutorialCombatCalibrated){
         const perHit=Math.max(.1,Number(volleyShots[0]?.shotDamage)||1);
@@ -5298,6 +5307,14 @@ export class WorldRuntime {
         entity.tutorialCombatCalibrated=true;
       }
       if(entity.tutorialCombatPhase!=="chase")entity.tutorialCombatPhase="firing";
+      if(!this.tutorialIsolatedTargetId){
+        this.tutorialIsolatedTargetId=String(entity.id);
+        for(const other of this.entities){
+          if(other===entity||!this.isClickableCombatShip(other))continue;
+          other.tutorialHiddenForDuel=true;
+          if(other.el)other.el.hidden=true;
+        }
+      }
       this.onTutorialAttack?.(entity);
     }
     this.audio?.play("cannon-shot");
@@ -5386,7 +5403,7 @@ export class WorldRuntime {
     if(this.repairActive?.forced===true)return false;
     if(this.navalPlayerHp<=0)return false;
     let incoming=Math.max(1,Number(amount)||1);
-    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship"&&source?.tutorialCombatTarget===true){
+    if(["attack-ship","attack-ship-2"].includes(String(this.getTutorialGuide?.()?.stage||""))&&source?.tutorialCombatTarget===true){
       incoming=Math.min(incoming,Math.max(1,this.navalPlayerMaxHp*.03));
     }
     const immunityQty=Math.max(0,Math.floor(Number(this.getConsumableQuantity("halloween-immunity-charm"))||0));
@@ -6663,11 +6680,11 @@ export class WorldRuntime {
       return;
     }
     let target=null;
-    if(stage==="treasure"){
+    if(stage==="treasure"||stage==="collect-10"){
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
-    }else if(stage==="attack-ship"){
+    }else if(stage==="attack-ship"||stage==="attack-ship-2"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
       if(locked?.tutorialCombatPhase==="ready-fire"||locked?.tutorialCombatPhase==="firing"){
         this.tutorialArrowEl?.remove();
