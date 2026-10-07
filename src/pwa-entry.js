@@ -1,4 +1,6 @@
-import { enforcePwaOnly } from "./runtime/PwaGate.js?v=20261007-monster-water-blood-v2";
+const __tqDevStamp=globalThis.__TQ_DEV_STAMP__||Date.now();
+globalThis.__TQ_DEV_STAMP__=__tqDevStamp;
+const { enforcePwaOnly }=await import("./runtime/PwaGate.js?v="+__tqDevStamp);
 
 const app=document.querySelector("#app");
 if(!app)throw new Error("Tabuada Quest app root not found");
@@ -17,7 +19,7 @@ const showOpeningBanner=async()=>{
   });
 
   const img=document.createElement("img");
-  img.src="./assets/ui/evento_halloween_terror_em_alto_mar.webp?v=20261006-opening-banner-play-v2";
+  img.src="./assets/ui/evento_halloween_terror_em_alto_mar.webp?v="+__tqDevStamp;
   img.alt="Evento Halloween: Terror em Alto Mar";
   Object.assign(img.style,{
     position:"absolute",
@@ -70,9 +72,7 @@ const showOpeningBanner=async()=>{
 const gate=await enforcePwaOnly(app);
 if(gate.allowed){
   await showOpeningBanner();
-  const devStamp=Date.now();
-  globalThis.__TQ_DEV_STAMP__=devStamp;
-  await import("./game.js?v="+devStamp);
+  await import("./game.js?v="+__tqDevStamp);
 }else{
   globalThis.TabuadaQuest={
     ...(globalThis.TabuadaQuest||{}),
