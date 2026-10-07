@@ -20,4 +20,4 @@ jobs:
         run: node --check src/world/WorldRuntime.js
 
       - name: Run viewport and sprite regression tests
-        run: node --test tests/viewport-width.test.mjs tests/world-sprite-animation.test.mjs
+        run: node --test tests/viewport-width.test.mjs tests/world-sprite-animation.test.mjs tests/dev-dynamic-versioning.test.mjs
