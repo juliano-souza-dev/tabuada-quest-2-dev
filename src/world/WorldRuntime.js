@@ -25,6 +25,7 @@ const [
   { selectVisibleTreasures },
   { composeEntityVisualFrame },
   { paintEntityEffects },
+  { paintEntityTransform },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -59,6 +60,7 @@ const [
   import("./presentation/TreasureRenderModel.mjs?v="+__tqDevStamp),
   import("./presentation/EntityVisualFrame.mjs?v="+__tqDevStamp),
   import("./presentation/EntityEffectPainter.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityTransformPainter.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -3626,18 +3628,7 @@ export class WorldRuntime {
       const timelineAnimated=hasTimelineSpriteAnimation(entity);
       const hasDirectionalSprite=!timelineAnimated&&Boolean(entity.sprite?.src&&entity.sprite?.regions);
       const visual=composeEntityVisualFrame({entity,motionFrame,effectFrame,timelineAnimated,hasDirectionalSprite});
-      entity.visualX=visual.x;
-      entity.visualY=visual.y;
-      entity.visualRotation=Number(entity.rotation||0);
-      entity.el.style.left=visual.x+"px";
-      entity.el.style.top=visual.y+"px";
-      entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
-      entity.el.style.transform=`translate(-50%,-50%) rotate(${visual.rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${visual.scaleX},${visual.scaleY})`;
-      if(entity.nameEl){
-        entity.nameEl.style.left=visual.x+"px";
-        entity.nameEl.style.top=(visual.y+visual.nameOffset)+"px";
-        entity.nameEl.hidden=entity.el.hidden===true;
-      }
+      paintEntityTransform(entity,visual,effect,effectFrame);
       if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
       else if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
 
