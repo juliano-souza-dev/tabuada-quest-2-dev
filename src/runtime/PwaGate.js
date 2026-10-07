@@ -95,6 +95,10 @@ function installGateStyles(){
 }
 
 export async function enforcePwaOnly(root){
+  // DEV always checks the worker on boot, including installed/standalone mode.
+  // Registration is background-only so it cannot delay first paint.
+  registerWorker().catch(error=>console.warn("[TQ PWA] background worker registration failed",error));
+
   // Capture beforeinstallprompt at module load time, before awaiting service-worker
   // registration. The previous implementation attached the listener too late and
   // could miss Chrome's install event, leaving the button stuck on "Aguardando...".
@@ -107,8 +111,6 @@ export async function enforcePwaOnly(root){
   installGateStyles();
   const ios=isIOS();
   root.innerHTML=gateMarkup({ios});
-  registerWorker().catch(error=>console.warn("[TQ PWA] background worker registration failed",error));
-
   const button=root.querySelector("[data-pwa-install]");
   const status=root.querySelector("[data-pwa-status]");
   let promptEvent=capturedInstallPrompt;
