@@ -1,4 +1,4 @@
-const CACHE_NAME="tq-pwa-runtime-20261007-live-player-hp-v1";
+const CACHE_NAME="tq-pwa-runtime-20261007-ammo-auto-cheapest-v1";
 const CACHE_PREFIX="tq-pwa-runtime-";
 const CORE_URLS=[
   "./",
