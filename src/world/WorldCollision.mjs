@@ -1,7 +1,7 @@
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const finite=(value,fallback=0)=>Number.isFinite(Number(value))?Number(value):fallback;
 
-const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene","enter-world","combat"]);
+const VALID_ACTIONS=new Set(["auto","none","collect","enter-scene","enter-world","combat","interact"]);
 
 export function inferCollisionAction(entity={},collision={}){
   const explicit=VALID_ACTIONS.has(String(collision.action||""))
@@ -59,6 +59,7 @@ export function collisionMessage(entity={},collision={}){
   if(action==="enter-scene")return "Você chegou a "+label+".";
   if(action==="enter-world")return "Você chegou ao limite desta região.";
   if(action==="combat")return label+" bloqueia sua rota.";
+  if(action==="interact")return "Você chegou a "+label+".";
   return "";
 }
 
@@ -68,6 +69,7 @@ export function collisionActionLabel(entity={},collision={}){
   if(action==="enter-scene")return "Acessar";
   if(action==="enter-world")return "Navegar";
   if(action==="combat")return "Combater";
+  if(action==="interact")return "Entrar";
   return "";
 }
 
