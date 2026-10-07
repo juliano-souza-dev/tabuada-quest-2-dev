@@ -749,7 +749,7 @@
         "compiled": {}
       },
       "combat": {
-        "hp": 50,
+        "hp": 1000,
         "attackRange": 1200,
         "attackCooldownMs": 900,
         "damage": 1,
