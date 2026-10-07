@@ -31,11 +31,11 @@
         }
       },
       "combat": {
-        "expectedPlayerHp": 50,
+        "expectedPlayerHp": 1000,
         "expectedDamagePerShot": 10,
         "commonNpcHp": {
-          "min": 30,
-          "max": 50
+          "min": 100,
+          "max": 100
         },
         "targetHitsCommon": 4
       },
