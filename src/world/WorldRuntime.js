@@ -315,7 +315,22 @@ export class WorldRuntime {
           ammo
         };
       },
-      onAttack:()=>this.activateNearby(),
+      onAttack:()=>{
+        const stage=String(this.getTutorialGuide?.()?.stage||"");
+        if(stage==="missions-hunt"){
+          const target=this.combatTarget&&this.combatTarget.tutorialMissionCorsair===true
+            ?this.combatTarget
+            :this.nearestCombatTarget();
+          if(target){
+            if(this.combatTarget!==target)this.selectCombatTarget(target,{preserveMovement:true});
+            if(!this.isNavalTargetInRange(target)){
+              this.showGameplayToast("🏴‍☠️ Aproxime-se mais do corsário para disparar.",1800);
+              return false;
+            }
+          }
+        }
+        return this.activateNearby();
+      },
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
       onFollow:()=>this.toggleCombatFollow(),
       onCenterCamera:()=>{
@@ -5898,9 +5913,12 @@ export class WorldRuntime {
       this.beginStarterAmmoChallenge();
       return;
     }
-    const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)
-      ?this.combatTarget
-      :this.nearby;
+    const tutorialMissionHunt=String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt";
+    const missionTarget=tutorialMissionHunt
+      ?(this.combatTarget?.tutorialMissionCorsair===true?this.combatTarget:this.nearestCombatTarget())
+      :null;
+    const entity=missionTarget
+      ||(this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:this.nearby);
     if(!entity||this.mode!=="play")return;
 
     const collision=normalizeCollision(entity.collision||{},entity);
