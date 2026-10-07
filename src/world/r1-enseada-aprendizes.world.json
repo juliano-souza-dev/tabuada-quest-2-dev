@@ -423,6 +423,25 @@
           "xp": 500
         },
         "hp": 100000
+      },
+      {
+        "npcId": "npc-corsario-tabuada-sombria",
+        "shipId": "ship-halloween-tabuada-sombria",
+        "count": 2,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 40,
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 900,
+          "minDistance": 560,
+          "seed": 7201
+        },
+        "hitRewardGold": 0,
+        "rewards": {
+          "gold": 220,
+          "xp": 65
+        }
       }
     ]
   },
@@ -434,7 +453,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261005-halloween-dreadnought-mission-boss",
+    "sourceRevision": "20261006-corsario-tabuada-sombria-all-maps",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
