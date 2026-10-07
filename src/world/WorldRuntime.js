@@ -192,6 +192,12 @@ export class WorldRuntime {
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
+    this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
+    this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
+    this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
+    this.shouldForceRepair=typeof options.shouldForceRepair==="function"?options.shouldForceRepair:()=>false;
+    this.onRepairCompleted=typeof options.onRepairCompleted==="function"?options.onRepairCompleted:null;
+    this.canSelectAmmo=typeof options.canSelectAmmo==="function"?options.canSelectAmmo:()=>true;
     this.canAttackEntity=typeof options.canAttackEntity==="function"?options.canAttackEntity:()=>true;
     this.attackLockMessage=typeof options.attackLockMessage==="function"?options.attackLockMessage:()=>"Alvo bloqueado.";
     this.shopBalances=typeof options.shopBalances==="function"?options.shopBalances:()=>({gold:0,rubies:0});
@@ -275,7 +281,7 @@ export class WorldRuntime {
           cameraRecenterRemainingMs:this.playCameraDetached&&this.playCameraRecenterAt>0
             ?Math.max(0,this.playCameraRecenterAt-performance.now())
             :0,
-          repairAvailable:!this.isPlayerInNavalCombat(),
+          repairAvailable:this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true&&!this.isPlayerInNavalCombat(),
           missionProgress:this.getMissionProgress()||{},
           playerHp:Number(this.navalPlayerHp||0),
           playerMaxHp:Number(this.navalPlayerMaxHp||0),
@@ -303,9 +309,15 @@ export class WorldRuntime {
         return true;
       },
       onUseHullReinforcement:()=>this.useHullReinforcement(),
-      onRepair:()=>this.beginPlayerRepair({forced:false}),
+      onRepair:()=>{
+        if(this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})!==true){this.showGameplayToast("🔒 Conserto ainda bloqueado.",1600);return false;}
+        return this.beginPlayerRepair({forced:false});
+      },
       onSelectAmmo:ammoId=>this.selectPlayerAmmo(ammoId),
-      onShop:()=>this.shopOverlay?.open?.(),
+      onShop:()=>{
+        if(this.canUseShop()!==true){this.showGameplayToast("🔒 A loja será liberada após derrotar o Corsário da Tabuada Sombria.",2200);return false;}
+        this.shopOverlay?.open?.();return true;
+      },
       onShipyard:()=>{this.shipyardOverlay?.open?.();return true;},
       onGraphicsSettingsChange:settings=>this.applyGraphicsSettings(settings,{persist:true})
     });
@@ -556,7 +568,7 @@ export class WorldRuntime {
       const occupied=[{x:Number(this.player?.x??this.config.player?.x??this.config.width/2),y:Number(this.player?.y??this.config.player?.y??this.config.height/2)},...this.entities.map(e=>({x:Number(e.x)||0,y:Number(e.y)||0}))];
       let total=0;
       for(const typeConfig of population.types){
-        for(let i=0;i<typeConfig.count&&total<160;i++,total++){
+        for(let i=0;i<typeConfig.count&&total<240;i++,total++){
           const entity=this.createGeneratedTreasure({typeConfig,index:total,population,random,occupied});
           if(entity){
             // Never resurrect a non-respawning treasure already collected in persisted world state.
@@ -882,6 +894,7 @@ export class WorldRuntime {
       let total=0;
       for(const typeConfig of population.types){
         if(typeConfig.enabled===false)continue;
+        if(typeConfig.unlockAfterMission&&!this.isMissionComplete(typeConfig.unlockAfterMission))continue;
         const typePopulation={...population,spread:{...population.spread,...(typeConfig.spawn||{})}};
         const typeRandom=typeConfig.spawn?.seed>0?createSeededRandom(hashString(this.config.id||"world")^Number(typeConfig.spawn.seed)):random;
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
@@ -4097,7 +4110,11 @@ export class WorldRuntime {
       this.challengeClose.hidden=false;
       this.challengeClose.disabled=false;
     }
-    if(completed)this.playerEl?.classList.remove("is-player-sunk");
+    if(completed){
+      this.playerEl?.classList.remove("is-player-sunk");
+      this.onRuntimeStateChange?.();
+      this.onRepairCompleted?.({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp});
+    }
     return true;
   }
 
@@ -5132,6 +5149,11 @@ export class WorldRuntime {
     const targetDistance=this.navalTargetDistance(entity);
     let selectedAmmoId=String(this.state.ammo?.selectedAmmoId||"");
     let ammo=this.ammoCatalog.find(item=>String(item?.id||"")===selectedAmmoId&&item?.available!==false)||null;
+    const requiredAmmoEvent=String(entity?.requiredAmmoEvent||entity?.combat?.requiredAmmoEvent||"").toLowerCase();
+    if(requiredAmmoEvent&&String(ammo?.event||"").toLowerCase()!==requiredAmmoEvent){
+      this.showGameplayToast("🎃 O Terror só recebe dano de munição do evento.",2000);
+      return false;
+    }
     let ammoStock=Math.max(0,Math.floor(Number(this.state.ammo?.stock?.[selectedAmmoId])||0));
     if(!selectedAmmoId||!ammo||ammoStock<=0){
       const switched=this.autoSwitchAmmoIfEmpty({announce:Boolean(selectedAmmoId)});
@@ -5393,6 +5415,11 @@ export class WorldRuntime {
         ?sourceLabel+" revidou · seu casco "+this.navalPlayerHp+"/"+this.navalPlayerMaxHp
         :"Seu navio foi derrotado.";
     }
+    if(this.navalPlayerHp>0&&this.shouldForceRepair({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true){
+      this.navalAutoFire=false;this.navalNextShotAt=0;
+      this.showGameplayToast("🔧 Casco abaixo de 750. Repare o navio por inteiro para continuar.",2400);
+      setTimeout(()=>this.beginPlayerRepair({forced:true}),0);
+    }
     if(this.navalPlayerHp<=0){
       this.hullReinforcement={hp:0,expiresAt:0};
       this.onRuntimeStateChange?.();
@@ -5480,9 +5507,8 @@ export class WorldRuntime {
               kind:"ship",
               size:clamp(Math.max(Number(this.config.player?.width)||108,Number(this.config.player?.height)||150)/150,.75,1.45)
             });
-            const shotDamage=loadout.ammo
-              ?navalShotDamage(cannon,loadout.ammo)
-              :clamp(Number(stats.damage)||1,.1,100000000);
+            const fixedDamage=Math.max(0,Number(entity?.combat?.fixedDamagePerShot)||0);
+            const shotDamage=fixedDamage>0?fixedDamage:(loadout.ammo?navalShotDamage(cannon,loadout.ammo):clamp(Number(stats.damage)||1,.1,100000000));
             this.applyDirectPlayerNavalDamage(shotDamage,entity);
           },duration);
         }
@@ -5582,6 +5608,7 @@ export class WorldRuntime {
       .filter(item=>{
         const id=String(item?.id||"");
         return id&&id!==excluded&&item?.available!==false
+          &&this.canSelectAmmo(item)===true
           &&Math.max(0,Math.floor(Number(this.state?.ammo?.stock?.[id])||0))>0;
       })
       .sort((a,b)=>{
@@ -5627,6 +5654,10 @@ export class WorldRuntime {
     const item=(Array.isArray(this.ammoCatalog)?this.ammoCatalog:[]).find(entry=>String(entry?.id||"")===id&&entry?.available!==false);
     const quantity=Math.max(0,Number(this.state?.ammo?.stock?.[id])||0);
     if(!item||quantity<=0)return false;
+    if(this.canSelectAmmo(item)!==true){
+      this.showGameplayToast("🔒 Esta munição de evento ainda não foi liberada.",1800);
+      return false;
+    }
     if(!this.state.ammo)this.state.ammo=normalizeAmmoInventory({});
     this.state.ammo.selectedAmmoId=id;
     this.onAmmoChange?.(structuredClone(this.state.ammo));
