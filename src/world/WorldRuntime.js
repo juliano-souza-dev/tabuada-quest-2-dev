@@ -10,7 +10,6 @@ import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } f
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { hasTimelineSpriteAnimation, timelineAnimationFrame, atlasFrameStyle } from "./WorldSpriteAnimation.mjs?v=20261007-leviathan-v1";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261007-monster-water-blood-v2";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v4";
 import { ShipyardOverlay } from "./ShipyardOverlay.js?v=20261007-shipyard-responsibilities-v1";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261007-tutorial-guide-v2";
@@ -23,6 +22,9 @@ import {
   removeVelocityIntoNormal,
   contourVelocity
 } from "./WorldCollision.mjs?v=20261001-1438";
+const __tqDevStamp=globalThis.__TQ_DEV_STAMP__||Date.now();
+globalThis.__TQ_DEV_STAMP__=__tqDevStamp;
+const { NavalCombatWebGLRenderer }=await import("./NavalCombatWebGLRenderer.mjs?v="+__tqDevStamp);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 const shortestAngleDelta=(from,to)=>((((Number(to)||0)-(Number(from)||0)+540)%360)-180);
 const lerpAngle=(from,to,t)=>(Number(from)||0)+shortestAngleDelta(from,to)*clamp(Number(t)||0,0,1);
