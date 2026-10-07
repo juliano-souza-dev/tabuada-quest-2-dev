@@ -207,8 +207,6 @@ export class WorldRuntime {
     this.getConsumableQuantity=typeof options.getConsumableQuantity==="function"?options.getConsumableQuantity:()=>0;
     this.onConsumeItem=typeof options.onConsumeItem==="function"?options.onConsumeItem:null;
     this.onRuntimeStateChange=typeof options.onRuntimeStateChange==="function"?options.onRuntimeStateChange:null;
-    this.onInviteParty=typeof options.onInviteParty==="function"?options.onInviteParty:null;
-    this.onPartyNpcDefeat=typeof options.onPartyNpcDefeat==="function"?options.onPartyNpcDefeat:null;
     this.getShipyardState=typeof options.getShipyardState==="function"?options.getShipyardState:null;
     this.onEquipShip=typeof options.onEquipShip==="function"?options.onEquipShip:null;
     this.onEquipCannon=typeof options.onEquipCannon==="function"?options.onEquipCannon:null;
@@ -6732,9 +6730,6 @@ export class WorldRuntime {
     for(const timer of this.navalDestroyTimers.values())clearTimeout(timer);
     this.navalDestroyTimers.clear();
     this.navalDestroying.clear();
-    for(const pending of this.bossDamageFxPending.values())if(pending?.timer)clearTimeout(pending.timer);
-    this.bossDamageFxPending.clear();
-    this.bossProjectileFxWindow.clear();
     this.audio?.destroy?.();
     this.audio=null;
     this.pixiRenderer?.destroy?.();
