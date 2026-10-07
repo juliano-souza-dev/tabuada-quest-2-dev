@@ -5159,13 +5159,6 @@ export class WorldRuntime {
   }
 
   renderCannonProjectile({from,to,duration=620,ammo=null}={}){
-    const shot={
-      from,
-      to,
-      duration,
-      ammo,
-      size:Math.max(6,7*Math.max(.6,Number(ammo?.size)||1))
-    };
     return this.navalRenderer?.fire?.({from,to,duration,ammo})===true;
   }
 
