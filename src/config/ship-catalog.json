@@ -1325,13 +1325,85 @@
         "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada_400x400.webp",
         "sprite": {
           "src": "./assets/ships/events/halloween/navio_pirata_halloween_tabuada_400x400.webp",
-          "columns": 4,
-          "rows": 4,
-          "imageWidth": 1600,
-          "imageHeight": 1600,
+          "columns": 1,
+          "rows": 1,
+          "imageWidth": 400,
+          "imageHeight": 400,
           "cellWidth": 400,
           "cellHeight": 400,
           "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
             "w": {
               "x": 0,
               "y": 0,
@@ -1339,116 +1411,44 @@
               "height": 400
             },
             "wnw": {
-              "x": 400,
+              "x": 0,
               "y": 0,
               "width": 400,
               "height": 400
             },
             "nw": {
-              "x": 800,
+              "x": 0,
               "y": 0,
               "width": 400,
               "height": 400
             },
             "nnw": {
-              "x": 1200,
+              "x": 0,
               "y": 0,
-              "width": 400,
-              "height": 400
-            },
-            "n": {
-              "x": 0,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "nne": {
-              "x": 400,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "ne": {
-              "x": 800,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "ene": {
-              "x": 1200,
-              "y": 400,
-              "width": 400,
-              "height": 400
-            },
-            "e": {
-              "x": 0,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "ese": {
-              "x": 400,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "se": {
-              "x": 800,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "sse": {
-              "x": 1200,
-              "y": 800,
-              "width": 400,
-              "height": 400
-            },
-            "s": {
-              "x": 0,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "ssw": {
-              "x": 400,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "sw": {
-              "x": 800,
-              "y": 1200,
-              "width": 400,
-              "height": 400
-            },
-            "wsw": {
-              "x": 1200,
-              "y": 1200,
               "width": 400,
               "height": 400
             }
           },
           "directionFrames": {
-            "n": 4,
-            "nne": 5,
-            "ne": 6,
-            "ene": 7,
-            "e": 8,
-            "ese": 9,
-            "se": 10,
-            "sse": 11,
-            "s": 12,
-            "ssw": 13,
-            "sw": 14,
-            "wsw": 15,
+            "n": 0,
+            "nne": 0,
+            "ne": 0,
+            "ene": 0,
+            "e": 0,
+            "ese": 0,
+            "se": 0,
+            "sse": 0,
+            "s": 0,
+            "ssw": 0,
+            "sw": 0,
+            "wsw": 0,
             "w": 0,
-            "wnw": 1,
-            "nw": 2,
-            "nnw": 3
+            "wnw": 0,
+            "nw": 0,
+            "nnw": 0
           },
           "initialDirection": "n",
-          "autoFrameExact": true
+          "autoFrameExact": false
         },
         "compiled": {}
       },
