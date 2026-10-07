@@ -63,7 +63,6 @@ export class GameRuntime {
     this.treasureCatalog=null;
     this.ammoCatalog=null;
     this.cannonCatalog=null;
-    this.missionCatalog=null;
     this.pedagogyCurriculum=null;
     this.actionCatalog=null;
     this.soundCatalog=null;
@@ -112,7 +111,7 @@ export class GameRuntime {
     this.root.append(this.sceneHost,this.worldHost);
 
     const catalogs=this.manifest.catalogs||{};
-    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,missionCatalog,pedagogyCurriculum,actionCatalog,soundCatalog]=await Promise.all([
+    const [sceneCatalog,worldCatalog,shipCatalog,npcCatalog,treasureCatalog,ammoCatalog,cannonCatalog,pedagogyCurriculum,actionCatalog,soundCatalog]=await Promise.all([
       this.loadJson(catalogs.scenes||"./src/config/scene-catalog.json"),
       this.loadJson(catalogs.worlds||"./src/config/world-catalog.json"),
       this.loadJson(catalogs.ships||"./src/config/ship-catalog.json"),
@@ -120,7 +119,6 @@ export class GameRuntime {
       this.loadJson(catalogs.treasures||"./src/config/treasure-catalog.json"),
       this.loadJson(catalogs.ammo||"./src/config/ammo-catalog.json"),
       this.loadJson(catalogs.cannons||"./src/config/cannon-catalog.json"),
-      this.loadJson(catalogs.missions||"./src/config/mission-catalog.json"),
       this.loadJson(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       this.loadJson(catalogs.actions||"./src/config/action-catalog.json"),
       this.loadJson(catalogs.sounds||"./src/config/sound-catalog.json")
@@ -132,7 +130,6 @@ export class GameRuntime {
     this.treasureCatalog=treasureCatalog;
     this.ammoCatalog=ammoCatalog;
     this.cannonCatalog=cannonCatalog;
-    this.missionCatalog=missionCatalog;
     this.pedagogyCurriculum=pedagogyCurriculum;
     this.actionCatalog=actionCatalog;
     this.soundCatalog=soundCatalog;
@@ -275,7 +272,6 @@ export class GameRuntime {
       treasureCatalog:load(catalogs.treasures||"./src/config/treasure-catalog.json"),
       ammoCatalog:load(catalogs.ammo||"./src/config/ammo-catalog.json"),
       cannonCatalog:load(catalogs.cannons||"./src/config/cannon-catalog.json"),
-      missionCatalog:load(catalogs.missions||"./src/config/mission-catalog.json"),
       pedagogyCurriculum:load(catalogs.pedagogy||"./src/config/pedagogy-curriculum.json"),
       actionCatalog:load(catalogs.actions||"./src/config/action-catalog.json"),
       soundCatalog:load(catalogs.sounds||"./src/config/sound-catalog.json")
@@ -370,76 +366,7 @@ export class GameRuntime {
       :this.openScene(fallback,{pushHistory:false});
   }
 
-  requiredMissionStatus(regionNumber){
-    const region=Math.max(0,Math.floor(Number(regionNumber)||0));
-    if(!region)return {region,required:[],completed:[],pending:[],complete:true};
-    const missions=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
-      .filter(mission=>Number(mission?.region)===region&&mission?.required===true);
-    const missionState=this.accountState?.game?.missions&&typeof this.accountState.game.missions==="object"
-      ?this.accountState.game.missions
-      :{};
-    const progress=missionState.progress&&typeof missionState.progress==="object"
-      ?missionState.progress
-      :{};
-    const required=missions.map(mission=>{
-      const id=String(mission?.id||"").trim();
-      const target=Math.max(1,Math.floor(Number(mission?.objective?.target)||1));
-      const current=Math.max(0,Math.floor(Number(progress[id])||0));
-      return {
-        id,
-        name:String(mission?.name||id),
-        target,
-        current,
-        complete:current>=target
-      };
-    });
-    const completed=required.filter(item=>item.complete);
-    const pending=required.filter(item=>!item.complete);
-    return {region,required,completed,pending,complete:pending.length===0};
-  }
-
   canShowRegionTransition(targetWorldId,fromWorldId=this.current?.kind==="world"?this.current.id:""){
-    const target=String(targetWorldId||"").trim();
-    const from=String(fromWorldId||"").trim();
-    if(!target||!from)return true;
-
-    const fromIndex=Math.max(0,Number(from.match(/^r(\d+)/i)?.[1])||0);
-    const targetIndex=Math.max(0,Number(target.match(/^r(\d+)/i)?.[1])||0);
-    if(!fromIndex||!targetIndex)return true;
-    if(targetIndex<=fromIndex)return true;
-
-    const status=this.requiredMissionStatus(fromIndex);
-    if(!status.complete){
-      globalThis.dispatchEvent?.(new CustomEvent("tq:regionlocked",{detail:{
-        fromWorldId:from,
-        targetWorldId:target,
-        region:fromIndex,
-        pending:clone(status.pending)
-      }}));
-      return false;
-    }
-
-    if(fromIndex===1&&this.playerShips?.equippedShip!=="ship-halloween-terror-reward-400"){
-      this.worldRuntime?.showGameplayToast?.("⚓ Equipe o Terror do Halloween no estaleiro antes de deixar a região.",2600);
-      return false;
-    }
-
-    const completed=new Set(
-      Array.isArray(this.flags?.completedRegions)
-        ?this.flags.completedRegions.map(value=>String(value||""))
-        :[]
-    );
-    if(!completed.has(from)){
-      completed.add(from);
-      this.flags={...(this.flags||{}),completedRegions:[...completed]};
-      this.saveState();
-      this.syncCloud("region-auto-complete");
-      globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{
-        regionId:from,
-        region:fromIndex,
-        source:"missions"
-      }}));
-    }
     return true;
   }
 
@@ -447,23 +374,10 @@ export class GameRuntime {
     const regionId=this.current?.kind==="world"?String(this.current.id||""):"";
     const region=Math.max(0,Number(regionId.match(/^r(\d+)/i)?.[1])||0);
     if(!regionId||!region)return false;
-    const status=this.requiredMissionStatus(region);
-    if(!status.complete){
-      globalThis.dispatchEvent?.(new CustomEvent("tq:regionlocked",{detail:{
-        fromWorldId:regionId,
-        targetWorldId:"",
-        region,
-        pending:clone(status.pending)
-      }}));
-      return false;
-    }
-    this.flags={
-      ...(this.flags||{}),
-      completedRegions:[...new Set([...(Array.isArray(this.flags?.completedRegions)?this.flags.completedRegions:[]),regionId])]
-    };
+    this.flags={...(this.flags||{}),completedRegions:[...new Set([...(this.flags?.completedRegions||[]),regionId])]};
     this.saveState();
     this.syncCloud("region-complete");
-    globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{regionId,region,source:"missions"}}));
+    globalThis.dispatchEvent?.(new CustomEvent("tq:regioncomplete",{detail:{regionId,region,source:"navigation"}}));
     return true;
   }
 
@@ -787,7 +701,6 @@ export class GameRuntime {
       total,
       currency:walletKey
     }}));
-    await this.advanceMissions("purchase_upgrade",{worldId,amount:1});
     if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="shop-cannon"&&String(product.type)==="cannon"&&String(product.id)==="cannon-bronze"){
       this.setR1TutorialStage("equip-shop-cannon",{save:true,sync:true});
       this.worldRuntime?.showGameplayToast?.("⚓ Canhão comprado! Agora equipe-o no Estaleiro.",2600);
@@ -1445,170 +1358,6 @@ export class GameRuntime {
     globalThis.dispatchEvent?.(new CustomEvent("tq:pedagogyresult",{detail:clone(activity.at(-1))}));
   }
 
-  missionClaimed(id){
-    const key=String(id||"").trim();
-    if(!key)return false;
-    return Array.isArray(this.accountState?.game?.missions?.claimedRewards)
-      &&this.accountState.game.missions.claimedRewards.map(String).includes(key);
-  }
-
-  async advanceMissions(type,context={}){
-    const eventType=String(type||"").trim();
-    if(!eventType)return {changed:false,completed:[]};
-    const worldId=String(context.worldId||this.current?.id||"");
-    const runtimeRegion=Number(this.worldRuntime?.config?.region?.index)||Number(this.worldRuntime?.config?.meta?.regionIndex)||Number(this.worldRuntime?.config?.region)||0;
-    const region=Math.max(0,Number(context.region)||Number(worldId.match(/^r(\d+)/i)?.[1])||runtimeRegion||0);
-    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
-    const game=base.game&&typeof base.game==="object"?base.game:{};
-    const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
-    const progress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
-    const claimed=new Set(Array.isArray(missionState.claimedRewards)?missionState.claimedRewards.map(String):[]);
-    const completed=[];
-    let changed=false;
-
-    for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
-      const eventMission=String(mission?.event||"").toLowerCase()==="halloween";
-      if(String(mission?.id||"")==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()!=="missions-hunt")continue;
-      if(String(mission?.id||"")==="R1_TUTORIAL_PREP_NEXT_MAP"&&this.r1TutorialStage()!=="prepare-next-map")continue;
-      if(!eventMission&&Number(mission?.region)!==region)continue;
-      const unlockAfter=Array.isArray(mission?.unlockAfter)?mission.unlockAfter.map(String).filter(Boolean):[];
-      if(unlockAfter.length&&!unlockAfter.every(id=>claimed.has(id)))continue;
-      const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
-      if(String(objective.type||"")!==eventType)continue;
-      if(eventType==="defeat_npc"){
-        const requiredNpcId=String(objective.npcId||objective.targetNpcId||"").trim();
-        if(requiredNpcId&&requiredNpcId!==String(context.npcId||""))continue;
-      }
-      if(eventType==="collect_rare_treasure"&&context.rare!==true)continue;
-
-      const id=String(mission.id||"").trim();
-      if(!id)continue;
-      const target=Math.max(1,Math.floor(Number(objective.target)||1));
-      const amount=Math.max(1,Math.floor(Number(context.amount)||1));
-      const previous=Math.max(0,Math.floor(Number(progress[id])||0));
-      const next=Math.min(target,previous+amount);
-      if(next!==previous){
-        progress[id]=next;
-        changed=true;
-        const progressReward=mission?.progressReward&&typeof mission.progressReward==="object"?mission.progressReward:{};
-        const progressAmmoId=String(progressReward.ammoId||"").trim();
-        const perStep=Math.max(0,Math.floor(Number(progressReward.ammoPerStep)||0));
-        const delta=Math.max(0,next-previous);
-        if(progressAmmoId&&perStep>0&&delta>0)this.grantAmmo(progressAmmoId,perStep*delta,{save:false,syncServer:false,source:"mission-progress"});
-      }
-      if(next<target||claimed.has(id))continue;
-
-      const reward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
-      const gold=Math.max(0,Number(reward.gold ?? reward.coins)||0);
-      const rubies=Math.max(0,Number(reward.rubies)||0);
-      const xp=Math.max(0,Number(reward.xp)||0);
-      const current=this.rewards&&typeof this.rewards==="object"?this.rewards:{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
-      this.rewards={
-        ...current,
-        coins:Math.max(0,Number(current.coins)||0)+gold,
-        gold:Math.max(0,Number(current.gold ?? current.coins)||0)+gold,
-        rubies:Math.max(0,Number(current.rubies)||0)+rubies,
-        xp:Math.max(0,Number(current.xp)||0)+xp
-      };
-
-      const cannonId=String(reward.cannonId||"").trim();
-      const cannonQuantity=Math.max(1,Math.floor(Number(reward.cannonQuantity)||1));
-      if(cannonId){
-        this.grantCannon(cannonId,cannonQuantity,{save:false});
-        if(reward.equipCannon===true){
-          const shipIdForCannon=String(this.playerShips?.equippedShip||"");
-          if(shipIdForCannon){
-            const equipped=this.getShipCannons(shipIdForCannon);
-            if(equipped.length<this.shipCannonCapacity(shipIdForCannon)){
-              equipped.push(cannonId);
-              this.playerCannons.equippedByShip[shipIdForCannon]=equipped;
-              this.ensurePlayerCannons();
-            }
-          }
-        }
-      }
-      const ammoId=String(reward.ammoId||"").trim();
-      const ammoQuantity=Math.max(0,Math.floor(Number(reward.ammoQuantity)||0));
-      if(ammoId&&ammoQuantity>0)this.grantAmmo(ammoId,ammoQuantity,{save:false,syncServer:false,source:"mission-reward"});
-      const itemId=String(reward.itemId||"").trim();
-      const itemQuantity=Math.max(0,Math.floor(Number(reward.itemQuantity??reward.quantity)||0));
-      if(itemId&&itemQuantity>0){
-        this.consumables[itemId]=Math.max(0,Math.floor(Number(this.consumables?.[itemId])||0))+itemQuantity;
-      }
-      const shipId=String(reward.shipId||"").trim();
-      if(shipId){
-        await this.grantShip(shipId,{equip:reward.equipShip===true,save:false});
-        if(reward.equipShip===true&&this.playerShips.ownedShips.includes(shipId)){
-          this.playerShips.equippedShip=shipId;
-          this.ensurePlayerShips();
-        }
-      }
-
-      claimed.add(id);
-      completed.push(id);
-      if(id==="R1_TUTORIAL_CORSARIOS_5"&&this.r1TutorialStage()==="missions-hunt"){
-        this.setR1TutorialStage("prepare-next-map",{save:false});
-      }
-      if(id==="R1_TUTORIAL_PREP_NEXT_MAP"&&this.r1TutorialStage()==="prepare-next-map"){
-        this.setR1TutorialStage("sail-next-map",{save:false});
-      }
-      changed=true;
-      globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
-        missionId:id,gold,rubies,xp,cannonId,
-        quantity:cannonId?cannonQuantity:0,
-        shipId,equipped:shipId?reward.equipShip===true:false
-      }}));
-      const rewardParts=[];
-      if(gold>0)rewardParts.push("+"+gold+" ouro");
-      if(rubies>0)rewardParts.push("+"+rubies+" rubis");
-      if(xp>0)rewardParts.push("+"+xp+" XP");
-      if(cannonId)rewardParts.push(String(reward.cannonQuantity||1)+"× canhão");
-      if(ammoId&&ammoQuantity>0)rewardParts.push(ammoQuantity+"× munição");
-      if(itemId&&itemQuantity>0)rewardParts.push("🛡 Amuleto da Imunidade");
-      if(shipId)rewardParts.push("navio "+String(shipId));
-      globalThis.setTimeout(()=>{
-        this.worldRuntime?.showGameplayToast?.(
-          "🏆 Parabéns! "+String(mission.name||id)+" concluída"+(rewardParts.length?" · "+rewardParts.join(" · "):""),
-          4200
-        );
-      },850);
-      globalThis.setTimeout(()=>{
-        if(id==="HALLOWEEN_BOSS_10"){
-          this.worldRuntime?.showGameplayToast?.("⚓ Vá ao estaleiro, equipe o Terror do Halloween e navegue para a próxima região.",4200);
-          return;
-        }
-        const next=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
-          .filter(item=>Number(item?.region)===region&&item?.required===true&&!claimed.has(String(item?.id||"")))
-          .sort((a,b)=>Number(a?.order||0)-Number(b?.order||0))
-          .find(item=>(Array.isArray(item?.unlockAfter)?item.unlockAfter:[]).every(req=>claimed.has(String(req))));
-        if(next)this.worldRuntime?.showGameplayToast?.("➡ Próxima missão: "+String(next.name||next.id)+" · "+String(next.description||""),4200);
-      },2500);
-    }
-
-    if(!changed)return {changed:false,completed:[]};
-    this.accountState={
-      ...base,
-      game:{
-        ...game,
-        rewards:clone(this.rewards),
-        missions:{...missionState,progress,claimedRewards:[...claimed]}
-      }
-    };
-    this.worldRuntime?.shopOverlay?.refreshBalances?.();
-    // Updating mission counters must not rebuild the whole NPC population.
-    // Runtime mission corsairs are part of that population, so rebuilding here
-    // made the four surviving ships disappear after every defeat.
-    if(completed.length>0&&this.r1TutorialStage()!=="missions-hunt"){
-      this.worldRuntime?.rebuildNpcPopulation?.({render:true});
-    }
-
-
-
-    this.saveState();
-    this.syncCloud("mission-progress");
-    return {changed:true,completed,rewards:clone(this.rewards)};
-  }
-
   async handleCombatVictory({entity,rewards,claimKey:explicitClaimKey=""}={}){
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     let configured=rewards&&typeof rewards==="object"?clone(rewards):clone(cleanEntity.rewards||{});
@@ -1823,18 +1572,9 @@ export class GameRuntime {
         ...base,
         game:{
           ...game,
-          rewards:clone(this.rewards),
-          missions:game.missions&&typeof game.missions==="object"?clone(game.missions):{}
+          rewards:clone(this.rewards)
         }
       };
-
-      const tutorialMissionCorsair=String(cleanEntity.id||"").startsWith("npc.tutorial.mission.corsair.");
-      if(tutorialMissionCorsair){
-        await this.advanceMissions("defeat_npc",{worldId,region:1,npcId:"tutorial-corsair",amount:1});
-        if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
-      }else if(cleanEntity.npcId){
-        await this.advanceMissions("defeat_npc",{worldId,npcId:String(cleanEntity.npcId),amount:1});
-      }
 
       const balances=this.getWalletBalances();
       const detail={
@@ -1905,10 +1645,7 @@ export class GameRuntime {
     configuredRewards.ammoRewards=ammoRewards;
     const rewardResult=await this.handleCombatVictory({entity,rewards:configuredRewards,claimKey});
     if(!rewardResult)return false;
-
-    await this.advanceMissions("defeat_boss",{worldId:String(this.current?.id||""),amount:1});
     if(Number(String(this.current?.id||"").match(/^r(\d+)/i)?.[1])===12){
-      await this.advanceMissions("defeat_final_boss",{worldId:String(this.current?.id||""),amount:1});
     }
 
     const rewardShipId=String(entity?.rewardShipId||"").trim();
@@ -1989,7 +1726,6 @@ export class GameRuntime {
 
     // Mission progress is driven by the successful collection event itself.
     // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
-    await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
 
     if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="treasure"){
       const cannonId=String(this.cannonCatalog?.defaultCannonId||"cannon-basic");
@@ -2269,24 +2005,13 @@ export class GameRuntime {
       onEquipCannon:id=>this.equipCannonToShip(id),
       onRemoveCannon:(cannonId,shipId)=>this.removeCannonFromShip(cannonId,shipId),
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
-      missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
-      getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
-      onMissionsOpen:()=>{
-        if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions"){
-          this.setR1TutorialStage("missions-hunt",{save:true,sync:true});
-          this.worldRuntime?.spawnTutorialCorsairMissionFleet?.(5);
-          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Missão iniciada: 5 corsários entraram no mar. Afunde todos. Recompensa: 3 Canhões do Marujo.",3600);
-        }
-      },
       getTutorialGuide:()=>this.r1TutorialGuide(worldId),
-      isMissionComplete:id=>this.missionClaimed(id),
       shopBalances:()=>this.getWalletBalances(),
       canUseShop:()=>true,
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
       canRepairPlayer:()=>true,
       shouldForceRepair:()=>false,
       onRepairCompleted:async ({hp,maxHp}={})=>{
-        await this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="repair-ship"&&Number(hp)>=Number(maxHp)){
           this.setR1TutorialStage("attack-ship-2",{save:true,sync:true});
           this.worldRuntime?.spawnTutorialCorsairForSecondDuel?.();

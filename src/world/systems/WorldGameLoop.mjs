@@ -7,12 +7,12 @@ export class WorldGameLoop{
     this.frameId=0;
     this.lastTime=0;
     this.running=false;
+    this.inFrame=false;
   }
 
   start(){
     if(this.running)return false;
     this.running=true;
-    this.lastTime=0;
     this.schedule();
     return true;
   }
@@ -24,21 +24,31 @@ export class WorldGameLoop{
   }
 
   schedule(){
-    if(!this.running)return;
-    this.frameId=this.requestFrame(time=>this.frame(time));
+    if(!this.running||this.frameId||this.inFrame)return;
+    this.frameId=this.requestFrame(time=>{this.frameId=0;this.frame(time);});
   }
 
   frame(time){
-    if(!this.running)return;
+    if(!this.running||this.inFrame)return;
+    this.inFrame=true;
     const now=Number(time)||0;
     const previous=this.lastTime||now;
     const dt=Math.min(.10,Math.max(.001,(now-previous)/1000));
     this.lastTime=now;
 
     const runtime=this.runtime;
-    runtime.updateSimulationFrame(now,dt);
-    runtime.updatePresentationFrame(now,dt);
-    runtime.updateInterfaceFrame(now,dt);
-    this.schedule();
+    try{
+      runtime.updateSimulationFrame(now,dt);
+      if(!this.running)return;
+      runtime.updatePresentationFrame(now,dt);
+      if(!this.running)return;
+      runtime.updateInterfaceFrame(now,dt);
+    }catch(error){
+      this.stop();
+      throw error;
+    }finally{
+      this.inFrame=false;
+      if(this.running)this.schedule();
+    }
   }
 }

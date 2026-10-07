@@ -21,6 +21,12 @@ const [
   { normalizeNpcPopulation,normalizeTreasurePopulation,normalizeNpcAmmoIds },
   { normalizeAmmoInventory,ammoDamageFactor,cannonDamagePerShot,navalShotDamage,resolvePlayerHullHp },
   { WorldGameLoop },
+  { createWorldSimulationPipeline },
+  { integratePlayerVelocity },
+  { selectVisibleTreasures },
+  { composeEntityVisualFrame },
+  { paintEntityEffects },
+  { paintEntityTransform },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -51,6 +57,12 @@ const [
   import("./entities/PopulationRules.mjs?v="+__tqDevStamp),
   import("./combat/NavalCombatRules.mjs?v="+__tqDevStamp),
   import("./systems/WorldGameLoop.mjs?v="+__tqDevStamp),
+  import("./systems/WorldSimulationPipeline.mjs?v="+__tqDevStamp),
+  import("./navigation/PlayerKinematics.mjs?v="+__tqDevStamp),
+  import("./presentation/TreasureRenderModel.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityVisualFrame.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityEffectPainter.mjs?v="+__tqDevStamp),
+  import("./presentation/EntityTransformPainter.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -132,11 +144,9 @@ export class WorldRuntime {
     this.resolveShip=typeof options.resolveShip==="function"?options.resolveShip:null;
     this.resolveNpc=typeof options.resolveNpc==="function"?options.resolveNpc:null;
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
-    this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.getTutorialGuide=typeof options.getTutorialGuide==="function"?options.getTutorialGuide:()=>null;
     this.onTutorialAttack=typeof options.onTutorialAttack==="function"?options.onTutorialAttack:()=>{};
     this.onTutorialNpcDestroyed=typeof options.onTutorialNpcDestroyed==="function"?options.onTutorialNpcDestroyed:()=>{};
-    this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
     this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
     this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
     this.shouldForceRepair=typeof options.shouldForceRepair==="function"?options.shouldForceRepair:()=>false;
@@ -173,9 +183,7 @@ export class WorldRuntime {
     });
     const regionNumber=Math.max(1,Number(this.config.region)||Number(String(this.config.id||"").match(/^r(\d+)/i)?.[1])||1);
     this.mobileHud=new MobileHudOverlay({
-      missions:Array.isArray(options.missionCatalog)?options.missionCatalog:[],
       region:regionNumber,
-      onMissionsOpen:()=>options.onMissionsOpen?.(),
       getState:()=>{
         const target=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:null;
         const targetInRange=Boolean(target&&this.isNavalTargetInRange(target));
@@ -229,7 +237,6 @@ export class WorldRuntime {
             ?Math.max(0,this.playCameraRecenterAt-performance.now())
             :0,
           repairAvailable:this.canRepairPlayer({hp:this.navalPlayerHp,maxHp:this.navalPlayerMaxHp})===true&&!this.isPlayerInNavalCombat(),
-          missionProgress:this.getMissionProgress()||{},
           tutorialGuide:(()=>{
             const guide=this.getTutorialGuide?.()||null;
             if(!guide)return null;
@@ -265,19 +272,6 @@ export class WorldRuntime {
           return false;
         }
         this.contextGuideTarget=null;
-        const stage=String(this.getTutorialGuide?.()?.stage||"");
-        if(stage==="missions-hunt"){
-          const target=this.combatTarget&&this.combatTarget.tutorialMissionCorsair===true
-            ?this.combatTarget
-            :this.nearestCombatTarget();
-          if(target){
-            if(this.combatTarget!==target)this.selectCombatTarget(target,{preserveMovement:true});
-            if(!this.isNavalTargetInRange(target)){
-              this.showGameplayToast("🏴‍☠️ Aproxime-se mais do corsário para disparar.",1800);
-              return false;
-            }
-          }
-        }
         return this.activateNearby();
       },
       onCancel:()=>this.stopNavalAutoFire({keepTarget:true,message:"Ataque cancelado."}),
@@ -942,70 +936,11 @@ export class WorldRuntime {
     return entity;
   }
 
-  restoreTutorialCorsairMissionFleet(){
-    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
-    const progress=this.getMissionProgress?.()||{};
-    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
-    const requiredIds=Array.from({length:5-defeated},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
-    const liveById=new Map(this.entities
-      .filter(entity=>entity?.tutorialMissionCorsair===true&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
-      .map(entity=>[String(entity.id),entity]));
-    const missing=requiredIds.filter(id=>!liveById.has(id));
-    if(missing.length)this.spawnTutorialCorsairMissionFleet(missing);
-    const targets=requiredIds.map(id=>this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id)).filter(Boolean);
-    for(const entity of targets){
-      entity.tutorialCombatTarget=true;
-      entity.tutorialCombatPhase="hunt";
-    }
-    this.syncAutomaticCombatTarget();
-    this.updateTutorialGuideArrow();
-    return targets;
-  }
-
-  spawnTutorialCorsairMissionFleet(slots=5){
-    if(String(this.getTutorialGuide?.()?.stage||"")!=="missions-hunt")return [];
-    const progress=this.getMissionProgress?.()||{};
-    const defeated=Math.max(0,Math.min(5,Math.floor(Number(progress.R1_TUTORIAL_CORSARIOS_5)||0)));
-    const ids=Array.isArray(slots)
-      ?slots.map(String)
-      :Array.from({length:Math.max(0,5-defeated)},(_,offset)=>"npc.tutorial.mission.corsair."+(defeated+offset+1));
-    const population=normalizeNpcPopulation(this.config.npcPopulation||{});
-    const typeConfig=population.types.find(type=>type.enabled!==false)||null;
-    if(!typeConfig)return [];
-    const occupied=this.entities.filter(entity=>!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)).map(entity=>({x:Number(entity.x)||0,y:Number(entity.y)||0}));
-    occupied.push({x:Number(this.player?.x)||0,y:Number(this.player?.y)||0});
-    const spawned=[];
-    for(const id of ids){
-      const existing=this.entityById?.get(id)||this.entities.find(entity=>String(entity?.id||"")===id);
-      if(existing&&!this.collected.has(id)&&!this.navalDestroying.has(id)){spawned.push(existing);continue;}
-      if(this.collected.has(id))continue;
-      const random=createSeededRandom(hashString(String(this.config.id||"world")+"."+id));
-      const missionType={...typeConfig,respawn:false,spawn:{...(typeConfig.spawn||{}),nearPlayerMin:700,nearPlayerMax:1500}};
-      const entity=this.createGeneratedNpc({shipId:missionType.shipId||missionType.npcId,index:this.entities.length,typeConfig:missionType,population,random,occupied});
-      if(!entity)continue;
-      entity.id=id;
-      entity.npcId=String(entity.npcId||missionType.npcId||missionType.shipId||"tutorial-corsair");
-      entity.tutorialMissionCorsair=true;
-      entity.tutorialCombatTarget=true;
-      entity.tutorialCombatPhase="hunt";
-      entity.tutorialDefeated=false;
-      entity.index=this.entities.length;
-      this.entities.push(entity);
-      this.generatedNpcIds.add(id);
-      this.entityById?.set(id,entity);
-      this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
-      occupied.push({x:Number(entity.x)||0,y:Number(entity.y)||0});
-      spawned.push(entity);
-    }
-    this.renderEntities();
-    return spawned;
-  }
-
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
     // NPC refresh must never remove runtime treasures. Both NPCs and treasures
     // are runtimeGenerated, so filtering only by runtimeGenerated erased every
-    // treasure when a mission completion rebuilt the NPC population.
+    // Preserve uncollected treasure when rebuilding NPC population.
     for(const entity of this.entities){
       const runtimeNpc=entity?.runtimeGenerated===true&&entity?.runtimeTreasure!==true&&String(entity?.type||"")==="ship";
       if(runtimeNpc&&entity.id)this.navalHp?.delete(String(entity.id));
@@ -1027,7 +962,6 @@ export class WorldRuntime {
       let total=0;
       for(const typeConfig of population.types){
         if(typeConfig.enabled===false)continue;
-        if(typeConfig.unlockAfterMission&&!this.isMissionComplete(typeConfig.unlockAfterMission))continue;
         const typePopulation={...population,spread:{...population.spread,...(typeConfig.spawn||{})}};
         const typeRandom=typeConfig.spawn?.seed>0?createSeededRandom(hashString(this.config.id||"world")^Number(typeConfig.spawn.seed)):random;
         for(let index=0;index<typeConfig.count&&total<80;index++,total++){
@@ -1493,9 +1427,6 @@ export class WorldRuntime {
     this.cleanups.push(()=>window.removeEventListener("resize",this.onResize));
 
     this.setMode(this.mode);
-    if(String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt"){
-      this.restoreTutorialCorsairMissionFleet();
-    }
     this.renderMinimap(true);
     this.lastTime=performance.now();
     this.gameLoop?.stop?.();
@@ -1846,7 +1777,6 @@ export class WorldRuntime {
       if(!this.isClickableCombatShip(entity))continue;
       const tutorialStage=String(this.getTutorialGuide?.()?.stage||"");
       if(["attack-ship","attack-ship-2"].includes(tutorialStage)&&entity.tutorialDefeated===true)continue;
-      if(tutorialStage==="missions-hunt"&&entity.tutorialMissionCorsair!==true)continue;
       const distance=this.navalTargetDistance(entity);
       if(!Number.isFinite(distance)||distance>=nearestDistance)continue;
       nearest=entity;
@@ -2984,12 +2914,6 @@ export class WorldRuntime {
         this.shipyardOverlay?.open?.();
         return;
       }
-      if(directAction==="open-missions"){
-        this.actionWrap.hidden=true;
-        this.mobileHud?.openMissions?.();
-        this.mobileHud?.onMissionsOpen?.();
-        return;
-      }
       this.activateNearby();
     };
     const recenter=event=>{
@@ -3310,29 +3234,18 @@ export class WorldRuntime {
 
   updatePlayer(dt){
     const input=this.inputVector();
-    const accel=Math.max(100,Number(this.config.player?.acceleration)||1100);
-    const maxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
-    const minSpeed=clamp(Number(this.config.player?.minSpeed)||0,0,maxSpeed);
-    const braking=clamp(Number(this.config.player?.braking??.12),.01,.98);
-    const drag=Math.pow(braking,dt);
-
-    this.player.vx=(this.player.vx+input.x*accel*dt)*drag;
-    this.player.vy=(this.player.vy+input.y*accel*dt)*drag;
-
-    let speed=Math.hypot(this.player.vx,this.player.vy);
-    const steering=Math.hypot(Number(input.x)||0,Number(input.y)||0);
-    if(steering>.001&&speed>0&&speed<minSpeed){
-      const scale=minSpeed/speed;
-      this.player.vx*=scale;
-      this.player.vy*=scale;
-      speed=minSpeed;
-    }
-    if(speed>maxSpeed){
-      const scale=maxSpeed/speed;
-      this.player.vx*=scale;
-      this.player.vy*=scale;
-      speed=maxSpeed;
-    }
+    const velocity=integratePlayerVelocity({
+      vx:this.player.vx,
+      vy:this.player.vy,
+      input,
+      acceleration:this.config.player?.acceleration,
+      maxSpeed:this.config.player?.speed,
+      minSpeed:this.config.player?.minSpeed,
+      braking:this.config.player?.braking,
+      dt
+    });
+    this.player.vx=velocity.vx;
+    this.player.vy=velocity.vy;
 
     const travel=this.getPlayerTravelBounds();
     const candidate={
@@ -3360,7 +3273,7 @@ export class WorldRuntime {
       if(!stillNear)this.contactEntity=null;
     }
 
-    speed=Math.hypot(this.player.vx,this.player.vy);
+    const speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>8){
       this.player.rotation=Math.atan2(this.player.vy,this.player.vx)*180/Math.PI+90;
     }
@@ -3682,48 +3595,18 @@ export class WorldRuntime {
         worldHeight:this.config.height
       });
 
-      const offsetX=Number(motionFrame.offsetX||0)+Number(effectFrame.offsetX||0);
-      const offsetY=Number(motionFrame.offsetY||0)+Number(effectFrame.offsetY||0);
       const timelineAnimated=hasTimelineSpriteAnimation(entity);
       const hasDirectionalSprite=!timelineAnimated&&Boolean(entity.sprite?.src&&entity.sprite?.regions);
-      const rotation=((hasDirectionalSprite||timelineAnimated)?0:Number(entity.rotation||0))+Number(motionFrame.rotation||0)+Number(effectFrame.rotation||0);
-      const scaleX=Number(effectFrame.scaleX||1);
-      const scaleY=Number(motionFrame.scaleY||1)*Number(effectFrame.scaleY||1);
-
-      entity.visualX=entity.x+offsetX;
-      entity.visualY=entity.y+offsetY;
-      entity.visualRotation=Number(entity.rotation||0);
-      entity.el.style.left=entity.visualX+"px";
-      entity.el.style.top=entity.visualY+"px";
-      entity.el.style.opacity=String(effect.active?effectFrame.opacity:1);
-      entity.el.style.transform=`translate(-50%,-50%) rotate(${rotation}deg) skewX(${Number(entity.skewX||0)}deg) skewY(${Number(entity.skewY||0)}deg) scale(${scaleX},${scaleY})`;
-      if(entity.nameEl){
-        entity.nameEl.style.left=entity.visualX+"px";
-        entity.nameEl.style.top=(entity.visualY+Math.max(18,Number(entity.height)||96)*Math.abs(scaleY)*.54+10)+"px";
-        entity.nameEl.hidden=entity.el.hidden===true;
-      }
+      const visual=composeEntityVisualFrame({entity,motionFrame,effectFrame,timelineAnimated,hasDirectionalSprite});
+      paintEntityTransform(entity,visual,effect,effectFrame);
       if(timelineAnimated)this.applyEntityTimelineVisual(entity,time);
       else if(hasDirectionalSprite)this.applyEntityDirectionalVisual(entity);
       if(String(entity.entityKind||"")==="monster")this.renderMonsterPresence(entity,time);
 
-      const img=entity.el.querySelector(":scope > img:not(.tq-world-island-depth-layer)");
-      const canvas=entity.el.querySelector(".tq-world-entity__webgl");
-      const blur=effect.active?Number(effectFrame.blur||0):0;
-      const depthLayer=entity.el.querySelector(".tq-world-island-depth-layer");
-      const maskedDepth=String(entity.type||"")==="island"&&Array.isArray(entity.depthMask?.points)&&entity.depthMask.points.length>=3;
-      if(img)img.style.filter=maskedDepth?"drop-shadow(0 6px 4px #001a2e80)":`drop-shadow(0 6px 4px #001a2e80) blur(${blur}px)`;
-      if(depthLayer)depthLayer.style.filter=`blur(${blur}px)`;
-
-      const atlasMode=timelineAnimated||hasDirectionalSprite||entity.el.dataset.renderMode==="atlas";
-      if(effect.active&&effect.renderer==="webgl"&&!atlasMode){
-        const renderer=this.entityEffectRenderers.get(entity.id);
-        const rendered=renderer?.render?.(time,effect,entity.width||96,entity.height||96)===true;
-        if(canvas)canvas.hidden=!rendered;
-        if(img)img.hidden=rendered;
-      }else{
-        if(canvas)canvas.hidden=true;
-        if(img)img.hidden=atlasMode;
-      }
+      paintEntityEffects({
+        entity,effect,effectFrame,time,timelineAnimated,hasDirectionalSprite,
+        renderer:this.entityEffectRenderers.get(entity.id)
+      });
     }
   }
 
@@ -4907,7 +4790,6 @@ export class WorldRuntime {
       };
     }
     if(entity.interaction==="shipyard")return {actionId:"open-shipyard",params:{}};
-    if(entity.interaction==="missions")return {actionId:"open-missions",params:{}};
     if(entity.scene){
       return {
         actionId:"open-scene",
@@ -4991,7 +4873,7 @@ export class WorldRuntime {
         if(this.actionMessage)this.actionMessage.textContent=collisionMessage(entity,collision);
         this.actionButton.textContent=collisionActionLabel(entity,collision);
         const directAction=String(interaction?.actionId||"");
-        if(directAction==="open-shipyard"||directAction==="open-missions"){
+        if(directAction==="open-shipyard"){
           this.actionButton.dataset.interactionAction=directAction;
         }else{
           delete this.actionButton.dataset.interactionAction;
@@ -6007,12 +5889,6 @@ export class WorldRuntime {
       this.shipyardOverlay?.open?.();
       return;
     }
-    if(mapInteraction?.actionId==="open-missions"){
-      this.actionWrap.hidden=true;
-      this.mobileHud?.openMissions?.();
-      this.mobileHud?.onMissionsOpen?.();
-      return;
-    }
 
     if(this.navalPlayerHp<=0){
       if(this.actionButton){
@@ -6032,12 +5908,7 @@ export class WorldRuntime {
       this.beginStarterAmmoChallenge();
       return;
     }
-    const tutorialMissionHunt=String(this.getTutorialGuide?.()?.stage||"")==="missions-hunt";
-    const missionTarget=tutorialMissionHunt
-      ?(this.combatTarget?.tutorialMissionCorsair===true?this.combatTarget:this.nearestCombatTarget())
-      :null;
-    const entity=missionTarget
-      ||(this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:this.nearby);
+    const entity=this.combatTarget&&this.isClickableCombatShip(this.combatTarget)?this.combatTarget:this.nearby;
     if(!entity||this.mode!=="play")return;
 
     const collision=normalizeCollision(entity.collision||{},entity);
@@ -6101,12 +5972,6 @@ export class WorldRuntime {
     if(interaction?.actionId==="open-shipyard"){
       this.actionWrap.hidden=true;
       this.shipyardOverlay?.open?.();
-      return;
-    }
-    if(interaction?.actionId==="open-missions"){
-      this.actionWrap.hidden=true;
-      this.mobileHud?.openMissions?.();
-      this.mobileHud?.onMissionsOpen?.();
       return;
     }
 
@@ -7023,9 +6888,9 @@ export class WorldRuntime {
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="region-exit"&&String(entity?.destinationWorldId||"")==="r2-costa-corsarios")
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
-    }else if(stage==="attack-ship"||stage==="attack-ship-2"||stage==="missions-hunt"){
+    }else if(stage==="attack-ship"||stage==="attack-ship-2"){
       const locked=this.entities.find(entity=>entity.tutorialCombatTarget&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))||null;
-      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="ready-fire"){
+      if(locked?.tutorialCombatPhase==="ready-fire"){
         const fireButton=this.mobileHud?.wrap?.querySelector?.('[data-hud-action="fire"]');
         const rect=fireButton?.getBoundingClientRect?.();
         if(rect&&rect.width>0&&rect.height>0){
@@ -7048,13 +6913,13 @@ export class WorldRuntime {
           return;
         }
       }
-      if(stage!=="missions-hunt"&&locked?.tutorialCombatPhase==="firing"){
+      if(locked?.tutorialCombatPhase==="firing"){
         this.tutorialArrowEl?.remove();
         this.tutorialArrowEl=null;
         return;
       }
       target=locked||this.entities
-        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id)&&(stage!=="missions-hunt"||entity.tutorialMissionCorsair===true))
+        .filter(entity=>this.isClickableCombatShip(entity)&&!entity.tutorialDefeated&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
@@ -7090,25 +6955,31 @@ export class WorldRuntime {
   }
 
   updateSimulationFrame(time,dt){
-    if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
-    else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
-    if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);
-    this.updateEntityMotionFrame(time,dt);
-    this.updateTreasurePopulation(time);
-    this.treasureCombatLocked();
-    const collectingTreasure=this.updateTreasureCollection();
-    if(!collectingTreasure&&!this.challengeActive){
-      this.syncAutomaticCombatTarget();
-      this.updateDirectNavalCombat(time);
+    if(!this.simulationPipeline){
+      this.simulationPipeline=createWorldSimulationPipeline({
+        movePlayer:(time,dt)=>{
+          if(this.mode==="play"&&!this.challengeActive&&!this.combatActive&&this.navalPlayerHp>0)this.updatePlayer(dt);
+          else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
+        },
+        correctAuthority:dt=>{if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);},
+        renderPlayer:(time,dt)=>this.updatePlayerVisual(time,dt),
+        animatePlayerWater:time=>this.updatePlayerWaterEffects(time),
+        moveEntities:(time,dt)=>this.updateEntityMotionFrame(time,dt),
+        populateTreasures:time=>this.updateTreasurePopulation(time),
+        lockTreasureCombat:()=>this.treasureCombatLocked(),
+        collectTreasures:()=>this.updateTreasureCollection(),
+        challengeActive:()=>this.challengeActive,
+        selectCombatTarget:()=>this.syncAutomaticCombatTarget(),
+        updateCombat:time=>this.updateDirectNavalCombat(time),
+        updateCameraInput:dt=>this.updateCameraKeyboard(dt),
+        updateCamera:dt=>this.updateCamera(false,dt),
+        updateEnvironment:time=>this.updateEnvironmentCycle(time)
+      });
     }
-    this.updateCameraKeyboard(dt);
-    this.updateCamera(false,dt);
-    this.updateEnvironmentCycle(time);
+    this.simulationPipeline(time,dt);
   }
 
   updatePresentationFrame(time,dt){
-    this.updatePlayerVisual(time,dt);
-    this.updatePlayerWaterEffects(time);
     if(this.graphicsSettings?.clouds!==false&&this.cloudsEl&&!this.cloudsEl.hidden){
       const parallax=this.environmentConfig().clouds.parallax;
       this.cloudsEl.style.setProperty("--cloud-camera-x",(-this.camera.x*parallax)+"px");
@@ -7122,22 +6993,11 @@ export class WorldRuntime {
       width:this.viewportSize?.width||this.viewport?.clientWidth||1,
       height:this.viewportSize?.height||this.viewport?.clientHeight||1,
       damagedShips:this.navalDamageVisuals(),
-      treasures:this.entities
-        .filter(entity=>String(entity?.type||"")==="treasure"
-          &&!this.collected.has(entity.id)
-          &&!entity.treasurePending
-          &&entity.el?.hidden!==true)
-        .map(entity=>({
-          x:Number(entity.visualX??entity.x)||0,
-          y:Number(entity.visualY??entity.y)||0,
-          size:Math.max(42,Number(entity.width)||0,Number(entity.height)||0),
-          phase:(Math.abs(hashString(String(entity.id||"treasure")))%6283)/1000
-        }))
+      treasures:selectVisibleTreasures(this.entities,this.collected,hashString)
     });
   }
 
   updateInterfaceFrame(time){
-    this.updateTutorialGuideArrow();
     this.updateNearby();
     this.renderMinimap(false,time);
     if(this.coordsEl){
@@ -7148,16 +7008,6 @@ export class WorldRuntime {
     if(this.zoomEl)this.zoomEl.textContent=this.mode==="edit"?`zoom ${Math.round(this.zoom*100)}%`:"";
   }
 
-  tick(time){
-    if(!this.gameLoop){
-      this.gameLoop=new WorldGameLoop(this);
-      this.gameLoop.running=true;
-      this.gameLoop.lastTime=this.lastTime||0;
-    }
-    this.gameLoop.frame(time);
-    this.lastTime=this.gameLoop.lastTime;
-    this.raf=this.gameLoop.frameId;
-  }
 
   getState(){
     return {
