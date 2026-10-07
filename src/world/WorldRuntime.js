@@ -881,10 +881,17 @@ export class WorldRuntime {
 
   rebuildNpcPopulation({render=true}={}){
     if(!this.entities)return;
+    // NPC refresh must never remove runtime treasures. Both NPCs and treasures
+    // are runtimeGenerated, so filtering only by runtimeGenerated erased every
+    // treasure when a mission completion rebuilt the NPC population.
     for(const entity of this.entities){
-      if(entity?.runtimeGenerated&&entity.id)this.navalHp?.delete(String(entity.id));
+      const runtimeNpc=entity?.runtimeGenerated===true&&entity?.runtimeTreasure!==true&&String(entity?.type||"")==="ship";
+      if(runtimeNpc&&entity.id)this.navalHp?.delete(String(entity.id));
     }
-    this.entities=this.entities.filter(entity=>!entity.runtimeGenerated);
+    this.entities=this.entities.filter(entity=>{
+      const runtimeNpc=entity?.runtimeGenerated===true&&entity?.runtimeTreasure!==true&&String(entity?.type||"")==="ship";
+      return !runtimeNpc;
+    });
     this.generatedNpcIds.clear();
 
     const population=normalizeNpcPopulation(this.config.npcPopulation||{});
