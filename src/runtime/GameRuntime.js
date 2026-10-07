@@ -522,6 +522,25 @@ export class GameRuntime {
 
   importAccountState(state){
     if(!state||typeof state!=="object")return false;
+    if(Number(state.progressEpoch||0)<7){
+      this.accountState={progressEpoch:7,game:{tutorial:{stage:"treasure",treasuresCollected:0}}};
+      this.current=null;
+      this.history=[];
+      this.worldStates={};
+      this.flags={};
+      this.inventory=[];
+      this.consumables={};
+      this.rewards={coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
+      this.playerShips={ownedShips:[],equippedShip:null};
+      this.playerCannons={owned:{},equippedByShip:{}};
+      this.playerAmmo={selectedAmmoId:"",stock:{}};
+      this.ensurePlayerShips();
+      this.ensurePlayerCannons();
+      this.ensurePlayerAmmo();
+      this.ensureStarterLoadout();
+      queueMicrotask(()=>this.syncCloud("progress-epoch-7-reset"));
+      return true;
+    }
     this.accountState=clone(state);
 
     const game=state.game&&typeof state.game==="object"?state.game:{};
