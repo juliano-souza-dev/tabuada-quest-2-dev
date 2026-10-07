@@ -2380,6 +2380,27 @@ export class GameRuntime {
     this.worldRuntime.setMode("play");
 
     this.current={kind:"world",id:worldId||null,path:entry.path};
+
+    // Repair saves created while tutorial corsair defeats were rewarded but did
+    // not advance mission progress. Reward claimDetails are canonical evidence
+    // of each already-defeated generated mission corsair, so never make the
+    // player sink the same tutorial quota twice.
+    if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="missions-hunt"){
+      const missionId="R1_TUTORIAL_CORSARIOS_5";
+      const savedKills=Math.max(0,Math.floor(Number(this.accountState?.game?.missions?.progress?.[missionId])||0));
+      const defeatedIds=new Set(
+        Object.values(this.rewards?.claimDetails||{})
+          .filter(detail=>String(detail?.worldId||"")===worldId&&String(detail?.entityId||"").startsWith("npc.tutorial.mission.corsair."))
+          .map(detail=>String(detail.entityId))
+      );
+      const recoveredKills=Math.min(5,defeatedIds.size);
+      if(recoveredKills>savedKills){
+        await this.advanceMissions("defeat_npc",{worldId,region:1,npcId:"tutorial-corsair",amount:recoveredKills-savedKills});
+      }
+      if(this.r1TutorialStage()==="missions-hunt")this.worldRuntime?.restoreTutorialCorsairMissionFleet?.();
+    }
+
+
     this.saveState();
     this.emitChange();
     return this.worldRuntime.getWorld();
