@@ -1917,6 +1917,15 @@ export class GameRuntime {
     };
     this.worldRuntime?.shopOverlay?.refreshBalances?.();
     this.worldRuntime?.rebuildNpcPopulation?.({render:true});
+
+    // Mission-gated NPCs change the authoritative world roster. When a mission
+    // unlocks one while the player is already connected, push the new world
+    // revision immediately. Otherwise the local NPC exists but the WebSocket
+    // room keeps the older entity set and the target effectively disappears.
+    if(this.multiplayer?.socketReady===true&&this.worldRuntime?.dynamicWorldSeed){
+      this.multiplayer.ensureWorld?.(this.worldRuntime.dynamicWorldSeed());
+    }
+
     this.saveState();
     this.syncCloud("mission-progress");
     return {changed:true,completed,rewards:clone(this.rewards)};
