@@ -5368,6 +5368,12 @@ export class WorldRuntime {
     }
     const previousHp=this.navalPlayerHp;
     this.navalPlayerHp=Math.max(0,Math.round((this.navalPlayerHp-incoming)*10)/10);
+
+    // HP is gameplay state, so publish every hit immediately instead of waiting
+    // for the HUD polling interval or for the defeat branch.
+    this.mobileHud?.sync?.();
+    this.onRuntimeStateChange?.();
+
     this.showNavalDamageNumber({
       x:Number(this.player?.x)||0,
       y:(Number(this.player?.y)||0)-Math.max(22,(Number(this.config.player?.height)||150)*.36),
