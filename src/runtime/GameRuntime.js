@@ -8,7 +8,6 @@ const isPath=value=>typeof value==="string"&&(value.startsWith("./")||value.star
 const unique=list=>[...new Set((Array.isArray(list)?list:[]).map(String).filter(Boolean))];
 const LEGACY_DEFAULT_SHIP_ID="pirate-default";
 const CURRENT_DEFAULT_SHIP_ID="ship-pirate-galleon-navio";
-const HALLOWEEN_TERROR_PREREQUISITES=["HALLOWEEN_M01","HALLOWEEN_M02","HALLOWEEN_M03","HALLOWEEN_M04","HALLOWEEN_M05","HALLOWEEN_M06","HALLOWEEN_M07","HALLOWEEN_M08","HALLOWEEN_M09"];
 const migrateLegacyShipId=id=>String(id||"")===LEGACY_DEFAULT_SHIP_ID?CURRENT_DEFAULT_SHIP_ID:String(id||"");
 const normalizeGlobalAmmo=input=>{
   const value=input&&typeof input==="object"?input:{};
@@ -586,7 +585,7 @@ export class GameRuntime {
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     return {
       ...base,
-      progressEpoch:4,
+      progressEpoch:5,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
         settings:{
@@ -1423,107 +1422,6 @@ export class GameRuntime {
       &&this.accountState.game.missions.claimedRewards.map(String).includes(key);
   }
 
-  ensureRegionOneTutorialBaseline(worldId=""){
-    if(String(worldId)!=="r1-enseada-aprendizes")return false;
-    this.flags=this.flags&&typeof this.flags==="object"?this.flags:{};
-    const version=1;
-    if(Math.floor(Number(this.flags.r1TutorialBaselineVersion)||0)>=version)return false;
-    const tutorialIds=["HALLOWEEN_M01","HALLOWEEN_M02","HALLOWEEN_M03","HALLOWEEN_M04","HALLOWEEN_M05","HALLOWEEN_M06","HALLOWEEN_M07","HALLOWEEN_M08","HALLOWEEN_M09","HALLOWEEN_BOSS_10"];
-    const completed=Array.isArray(this.flags.completedRegions)&&this.flags.completedRegions.map(String).includes("r1-enseada-aprendizes");
-    if(!completed){
-      this.playerCannons={owned:{},equippedByShip:{}};
-      this.playerAmmo=normalizeGlobalAmmo({});
-      const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
-      const game=base.game&&typeof base.game==="object"?base.game:{};
-      const missions=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
-      const progress=missions.progress&&typeof missions.progress==="object"?clone(missions.progress):{};
-      for(const id of tutorialIds)delete progress[id];
-      const claimed=(Array.isArray(missions.claimedRewards)?missions.claimedRewards:[]).map(String).filter(id=>!tutorialIds.includes(id));
-      this.accountState={...base,game:{...game,missions:{...missions,progress,claimedRewards:claimed}}};
-      const rewardShip="ship-halloween-terror-reward-400";
-      this.playerShips.ownedShips=(Array.isArray(this.playerShips?.ownedShips)?this.playerShips.ownedShips:[]).filter(id=>String(id)!==rewardShip);
-      if(String(this.playerShips?.equippedShip||"")===rewardShip)this.playerShips.equippedShip=null;
-      this.ensurePlayerShips();
-    }
-    this.flags.r1TutorialBaselineVersion=version;
-    return true;
-  }
-
-  halloweenTerrorUnlocked(){
-    const claimed=new Set(
-      Array.isArray(this.accountState?.game?.missions?.claimedRewards)
-        ?this.accountState.game.missions.claimedRewards.map(String)
-        :[]
-    );
-    return HALLOWEEN_TERROR_PREREQUISITES.every(id=>claimed.has(id));
-  }
-
-  canAttackWorldEntity(entity){
-    const npcId=String(entity?.npcId||"");
-    const coopBossId=String(entity?.coopBossId||"");
-    if(npcId==="boss-halloween-dreadnought"||coopBossId==="boss-halloween-dreadnought"){
-      return this.halloweenTerrorUnlocked();
-    }
-    return true;
-  }
-
-  attackLockMessage(entity){
-    const npcId=String(entity?.npcId||"");
-    const coopBossId=String(entity?.coopBossId||"");
-    if(npcId==="boss-halloween-dreadnought"||coopBossId==="boss-halloween-dreadnought"){
-      const claimed=new Set(
-        Array.isArray(this.accountState?.game?.missions?.claimedRewards)
-          ?this.accountState.game.missions.claimedRewards.map(String)
-          :[]
-      );
-      const done=HALLOWEEN_TERROR_PREREQUISITES.filter(id=>claimed.has(id)).length;
-      return "🔒 Terror do Halloween protegido · conclua as 9 missões ("+done+"/9).";
-    }
-    return "Alvo bloqueado.";
-  }
-
-  tutorialGuide(worldId=this.current?.id){
-    if(String(worldId||"")!=="r1-enseada-aprendizes")return null;
-    const claimed=new Set(
-      Array.isArray(this.accountState?.game?.missions?.claimedRewards)
-        ?this.accountState.game.missions.claimedRewards.map(String)
-        :[]
-    );
-    const missions=(Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[])
-      .filter(m=>Number(m?.region)===1&&m?.required===true)
-      .sort((a,b)=>Number(a?.order||0)-Number(b?.order||0));
-    const active=missions.find(m=>{
-      const id=String(m?.id||"");
-      if(!id||claimed.has(id))return false;
-      const req=Array.isArray(m?.unlockAfter)?m.unlockAfter.map(String):[];
-      return req.every(x=>claimed.has(x));
-    });
-    if(!active)return null;
-    const id=String(active.id||"");
-    const map={
-      HALLOWEEN_M01:{icon:"📦",action:"",text:"Navegue até um baú brilhante. Ao chegar perto, a continha abre automaticamente."},
-      HALLOWEEN_M02:{icon:"🔧",action:"repair",text:"Entre em combate até o casco ficar abaixo de 750. Quando isso acontecer, toque em Reparar."},
-      HALLOWEEN_M03:{icon:"🎃",action:"",text:"Continue explorando o mar e colete 10 baús. Cada coleta entrega munição de Halloween."},
-      HALLOWEEN_M04:{icon:"⚓",action:"shipyard",text:"Toque no botão Estaleiro destacado no canto inferior direito e equipe um dos canhões recebidos."},
-      HALLOWEEN_M05:{icon:"☠️",action:"",text:"Procure o Corsário da Tabuada Sombria no mapa e afunde-o."},
-      HALLOWEEN_M06:{icon:"💎",action:"shop",text:"Toque no botão Loja destacado e compre um item usando rubis."},
-      HALLOWEEN_M07:{icon:"🧮",action:"",text:"Explore o mapa e resolva as continhas de mais 15 tesouros."},
-      HALLOWEEN_M08:{icon:"🔥",action:"fire",text:"Encontre os navios de treino, aproxime-se e use Atirar para afundar 5 deles."},
-      HALLOWEEN_M09:{icon:"🛡️",action:"",text:"Colete os 20 tesouros finais. Você receberá canhões Halloween, munição e o Amuleto da Imunidade."},
-      HALLOWEEN_BOSS_10:{icon:"🎃",action:"ammo",text:"Equipe a munição Halloween, aproxime-se do Terror do Halloween e ataque. O Amuleto reduz em 50% o dano recebido."}
-    };
-    const hint=map[id]||{icon:"📜",action:"missions",text:String(active.description||"Complete o objetivo atual.")};
-    return {
-      missionId:id,
-      step:Math.max(1,Number(active.order)||1),
-      total:missions.length,
-      title:String(active.name||id),
-      icon:hint.icon,
-      action:hint.action,
-      text:hint.text
-    };
-  }
-
   async advanceMissions(type,context={}){
     const eventType=String(type||"").trim();
     if(!eventType)return {changed:false,completed:[]};
@@ -2020,26 +1918,7 @@ export class GameRuntime {
 
     // Mission progress is driven by the successful collection event itself.
     // It must not depend on the reward/claim pipeline, especially in DEV flow-test.
-    const missionAdvance=await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
-
-    // Tutorial step 1 is atomic: the very first successful treasure collection
-    // must leave the player armed immediately. Never require a second chest,
-    // reload or UI refresh for the starter combat loadout to exist.
-    if(missionAdvance?.completed?.includes("HALLOWEEN_M01")){
-      const starterCannonId="cannon-basic";
-      const starterAmmoId="cannonball-standard";
-      const shipId=String(this.playerShips?.equippedShip||"");
-      const owned=Math.max(0,Math.floor(Number(this.playerCannons?.owned?.[starterCannonId])||0));
-      if(owned<1)this.grantCannon(starterCannonId,1-owned,{save:false});
-      if(this.ammoQuantity(starterAmmoId)<100)this.grantAmmo(starterAmmoId,100-this.ammoQuantity(starterAmmoId),{save:false,source:"tutorial-first-treasure"});
-      if(shipId&&!this.getShipCannons(shipId).includes(starterCannonId)&&this.getShipCannons(shipId).length<this.shipCannonCapacity(shipId)){
-        this.playerCannons.equippedByShip[shipId]=[...this.getShipCannons(shipId),starterCannonId];
-        this.ensurePlayerCannons();
-      }
-      this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-      this.saveState();
-      this.syncCloud("tutorial-first-treasure");
-    }
+    await this.advanceMissions("collect_treasure",{worldId,region,amount:1,rare:false});
 
     // Treasure rewards are granted separately. WorldRuntime may emit the generic
     // reward callback later; using the same claim key keeps payout idempotent.
@@ -2114,7 +1993,6 @@ export class GameRuntime {
     const world=this.resolveWorldShips(clone(sourceWorld));
     world.player=this.resolveWorldPlayer(world);
     const worldId=world.id||entry.id;
-    this.ensureRegionOneTutorialBaseline(worldId);
     this.ensurePlayerCannons();
     this.ensurePlayerAmmo();
     this.ensureStarterLoadout();
@@ -2256,29 +2134,14 @@ export class GameRuntime {
       shipCatalog:Array.isArray(this.shipCatalog?.ships)?clone(this.shipCatalog.ships):Array.isArray(this.shipCatalog)?clone(this.shipCatalog):[],
       missionCatalog:Array.isArray(this.missionCatalog?.missions)?clone(this.missionCatalog.missions):[],
       getMissionProgress:()=>clone(this.accountState?.game?.missions?.progress||{}),
-      getTutorialGuide:()=>this.tutorialGuide(worldId),
       isMissionComplete:id=>this.missionClaimed(id),
-      canAttackEntity:entity=>this.canAttackWorldEntity(entity),
-      attackLockMessage:entity=>this.attackLockMessage(entity),
       shopBalances:()=>this.getWalletBalances(),
-      canUseShop:()=>!world?.tutorial?.lockShopUntilMission||this.missionClaimed(world.tutorial.lockShopUntilMission),
+      canUseShop:()=>true,
       onShopPurchase:request=>this.purchaseShopItem(request,{worldId}),
-      canRepairPlayer:({hp})=>{
-        if(!world?.tutorial)return true;
-        if(this.missionClaimed(world.tutorial.repairMission))return true;
-        return this.missionClaimed("HALLOWEEN_M01")&&Number(hp)<Number(world.tutorial.lockRepairUntilHpBelow||750);
-      },
-      shouldForceRepair:({hp})=>Boolean(world?.tutorial&&!this.missionClaimed(world.tutorial.repairMission)&&this.missionClaimed("HALLOWEEN_M01")&&Number(hp)>0&&Number(hp)<Number(world.tutorial.lockRepairUntilHpBelow||750)),
+      canRepairPlayer:()=>true,
+      shouldForceRepair:()=>false,
       onRepairCompleted:()=>this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1}),
-      canSelectAmmo:item=>{
-        const event=String(item?.event||"").toLowerCase();
-        if(event!=="halloween")return true;
-        // Halloween ammunition is progression-gated globally, not only while
-        // the player is inside the tutorial world. Every ammo selection path
-        // therefore resolves against the same persisted mission state.
-        const unlockMission=String(world?.tutorial?.eventAmmoUnlockMission||"HALLOWEEN_M06");
-        return this.missionClaimed(unlockMission);
-      },
+      canSelectAmmo:()=>true,
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
       onRuntimeStateChange:()=>{
