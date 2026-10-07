@@ -5403,7 +5403,9 @@ export class WorldRuntime {
       this.stopNavalAutoFire({keepTarget:true,message:String(this.attackLockMessage(entity)||"Alvo bloqueado.")});
       return false;
     }
-    this.syncEquippedCannonsFromShipyard();
+    // playerCannonIds is already the runtime snapshot of the equipped battery.
+    // Re-reading the shipyard on every projectile can transiently return an
+    // empty overlay state and disarm the shot even though the HUD sees cannons.
     if(!Array.isArray(this.playerCannonIds)||this.playerCannonIds.length===0){
       this.stopNavalAutoFire({keepTarget:true,message:"Nenhum canhão equipado neste navio."});
       return false;
