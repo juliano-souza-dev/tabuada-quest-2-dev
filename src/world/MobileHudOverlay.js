@@ -353,8 +353,20 @@ export class MobileHudOverlay{
       }
     }
 
+    const tutorialStage=String(guide?.stage||"");
+    const tutorialActive=Boolean(guide);
+    for(const button of this.wrap.querySelectorAll("[data-hud-action]")){
+      const action=String(button.dataset.hudAction||"");
+      const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard");
+      button.hidden=!allowed;
+    }
+    const playerStatus=this.wrap.querySelector(".tq-player-status");
+    if(playerStatus)playerStatus.hidden=tutorialActive;
+    const targetStatus=this.wrap.querySelector("[data-target-status]");
+    if(targetStatus&&tutorialActive)targetStatus.hidden=true;
+
     if(this.pixiHud?.ready){
-      this.pixiHud.sync(state);
+      this.pixiHud.sync({...state,tutorialMode:tutorialActive,tutorialAction:tutorialStage==="shipyard"||tutorialStage==="equip-cannon"?"shipyard":""});
       this.syncPixiHitAreas();
     }
 
