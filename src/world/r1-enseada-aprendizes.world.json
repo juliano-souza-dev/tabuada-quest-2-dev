@@ -401,6 +401,22 @@
           "minDistance": 760,
           "seed": 9101
         }
+      },
+      {
+        "npcId": "npc-kraken-esmeralda",
+        "shipId": "monster-kraken-esmeralda",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 60,
+        "hp": 900,
+        "rewards": {},
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 520,
+          "minDistance": 760,
+          "seed": 9201
+        }
       }
     ]
   },
@@ -412,7 +428,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-r1-guardiao-abissal-v1",
+    "sourceRevision": "20261007-kraken-esmeralda-r1-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 1,
