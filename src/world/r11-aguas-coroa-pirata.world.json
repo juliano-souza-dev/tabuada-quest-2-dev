@@ -263,9 +263,9 @@
       "collision": {
         "active": true,
         "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
+        "scaleX": 0.92,
+        "scaleY": 0.72,
+        "padding": 90,
         "action": "interact",
         "message": "⚓ Atracar no Arsenal Naval",
         "actionLabel": "Atracar"
@@ -285,9 +285,9 @@
       "collision": {
         "active": true,
         "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
+        "scaleX": 0.92,
+        "scaleY": 0.72,
+        "padding": 90,
         "action": "interact",
         "message": "📜 Entrar na Taverna dos Contratos",
         "actionLabel": "Entrar"
@@ -306,9 +306,9 @@
       "collision": {
         "active": true,
         "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
+        "scaleX": 0.92,
+        "scaleY": 0.72,
+        "padding": 90,
         "action": "auto",
         "message": ""
       }
@@ -326,9 +326,9 @@
       "collision": {
         "active": true,
         "shape": "ellipse",
-        "scaleX": 0.72,
-        "scaleY": 0.52,
-        "padding": 10,
+        "scaleX": 0.92,
+        "scaleY": 0.72,
+        "padding": 90,
         "action": "auto",
         "message": ""
       }
