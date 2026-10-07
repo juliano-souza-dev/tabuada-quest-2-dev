@@ -38,14 +38,8 @@
     "grantDefaultShip": true,
     "grantDefaultCannon": false,
     "startingLoadout": {
-      "version": 3,
-      "cannons": [
-        {
-          "id": "cannon-bronze",
-          "quantity": 2,
-          "equip": true
-        }
-      ],
+      "version": 4,
+      "cannons": [],
       "ammo": []
     }
   },
