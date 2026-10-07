@@ -53,8 +53,10 @@
         ],
         "ammoId": "cannonball-standard",
         "ammoUnlimited": true,
-        "fixedDamagePerShot": 25,
-        "requiredAmmoEvent": "halloween"
+        "fixedDamagePerShot": 100,
+        "requiredAmmoEvent": "halloween",
+        "attackRange": 1400,
+        "attackCooldownMs": 1100
       }
     },
     {
