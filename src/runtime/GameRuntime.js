@@ -1171,9 +1171,6 @@ export class GameRuntime {
     this.playerShips.equippedShip=shipId;
     if(save)this.saveState();
     globalThis.dispatchEvent?.(new CustomEvent("tq:shipequipped",{detail:{ship:clone(ship)}}));
-    if(String(id)==="ship-halloween-terror-reward-400"&&this.missionClaimed("HALLOWEEN_BOSS_10")){
-      this.worldRuntime?.showGameplayToast?.("🧭 Tutorial concluído · navegue para a próxima região.",3600);
-    }
 
     if(reloadWorld&&this.current?.kind==="world"){
       this.captureCurrentState();
