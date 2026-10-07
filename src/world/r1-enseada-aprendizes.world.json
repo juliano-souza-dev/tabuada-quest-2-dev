@@ -389,7 +389,6 @@
         "shipId": "ship-halloween-pumpkin-corsair",
         "count": 8,
         "enabled": true,
-        "unlockAfterMission": "HALLOWEEN_M01",
         "respawn": true,
         "respawnDelaySec": 35,
         "spawn": {
