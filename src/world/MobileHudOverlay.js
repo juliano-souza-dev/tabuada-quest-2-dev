@@ -348,8 +348,14 @@ export class MobileHudOverlay{
     for(const button of this.wrap.querySelectorAll("[data-hud-action]")){
       const action=String(button.dataset.hudAction||"");
       const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard")||(tutorialStage==="attack-ship"&&action==="fire")||(tutorialStage==="attack-ship-2"&&action==="fire")||(tutorialStage==="shop-cannon"&&action==="shop")||(tutorialStage==="equip-shop-cannon"&&action==="shipyard")||(tutorialStage==="switch-ammo"&&action==="ammo")||(tutorialStage==="repair-ship"&&action==="repair");
-      button.hidden=!allowed;
-      button.style.display=allowed?"":"none";
+      // Tutorial keeps the final HUD layout stable: every action stays in its
+      // permanent slot and locked actions are only disabled, never removed.
+      button.hidden=false;
+      button.style.display="";
+      button.dataset.tutorialLocked=allowed?"false":"true";
+      button.classList.toggle("is-tutorial-locked",!allowed);
+      button.setAttribute("aria-disabled",allowed?"false":"true");
+      if(!allowed)button.disabled=true;
     }
     const playerStatus=this.wrap.querySelector(".tq-player-status");
     if(playerStatus)playerStatus.hidden=tutorialActive;
@@ -383,7 +389,8 @@ export class MobileHudOverlay{
       const attacking=state.attacking===true;
       const hasCannons=state.hasCannons!==false;
       const hasAmmo=state.hasAmmo!==false;
-      fire.disabled=!attacking&&(php<=0||((hasCannons&&hasAmmo)&&!targetVisible));
+      const tutorialLocked=fire.dataset.tutorialLocked==="true";
+      fire.disabled=tutorialLocked||(!attacking&&(php<=0||((hasCannons&&hasAmmo)&&!targetVisible)));
       fire.classList.toggle("is-cancel",attacking);
       fire.classList.toggle("is-disabled",fire.disabled);
       fire.querySelector("span").textContent=attacking?"✕":"🔥";
@@ -394,7 +401,7 @@ export class MobileHudOverlay{
     const follow=this.wrap.querySelector('[data-hud-action="follow"]');
     if(follow){
       follow.hidden=false;
-      follow.disabled=!targetVisible;
+      follow.disabled=follow.dataset.tutorialLocked==="true"||!targetVisible;
       follow.classList.toggle("is-disabled",follow.disabled);
     }
 
@@ -402,7 +409,7 @@ export class MobileHudOverlay{
     if(center){
       const detached=state.cameraDetached===true;
       center.hidden=false;
-      center.disabled=false;
+      center.disabled=center.dataset.tutorialLocked==="true";
       center.classList.toggle("is-active",detached);
       const remaining=Math.max(0,Math.ceil((Number(state.cameraRecenterRemainingMs)||0)/1000));
       center.querySelector("small").textContent=remaining>0?"Centralizar "+remaining+"s":"Centralizar";
