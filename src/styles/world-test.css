@@ -2544,3 +2544,19 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
     width:min(58vw,300px);
   }
 }
+
+
+/* HP HUD mobile stack 20261007-hp-above-hud-v2 */
+@media (max-width:720px){
+  .tq-mobile-combat-ui .tq-player-status{
+    top:auto!important;
+    left:auto!important;
+    right:max(12px,env(safe-area-inset-right))!important;
+    bottom:max(178px,calc(env(safe-area-inset-bottom) + 166px))!important;
+    width:clamp(148px,42vw,184px)!important;
+    z-index:620!important;
+  }
+  .tq-mobile-combat-ui .tq-player-status>small{
+    text-align:right;
+  }
+}
