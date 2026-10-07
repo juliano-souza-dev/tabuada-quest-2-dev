@@ -3239,22 +3239,16 @@ export class WorldRuntime {
           if(!contact||hit.penetration>contact.penetration){
             contact={entity,penetration:hit.penetration};
           }
-          // Keep the interaction contact for this frame, but still let the
-          // solid island use contour steering so the ship cannot sit inside it.
           if(action==="interact"){
-            const remembered=this.collisionAvoidance.entityId===entity.id&&this.collisionAvoidance.until>now
-              ?this.collisionAvoidance.side
-              :0;
-            const playerMaxSpeed=Math.max(40,Number(this.config.player?.speed)||420);
-            const playerMinSpeed=clamp(Number(this.config.player?.minSpeed)||0,0,playerMaxSpeed);
-            const contour=contourVelocity({x:vx,y:vy},hit.normalX,hit.normalY,desired,{
-              side:remembered,
-              minSpeed:Math.max(20,playerMinSpeed||playerMaxSpeed*.25),
-              maxSpeed:playerMaxSpeed,
-              strength:.72
-            });
-            vx=contour.x;vy=contour.y;
-            this.collisionAvoidance={entityId:entity.id,side:contour.side,until:now+520};
+            // Functional islands are docks, not walls to auto-contour around.
+            // Resolve penetration once and remove only velocity into the shore.
+            // Tangential movement remains under the player's control, which
+            // prevents the alternating contour correction that made the ship shake.
+            const cleaned=removeVelocityIntoNormal({x:vx,y:vy},hit.normalX,hit.normalY);
+            vx=Math.abs(cleaned.x)<1?0:cleaned.x;
+            vy=Math.abs(cleaned.y)<1?0:cleaned.y;
+            this.navigationTarget=null;
+            this.collisionAvoidance={entityId:"",side:0,until:0};
           }
           continue;
         }
