@@ -10,7 +10,7 @@ import { normalizeJoystickVector, screenPointToWorld, targetNavigationVector } f
 import { directionForHeading, resolveDirectionalSource, directionalRegionStyle } from "./WorldDirectionalSprite.mjs?v=20260930-1912";
 import { hasTimelineSpriteAnimation, timelineAnimationFrame, atlasFrameStyle } from "./WorldSpriteAnimation.mjs?v=20261007-leviathan-v1";
 import { OceanWebGLRenderer } from "./OceanWebGLRenderer.mjs?v=20261001-2258";
-import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261004-2142-graphics-settings";
+import { NavalCombatWebGLRenderer } from "./NavalCombatWebGLRenderer.mjs?v=20261007-monster-water-blood-v2";
 import { ShopOverlay } from "./ShopOverlay.js?v=20261007-r1-tutorial-progression-v4";
 import { ShipyardOverlay } from "./ShipyardOverlay.js?v=20261007-shipyard-responsibilities-v1";
 import { MobileHudOverlay } from "./MobileHudOverlay.js?v=20261007-tutorial-guide-v2";

@@ -34,7 +34,7 @@ const html=String.raw;
 async function registerWorker(){
   if(!("serviceWorker" in navigator))return null;
   try{
-    return await navigator.serviceWorker.register("./sw.js?v=20261006-pwa-install-fix-v2",{
+    return await navigator.serviceWorker.register("./sw.js?v=20261007-monster-water-blood-v2",{
       scope:"./",
       updateViaCache:"none"
     });
