@@ -7059,7 +7059,6 @@ export class WorldRuntime {
         challengeActive:()=>this.challengeActive,
         selectCombatTarget:()=>this.syncAutomaticCombatTarget(),
         updateCombat:time=>this.updateDirectNavalCombat(time),
-        updateTutorial:()=>this.updateTutorialGuideArrow(),
         updateCameraInput:dt=>this.updateCameraKeyboard(dt),
         updateCamera:dt=>this.updateCamera(false,dt),
         updateEnvironment:time=>this.updateEnvironmentCycle(time)
