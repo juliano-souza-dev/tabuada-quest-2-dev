@@ -1937,7 +1937,7 @@ export class GameRuntime {
     if(stage==="attack-ship-2")return {stage,action:"attack-ship",icon:"🔥",title:"Segundo combate",text:"Agora destrua outro navio.",hudMode:"fire-only"};
     if(stage==="collect-10")return {stage,action:"treasure",icon:"📦",title:"Caça ao tesouro",text:"Colete 10 tesouros.",hudMode:"analog-only"};
     if(stage==="missions")return {stage,action:"missions",icon:"📜",title:"Conheça as Missões",text:"Abra Missões. Sua próxima tarefa é afundar 5 corsários.",hudMode:"missions-only"};
-    if(stage==="missions-hunt")return {stage,action:"missions",icon:"🏴‍☠️",title:"Caçada aos Corsários",text:"Afunde 5 corsários. Recompensa: 3 Canhões do Marujo.",hudMode:"combat-missions"};
+    if(stage==="missions-hunt")return {stage,action:"fire",icon:"🏴‍☠️",title:"Caçada aos Corsários",text:"Siga a marcação até os corsários e use Atirar. Afunde 5.",hudMode:"combat-missions"};
     return null;
   }
 
