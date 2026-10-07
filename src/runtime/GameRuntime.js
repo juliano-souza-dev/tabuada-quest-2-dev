@@ -586,6 +586,7 @@ export class GameRuntime {
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     return {
       ...base,
+      progressEpoch:3,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
         settings:{
