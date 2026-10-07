@@ -3316,7 +3316,13 @@ export class WorldRuntime {
     this.player.y=clamp(resolved.y,travel.top,travel.bottom);
     this.player.vx=resolved.vx;
     this.player.vy=resolved.vy;
-    this.contactEntity=resolved.contact;
+    // Do not clear a latched functional-island contact on the first frame after
+    // penetration resolution. The interaction detector owns release hysteresis.
+    if(resolved.contact){
+      this.contactEntity=resolved.contact;
+    }else if(!(this.contactEntity&&inferCollisionAction(this.contactEntity,normalizeCollision(this.contactEntity.collision||{},this.contactEntity))==="interact")){
+      this.contactEntity=null;
+    }
 
     speed=Math.hypot(this.player.vx,this.player.vy);
     if(speed>8){
