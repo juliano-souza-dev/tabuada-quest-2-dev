@@ -478,236 +478,6 @@ export class GameRuntime {
     return this;
   }
 
-  grantPartyRewardShare(event={}){
-    const claimKey=String(event.claimKey||"").trim();
-    if(!claimKey)return false;
-    const localClaim="party-share:"+claimKey;
-    const claims=Array.isArray(this.rewards?.claims)?[...this.rewards.claims]:[];
-    if(claims.includes(localClaim))return false;
-    const gold=Math.max(0,Math.round((Number(event.gold)||0)*100)/100);
-    const xp=Math.max(0,Math.round((Number(event.xp)||0)*100)/100);
-    if(gold<=0&&xp<=0)return false;
-    claims.push(localClaim);
-    this.rewards={
-      ...this.rewards,
-      coins:Math.max(0,Number(this.rewards?.coins)||0)+gold,
-      gold:Math.max(0,Number(this.rewards?.gold ?? this.rewards?.coins)||0)+gold,
-      xp:Math.max(0,Number(this.rewards?.xp)||0)+xp,
-      claims
-    };
-    this.saveState();
-    this.syncCloud("party-reward");
-    this.worldRuntime?.shopOverlay?.refreshBalances?.();
-    this.worldRuntime?.showGameplayToast?.("🤝 Grupo · +"+gold+" ouro"+(xp>0?" · +"+xp+" XP":""),1500);
-    return true;
-  }
-
-  recordPartyNpcDefeat({entity,partyMembers=[]}={}){
-    const uid=String(this.multiplayer?.auth?.status?.().uid||"");
-    if(!uid||!Array.isArray(partyMembers)||!partyMembers.map(String).includes(uid)||!entity?.npcId)return false;
-    const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
-    const game=base.game&&typeof base.game==="object"?base.game:{};
-    const missionState=game.missions&&typeof game.missions==="object"?clone(game.missions):{};
-    const progress=missionState.progress&&typeof missionState.progress==="object"?clone(missionState.progress):{};
-    const claimed=new Set(Array.isArray(missionState.claimedRewards)?missionState.claimedRewards.map(String):[]);
-    const currentRegion=Math.max(0,Number(String(this.current?.id||"").match(/^r(\d+)/i)?.[1])||0);
-    let changed=false;
-    for(const mission of Array.isArray(this.missionCatalog?.missions)?this.missionCatalog.missions:[]){
-      const objective=mission?.objective&&typeof mission.objective==="object"?mission.objective:{};
-      if(String(objective.type||"")!=="defeat_npc"||Number(mission.region)!==currentRegion)continue;
-      const requiredNpcId=String(objective.npcId||objective.targetNpcId||"").trim();
-      if(requiredNpcId&&requiredNpcId!==String(entity.npcId))continue;
-      const id=String(mission.id||"").trim();if(!id)continue;
-      const target=Math.max(1,Math.floor(Number(objective.target)||1));
-      const previous=Math.max(0,Math.floor(Number(progress[id])||0));
-      const next=Math.min(target,previous+1);
-      if(next===previous)continue;
-      progress[id]=next;changed=true;
-      if(next>=target&&!claimed.has(id)){
-        const reward=mission?.reward&&typeof mission.reward==="object"?mission.reward:{};
-        const gold=Math.max(0,Number(reward.gold ?? reward.coins)||0);
-        const rubies=Math.max(0,Number(reward.rubies)||0);
-        const xp=Math.max(0,Number(reward.xp)||0);
-        const current=this.rewards&&typeof this.rewards==="object"
-          ?this.rewards
-          :{coins:0,gold:0,rubies:0,xp:0,claims:[],claimDetails:{}};
-        this.rewards={
-          ...current,
-          coins:Math.max(0,Number(current.coins)||0)+gold,
-          gold:Math.max(0,Number(current.gold ?? current.coins)||0)+gold,
-          rubies:Math.max(0,Number(current.rubies)||0)+rubies,
-          xp:Math.max(0,Number(current.xp)||0)+xp
-        };
-
-        const cannonId=String(reward.cannonId||"").trim();
-        const quantity=Math.max(1,Math.floor(Number(reward.cannonQuantity)||1));
-        if(cannonId)this.grantCannon(cannonId,quantity,{save:false});
-
-        const shipId=String(reward.shipId||"").trim();
-        if(shipId){
-          const ship=this.shipEntry(shipId);
-          if(ship&&ship.available!==false){
-            if(!this.playerShips.ownedShips.includes(shipId))this.playerShips.ownedShips.push(shipId);
-            if(reward.equipShip===true)this.playerShips.equippedShip=shipId;
-            this.ensurePlayerShips();
-          }
-        }
-
-        claimed.add(id);
-        globalThis.dispatchEvent?.(new CustomEvent("tq:missionreward",{detail:{
-          missionId:id,gold,rubies,xp,cannonId,
-          quantity:cannonId?quantity:0,
-          shipId,equipped:shipId?reward.equipShip===true:false,
-          source:"party"
-        }}));
-      }
-    }
-    if(!changed)return false;
-    this.accountState={
-      ...base,
-      game:{
-        ...game,
-        rewards:clone(this.rewards),
-        ships:{
-          ownedShips:[...this.playerShips.ownedShips],
-          equippedShip:this.playerShips.equippedShip
-        },
-        cannons:clone(this.playerCannons),
-        missions:{...missionState,progress,claimedRewards:[...claimed]}
-      }
-    };
-    this.saveState();
-    this.syncCloud("party-mission-progress");
-    this.worldRuntime?.showGameplayToast?.("🤝 Derrota contou para as missões do grupo",1300);
-    return true;
-  }
-
-  handlePartyEvent(data={}){
-    const type=String(data.type||"");
-    if(type==="party.invite"){
-      const accepted=globalThis.confirm?.(String(data.fromName||"Pirata")+" quer formar um grupo cooperativo. Aceitar?");
-      if(!accepted){
-        this.multiplayer?.declinePartyInvite?.(data.inviteId);
-        return false;
-      }
-      const answer=globalThis.prompt?.("Para entrar no grupo, responda: "+Number(data.a)+" × "+Number(data.b)+" = ?");
-      if(answer===null){
-        this.multiplayer?.declinePartyInvite?.(data.inviteId);
-        return false;
-      }
-      this.multiplayer?.acceptPartyInvite?.(data.inviteId,Number(answer));
-      return true;
-    }
-    if(type==="party.updated"){
-      this.coopParty={
-        partyId:String(data.partyId||""),
-        members:Array.isArray(data.members)?clone(data.members).slice(0,6):[]
-      };
-      this.worldRuntime?.showGameplayToast?.(
-        this.coopParty.members.length>1
-          ?"🤝 Grupo cooperativo · "+this.coopParty.members.length+"/6 jogadores"
-          :"Grupo cooperativo encerrado",
-        1800
-      );
-      return true;
-    }
-    if(type==="party.challenge.failed"){
-      this.worldRuntime?.showGameplayToast?.("Conta incorreta. Convite não aceito.",1800);
-      return false;
-    }
-    if(type==="party.reward")return this.grantPartyRewardShare(data);
-    if(type==="party.error"){
-      const map={party_full:"Grupo já está cheio.",player_unavailable:"Jogador indisponível.",invite_expired:"Convite expirou."};
-      this.worldRuntime?.showGameplayToast?.(map[data.reason]||"Não foi possível atualizar o grupo.",1800);
-      return false;
-    }
-    return false;
-  }
-
-  startMultiplayerWorld(worldId){
-    if(!this.multiplayer||!this.worldRuntime)return false;
-    const multiplayerAuthenticated=this.multiplayer.auth?.status?.().authenticated===true;
-    if(!this.authenticated&&multiplayerAuthenticated)this.authenticated=true;
-    if(!multiplayerAuthenticated)return false;
-    this.stopMultiplayerWorld();
-    const onPlayers=event=>this.worldRuntime?.syncRemotePlayers?.(event.detail?.players||[],{serverTime:event.detail?.serverTime,full:event.detail?.full===true});
-    const onAuthority=event=>this.worldRuntime?.syncLocalAuthority?.(event.detail||{});
-    const onEntities=event=>this.worldRuntime?.syncServerEntities?.(event.detail?.entities||{});
-    const onProjectiles=event=>this.worldRuntime?.syncServerProjectiles?.(event.detail?.projectiles||{},{
-      serverTime:event.detail?.serverTime,
-      full:event.detail?.full===true
-    });
-    const onEvent=event=>{
-      const detail=event.detail||{};
-      if((detail.type==="ammo.state"||detail.type==="fire.volley.accepted"||detail.type==="fire.rejected")&&detail.ammo){
-        this.replacePlayerAmmo(detail.ammo,{save:true,syncServer:false,reason:"server-authority"});
-        this.worldRuntime?.handleMultiplayerEvent?.({...detail,ammo:null});
-        return;
-      }
-      this.worldRuntime?.handleMultiplayerEvent?.(detail);
-    };
-    const onParty=event=>this.handlePartyEvent(event.detail||{});
-    const onBosses=event=>this.worldRuntime?.syncCoopBosses?.(event.detail?.bosses||{});
-    const onTransport=event=>{
-      const online=event.detail?.online===true&&event.detail?.authority==="server";
-      this.worldRuntime?.setServerWorldAuthority?.(online);
-      if(online&&this.worldRuntime){
-        this.worldRuntime?.showGameplayToast?.("🌐 Servidor online · mundo multiplayer sincronizado",1800);
-        this.multiplayer?.ensureWorld?.(this.worldRuntime.dynamicWorldSeed?.()||{});
-        globalThis.dispatchEvent?.(new CustomEvent("tq:network-mode",{detail:{mode:"online",worldId}}));
-        return;
-      }
-      if(event.detail?.reason==="server_disconnected"){
-        this.worldRuntime?.showGameplayToast?.("⚠️ Servidor caiu · entrando no modo offline",4200);
-        globalThis.dispatchEvent?.(new CustomEvent("tq:network-mode",{detail:{
-          mode:"offline",
-          reason:"server_disconnected",
-          worldId
-        }}));
-      }
-    };
-    this.multiplayer.addEventListener?.("players",onPlayers);
-    this.multiplayer.addEventListener?.("authority",onAuthority);
-    this.multiplayer.addEventListener?.("entities",onEntities);
-    this.multiplayer.addEventListener?.("projectiles",onProjectiles);
-    this.multiplayer.addEventListener?.("event",onEvent);
-    this.multiplayer.addEventListener?.("party",onParty);
-    this.multiplayer.addEventListener?.("bosses",onBosses);
-    this.multiplayer.addEventListener?.("transport",onTransport);
-    this.multiplayerCleanups.push(
-      ()=>this.multiplayer?.removeEventListener?.("players",onPlayers),
-      ()=>this.multiplayer?.removeEventListener?.("authority",onAuthority),
-      ()=>this.multiplayer?.removeEventListener?.("entities",onEntities),
-      ()=>this.multiplayer?.removeEventListener?.("projectiles",onProjectiles),
-      ()=>this.multiplayer?.removeEventListener?.("event",onEvent),
-      ()=>this.multiplayer?.removeEventListener?.("party",onParty),
-      ()=>this.multiplayer?.removeEventListener?.("bosses",onBosses),
-      ()=>this.multiplayer?.removeEventListener?.("transport",onTransport)
-    );
-    const runtime=this.worldRuntime;
-    const coopTransport={
-      uid:String(this.multiplayer.auth?.status?.().uid||""),
-      ensureBoss:boss=>this.multiplayer.ensureBoss?.(boss),
-      damageBoss:(bossId,damage,meta)=>this.multiplayer.damageBoss?.(bossId,damage,meta),
-      damageEntity:(entityId,damage,meta)=>this.multiplayer.damageEntity?.(entityId,damage,meta),
-      fireProjectile:shot=>this.multiplayer.fireProjectile?.(shot)===true,
-      fireVolley:volley=>this.multiplayer.fireVolley?.(volley)===true,
-      setChallengeProtection:(active,until)=>this.multiplayer.setChallengeProtection?.(active,until)===true,
-      inviteParty:targetUid=>this.multiplayer.inviteParty?.(targetUid)===true,
-      leaveParty:()=>this.multiplayer.leaveParty?.()===true,
-      sharePartyReward:payload=>this.multiplayer.sharePartyReward?.(payload)===true
-    };
-    const ship=this.getEquippedShip();
-    this.multiplayer.joinWorld(worldId,{getLocalState:()=>runtime?.getState?.()||{},getCannonIds:()=>this.getShipCannons(this.playerShips.equippedShip),getAmmoInventory:()=>clone(this.playerAmmo),shipId:ship?.id||"",displayName:this.accountState?.profile?.displayName||""})
-      .then(()=>{
-        if(this.worldRuntime!==runtime)return;
-        runtime.setCoopTransport?.(coopTransport);
-        this.multiplayer?.ensureWorld?.(runtime.dynamicWorldSeed?.()||{});
-      })
-      .catch(error=>console.warn("Multiplayer join failed",error));
-    return true;
-  }
-
   attachPlayerStateStore(store){
     this.playerStateStore=store||null;
     const status=this.playerStateStore?.status?.();
@@ -1606,7 +1376,6 @@ export class GameRuntime {
     if(pushHistory)this.pushCurrentToHistory();
 
     if(this.worldRuntime){
-      this.stopMultiplayerWorld();
       this.worldRuntime.destroy();
       this.worldRuntime=null;
     }
@@ -2598,7 +2367,6 @@ export class GameRuntime {
     });
     this.worldRuntime.mount();
     this.worldRuntime.setMode("play");
-    this.startMultiplayerWorld(worldId);
 
     this.current={kind:"world",id:worldId||null,path:entry.path};
     this.saveState();
@@ -2779,7 +2547,6 @@ export class GameRuntime {
     this.ammoSyncTimer=0;
     this.captureCurrentState();
     this.saveState();
-    this.stopMultiplayerWorld();
     this.worldRuntime?.destroy?.();
     this.worldRuntime=null;
     this.sceneRuntime?.resizeObserver?.disconnect?.();
