@@ -4970,10 +4970,6 @@ export class WorldRuntime {
         this.navalHp.set(id,Math.max(1,Math.min(500000000,Number(entity.combat?.hp)||3)));
         entity.npcSpawnCycle=Math.max(1,Math.floor(Number(entity.npcSpawnCycle)||1))+1;
         entity.npcRewardClaimToken="";
-        if(this.isCoopBoss(entity)){
-          entity.bossSpawnCycle=Math.max(1,Number(entity.bossSpawnCycle)||1)+1;
-          this.coopBossLocalDamage.set(this.coopBossId(entity),0);
-        }
         if(entity.el)entity.el.hidden=false;
         this.applyEntityVisual(entity);
         this.syncCombatClickableEntity(entity);
@@ -5039,14 +5035,7 @@ export class WorldRuntime {
       y:(Number(entity.visualY??entity.y)||0)-Math.max(18,(Number(entity.height)||96)*.36)+offsetY,
       amount:dealt
     });
-
-    if(this.isCoopBoss(entity)){
-      const bossId=this.coopBossId(entity);
-      this.coopBossLocalDamage.set(bossId,Math.max(0,Number(this.coopBossLocalDamage.get(bossId))||0)+dealt);
-    }
-
     if(next<=0){
-      if(this.isCoopBoss(entity))this.notifyCoopBossDefeated(entity);
       this.beginNavalDestruction(entity);
       return;
     }
