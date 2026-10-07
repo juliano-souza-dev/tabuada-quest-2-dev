@@ -17,6 +17,8 @@ const [
   { ShopOverlay },
   { ShipyardOverlay },
   { MobileHudOverlay },
+  { normalizeNpcPopulation,normalizeTreasurePopulation,normalizeNpcAmmoIds },
+  { normalizeAmmoInventory,ammoDamageFactor,cannonDamagePerShot,navalShotDamage,resolvePlayerHullHp },
   {
     normalizeCollision,
     inferCollisionAction,
@@ -43,6 +45,8 @@ const [
   import("./ShopOverlay.js?v="+__tqDevStamp),
   import("./ShipyardOverlay.js?v="+__tqDevStamp),
   import("./MobileHudOverlay.js?v="+__tqDevStamp),
+  import("./entities/PopulationRules.mjs?v="+__tqDevStamp),
+  import("./combat/NavalCombatRules.mjs?v="+__tqDevStamp),
   import("./WorldCollision.mjs?v="+__tqDevStamp)
 ]);
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
@@ -67,96 +71,6 @@ const createSeededRandom=seed=>{
     return ((t^(t>>>14))>>>0)/4294967296;
   };
 };
-const normalizeNpcPopulation=input=>{
-  const value=input&&typeof input==="object"?input:{};
-  const spread=value.spread&&typeof value.spread==="object"?value.spread:{};
-  const movement=value.movement&&typeof value.movement==="object"?value.movement:{};
-  const types=Array.isArray(value.types)?value.types:[];
-  return {
-    enabled:value.enabled===true,
-    seed:Math.max(1,Math.floor(Number(value.seed)||1)),
-    spread:{
-      mode:["random","random-spaced"].includes(String(spread.mode))?String(spread.mode):"random-spaced",
-      margin:clamp(Number(spread.margin??320),0,2000),
-      minDistance:clamp(Number(spread.minDistance??360),0,1800)
-    },
-    movement:{
-      mode:"straight",
-      speed:clamp(Number(movement.speed??80),0,1200)
-    },
-    types:types.slice(0,12).map(item=>({
-      npcId:String(item?.npcId||item?.shipId||""),
-      shipId:String(item?.shipId||""),
-      count:clamp(Math.floor(Number(item?.count)||0),0,50),
-      enabled:item?.enabled!==false,
-      unlockAfterMission:String(item?.unlockAfterMission||"").trim(),
-      spawn:{
-        mode:["random","random-spaced"].includes(String(item?.spawn?.mode))?String(item.spawn.mode):String(spread.mode||"random-spaced"),
-        margin:clamp(Number(item?.spawn?.margin??spread.margin??320),0,2000),
-        minDistance:clamp(Number(item?.spawn?.minDistance??spread.minDistance??360),0,1800),
-        seed:Math.max(0,Math.floor(Number(item?.spawn?.seed)||0))
-      },
-      hp:clamp(Math.floor(Number(item?.hp)||3),1,500000000),
-      respawn:item?.respawn===true,
-      respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,86400),
-      devFrozen:item?.devFrozen===true,
-      hitRewardGold:Math.max(0,Math.floor(Number(item?.hitRewardGold)||0)),
-      rewards:item?.rewards&&typeof item.rewards==="object"?structuredClone(item.rewards):{},
-      allowedAmmoIds:normalizeNpcAmmoIds(item?.allowedAmmoIds)
-    })).filter(item=>(item.npcId||item.shipId)&&item.count>0)
-  };
-};
-const normalizeTreasurePopulation=input=>{
-  const value=input&&typeof input==="object"?input:{};
-  const spread=value.spread&&typeof value.spread==="object"?value.spread:{};
-  return {
-    enabled:value.enabled===true,
-    seed:Math.max(1,Math.floor(Number(value.seed)||1)),
-    spread:{
-      mode:["random","random-spaced"].includes(String(spread.mode))?String(spread.mode):"random-spaced",
-      margin:clamp(Number(spread.margin??220),0,2000),
-      minDistance:clamp(Number(spread.minDistance??180),0,1800)
-    },
-    types:(Array.isArray(value.types)?value.types:[]).slice(0,16).map(item=>({
-      treasureId:String(item?.treasureId||""),
-      count:clamp(Math.floor(Number(item?.count)||0),0,100),
-      respawn:item?.respawn===true,
-      spawnIntervalSec:clamp(Number(item?.spawnIntervalSec??5),0,3600),
-      respawnDelaySec:clamp(Number(item?.respawnDelaySec??30),1,3600)
-    })).filter(item=>item.treasureId&&item.count>0)
-  };
-};
-const normalizeAmmoInventory=input=>{
-  const value=input&&typeof input==="object"?input:{};
-  const stock=value.stock&&typeof value.stock==="object"?value.stock:{};
-  const normalizedStock={};
-  for(const [ammoId,quantity] of Object.entries(stock)){
-    const id=String(ammoId||"").trim();
-    if(id)normalizedStock[id]=Math.max(0,Math.floor(Number(quantity)||0));
-  }
-  return {
-    selectedAmmoId:String(value.selectedAmmoId||""),
-    stock:normalizedStock
-  };
-};
-const normalizeNpcAmmoIds=input=>{
-  const values=Array.isArray(input)?input:[];
-  return [...new Set(values.map(value=>String(value||"").trim()).filter(Boolean))];
-};
-
-const ammoDamageFactor=ammo=>clamp(Number(ammo?.damageFactor??1)||1,.1,2);
-const cannonDamagePerShot=cannon=>Math.max(.1,Number(cannon?.damagePerShot)||1);
-const navalShotDamage=(cannon,ammo)=>Math.round(cannonDamagePerShot(cannon)*ammoDamageFactor(ammo)*100)/100;
-
-const resolvePlayerHullHp=(player,fallbackCombat={})=>{
-  const combat=player?.combat&&typeof player.combat==="object"?player.combat:{};
-  const modifiers=player?.combatModifiers&&typeof player.combatModifiers==="object"?player.combatModifiers:{};
-  const base=clamp(Math.floor(Number(combat.hp??fallbackCombat?.playerHp)||50),50,500000000);
-  const flat=clamp(Math.floor(Number(modifiers.maxHpFlat??modifiers.hpFlat)||0),-499999950,500000000);
-  const pct=clamp(Number(modifiers.maxHpPct??modifiers.hpPct)||0,-.9,10);
-  return clamp(Math.round(base*(1+pct)+flat),50,500000000);
-};
-
 const normalizePlayerWaterEffects=player=>{
   const fx=player?.effects||{};
   return {
