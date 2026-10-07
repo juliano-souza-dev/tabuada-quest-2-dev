@@ -72,3 +72,29 @@ test("stopping inside simulation skips later phases and does not reschedule",()=
   assert.deepEqual(calls,["simulation"]);
   assert.equal(scheduled,1);
 });
+
+test("a frame exception stops scheduling instead of repeating a broken frame",()=>{
+  let scheduled=0;
+  const loop=new WorldGameLoop({
+    updateSimulationFrame:()=>{throw new Error("simulation failed");},
+    updatePresentationFrame:()=>{},
+    updateInterfaceFrame:()=>{}
+  },{requestFrame:()=>++scheduled,cancelFrame:()=>{}});
+  loop.start();
+  assert.throws(()=>loop.frame(1000),/simulation failed/);
+  assert.equal(loop.running,false);
+  assert.equal(scheduled,1);
+});
+
+test("reentrant frame calls cannot run simulation twice",()=>{
+  let calls=0;
+  let loop;
+  loop=new WorldGameLoop({
+    updateSimulationFrame:()=>{calls++;loop.frame(1100);},
+    updatePresentationFrame:()=>{},
+    updateInterfaceFrame:()=>{}
+  },{requestFrame:()=>1,cancelFrame:()=>{}});
+  loop.start();
+  loop.frame(1000);
+  assert.equal(calls,1);
+});
