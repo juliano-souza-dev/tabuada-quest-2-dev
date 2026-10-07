@@ -326,17 +326,6 @@ export class WorldRuntime {
       onShipyard:()=>{this.shipyardOverlay?.open?.();return true;},
       onGraphicsSettingsChange:settings=>this.applyGraphicsSettings(settings,{persist:true})
     });
-    this.remotePlayers=new Map();
-    this.coopTransport=null;
-    this.coopBossStates=new Map();
-    this.coopBossRewardNotified=new Set();
-    this.coopBossLocalDamage=new Map();
-    this.bossProjectileFxWindow=new Map();
-    this.bossDamageFxPending=new Map();
-    this.coopLocalUid="";
-    this.serverWorldAuthority=false;
-    this.serverEntityStates=new Map();
-    this.offlineDynamicState=null;
 
     // Ship behavior is global. A map stores which ship is selected, but the
     // current catalog profile wins over stale copies of speed/physics/combat.
@@ -721,14 +710,12 @@ export class WorldRuntime {
 
   beginPedagogyProtection(){
     this.pedagogyInvulnerableUntil=Number.MAX_SAFE_INTEGER;
-    this.coopTransport?.setChallengeProtection?.(true,0);
     return true;
   }
 
   endPedagogyProtection(){
     const until=Date.now()+15000;
     this.pedagogyInvulnerableUntil=until;
-    this.coopTransport?.setChallengeProtection?.(false,until);
     return until;
   }
 
@@ -956,7 +943,6 @@ export class WorldRuntime {
 
   updateNpcNavigation(entity,dt){
     if(this.mode!=="play"||!entity?.runtimeGenerated||this.navalDestroying.has(entity.id))return;
-    if(this.serverWorldAuthority&&entity.serverAuthoritative===true)return;
     const nav=entity.npcNavigation;
     if(entity.devFrozen||entity.bossCombatStopped===true){
       if(nav){
@@ -5281,80 +5267,7 @@ export class WorldRuntime {
     const eligible=battery.filter(item=>targetDistance<=Math.max(1,Number(item.cannon?.range)||900));
     if(!eligible.length)return false;
 
-    const onlineAuthoritative=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.fireVolley;
-    if(onlineAuthoritative){
-      const hp=this.navalHpState(entity);
-      const available=eligible.slice(0,ammoStock);
-      if(!available.length){
-        if(this.actionMessage)this.actionMessage.textContent="Sem munição: "+String(ammo?.name||selectedAmmoId)+".";
-        return false;
-      }
 
-      const volleyId="volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-      const visualShots=[];
-      const requestShots=available.map((batteryShot,index)=>{
-        const cannon=batteryShot.cannon;
-        const muzzle=batteryShot.hardpoint;
-        const projectileSpeed=Math.max(120,Number(ammo?.projectileSpeed)||Number(cannon.projectileSpeed)||620);
-        const intercept=this.predictNavalIntercept(muzzle,entity,projectileSpeed);
-        const duration=clamp(intercept.time*1000,120,8000);
-        visualShots.push({from:muzzle,to:{x:intercept.x,y:intercept.y},duration});
-        return {
-          shotId:"player-"+Date.now()+"-"+index+"-"+Math.random().toString(36).slice(2,7),
-          cannonId:String(cannon.id||""),
-          from:muzzle
-        };
-      });
-
-      const sent=this.coopTransport.fireVolley({
-        volleyId,
-        targetId:String(entity.serverEntityId||entity.id||""),
-        ammoId:selectedAmmoId,
-        shots:requestShots
-      })===true;
-      if(!sent)return false;
-
-      if(!(this.serverProjectileRendered instanceof Map))this.serverProjectileRendered=new Map();
-      const renderedAt=performance.now();
-      for(const request of requestShots)this.serverProjectileRendered.set(String(request.shotId||""),renderedAt);
-
-      for(const shot of visualShots){
-        this.renderCannonProjectile({...shot,ammo});
-      }
-
-      const firedCount=available.length;
-      this.audio?.play("cannon-shot");
-
-      const id=String(entity.id);
-      if(!entity.devFrozen&&entity.npcAttitude!=="peaceful"){
-        const hostile=this.navalHostile.get(id)||{nextShotAt:0};
-        this.navalHostile.set(id,hostile);
-      }
-      if(this.actionMessage){
-        this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")
-          +" · salva "+firedCount+"/"+this.playerCannonIds.length+" canhões"
-          +" · munição "+this.state.ammo.stock[selectedAmmoId]
-          +" · casco "+hp.current+"/"+hp.max;
-      }
-      return true;
-    }
-
-    // Boss behavior: once a valid attack volley starts, stop navigation before
-    // solving projectile interception. This prevents the coop boss from turning
-    // away during the first projectile flight and makes the first valid volley
-    // capable of landing instead of endlessly chasing a moving prediction.
-    if(this.isCoopBoss(entity)&&entity.bossCombatStopped!==true){
-      entity.bossCombatStopped=true;
-      if(entity.npcNavigation){
-        entity.npcNavigation.vx=0;
-        entity.npcNavigation.vy=0;
-        entity.npcNavigation.targetHeading=Number(entity.rotation)||Number(entity.npcNavigation.heading)||0;
-      }
-      entity.anchorX=entity.x;
-      entity.anchorY=entity.y;
-    }
-
-    const hp=this.navalHpState(entity);
     const ammoUnlimited=false;
     let ammoRemaining=ammoStock;
     if(ammoRemaining<=0){
@@ -5419,20 +5332,7 @@ export class WorldRuntime {
         size:clamp(Math.max(Number(entity.width)||96,Number(entity.height)||96)/150,.75,1.55)
       });
 
-      const coopBoss=this.isCoopBoss(entity)&&this.coopTransport?.damageBoss;
-      const coopBossId=coopBoss?this.coopBossId(entity):"";
-      const serverOwned=this.serverWorldAuthority===true&&entity.runtimeGenerated===true&&this.coopTransport?.damageEntity;
-      if(serverOwned){
-        const shotId="entity-volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-        this.coopTransport.damageEntity(String(entity.id||""),totalDamage,{shotId}).catch?.(()=>{});
-      }else if(coopBoss){
-        const shotId="coop-volley-"+Date.now()+"-"+Math.random().toString(36).slice(2,8);
-        Promise.resolve(this.coopTransport.damageBoss(coopBossId,totalDamage,{shotId}))
-          .then(sent=>{if(sent!==true)this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1})})
-          .catch(()=>this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1}));
-      }else{
-        this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1});
-      }
+      this.applyDirectNavalDamage(entity,totalDamage,{burstIndex:0,burstTotal:1});
     };
 
     setTimeout(resolveVolley,Math.max(80,maxDuration));
@@ -5571,13 +5471,7 @@ export class WorldRuntime {
         y:Number(this.player?.y)||0,
         distance:Math.hypot((Number(entity.x)||0)-(Number(this.player?.x)||0),(Number(entity.y)||0)-(Number(this.player?.y)||0))
       }]:[]),
-      ...[...this.remotePlayers.values()].map(remote=>({
-        id:String(remote.id||""),
-        local:false,
-        x:Number(remote.x)||0,
-        y:Number(remote.y)||0,
-        distance:Math.hypot((Number(entity.x)||0)-(Number(remote.x)||0),(Number(entity.y)||0)-(Number(remote.y)||0))
-      }))
+)
     ]
       .filter(target=>target.distance<=stats.attackRange)
       .sort((a,b)=>a.distance-b.distance)
@@ -5665,8 +5559,6 @@ export class WorldRuntime {
         }
       }
     }
-
-    if(this.serverWorldAuthority===true)return;
 
     for(const [id,state] of [...this.navalHostile.entries()]){
       const entity=this.entityByIdGet(id);
@@ -6655,7 +6547,6 @@ export class WorldRuntime {
       ctx.translate(point.x,point.y);
 
       if(logicalType==="ship"){
-        const remotePlayer=entity.runtimeMultiplayer===true||entity.role==="multiplayer";
         const bossShip=this.isCoopBoss(entity);
         ctx.rotate((Number(entity.visualRotation??entity.rotation)||0)*Math.PI/180);
         ctx.beginPath();
@@ -6667,10 +6558,10 @@ export class WorldRuntime {
         // Minimap ship colors: bosses yellow, remote players green, regular NPCs red.
         ctx.fillStyle=bossShip
           ?"rgba(255,213,74,.99)"
-          :(remotePlayer?"rgba(92,232,132,.98)":"rgba(255,111,92,.98)");
+          :"rgba(255,111,92,.98)";
         ctx.strokeStyle=bossShip
           ?"rgba(255,250,210,.99)"
-          :(remotePlayer?"rgba(226,255,234,.98)":"rgba(255,235,228,.98)");
+          :"rgba(255,235,228,.98)";
         ctx.lineWidth=1.5;
         ctx.fill();
         ctx.stroke();
@@ -7450,8 +7341,6 @@ export class WorldRuntime {
     else if(this.editorPreviewActive)this.updateEditorPreviewPlayer(time,dt);
     if(this.mode==="play")this.applyLocalAuthorityCorrection(dt);
     this.updatePlayerVisual(time,dt);
-    this.updateRemotePlayers(time);
-    this.updateServerEntities(time);
     this.updatePlayerWaterEffects(time);
     // World simulation never freezes because the local player sank.
     this.updateEntityMotionFrame(time,dt);
