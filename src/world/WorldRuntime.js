@@ -193,6 +193,7 @@ export class WorldRuntime {
     this.resolveTreasure=typeof options.resolveTreasure==="function"?options.resolveTreasure:null;
     this.getMissionProgress=typeof options.getMissionProgress==="function"?options.getMissionProgress:()=>({});
     this.getTutorialGuide=typeof options.getTutorialGuide==="function"?options.getTutorialGuide:()=>null;
+    this.onTutorialAttack=typeof options.onTutorialAttack==="function"?options.onTutorialAttack:()=>{};
     this.isMissionComplete=typeof options.isMissionComplete==="function"?options.isMissionComplete:()=>false;
     this.canUseShop=typeof options.canUseShop==="function"?options.canUseShop:()=>true;
     this.canRepairPlayer=typeof options.canRepairPlayer==="function"?options.canRepairPlayer:()=>true;
@@ -5256,6 +5257,7 @@ export class WorldRuntime {
     }
 
     if(!firedCount)return false;
+    if(String(this.getTutorialGuide?.()?.stage||"")==="attack-ship")this.onTutorialAttack?.(entity);
     this.audio?.play("cannon-shot");
     if(ammoRemaining<=0)this.autoSwitchAmmoIfEmpty({announce:true});
     this.onAmmoChange?.(structuredClone(this.state.ammo));
@@ -6618,6 +6620,10 @@ export class WorldRuntime {
     if(stage==="treasure"){
       target=this.entities
         .filter(entity=>String(entity?.type||"")==="treasure"&&!this.collected.has(entity.id)&&entity?.el?.hidden!==true)
+        .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
+    }else if(stage==="attack-ship"){
+      target=this.entities
+        .filter(entity=>this.isClickableCombatShip(entity)&&!this.collected.has(entity.id)&&!this.navalDestroying.has(entity.id))
         .sort((a,b)=>distance(this.player,a)-distance(this.player,b))[0]||null;
     }
     if(!target){
