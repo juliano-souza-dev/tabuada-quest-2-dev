@@ -220,6 +220,7 @@ export class PixiMobileHudRenderer{
     r.configBack.roundRect(c.x-c.size/2,c.y-c.size/2,c.size,c.size,12).fill(0x10131c).stroke({color:0xb98039,width:3});
     r.configIcon.position.set(c.x,c.y);
 
+    r.targetText.visible=false;
     r.targetText.position.set(w/2,topH+7);
     return true;
   }
@@ -244,9 +245,8 @@ export class PixiMobileHudRenderer{
     r.levelText.text=String(Math.max(1,Math.floor(Number(state.level)||1)));
 
     const target=state.target||{};
-    r.targetText.text=target.visible===true
-      ?String(target.name||"Navio inimigo")+"  "+Math.round(Number(target.hp)||0)+"/"+Math.round(Number(target.maxHp)||1)
-      :"";
+    r.targetText.text="";
+    r.targetText.visible=false;
 
     const map=r.mapMarkers;
     map.clear();
