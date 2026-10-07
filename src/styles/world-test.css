@@ -2476,7 +2476,8 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--center,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions,
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--repair{
   border:0!important;
   border-radius:0!important;
   box-shadow:none!important;
@@ -2493,6 +2494,7 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shipyard{background-image:url("../../assets/hud/estaleiro.webp?v=20261005-hud-stable-v9")!important}
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions{background-image:url("../../assets/hud/missoes.webp?v=20261005-hud-stable-v9")!important}
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop{background-image:url("../../assets/hud/loja.webp?v=20261005-hud-stable-v9")!important}
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--repair{background-image:url("../../assets/hud/repair_halloween.webp?v=20261007-repair-asset-v1")!important}
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>span,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--ammo>small,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--fire>span,
@@ -2506,13 +2508,14 @@ html.tq-settings-open .tq-world-controls,html.tq-settings-open .tq-world-action{
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions>span,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--missions>small,
 .tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop>span,
-.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop>small{
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--shop>small,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--repair>span,
+.tq-mobile-combat-ui:not(.is-pixi-hud) .tq-combat-dock__button--repair>small{
   visibility:hidden!important;
 }
 
 /* HUD stable v9: Pixi draws only controls with dedicated compact assets. */
-.tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock__button--shield,
-.tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock__button--repair{
+.tq-mobile-combat-ui.is-pixi-hud .tq-combat-dock__button--shield{
   display:none!important;
 }
 
