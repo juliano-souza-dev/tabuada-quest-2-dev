@@ -349,6 +349,7 @@ export class MobileHudOverlay{
       const action=String(button.dataset.hudAction||"");
       const allowed=!tutorialActive||(tutorialStage==="shipyard"&&action==="shipyard")||(tutorialStage==="equip-cannon"&&action==="shipyard");
       button.hidden=!allowed;
+      button.style.display=allowed?"":"none";
     }
     const playerStatus=this.wrap.querySelector(".tq-player-status");
     if(playerStatus)playerStatus.hidden=tutorialActive;
@@ -356,7 +357,7 @@ export class MobileHudOverlay{
     if(targetStatus&&tutorialActive)targetStatus.hidden=true;
 
     const targetWrap=this.wrap.querySelector("[data-target-status]");
-    const targetVisible=Boolean(state.target?.visible);
+    const targetVisible=!tutorialActive&&Boolean(state.target?.visible);
     if(targetWrap){
       targetWrap.hidden=!targetVisible;
       if(targetVisible){
