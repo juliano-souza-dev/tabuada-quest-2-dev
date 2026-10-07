@@ -586,7 +586,7 @@ export class GameRuntime {
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     return {
       ...base,
-      progressEpoch:6,
+      progressEpoch:7,
       game:{
         ...(base.game&&typeof base.game==="object"?base.game:{}),
         settings:{
@@ -760,6 +760,10 @@ export class GameRuntime {
       currency:walletKey
     }}));
     await this.advanceMissions("purchase_upgrade",{worldId,amount:1});
+    if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="shop-cannon"&&String(product.type)==="cannon"&&String(product.id)==="cannon-bronze"){
+      this.setR1TutorialStage("equip-shop-cannon",{save:true,sync:true});
+      this.worldRuntime?.showGameplayToast?.("⚓ Canhão comprado! Agora equipe-o no Estaleiro.",2600);
+    }
     return {
       ok:true,
       purchasedUnits,
@@ -1899,12 +1903,30 @@ export class GameRuntime {
     if(stage==="treasure")return {stage,action:"treasure",icon:"📦",title:"Primeiro tesouro",text:"Siga a seta até o tesouro e toque nele.",hudMode:"analog-only"};
     if(stage==="shipyard")return {stage,action:"shipyard",icon:"⚓",title:"Abra o Estaleiro",text:"Toque no Estaleiro para preparar seu primeiro canhão.",hudMode:"shipyard-only"};
     if(stage==="equip-cannon")return {stage,action:"equip-cannon",icon:"💥",title:"Equipe o canhão",text:"Na aba Canhões, equipe o Canhão do Marujo no seu navio.",hudMode:"shipyard-only"};
-    if(stage==="attack-ship")return {stage,action:"attack-ship",icon:"🔥",title:"Primeiro combate",text:"Siga a seta e destrua o navio inimigo. Ele cairá no 20º disparo.",hudMode:"fire-only"};
-    if(stage==="repair-ship")return {stage,action:"repair-ship",icon:"🔧",title:"Conserte seu navio",text:"Use Reparar e restaure todo o casco.",hudMode:"repair-only"};
+    if(stage==="attack-ship")return {stage,action:"attack-ship",icon:"🔥",title:"Primeiro combate",text:"Siga a seta, ataque e persiga o navio inimigo.",hudMode:"fire-only"};
+    if(stage==="shop-cannon")return {stage,action:"shop",icon:"🛒",title:"Abra a Loja",text:"Use os 10 rubis e compre o Canhão Corsário.",hudMode:"shop-only"};
+    if(stage==="equip-shop-cannon")return {stage,action:"shipyard",icon:"⚓",title:"Equipe o novo canhão",text:"Abra o Estaleiro e equipe o Canhão Corsário.",hudMode:"shipyard-only"};
+    if(stage==="switch-ammo")return {stage,action:"ammo",icon:"💣",title:"Troque a munição",text:"Equipe a Bala Perfurante, sua munição comum mais forte.",hudMode:"ammo-only"};
+    if(stage==="repair-ship")return {stage,action:"repair-ship",icon:"🔧",title:"Conserte seu navio",text:"Use Reparar. Cada acerto recupera 25% do casco total.",hudMode:"repair-only"};
+    if(stage==="attack-ship-2")return {stage,action:"attack-ship",icon:"🔥",title:"Segundo combate",text:"Agora destrua outro navio.",hudMode:"fire-only"};
+    if(stage==="collect-10")return {stage,action:"treasure",icon:"📦",title:"Caça ao tesouro",text:"Colete 10 tesouros.",hudMode:"analog-only"};
+    if(stage==="tutorial-next")return {stage,action:"next",icon:"🧭",title:"Treinamento continua",text:"Próxima etapa será adicionada aqui.",hudMode:"analog-only"};
     return null;
   }
 
   async handleTreasureCollected({entity,challenge,rewards}={}){
+    if(String(challenge?.context?.worldId||this.current?.id||"")==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="collect-10"){
+      const tutorial=this.accountState?.game?.tutorial||{};
+      const count=Math.max(0,Math.floor(Number(tutorial.treasuresCollected)||0))+1;
+      const game=this.accountState?.game||{};
+      this.accountState={...this.accountState,game:{...game,tutorial:{...tutorial,treasuresCollected:count}}};
+      if(count>=10){
+        this.setR1TutorialStage("tutorial-next",{save:false});
+        this.worldRuntime?.showGameplayToast?.("🧭 10/10 tesouros! Esta parte terminou. O tutorial continua daqui.",3400);
+      }else{
+        this.worldRuntime?.showGameplayToast?.("📦 Tesouros do treino: "+count+"/10",1600);
+      }
+    }
     const cleanEntity=entity&&typeof entity==="object"?clone(entity):{};
     const base=this.accountState&&typeof this.accountState==="object"?clone(this.accountState):{};
     const game=base.game&&typeof base.game==="object"?base.game:{};
@@ -2152,6 +2174,10 @@ export class GameRuntime {
       onAmmoChange:ammo=>{
         this.playerAmmo=normalizeGlobalAmmo(ammo);
         this.ensurePlayerAmmo();
+        if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="switch-ammo"&&String(this.playerAmmo.selectedAmmoId||"")==="cannonball-piercing"){
+          this.setR1TutorialStage("repair-ship",{save:false});
+          queueMicrotask(()=>this.worldRuntime?.showGameplayToast?.("🔧 Munição equipada. Agora restaure todo o casco.",2800));
+        }
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
           const snapshot=this.worldRuntime.getState();
           if(snapshot&&typeof snapshot==="object"){
@@ -2179,14 +2205,8 @@ export class GameRuntime {
       onRepairCompleted:async ({hp,maxHp}={})=>{
         await this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1});
         if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="repair-ship"&&Number(hp)>=Number(maxHp)){
-          const strongest=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
-            .filter(ammo=>ammo?.available!==false&&!ammo?.event)
-            .sort((a,b)=>Number(b.damageFactor||0)-Number(a.damageFactor||0))[0];
-          if(strongest?.id)this.grantAmmo(strongest.id,1000,{save:false,syncServer:false,source:"tutorial-repair"});
-          this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-          this.setR1TutorialStage("complete",{save:false});
-          this.saveState();this.syncCloud("tutorial-repair-complete");
-          this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! +1000 "+String(strongest?.name||"munições")+".",3600);
+          this.setR1TutorialStage("attack-ship-2",{save:true,sync:true});
+          this.worldRuntime?.showGameplayToast?.("🔧 Casco restaurado! Agora destrua outro alvo.",3000);
         }
       },
       canSelectAmmo:()=>true,
@@ -2194,12 +2214,17 @@ export class GameRuntime {
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
       onTutorialAttack:()=>{},
       onTutorialNpcDestroyed:async entity=>{
-        if(worldId!=="r1-enseada-aprendizes"||this.r1TutorialStage()!=="attack-ship")return;
-        this.grantAmmo("cannonball-halloween-purple",5,{save:false,syncServer:false,source:"tutorial"});
-        this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
-        this.setR1TutorialStage("repair-ship",{save:false});
-        this.saveState();this.syncCloud("tutorial-stage-two");
-        this.worldRuntime?.showGameplayToast?.("🎃 Navio destruído! +5 Bolas Halloween. Agora repare seu navio.",3600);
+        if(worldId!=="r1-enseada-aprendizes")return;
+        const stage=this.r1TutorialStage();
+        if(stage==="attack-ship"){
+          this.rewards={...this.rewards,rubies:Math.max(0,Number(this.rewards?.rubies)||0)+10};
+          this.setR1TutorialStage("shop-cannon",{save:false});
+          this.saveState();this.syncCloud("tutorial-first-duel");
+          this.worldRuntime?.showGameplayToast?.("💎 Vitória! +10 rubis. Abra a Loja.",3200);
+        }else if(stage==="attack-ship-2"){
+          this.setR1TutorialStage("collect-10",{save:true,sync:true});
+          this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Segundo alvo destruído! Agora colete 10 tesouros.",3200);
+        }
       },
       onRuntimeStateChange:()=>{
         if(this.current?.kind==="world"&&this.worldRuntime?.getState){
@@ -2226,6 +2251,14 @@ export class GameRuntime {
           if(worldId==="r1-enseada-aprendizes"&&["shipyard","equip-cannon"].includes(this.r1TutorialStage())){
             this.setR1TutorialStage("attack-ship",{save:true,sync:true});
             this.worldRuntime?.showGameplayToast?.("🏴‍☠️ Etapa 1 concluída! Agora siga a seta até um navio inimigo.",3600);
+          }else if(worldId==="r1-enseada-aprendizes"&&this.r1TutorialStage()==="equip-shop-cannon"&&String(id)==="cannon-bronze"){
+            const ammo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[])
+              .filter(a=>a?.available!==false&&!a?.event&&a?.shop?.purchasable===true)
+              .sort((a,b)=>Number(b.shop?.price||0)-Number(a.shop?.price||0))[0];
+            if(ammo?.id)this.grantAmmo(ammo.id,100,{save:false,syncServer:false,source:"tutorial-cannon-equipped"});
+            this.worldRuntime?.replaceAmmoInventory?.(this.playerAmmo,{emit:false});
+            this.setR1TutorialStage("switch-ammo",{save:true,sync:true});
+            this.worldRuntime?.showGameplayToast?.("💣 +100 "+String(ammo?.name||"munições")+". Agora equipe essa munição.",3200);
           }
         }
         return result.ok?{ok:true,message:"Canhão equipado."}:result;
