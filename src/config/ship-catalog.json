@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 7,
+  "version": 8,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -1690,7 +1690,17 @@
         "cannonSlots": 0
       },
       "schema": "tq.ship",
-      "version": 2
+      "version": 2,
+      "spriteAnimationMode": "timeline",
+      "motion": {
+        "active": true,
+        "preset": "heavy",
+        "speed": 34,
+        "heave": 88,
+        "pitch": 100,
+        "roll": 16,
+        "sway": 18
+      }
     },
     {
       "id": "ship-corsario-rubro",
