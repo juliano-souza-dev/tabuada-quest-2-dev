@@ -2532,8 +2532,12 @@ export class GameRuntime {
       onRepairCompleted:()=>this.advanceMissions("repair_ship",{worldId,region:Number(world?.region?.index)||Number(entry?.region)||0,amount:1}),
       canSelectAmmo:item=>{
         const event=String(item?.event||"").toLowerCase();
-        if(!world?.tutorial||event!==String(world.tutorial.eventAmmoEvent||"halloween").toLowerCase())return true;
-        return this.missionClaimed(world.tutorial.eventAmmoUnlockMission);
+        if(event!=="halloween")return true;
+        // Halloween ammunition is progression-gated globally, not only while
+        // the player is inside the tutorial world. Every ammo selection path
+        // therefore resolves against the same persisted mission state.
+        const unlockMission=String(world?.tutorial?.eventAmmoUnlockMission||"HALLOWEEN_M06");
+        return this.missionClaimed(unlockMission);
       },
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
