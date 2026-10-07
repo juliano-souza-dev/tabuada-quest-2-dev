@@ -48,7 +48,8 @@
       "fx": {
         "preset": "halloween"
       },
-      "damageFactor": 0.9
+      "damageFactor": 0.9,
+      "event": "halloween"
     },
     {
       "id": "cannonball-piercing",
