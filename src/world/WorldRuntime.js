@@ -5298,6 +5298,9 @@ export class WorldRuntime {
     if(this.actionMessage){
       this.actionMessage.textContent=String(entity.label||entity.shipName||"Navio inimigo")+" · casco "+next+"/"+hp.max;
     }
+    // NPC hull HP is durable gameplay state. Publish the mutation immediately so
+    // a reload cannot hydrate an older full-health snapshot.
+    this.onRuntimeStateChange?.();
   }
 
   navalEntityVelocity(entity){
