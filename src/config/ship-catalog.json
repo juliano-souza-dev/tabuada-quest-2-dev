@@ -1889,7 +1889,7 @@
       "entityKind": "monster",
       "available": true,
       "description": "Monstro marinho de águas profundas. Animação manual em atlas 4x4, sem Pixi, com idle cíclico de 16 quadros.",
-      "spriteMode": "animated-atlas",
+      "spriteMode": "timeline-atlas",
       "autoFrame": false,
       "cellSize": 400,
       "asset": "./assets/monsters/guardiao_abissal_idle_1600x1600.webp",
@@ -1988,7 +1988,17 @@
         "cannonSlots": 0
       },
       "schema": "tq.ship",
-      "version": 2
+      "version": 2,
+      "spriteAnimationMode": "timeline",
+      "motion": {
+        "active": true,
+        "preset": "heavy",
+        "speed": 30,
+        "heave": 18,
+        "pitch": 12,
+        "roll": 8,
+        "sway": 5
+      }
     }
   ],
   "shipTypes": [
