@@ -392,7 +392,7 @@
       "shipId": "ship-terror-do-mar",
       "boss": true,
       "coopBoss": false,
-      "requiredMissionId": "R2_M05",
+      "requiredMissionId": "R2_M06",
       "requiredMissionName": "Bloqueio Naval",
       "attackLockedMessage": "🔒 O Terror do Mar só pode ser atacado durante a missão Bloqueio Naval.",
       "width": 300,
@@ -411,7 +411,7 @@
         "cannonLoadout": [],
         "ammoId": "",
         "ammoUnlimited": false,
-        "requiredMissionId": "R2_M05",
+        "requiredMissionId": "R2_M06",
         "requiredMissionName": "Bloqueio Naval"
       }
     }
