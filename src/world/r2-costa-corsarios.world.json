@@ -434,7 +434,7 @@
         "respawnDelaySec": 0,
         "hp": 500000,
         "rewards": {},
-        "requiredMissionId": "R2_M05",
+        "requiredMissionId": "R2_M06",
         "spawn": {
           "mode": "random-spaced",
           "margin": 700,
