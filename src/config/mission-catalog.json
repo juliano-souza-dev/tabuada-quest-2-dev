@@ -1,6 +1,6 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 7,
+  "version": 8,
   "missions": [
     {
       "id": "R2_M01",
@@ -66,6 +66,27 @@
       "id": "R2_M05",
       "region": 2,
       "order": 5,
+      "name": "Equipagem no Estaleiro",
+      "objective": {
+        "type": "prepare_ship",
+        "target": 1,
+        "location": "shipyard",
+        "sourceMissionId": "R2_M04",
+        "requiredActions": [
+          "visit_shipyard",
+          "equip_purchased_items"
+        ]
+      },
+      "reward": {
+        "gold": 0,
+        "rubies": 0
+      },
+      "required": true
+    },
+    {
+      "id": "R2_M06",
+      "region": 2,
+      "order": 6,
       "name": "Bloqueio Naval",
       "objective": {
         "type": "defeat_boss",
