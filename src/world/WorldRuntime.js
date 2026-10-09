@@ -5357,6 +5357,39 @@ export class WorldRuntime {
     };
   }
 
+  alignNavalBroadside(shooter,target,{player=false,time=performance.now()}={}){
+    if(!shooter||!target)return false;
+    const x=Number(shooter.x)||0,y=Number(shooter.y)||0;
+    const dx=(Number(target.x)||0)-x,dy=(Number(target.y)||0)-y;
+    if(Math.hypot(dx,dy)<1)return true;
+    const bearing=Math.atan2(dx,-dy)*180/Math.PI;
+    const current=Number(shooter.rotation)||0;
+    // A broadside points ninety degrees to port or starboard. Choose the
+    // nearest of the two valid headings rather than spinning the entire hull.
+    const port=bearing+90,starboard=bearing-90;
+    const desired=Math.abs(shortestAngleDelta(current,port))<Math.abs(shortestAngleDelta(current,starboard))?port:starboard;
+    const delta=shortestAngleDelta(current,desired);
+    const key=player?"navalPlayerAimAt":"navalNpcAimAt";
+    const prev=player?this[key]:(shooter[key]||0);
+    const dt=clamp((Number(time)-Number(prev||time))/1000,0,.08);
+    if(player)this[key]=time;
+    else shooter[key]=time;
+    const turnSpeed=clamp(Number(
+      player?(this.config.player?.navigation?.turnSpeed??this.config.player?.turnSpeed):
+      (shooter.npcNavigation?.turnSpeed??shooter.navigation?.turnSpeed)
+    )||100,25,180);
+    const step=turnSpeed*Math.max(dt,1/120);
+    const next=Math.abs(delta)<=step?desired:current+Math.sign(delta)*step;
+    shooter.rotation=((next%360)+360)%360;
+    shooter.direction=directionForHeading(shooter.rotation,shooter.direction,{hysteresis:2});
+    if(player)this.updatePlayerVisual?.(time,dt);
+    else{
+      if(shooter.npcNavigation)shooter.npcNavigation.heading=shooter.rotation;
+      this.applyEntityVisual?.(shooter);
+    }
+    return Math.abs(shortestAngleDelta(shooter.rotation,desired))<=12;
+  }
+
   navalActiveBattery(shooter,cannons,target,{player=false}={}){
     const list=Array.isArray(cannons)?cannons.filter(Boolean):[];
     if(!list.length)return [];
@@ -5740,6 +5773,8 @@ export class WorldRuntime {
             String(target.label||target.shipName||"Navio inimigo")
             +" · FORA DE ALCANCE · "+Math.round(dist)
             +" / "+Math.round(effectiveRange)+" px";
+        }else if(!this.alignNavalBroadside(this.player,target,{player:true,time})){
+          if(this.actionButton)this.actionButton.textContent="🧭 Alinhando canhões";
         }else if(Number(time)>=Number(this.navalNextShotAt||0)){
           if(this.fireDirectNavalProjectile(target)){
             this.navalNextShotAt=Number(time)+effectiveCooldown;
@@ -5758,6 +5793,7 @@ export class WorldRuntime {
       }
       const stats=this.entityNavalCombatStats(entity);
       if(this.navalTargetDistance(entity)>stats.attackRange)continue;
+      if(!this.alignNavalBroadside(entity,this.player,{time}))continue;
       if(Number(time)<Number(state.nextShotAt||0))continue;
       if(this.fireNpcNavalProjectile(entity)){
         state.nextShotAt=Number(time)+stats.attackCooldownMs;
