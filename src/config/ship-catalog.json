@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 9,
+  "version": 10,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -2066,6 +2066,175 @@
         "impact": true,
         "useNavigationAtlas": false,
         "cannonSlots": 0
+      },
+      "schema": "tq.ship",
+      "version": 2
+    },
+    {
+      "id": "ship-terror-do-mar",
+      "name": "Terror do Mar",
+      "type": "npc",
+      "available": true,
+      "description": "Galeão pirata de guerra com atlas direcional 4x4 de 16 posições, mapeado em passos de 22,5°.",
+      "spriteMode": "combined",
+      "autoFrame": true,
+      "cellSize": 400,
+      "asset": "./assets/ships/terror do mar.webp",
+      "navigation": {
+        "width": 300,
+        "height": 300,
+        "minSpeed": 55,
+        "speed": 180,
+        "acceleration": 520,
+        "braking": 0.12,
+        "roll": 2.4,
+        "heave": 3.2,
+        "sway": 0,
+        "periodMs": 3600,
+        "wake": true,
+        "shadow": true,
+        "src": "./assets/ships/terror do mar.webp",
+        "sprite": {
+          "src": "./assets/ships/terror do mar.webp",
+          "columns": 4,
+          "rows": 4,
+          "imageWidth": 1600,
+          "imageHeight": 1600,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "nne": {
+              "x": 400,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ne": {
+              "x": 800,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "ene": {
+              "x": 1200,
+              "y": 400,
+              "width": 400,
+              "height": 400
+            },
+            "e": {
+              "x": 0,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "ese": {
+              "x": 400,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "se": {
+              "x": 800,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "sse": {
+              "x": 1200,
+              "y": 800,
+              "width": 400,
+              "height": 400
+            },
+            "s": {
+              "x": 0,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "ssw": {
+              "x": 400,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "sw": {
+              "x": 800,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "wsw": {
+              "x": 1200,
+              "y": 1200,
+              "width": 400,
+              "height": 400
+            },
+            "w": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "wnw": {
+              "x": 400,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nw": {
+              "x": 800,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            },
+            "nnw": {
+              "x": 1200,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            }
+          },
+          "directionFrames": {
+            "n": 4,
+            "nne": 5,
+            "ne": 6,
+            "ene": 7,
+            "e": 8,
+            "ese": 9,
+            "se": 10,
+            "sse": 11,
+            "s": 12,
+            "ssw": 13,
+            "sw": 14,
+            "wsw": 15,
+            "w": 0,
+            "wnw": 1,
+            "nw": 2,
+            "nnw": 3
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
+        },
+        "compiled": {}
+      },
+      "combat": {
+        "hp": 1000,
+        "attackRange": 1400,
+        "attackCooldownMs": 1100,
+        "damage": 1,
+        "recoil": 18,
+        "shake": 5,
+        "muzzleFlash": true,
+        "smoke": true,
+        "impact": true,
+        "useNavigationAtlas": true,
+        "cannonSlots": 10
       },
       "schema": "tq.ship",
       "version": 2
