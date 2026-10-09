@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 12,
+  "version": 13,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -384,6 +384,35 @@
         "maxTargets": 1,
         "cannonLoadout": [],
         "ammoUnlimited": false
+      }
+    },
+    {
+      "id": "npc-terror-do-mar",
+      "name": "Terror do Mar",
+      "shipId": "ship-terror-do-mar",
+      "boss": true,
+      "coopBoss": false,
+      "requiredMissionId": "R2_M05",
+      "requiredMissionName": "Bloqueio Naval",
+      "attackLockedMessage": "🔒 O Terror do Mar só pode ser atacado durante a missão Bloqueio Naval.",
+      "width": 300,
+      "height": 300,
+      "navigation": {
+        "minSpeed": 45,
+        "speed": 135,
+        "acceleration": 420,
+        "behavior": "roam"
+      },
+      "combat": {
+        "hp": 500000,
+        "attitude": "peaceful",
+        "damage": 1,
+        "maxTargets": 1,
+        "cannonLoadout": [],
+        "ammoId": "",
+        "ammoUnlimited": false,
+        "requiredMissionId": "R2_M05",
+        "requiredMissionName": "Bloqueio Naval"
       }
     }
   ]

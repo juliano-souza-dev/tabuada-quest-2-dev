@@ -841,6 +841,9 @@ export class WorldRuntime {
       coopBoss:profile.coopBoss===true||profile.boss===true||profile.combat?.boss===true,
       coopBossId:String(profile.coopBossId||npcId||""),
       rewardShipId:String(profile.rewardShipId||typeConfig?.rewardShipId||""),
+      requiredMissionId:String(typeConfig?.requiredMissionId||profile.requiredMissionId||profile.combat?.requiredMissionId||""),
+      requiredMissionName:String(profile.requiredMissionName||profile.combat?.requiredMissionName||""),
+      attackLockedMessage:String(profile.attackLockedMessage||""),
       bossSpawnCycle:1,
       npcSpawnCycle:1,
       devFrozen:this.editorEnabled===true&&typeConfig?.devFrozen===true,
@@ -875,7 +878,9 @@ export class WorldRuntime {
         ammoId:String(profile.combat?.ammoId||""),
         ammoUnlimited:profile.combat?.ammoUnlimited===true,
         fixedDamagePerShot:Math.max(0,Number(profile.combat?.fixedDamagePerShot)||0),
-        requiredAmmoEvent:String(typeConfig?.requiredAmmoEvent||profile.combat?.requiredAmmoEvent||"")
+        requiredAmmoEvent:String(typeConfig?.requiredAmmoEvent||profile.combat?.requiredAmmoEvent||""),
+        requiredMissionId:String(typeConfig?.requiredMissionId||profile.requiredMissionId||profile.combat?.requiredMissionId||""),
+        requiredMissionName:String(profile.requiredMissionName||profile.combat?.requiredMissionName||"")
       },
       motion:normalizeEntityMotion(
         profile.motion&&typeof profile.motion==="object"

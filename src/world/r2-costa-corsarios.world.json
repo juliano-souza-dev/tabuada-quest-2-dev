@@ -424,6 +424,23 @@
           "minDistance": 760,
           "seed": 9102
         }
+      },
+      {
+        "npcId": "npc-terror-do-mar",
+        "shipId": "ship-terror-do-mar",
+        "count": 1,
+        "enabled": true,
+        "respawn": false,
+        "respawnDelaySec": 0,
+        "hp": 500000,
+        "rewards": {},
+        "requiredMissionId": "R2_M05",
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 700,
+          "minDistance": 1100,
+          "seed": 75205
+        }
       }
     ]
   },
@@ -435,7 +452,7 @@
   "meta": {
     "schema": "tq.world",
     "version": 1,
-    "sourceRevision": "20261007-guardiao-abissal-v1",
+    "sourceRevision": "20261009-terror-do-mar-r2-mission-gate-v1",
     "editorVersion": 1,
     "createdFrom": "tabuada-quest-dev",
     "regionIndex": 2,

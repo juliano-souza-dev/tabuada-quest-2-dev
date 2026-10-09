@@ -2075,7 +2075,7 @@
       "name": "Terror do Mar",
       "type": "npc",
       "available": true,
-      "description": "Galeão pirata de guerra com atlas direcional 4x4 de 16 posições, mapeado em passos de 22,5°.",
+      "description": "Galeão pirata de guerra com atlas direcional 4x4 de 16 posições. Surge na Costa dos Corsários e só pode ser atacado durante a missão Bloqueio Naval.",
       "spriteMode": "combined",
       "autoFrame": true,
       "cellSize": 400,
@@ -2224,7 +2224,7 @@
         "compiled": {}
       },
       "combat": {
-        "hp": 1000,
+        "hp": 500000,
         "attackRange": 1400,
         "attackCooldownMs": 1100,
         "damage": 1,

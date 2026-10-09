@@ -366,6 +366,65 @@ export class GameRuntime {
       :this.openScene(fallback,{pushHistory:false});
   }
 
+  missionState(missionId){
+    const id=String(missionId||"").trim();
+    if(!id)return {active:false,completed:false,status:""};
+
+    const flags=this.flags&&typeof this.flags==="object"?this.flags:{};
+    const game=this.accountState?.game&&typeof this.accountState.game==="object"?this.accountState.game:{};
+    const missions=game.missions&&typeof game.missions==="object"?game.missions:{};
+
+    const listHas=(value)=>{
+      if(Array.isArray(value))return value.map(String).includes(id);
+      if(value&&typeof value==="object")return value[id]===true;
+      return false;
+    };
+
+    const activeIds=[
+      ...(Array.isArray(flags.activeMissions)?flags.activeMissions:[]),
+      ...(Array.isArray(missions.activeIds)?missions.activeIds:[]),
+      ...(Array.isArray(missions.activeMissions)?missions.activeMissions:[])
+    ].map(String);
+    const completedIds=[
+      ...(Array.isArray(flags.completedMissions)?flags.completedMissions:[]),
+      ...(Array.isArray(missions.completedIds)?missions.completedIds:[]),
+      ...(Array.isArray(missions.completedMissions)?missions.completedMissions:[]),
+      ...(Array.isArray(missions.completed)?missions.completed:[])
+    ].map(String);
+
+    const singleActive=String(flags.activeMissionId||missions.activeMissionId||missions.activeId||"");
+    const entry=missions.progress?.[id]||missions.byId?.[id]||missions[id]||{};
+    const status=String(entry?.status||entry?.state||"").toLowerCase();
+
+    const active=
+      activeIds.includes(id)
+      ||singleActive===id
+      ||listHas(missions.active)
+      ||["active","started","in_progress","in-progress"].includes(status);
+
+    const completed=
+      completedIds.includes(id)
+      ||listHas(missions.completedById)
+      ||["completed","complete","done"].includes(status)
+      ||entry?.completed===true;
+
+    return {active,completed,status};
+  }
+
+  isMissionCombatUnlocked(entity){
+    const missionId=String(entity?.requiredMissionId||entity?.combat?.requiredMissionId||"").trim();
+    if(!missionId)return true;
+    const state=this.missionState(missionId);
+    return state.active===true||state.completed===true;
+  }
+
+  missionCombatLockMessage(entity){
+    const missionId=String(entity?.requiredMissionId||entity?.combat?.requiredMissionId||"").trim();
+    if(!missionId)return "Alvo bloqueado.";
+    const missionName=String(entity?.requiredMissionName||entity?.combat?.requiredMissionName||missionId);
+    return String(entity?.attackLockedMessage||("🔒 Este alvo só pode ser atacado durante a missão "+missionName+"."));
+  }
+
   canShowRegionTransition(targetWorldId,fromWorldId=this.current?.kind==="world"?this.current.id:""){
     return true;
   }
@@ -2023,6 +2082,8 @@ export class GameRuntime {
         const ammo=(Array.isArray(this.ammoCatalog?.ammo)?this.ammoCatalog.ammo:[]).find(item=>String(item?.id||"")===id);
         return String(ammo?.event||"").toLowerCase()!=="halloween";
       },
+      canAttackEntity:entity=>this.isMissionCombatUnlocked(entity),
+      attackLockMessage:entity=>this.missionCombatLockMessage(entity),
       getConsumableQuantity:id=>Math.max(0,Math.floor(Number(this.consumables?.[String(id||"")])||0)),
       onConsumeItem:id=>this.consumeItem(id,{worldId}),
       onRuntimeStateChange:()=>{

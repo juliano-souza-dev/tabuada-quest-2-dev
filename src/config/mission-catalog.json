@@ -1,6 +1,6 @@
 {
   "schema": "tq.mission-catalog",
-  "version": 6,
+  "version": 7,
   "missions": [
     {
       "id": "R2_M01",
@@ -69,13 +69,19 @@
       "name": "Bloqueio Naval",
       "objective": {
         "type": "defeat_boss",
-        "target": 1
+        "target": 1,
+        "targetNpcId": "npc-terror-do-mar"
       },
       "reward": {
         "gold": 117,
         "rubies": 0
       },
-      "required": true
+      "required": true,
+      "combatUnlock": {
+        "npcIds": [
+          "npc-terror-do-mar"
+        ]
+      }
     },
     {
       "id": "R3_M01",
