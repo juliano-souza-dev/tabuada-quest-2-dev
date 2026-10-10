@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 10,
+  "version": 11,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -2235,6 +2235,41 @@
         "impact": true,
         "useNavigationAtlas": true,
         "cannonSlots": 10
+      },
+      "schema": "tq.ship",
+      "version": 2
+    },
+    {
+      "id": "monster-caranguejo-abissal",
+      "name": "Caranguejo Abissal",
+      "type": "npc",
+      "entityKind": "monster",
+      "available": true,
+      "description": "Crustáceo colossal de couraça vulcânica, encontrado nas regiões 2 e 3.",
+      "spriteMode": "combined",
+      "spriteAnimationMode": "timeline",
+      "autoFrame": false,
+      "asset": "./assets/monsters/caranguejo-abissal.svg",
+      "navigation": {
+        "width": 340,
+        "height": 340,
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary",
+        "wake": false,
+        "shadow": true,
+        "src": "./assets/monsters/caranguejo-abissal.svg"
+      },
+      "combat": {
+        "hp": 2500,
+        "attackRange": 400,
+        "attackCooldownMs": 1800,
+        "damage": 9,
+        "cannonSlots": 0,
+        "muzzleFlash": false,
+        "smoke": false,
+        "impact": true
       },
       "schema": "tq.ship",
       "version": 2
