@@ -1,6 +1,6 @@
 {
   "schema": "tq.ship-catalog",
-  "version": 11,
+  "version": 12,
   "defaultShipId": "ship-pirate-galleon-navio",
   "ships": [
     {
@@ -2270,6 +2270,96 @@
         "muzzleFlash": false,
         "smoke": false,
         "impact": true
+      },
+      "schema": "tq.ship",
+      "version": 2
+    },
+    {
+      "id": "monster-leviata-das-profundezas",
+      "name": "Leviatã das Profundezas",
+      "type": "npc",
+      "entityKind": "monster",
+      "available": true,
+      "description": "Leviatã dos mapas 2 e 3; usa temporariamente a imagem existente no jogo até a publicação do atlas direcional 4x4.",
+      "spriteMode": "combined",
+      "spriteAnimationMode": "timeline",
+      "autoFrame": false,
+      "cellSize": 400,
+      "asset": "./assets/monsters/leviata-superficie-boss.webp",
+      "animations": {
+        "idle": {
+          "frameMs": 1000,
+          "loop": true,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "frames": [
+            0
+          ]
+        }
+      },
+      "animationGroups": {
+        "idle": "navigation"
+      },
+      "motion": {
+        "active": true,
+        "preset": "heavy",
+        "speed": 32,
+        "heave": 40,
+        "pitch": 44,
+        "roll": 7,
+        "sway": 8
+      },
+      "navigation": {
+        "width": 440,
+        "height": 440,
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "braking": 0.18,
+        "roll": 0,
+        "heave": 0,
+        "sway": 0,
+        "periodMs": 2500,
+        "wake": false,
+        "shadow": true,
+        "src": "./assets/monsters/leviata-superficie-boss.webp",
+        "sprite": {
+          "src": "./assets/monsters/leviata-superficie-boss.webp",
+          "columns": 1,
+          "rows": 1,
+          "imageWidth": 400,
+          "imageHeight": 400,
+          "cellWidth": 400,
+          "cellHeight": 400,
+          "regions": {
+            "n": {
+              "x": 0,
+              "y": 0,
+              "width": 400,
+              "height": 400
+            }
+          },
+          "directionFrames": {
+            "n": 0
+          },
+          "initialDirection": "n",
+          "autoFrameExact": true
+        },
+        "compiled": {},
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 5000,
+        "attackRange": 520,
+        "attackCooldownMs": 1800,
+        "damage": 12,
+        "recoil": 0,
+        "shake": 4,
+        "muzzleFlash": false,
+        "smoke": false,
+        "impact": true,
+        "useNavigationAtlas": true,
+        "cannonSlots": 0
       },
       "schema": "tq.ship",
       "version": 2
