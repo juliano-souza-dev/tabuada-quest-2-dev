@@ -458,7 +458,9 @@
           "mode": "random-spaced",
           "margin": 650,
           "minDistance": 1050,
-          "seed": 9512
+          "seed": 9512,
+          "nearPlayerMin": 850,
+          "nearPlayerMax": 1350
         }
       }
     ]
