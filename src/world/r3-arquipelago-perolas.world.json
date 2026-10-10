@@ -424,6 +424,25 @@
           "minDistance": 760,
           "seed": 9103
         }
+      },
+      {
+        "npcId": "npc-caranguejo-abissal",
+        "shipId": "monster-caranguejo-abissal",
+        "count": 1,
+        "enabled": true,
+        "respawn": true,
+        "respawnDelaySec": 120,
+        "hp": 3500,
+        "rewards": {
+          "gold": 350,
+          "rubies": 1
+        },
+        "spawn": {
+          "mode": "random-spaced",
+          "margin": 650,
+          "minDistance": 1050,
+          "seed": 9313
+        }
       }
     ]
   },
