@@ -766,8 +766,8 @@ export class WorldRuntime {
     const profile={
       ...shipProfile,
       ...(npcProfile&&typeof npcProfile==="object"?structuredClone(npcProfile):{}),
-      sprite:shipProfile.sprite?structuredClone(shipProfile.sprite):null,
-      src:String(shipProfile.src||shipProfile.sprite?.src||""),
+      sprite:shipProfile.sprite?structuredClone(shipProfile.sprite):(shipProfile.navigation?.sprite?structuredClone(shipProfile.navigation.sprite):null),
+      src:String(shipProfile.src||shipProfile.sprite?.src||shipProfile.navigation?.src||shipProfile.navigation?.sprite?.src||shipProfile.asset||""),
       entityKind:String(npcProfile?.entityKind||shipProfile.entityKind||"ship"),
       spriteAnimationMode:String(npcProfile?.spriteAnimationMode||shipProfile.spriteAnimationMode||""),
       animations:npcProfile?.animations&&typeof npcProfile.animations==="object"
