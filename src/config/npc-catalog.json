@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 14,
+  "version": 15,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -432,6 +432,28 @@
         "hp": 2500,
         "attitude": "peaceful",
         "damage": 9,
+        "maxTargets": 1,
+        "cannonLoadout": [],
+        "ammoUnlimited": false
+      }
+    },
+    {
+      "id": "npc-leviata-das-profundezas",
+      "name": "Leviatã das Profundezas",
+      "shipId": "monster-leviata-das-profundezas",
+      "entityKind": "monster",
+      "width": 440,
+      "height": 440,
+      "navigation": {
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 5000,
+        "attitude": "peaceful",
+        "damage": 12,
         "maxTargets": 1,
         "cannonLoadout": [],
         "ammoUnlimited": false
