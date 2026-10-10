@@ -982,38 +982,8 @@ export class NavalCombatWebGLRenderer{
         continue;
       }
 
-      drawPoint(
-        x+worldSize*.045*sway,
-        y-worldSize*.055,
-        screenSize*(.25+.12*intensity),
-        2,
-        flameCycle,
-        true
-      );
-      drawPoint(
-        x-worldSize*.055*(.55+sway*.25),
-        y-worldSize*.015,
-        screenSize*(.17+.08*intensity),
-        2,
-        (flameCycle+.37)%1,
-        true
-      );
-      drawPoint(
-        x+worldSize*.025*Math.sin(phase),
-        y-worldSize*(.09+.12*smokeCycle),
-        screenSize*(.34+.28*smokeCycle)*(.72+.28*intensity),
-        3,
-        smokeCycle,
-        false
-      );
-      drawPoint(
-        x-worldSize*.035*Math.cos(phase*.8),
-        y-worldSize*(.06+.10*((smokeCycle+.48)%1)),
-        screenSize*(.25+.22*((smokeCycle+.48)%1)),
-        3,
-        (smokeCycle+.48)%1,
-        false
-      );
+      // Continuous damaged-ship fire/smoke intentionally disabled.
+      // Impact FX and destruction/explosion FX remain handled below.
     }
 
     for(const effect of this.destructions){
