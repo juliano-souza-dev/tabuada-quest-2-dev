@@ -6901,6 +6901,30 @@ export class WorldRuntime {
   }
 
 
+  createTutorialGuideArrow(){
+    const arrow=document.createElement("div");
+    arrow.className="tq-tutorial-guide-arrow";
+    Object.assign(arrow.style,{
+      width:"72px",
+      height:"72px",
+      pointerEvents:"none",
+      userSelect:"none"
+    });
+    const image=document.createElement("img");
+    image.src="./assets/ui/seta.png";
+    image.alt="";
+    image.draggable=false;
+    Object.assign(image.style,{
+      display:"block",
+      width:"100%",
+      height:"100%",
+      objectFit:"contain",
+      pointerEvents:"none"
+    });
+    arrow.append(image);
+    return arrow;
+  }
+
   updateTutorialGuideArrow(){
     const guide=this.getTutorialGuide?.();
     const stage=String(guide?.stage||"");
@@ -6936,9 +6960,7 @@ export class WorldRuntime {
         const rect=fireButton?.getBoundingClientRect?.();
         if(rect&&rect.width>0&&rect.height>0){
           if(!this.tutorialArrowEl){
-            const arrow=document.createElement("div");
-            arrow.className="tq-tutorial-guide-arrow";
-            arrow.textContent="➤";
+            const arrow=this.createTutorialGuideArrow();
             document.body.append(arrow);
             this.tutorialArrowEl=arrow;
           }else if(this.tutorialArrowEl.parentElement!==document.body){
@@ -6969,9 +6991,7 @@ export class WorldRuntime {
       return;
     }
     if(!this.tutorialArrowEl){
-      const arrow=document.createElement("div");
-      arrow.className="tq-tutorial-guide-arrow";
-      arrow.textContent="➤";
+      const arrow=this.createTutorialGuideArrow();
       this.host?.append(arrow);
       this.tutorialArrowEl=arrow;
     }else if(this.tutorialArrowEl.parentElement!==this.host){
