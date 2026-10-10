@@ -1,6 +1,6 @@
 {
   "schema": "tq.npc-catalog",
-  "version": 13,
+  "version": 14,
   "npcs": [
     {
       "id": "corsario-colombo",
@@ -413,6 +413,28 @@
         "ammoUnlimited": false,
         "requiredMissionId": "R2_M06",
         "requiredMissionName": "Bloqueio Naval"
+      }
+    },
+    {
+      "id": "npc-caranguejo-abissal",
+      "name": "Caranguejo Abissal",
+      "shipId": "monster-caranguejo-abissal",
+      "entityKind": "monster",
+      "width": 340,
+      "height": 340,
+      "navigation": {
+        "minSpeed": 0,
+        "speed": 0,
+        "acceleration": 0,
+        "behavior": "stationary"
+      },
+      "combat": {
+        "hp": 2500,
+        "attitude": "peaceful",
+        "damage": 9,
+        "maxTargets": 1,
+        "cannonLoadout": [],
+        "ammoUnlimited": false
       }
     }
   ]
